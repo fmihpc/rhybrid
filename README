@@ -1,0 +1,59 @@
+RHYBRID
+
+RHybrid is a parallel C++/MPI quasi-neutral hybrid (QNH) plasma
+simulation code for the solar wind and plasma interactions of
+celestial bodies. The RHybrid code is developed at the Finnish
+Meteorological Institute. The RHybrid code is distributed under the
+GPL v3 open source license by the Finnish Meteorological Institute.
+
+The latest version of RHybrid can be downloaded at:
+
+https://github.com/fmihpc/rhybrid
+
+Folders:
+
+src/: RHybrid source code
+examples/: Example simulation config files
+doc/: Documentation
+
+SIMULATION CODE
+
+RHybrid is based on the following open source libraries for space
+plasma simulations developed at the Finnish Meteorological Institute:
+
+Corsair - Parallel Simulation Platform
+https://github.com/fmihpc/corsair
+
+ParGrid - Parallel Grid
+https://github.com/fmihpc/pargrid
+
+VLSV - Parallel File Format
+https://github.com/fmihpc/vlsv
+
+COMPILATION
+
+-Download the above libraries and their dependencies
+-Compile VLSV
+-Copy the contents of rhybrid/src/ in corsair/src/user/rhybrid/
+-Compile Corsair with make "SIM=rhybrid"
+
+ACKNOWLEDGEMENTS
+
+We request acknowledging and citing the original code when publishing
+or presenting results from RHybrid. The RHybrid developers are open
+for scientific collaborations and further development of the code.
+
+Example acknowledgement text:
+
+"Simulations were performed using the RHybid code distributed under the
+open source GPL v3 license by the Finnish Meteorological Institute
+(github.com/fmihpc/rhybrid)."
+
+CONTACTS
+
+Finnish Meteorological Institute:
+
+Dr. Riku Jarvinen (riku.jarvinen@fmi.fi)
+
+Copyright (c) 2015- Finnish Meteorological Institute
+
