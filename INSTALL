@@ -1,0 +1,54 @@
+EXAMPLE COMPILATIONS
+
+Ubuntu 14.04.3 LTS (Jan 11, 2016)
+
+cd /home/user/bin
+wget https://github.com/fmihpc/rhybrid/archive/master.zip -O rhybrid.zip
+wget https://github.com/fmihpc/corsair/archive/master.zip -O corsair.zip
+wget https://github.com/fmihpc/vlsv/archive/master.zip -O vlsv.zip
+wget https://github.com/fmihpc/pargrid/archive/master.zip -O pargrid.zip
+wget http://ftp.mcs.anl.gov/pub/alice/10x10/zoltan_distrib_v3.6.tar.gz
+tar -xzf zoltan_distrib_v3.6.tar.gz
+rm parmetis_3.1.tar.gz ._scotch_5.1.12b.tar.gz scotch_5.1.12b.tar.gz
+cd Zoltan_v3.6
+mkdir build
+cd build
+../configure --prefix=/home/user/bin/Zoltan_v3.6/build
+make
+make install
+cd ~/bin
+unzip '*.zip'
+cd vlsv-master
+cp Makefile.arch Makefile.my
+jed Makefile.my
+INC_SILO=
+LIB_SILO=
+jed Makefile
+ARCH ?= my
+make
+cd visit-plugin
+xmledit vlsv.xml
+CXXFLAGS -std=c++0x -I/home/user/bin/vlsv-master -DNEW_VTK_API
+LDFLAGS -L/home/user/bin/vlsv-master
+xml2cmake vlsv.xml
+cmake .
+make
+cd ~/bin
+mv rhybrid-master/src/ corsair-master/src/user/rhybrid
+cd corsair-master
+cp Makefile.arch Makefile.my
+jed Makefile
+ARCH ?= my
+SIM=rhybrid
+jed Makefile.my
+INC=
+INC_BOOST=-I/usr/include/boost
+LIB_BOOST=-L/usr/lib/ -lboost_program_options
+INC_PARGRID=-I/home/user/bin/pargrid-master
+LIB_PARGRID=
+INC_VLSV=-I/home/user/bin/vlsv-master
+LIB_VLSV=-L/home/user/bin/vlsv-master -lvlsv
+INC_ZOLTAN=-I/home/user/bin/Zoltan_v3.6/build/include
+LIB_ZOLTAN=-L/home/user/bin/Zoltan_v3.6/build/lib -lzoltan
+make
+
