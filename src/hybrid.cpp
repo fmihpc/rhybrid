@@ -129,3 +129,5 @@ vector<pargrid::DataID> Hybrid::dataCellAverageVelocityID;
 int Hybrid::averageCounter;
 #endif
 
+map<string,bool> Hybrid::outParams;
+

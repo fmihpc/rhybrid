@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
+#include <istream>
 #include <user.h>
 #include <particle_list_skeleton.h>
 
@@ -152,7 +153,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dx=cellSize[0];
    Hybrid::dV=cube(Hybrid::dx);
    const Real defaultValue = 0.0;
+   string outputParams = "";
    cr.add("Hybrid.log_interval","Log interval in units of timestep [-] (int)",0);
+   cr.add("Hybrid.output_parameters","Parameters to write in output files (string)","");
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
    cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
@@ -183,6 +186,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    cr.parse();
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
+   cr.get("Hybrid.output_parameters",outputParams);
    cr.get("Hybrid.R_object",Hybrid::R_object);
    cr.get("Hybrid.R_fieldObstacle",Hybrid::R2_fieldObstacle);
    cr.get("Hybrid.R_particleObstacle",Hybrid::R2_particleObstacle);
@@ -216,6 +220,65 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dipMinR2 = sqr(Hybrid::dipMinR2);
 #endif
    if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
+   // set parameters written in vlsv files
+   Hybrid::outParams = {
+      {"faceB",false},
+      {"faceJ",false},
+      {"cellRhoQi",false},
+      {"cellB",false},
+      {"cellJ",false},
+      {"cellUe",false},
+      {"cellJi",false},
+      {"cellMaxUeCnt",false},
+      {"cellMaxViCnt",false},
+      {"cellMinRhoQiCnt",false},
+      {"nodeE",false},
+      {"nodeB",false},
+      {"nodeJ",false},
+      {"nodeUe",false},
+      {"nodeJi",false},
+      {"prod_rate_iono",false},
+      {"prod_rate_exo",false},
+      {"cellBAverage",false},
+      {"n_ave",false},
+      {"v_ave",false},
+      {"cellDivB",false},
+      {"cellNPles",false},
+      {"cellB0",false},
+      {"n",false},
+      {"T",false},
+      {"v",false}
+   };
+   istringstream iss(outputParams);
+   while(iss) {
+      string p;
+      iss >> p;
+      if(p.find_first_not_of(' ') != string::npos) {
+         if(Hybrid::outParams.count(p) > 0) {
+            Hybrid::outParams[p] = true;
+            //simClasses.logger << "Substring: |" << p << "|" << endl;
+         }
+      }
+   }
+   simClasses.logger << "(HYBRID) Available output parameters: ";
+   for(auto p: Hybrid::outParams) { simClasses.logger << p.first << " "; }
+   simClasses.logger << endl;
+   simClasses.logger << "(HYBRID) Selected output parameters: ";
+   for(auto p: Hybrid::outParams) {
+      if(p.second == true) { simClasses.logger << p.first << " "; }
+   }
+   simClasses.logger << endl;
+#ifndef WRITE_POPULATION_AVERAGES
+   if(Hybrid::outParams["n_ave"] == true || Hybrid::outParams["v_ave"] == true || Hybrid::outParams["cellBAverage"] == true) {
+      simClasses.logger << "(HYBRID) WARNING: Average output parameters selected but WRITE_POPULATION_AVERAGES not defined in Makefile" << endl;
+   }
+#endif
+#ifndef USE_B_CONSTANT
+   if(Hybrid::outParams["cellB0"] == true) {
+      simClasses.logger << "(HYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
+   }
+#endif
+   
    if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if(Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
    else { Hybrid::R2_fieldObstacle = -1; }

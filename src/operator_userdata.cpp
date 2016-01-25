@@ -79,32 +79,36 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeUeID,        "nodeUe",          N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeJiID,        "nodeJi",          N_blocks,3);
    // write production rates of ionosphere populations
-   Real* const cellIonosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellIonosphereID));
-   for(unsigned int N_ionoPop=0;N_ionoPop<Hybrid::N_ionospherePopulations;++N_ionoPop) {
-      vector<Real> iono;
-      for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
-	    const int n = (b*block::SIZE+block::index(i,j,k));
-	    const size_t nIono = n*Hybrid::N_ionospherePopulations + N_ionoPop;
-	    iono.push_back(cellIonosphere[nIono]);
-	 }
+   if(Hybrid::outParams["prod_rate_iono"] == true) {
+      Real* const cellIonosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellIonosphereID));
+      for(unsigned int N_ionoPop=0;N_ionoPop<Hybrid::N_ionospherePopulations;++N_ionoPop) {
+         vector<Real> iono;
+         for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+            for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+               const int n = (b*block::SIZE+block::index(i,j,k));
+               const size_t nIono = n*Hybrid::N_ionospherePopulations + N_ionoPop;
+               iono.push_back(cellIonosphere[nIono]);
+            }
+         }
+         attribs["name"] = string("prod_rate_iono") + to_string(N_ionoPop);
+         if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(iono[0])) == false) { success = false; }
       }
-      attribs["name"] = string("prod_rate_iono") + to_string(N_ionoPop);
-      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(iono[0])) == false) { success = false; }
    }
    // write production rates of exosphere populations
-   Real* const cellExosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellExosphereID));
-   for(unsigned int N_exoPop=0;N_exoPop<Hybrid::N_exospherePopulations;++N_exoPop) {
-      vector<Real> exo;
-      for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
-	    const int n = (b*block::SIZE+block::index(i,j,k));
-	    const size_t nExo = n*Hybrid::N_exospherePopulations + N_exoPop;
-	    exo.push_back(cellExosphere[nExo]);
-	 }
+   if(Hybrid::outParams["prod_rate_exo"] == true) {
+      Real* const cellExosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellExosphereID));
+      for(unsigned int N_exoPop=0;N_exoPop<Hybrid::N_exospherePopulations;++N_exoPop) {
+         vector<Real> exo;
+         for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+            for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+               const int n = (b*block::SIZE+block::index(i,j,k));
+               const size_t nExo = n*Hybrid::N_exospherePopulations + N_exoPop;
+               exo.push_back(cellExosphere[nExo]);
+            }
+         }
+         attribs["name"] = string("prod_rate_exo") + to_string(N_exoPop);
+         if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(exo[0])) == false) { success = false; }
       }
-      attribs["name"] = string("prod_rate_exo") + to_string(N_exoPop);
-      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(exo[0])) == false) { success = false; }
    }
 #ifdef WRITE_POPULATION_AVERAGES
    Real invAveCnt = 0.0;
@@ -112,53 +116,61 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       invAveCnt = 1.0/static_cast<Real>(Hybrid::averageCounter);
    }
    // magnetic field
-   Real* cellAverageB = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageBID));
-   vector<Real> averageB;
-   for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-      for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
-	 const int n = (b*block::SIZE+block::index(i,j,k));
-	 const int n3 = n*3;
-	 averageB.push_back(cellAverageB[n3+0]*invAveCnt);
-	 averageB.push_back(cellAverageB[n3+1]*invAveCnt);
-	 averageB.push_back(cellAverageB[n3+2]*invAveCnt);
-	 cellAverageB[n3+0] = 0.0;
-	 cellAverageB[n3+1] = 0.0;
-	 cellAverageB[n3+2] = 0.0;
-      }
-   }
-   attribs["name"] = "cellBAverage";
-   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(averageB[0])) == false) { success = false; }
-   // particle populations
-   for(unsigned int m=0;m<Hybrid::N_outputFields;++m) {
-      Real* nAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageDensityID[m]));
-      Real* vAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageVelocityID[m]));
-      vector<Real> averageDensity;
-      vector<Real> averageVelocity;
+   if(Hybrid::outParams["cellBAverage"] == true) {
+      Real* cellAverageB = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageBID));
+      vector<Real> averageB;
       for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
-	    const int n = (b*block::SIZE+block::index(i,j,k));
+         for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+            const int n = (b*block::SIZE+block::index(i,j,k));
             const int n3 = n*3;
-	    averageDensity.push_back(nAve[n]/Hybrid::dV/constants::CHARGE_ELEMENTARY*invAveCnt);
-	    if(nAve[n] > 0) {
-	       averageVelocity.push_back( vAve[n3+0]/nAve[n] );
-	       averageVelocity.push_back( vAve[n3+1]/nAve[n] );
-	       averageVelocity.push_back( vAve[n3+2]/nAve[n] );
-	    }
-	    else {
-	       averageVelocity.push_back(0.0);
-	       averageVelocity.push_back(0.0);
-	       averageVelocity.push_back(0.0);
-	    }
-            nAve[n] = 0.0;
-            vAve[n3+0] = 0.0;
-            vAve[n3+1] = 0.0;
-            vAve[n3+2] = 0.0;
-	 }
+            averageB.push_back(cellAverageB[n3+0]*invAveCnt);
+            averageB.push_back(cellAverageB[n3+1]*invAveCnt);
+            averageB.push_back(cellAverageB[n3+2]*invAveCnt);
+            cellAverageB[n3+0] = 0.0;
+            cellAverageB[n3+1] = 0.0;
+            cellAverageB[n3+2] = 0.0;
+         }
       }
-      attribs["name"] = string("n_") + Hybrid::outputFieldStr[m] + "_ave";
-      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(averageDensity[0])) == false) { success = false; }
-      attribs["name"] = string("v_") + Hybrid::outputFieldStr[m] + "_ave";
-      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(averageVelocity[0])) == false) { success = false; }
+      attribs["name"] = "cellBAverage";
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(averageB[0])) == false) { success = false; }
+   }
+   // particle populations
+   if(Hybrid::outParams["n_ave"] == true || Hybrid::outParams["v_ave"] == true) {
+      for(unsigned int m=0;m<Hybrid::N_outputFields;++m) {
+         Real* nAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageDensityID[m]));
+         Real* vAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageVelocityID[m]));
+         vector<Real> averageDensity;
+         vector<Real> averageVelocity;
+         for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+            for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+               const int n = (b*block::SIZE+block::index(i,j,k));
+               const int n3 = n*3;
+               averageDensity.push_back(nAve[n]/Hybrid::dV/constants::CHARGE_ELEMENTARY*invAveCnt);
+               if(nAve[n] > 0) {
+                  averageVelocity.push_back( vAve[n3+0]/nAve[n] );
+                  averageVelocity.push_back( vAve[n3+1]/nAve[n] );
+                  averageVelocity.push_back( vAve[n3+2]/nAve[n] );
+               }
+               else {
+                  averageVelocity.push_back(0.0);
+                  averageVelocity.push_back(0.0);
+                  averageVelocity.push_back(0.0);
+               }
+               nAve[n] = 0.0;
+               vAve[n3+0] = 0.0;
+               vAve[n3+1] = 0.0;
+               vAve[n3+2] = 0.0;
+            }
+         }
+         if(Hybrid::outParams["n_ave"] == true) {
+            attribs["name"] = string("n_") + Hybrid::outputFieldStr[m] + "_ave";
+            if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(averageDensity[0])) == false) { success = false; }
+         }
+         if(Hybrid::outParams["v_ave"] == true) {
+            attribs["name"] = string("v_") + Hybrid::outputFieldStr[m] + "_ave";
+            if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(averageVelocity[0])) == false) { success = false; }
+         }
+      }
    }
    Hybrid::averageCounter = 0;
 #endif
@@ -187,36 +199,49 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
 #endif
       }
    }
-   Real* const faceB = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataFaceBID));
-   calcCellDiv(faceB,divB);
-   calcCellNPles(NPles,particleLists);
-   
-   attribs["name"] = "cellDivB";
-   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(divB[0])) == false) { success = false; }
-   attribs["name"] = "cellNPles";
-   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(NPles[0])) == false) { success = false; }
+   if(Hybrid::outParams["cellDivB"] == true) {
+      Real* const faceB = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataFaceBID));
+      calcCellDiv(faceB,divB);
+      attribs["name"] = "cellDivB";
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(divB[0])) == false) { success = false; }
+   }
+   if(Hybrid::outParams["cellNPles"] == true) {
+      calcCellNPles(NPles,particleLists);
+      attribs["name"] = "cellNPles";
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(NPles[0])) == false) { success = false; }
+   }
 #ifdef USE_B_CONSTANT
-   attribs["name"] = "cellB0";
-   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(B0[0])) == false) { success = false; }
+   if(Hybrid::outParams["cellB0"] == true) {
+      attribs["name"] = "cellB0";
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(B0[0])) == false) { success = false; }
+   }
 #endif
    // particle bulk parameters
-   for(size_t i=0;i<Hybrid::N_outputFields;++i) {
-      vector<Real> n,T,U;
-      for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
-	 n.push_back(0.0);
-	 T.push_back(0.0);
-	 U.push_back(0.0);
-	 U.push_back(0.0);
-	 U.push_back(0.0);
+   if(Hybrid::outParams["n"] == true || Hybrid::outParams["v"] == true || Hybrid::outParams["T"] == true) {
+      for(size_t i=0;i<Hybrid::N_outputFields;++i) {
+         vector<Real> n,T,U;
+         for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+            n.push_back(0.0);
+            T.push_back(0.0);
+            U.push_back(0.0);
+            U.push_back(0.0);
+            U.push_back(0.0);
+         }
+         calcCellParticleBulkParameters(n,T,U,particleLists,Hybrid::outputFieldIdVector[i]);
+         const uint64_t arraySize = N_blocks*block::SIZE;
+         if(Hybrid::outParams["n"] == true) {
+            attribs["name"] = string("n_") + Hybrid::outputFieldStr[i];
+            if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(n[0])) == false) { success = false; }
+         }
+         if(Hybrid::outParams["T"] == true) {
+            attribs["name"] = string("T_") + Hybrid::outputFieldStr[i];
+            if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(T[0])) == false) { success = false; }
+         }
+         if(Hybrid::outParams["v"] == true) {
+            attribs["name"] = string("v_") + Hybrid::outputFieldStr[i];
+            if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(U[0])) == false) { success = false; }
+         }
       }
-      calcCellParticleBulkParameters(n,T,U,particleLists,Hybrid::outputFieldIdVector[i]);
-      const uint64_t arraySize = N_blocks*block::SIZE;
-      attribs["name"] = string("n_") + Hybrid::outputFieldStr[i];
-      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(n[0])) == false) { success = false; }
-      attribs["name"] = string("T_") + Hybrid::outputFieldStr[i];
-      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(T[0])) == false) { success = false; }
-      attribs["name"] = string("v_") + Hybrid::outputFieldStr[i];
-      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(U[0])) == false) { success = false; }
    }
    
 #ifdef ION_SPECTRA_ALONG_ORBIT
@@ -235,6 +260,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
 }
 
 bool UserDataOP::writeCellDataVariable(const std::string& spatMeshName,pargrid::DataID& dataVarID,const std::string& dataName,const pargrid::CellID& N_blocks,const uint64_t& vectorDim) {
+   if(Hybrid::outParams[dataName] == false) { return true; }
    Real* const d = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(dataVarID));
    if(d != NULL) {
       const uint64_t arraySize = N_blocks*block::SIZE;

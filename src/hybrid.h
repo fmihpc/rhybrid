@@ -140,6 +140,8 @@ struct Hybrid {
    static std::vector<pargrid::DataID> dataCellAverageVelocityID;
    static int averageCounter;
 #endif
+   
+   static std::map<std::string,bool> outParams;
 };
 
 #endif
