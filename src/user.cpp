@@ -154,6 +154,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dV=cube(Hybrid::dx);
    const Real defaultValue = 0.0;
    string outputParams = "";
+   string magneticFieldProfileName = "";
    cr.add("Hybrid.log_interval","Log interval in units of timestep [-] (int)",0);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)","");
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
@@ -172,6 +173,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
+   cr.add("IntrinsicB.profile_name","Magnetic field profile name [-] (string)","");
    cr.add("IntrinsicB.laminarR","Laminar flow around sphere R [m] (float)",defaultValue);
    cr.add("IntrinsicB.coeffDipole","Dipole coefficient [-] (float)",defaultValue);
    cr.add("IntrinsicB.coeffQuadrupole","Quadrupole coefficient [-] (float)",defaultValue);
@@ -203,6 +205,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
+   cr.get("IntrinsicB.profile_name",magneticFieldProfileName);
    cr.get("IntrinsicB.laminarR",Hybrid::laminarR2);
    cr.get("IntrinsicB.coeffDipole",Hybrid::coeffDip);
    cr.get("IntrinsicB.coeffQuadrupole",Hybrid::coeffQuad);
@@ -218,6 +221,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::laminarR2 =  sqr(Hybrid::laminarR2);
    Hybrid::dipMomCoeff = 3.0*Hybrid::dipSurfB*cube(Hybrid::dipSurfR);
    Hybrid::dipMinR2 = sqr(Hybrid::dipMinR2);
+   if(setMagneticFieldProfile(magneticFieldProfileName) == false) {
+      simClasses.logger << "(HYBRID) ERROR: Given magnetic field profile not found (" << magneticFieldProfileName << ")" << endl << write;
+      exit(1);
+   }
 #endif
    if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
    // set parameters written in vlsv files
@@ -329,6 +336,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    simClasses.logger
      << "(INTRINSIC MAGNETIC FIELD)" << endl
+#ifdef USE_B_INITIAL
+     << "Using initial field" << endl
+#endif
+#ifdef USE_B_CONSTANT
+     << "Using constant field" << endl
+#endif
+     << "Magnetic field profile = " << magneticFieldProfileName << endl
      << "Laminar flow around sphere R = " << sqrt(Hybrid::laminarR2)/1e3 << " km" << endl
      << "Dipole coefficient = " << Hybrid::coeffDip << endl
      << "Quadrupole coefficient = " << Hybrid::coeffQuad << endl

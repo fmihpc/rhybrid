@@ -116,6 +116,7 @@ struct Hybrid {
    static Real IMFBx,IMFBy,IMFBz;
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    static Real laminarR2,laminarR3,coeffDip,coeffQuad,dipSurfB,dipSurfR,dipMinR2,dipMomCoeff,xDip,yDip,zDip,thetaDip,phiDip;
+   static void (*magneticFieldProfilePtr)(const Real x,const Real y,const Real z,Real B[3]);
 #endif
    static unsigned int N_populations;
    static unsigned int N_ionospherePopulations;

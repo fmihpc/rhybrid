@@ -103,6 +103,7 @@ Real Hybrid::yDip;
 Real Hybrid::zDip;
 Real Hybrid::thetaDip;
 Real Hybrid::phiDip;
+void (*Hybrid::magneticFieldProfilePtr)(const Real x,const Real y,const Real z,Real B[3]);
 #endif
 unsigned int Hybrid::N_populations;
 unsigned int Hybrid::N_ionospherePopulations;

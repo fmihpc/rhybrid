@@ -77,7 +77,7 @@ inline void hemisphericDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[2] += Bx2*sin(Hybrid::thetaDip*M_PI/180.0) + Bz2*cos(Hybrid::thetaDip*M_PI/180.0);
 }
 
-/*inline void translateDipoleB(Real x,Real y,Real z,Real B[3]) {
+inline void translateDipoleB(Real x,Real y,Real z,Real B[3]) {
    // translation
    const Real x1 = x - Hybrid::xDip;
    const Real y1 = y - Hybrid::yDip;
@@ -90,7 +90,7 @@ inline void hemisphericDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[0] += coeff*x1*z1;
    B[1] += coeff*y1*z1;
    B[2] += coeff*(sqr(z1) - r2/3.0);
-}*/
+}
 
 inline void lineDipoleB(Real x,Real y,Real z,Real B[3]) {
    const Real x1 = x - Hybrid::xDip;
@@ -104,24 +104,38 @@ inline void lineDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[2] += D*( sqr(z) - sqr(x) )/( sqr(r2) );
 }
 
+inline bool setMagneticFieldProfile(std::string name) {
+   Hybrid::magneticFieldProfilePtr = NULL;
+   if(name.compare("laminarFlowAroundSphereBx") == 0) {
+      Hybrid::magneticFieldProfilePtr = &laminarFlowAroundSphereBx;
+   }
+   else if(name.compare("hemisphericDipoleB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &hemisphericDipoleB;
+   }
+   else if(name.compare("translateDipoleB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &translateDipoleB;
+   }
+   else if(name.compare("lineDipoleB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &lineDipoleB;
+   }
+   else {
+      return false;
+   }
+   return true;
+}
+
 #endif
 
 #ifdef USE_B_INITIAL
-inline void setInitialB(Real x,Real y,Real z,Real B[3]) {
+inline void setInitialB(const Real x,const Real y,const Real z,Real B[3]) {
    B[0] = B[1] = B[2] = 0.0;
-   laminarFlowAroundSphereBx(x,y,z,B);
-   //hemisphericDipoleB(x,y,z,B);
-   //translateDipoleB(x,y,z,B);
-   //lineDipoleB(x,y,z,B);
+   Hybrid::magneticFieldProfilePtr(x,y,z,B);
 }
 #endif
 
 #ifdef USE_B_CONSTANT
-inline void addConstantB(Real x,Real y,Real z,Real B[3]) {
-   laminarFlowAroundSphereBx(x,y,z,B);
-   //hemisphericDipoleB(x,y,z,B);
-   //translateDipoleB(x,y,z,B);
-   //lineDipoleB(x,y,z,B);
+inline void addConstantB(const Real x,const Real y,const Real z,Real B[3]) {
+   Hybrid::magneticFieldProfilePtr(x,y,z,B);
 }
 #endif
 
