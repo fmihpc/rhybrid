@@ -111,6 +111,7 @@ struct Hybrid {
    static Real maxVi2;
    static Real minRhoQi;
    static Real eta;
+   static bool useHallElectricField;
    static Real swMacroParticlesCellPerDt;
    static int Efilter;
    static Real IMFBx,IMFBy,IMFBz;

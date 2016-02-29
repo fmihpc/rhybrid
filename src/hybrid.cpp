@@ -83,6 +83,7 @@ Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::minRhoQi;
 Real Hybrid::eta;
+bool Hybrid::useHallElectricField;
 Real Hybrid::swMacroParticlesCellPerDt;
 int Hybrid::Efilter;
 

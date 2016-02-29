@@ -804,11 +804,12 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
       // calc Ue = (J - Ji)/rhoqi
       for(int l=0;l<3;++l) {
 	 if(fabs(cellRhoQi[n]) > 0) {
-#ifndef IGNORE_JxB_HALL_TERM
-	    cellUe[n3+l] = -(cellJ[n3+l] - cellJi[n3+l])/cellRhoQi[n];
-#else
-	    cellUe[n3+l] = cellJi[n3+l]/cellRhoQi[n];
-#endif
+            if(Hybrid::useHallElectricField == true) {
+               cellUe[n3+l] = -(cellJ[n3+l] - cellJi[n3+l])/cellRhoQi[n];
+            }
+            else {
+               cellUe[n3+l] = cellJi[n3+l]/cellRhoQi[n];
+            }
 	 }
 	 else {
 	    cellUe[n3+l] = 0.0;
@@ -954,11 +955,12 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
       // calc Ue = (J - Ji)/rhoqi
       for(int l=0;l<3;++l) {
 	 if(fabs(nodeRhoQi[n]) > 0) {
-#ifndef IGNORE_JxB_HALL_TERM
-	    nodeUe[n3+l] = -(nodeJ[n3+l] - nodeJi[n3+l])/nodeRhoQi[n];
-#else
-	    nodeUe[n3+l] = nodeJi[n3+l]/nodeRhoQi[n];
-#endif
+            if(Hybrid::useHallElectricField == true) {
+               nodeUe[n3+l] = -(nodeJ[n3+l] - nodeJi[n3+l])/nodeRhoQi[n];
+            }
+            else {
+               nodeUe[n3+l] = nodeJi[n3+l]/nodeRhoQi[n];
+            }
 	 }
 	 else {
 	    nodeUe[n3+l] = 0.0;

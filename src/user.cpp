@@ -89,9 +89,6 @@ bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,Confi
 #ifdef USE_XMIN_BOUNDARY
      << "USE_XMIN_BOUNDARY" << endl
 #endif
-#ifdef IGNORE_JxB_HALL_TERM
-     << "IGNORE_JxB_HALL_TERM" << endl
-#endif
 #ifdef WRITE_POPULATION_AVERAGES
      << "WRITE_POPULATION_AVERAGES" << endl
 #endif
@@ -168,6 +165,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.minRhoQi","Minimum value of ion charge density [C/m^3] (float)",defaultValue);
    cr.add("Hybrid.eta","Dimensionless resistivity [-] (float)",defaultValue);
+   cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
@@ -200,6 +198,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
    cr.get("Hybrid.eta",Hybrid::eta);
+   cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
@@ -325,6 +324,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s" << endl
      << "minRhoQi = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 " << endl
      << "eta = " << Hybrid::eta << " Ohm m = " << Hybrid::eta/(constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt) << " mu_0*dx^2/dt" << endl
+     << "Hall term = " << Hybrid::useHallElectricField << endl
      << "Efilter = " << Hybrid::Efilter << "" << endl
      << "dV = " << Hybrid::dV << " m^3" << endl
      << "dt = " << sim.dt << " s" << endl
