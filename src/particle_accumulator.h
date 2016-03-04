@@ -58,7 +58,7 @@ class Accumulator: public ParticleAccumulatorBase {
 #ifdef WRITE_POPULATION_AVERAGES
    void accumulateCell(const Species& species,pargrid::CellID blockID,unsigned int N_particles,
 		       const Particle<Real>* particles,Real* cellRhoQi,Real* cellJi,
-		       Real* cellAverageDensity,Real* cellAverageVelocity);
+		       Real* nAve,Real* vAve);
 #else
    void accumulateCell(const Species& species,pargrid::CellID blockID,unsigned int N_particles,
 		       const Particle<Real>* particles,Real* cellRhoQi,Real* cellJi);

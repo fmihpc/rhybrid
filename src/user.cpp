@@ -897,21 +897,22 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          Hybrid::outputFieldId.push_back(-1);
          continue;
       }
+      bool strFound = false;
       for(unsigned int j=0;j<Hybrid::outputFieldStr.size();++j) {
          if(species->outStr == Hybrid::outputFieldStr[j]) {
             Hybrid::outputFieldId.push_back(j);
             Hybrid::outputFieldIdVector[j].push_back(i);
-            goto mainLoopEnd;
+            strFound = true;
          }
       }
-      Hybrid::outputFieldStr.push_back(species->outStr);
-      Hybrid::outputFieldId.push_back(i);
-        {
-           vector<unsigned int> a;
-           a.push_back(i);
-           Hybrid::outputFieldIdVector.push_back(a);
-        }
-      mainLoopEnd: ;
+      if(strFound == false) {
+         const int newOutputId = static_cast<int>( Hybrid::outputFieldStr.size() );
+         Hybrid::outputFieldId.push_back(newOutputId);
+         Hybrid::outputFieldStr.push_back(species->outStr);
+         vector<unsigned int> a;
+         a.push_back(i);
+         Hybrid::outputFieldIdVector.push_back(a);
+      }
    }
    Hybrid::N_outputFields =  Hybrid::outputFieldStr.size();
    // check number of particle lists and populations
@@ -928,7 +929,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    for(unsigned int i=0;i<Hybrid::N_outputFields;++i) {
       simClasses.logger << Hybrid::outputFieldStr[i] << ": ";
       for(unsigned int j=0;j<Hybrid::outputFieldId.size();++j) {
-         if(Hybrid::outputFieldId[j] == i) {
+         if(Hybrid::outputFieldId[j] == static_cast<int>(i)) {
             simClasses.logger << Hybrid::populationNames[j] << " ";
          }
       }

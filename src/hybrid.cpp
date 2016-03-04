@@ -106,13 +106,21 @@ Real Hybrid::thetaDip;
 Real Hybrid::phiDip;
 void (*Hybrid::magneticFieldProfilePtr)(const Real x,const Real y,const Real z,Real B[3]);
 #endif
+// total number of particle populations
 unsigned int Hybrid::N_populations;
+// number of ionospheric particle populations
 unsigned int Hybrid::N_ionospherePopulations;
+// number of exospheric particle populations
 unsigned int Hybrid::N_exospherePopulations;
-unsigned int Hybrid::N_outputFields;
+// names of particle populations
 vector<string> Hybrid::populationNames;
+// number of output particle variables
+unsigned int Hybrid::N_outputFields;
+// names of output particle variables
 vector<string> Hybrid::outputFieldStr;
-vector<unsigned int> Hybrid::outputFieldId;
+// id of output particle variables for each population (<0 means no output)
+vector<int> Hybrid::outputFieldId;
+// ids of particle populations included in each output particle variables
 vector< vector<unsigned int> > Hybrid::outputFieldIdVector;
 
 vector<ofstream*> Hybrid::plog;

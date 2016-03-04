@@ -125,7 +125,7 @@ struct Hybrid {
    static unsigned int N_outputFields;
    static std::vector<std::string> populationNames;
    static std::vector<std::string> outputFieldStr;
-   static std::vector<unsigned int> outputFieldId;
+   static std::vector<int> outputFieldId;
    static std::vector< std::vector<unsigned int> > outputFieldIdVector;
 
    static std::vector<std::ofstream*> plog;

@@ -145,8 +145,8 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
    block::addValues3D(*simClasses,blockID,acc2,cellJi,3);
 
 #ifdef WRITE_POPULATION_AVERAGES
-   block::addValues3D(*simClasses,blockID,acc1,nAve,1);
-   block::addValues3D(*simClasses,blockID,acc2,vAve,3);
+   if(nAve != NULL) { block::addValues3D(*simClasses,blockID,acc1,nAve,1); }
+   if(vAve != NULL) { block::addValues3D(*simClasses,blockID,acc2,vAve,3); }
 #endif
    
    #if PROFILE_LEVEL > 1
@@ -201,14 +201,17 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
 bool Accumulator::accumulateBoundaryCells(pargrid::DataID particleDataID,const unsigned int* N_particles) {
    bool success = true;
    if(species->accumulate == false) { return success; }
-   //if(species->outFieldId < 0) { return success; }
    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses->pargrid.getUserDataDynamic<Particle<Real> >(particleDataID);
    Real* cellJi    = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
 #ifdef WRITE_POPULATION_AVERAGES
-   const unsigned int m = Hybrid::outputFieldId[species->popid-1];
-   Real* nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
-   Real* vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
+   Real* nAve = NULL;
+   Real* vAve = NULL;
+   const int m = Hybrid::outputFieldId[species->popid-1];
+   if(m >=0 ) {
+      nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
+      vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
+   }
 #endif
    const vector<pargrid::CellID>& boundaryBlocks = simClasses->pargrid.getBoundaryCells(Hybrid::accumulationStencilID);
    for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) {
@@ -225,14 +228,17 @@ bool Accumulator::accumulateBoundaryCells(pargrid::DataID particleDataID,const u
 bool Accumulator::accumulateInnerCells(pargrid::DataID particleDataID,const unsigned int* N_particles) {
    bool success = true;
    if(species->accumulate == false) { return success; }
-   //if(species->outFieldId < 0) { return success; }
    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses->pargrid.getUserDataDynamic<Particle<Real> >(particleDataID);
    Real* cellJi    = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
 #ifdef WRITE_POPULATION_AVERAGES
-   const unsigned int m = Hybrid::outputFieldId[species->popid-1];
-   Real* nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
-   Real* vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
+   Real* nAve = NULL;
+   Real* vAve = NULL;
+   const int m = Hybrid::outputFieldId[species->popid-1];
+   if(m >=0 ) {
+      nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
+      vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
+   }
 #endif
    const vector<pargrid::CellID>& innerBlocks = simClasses->pargrid.getInnerCells(Hybrid::accumulationStencilID);
    for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) {
@@ -333,15 +339,17 @@ bool Accumulator::clearAccumulationArrays() {
    }
 #ifdef WRITE_POPULATION_AVERAGES
    // zero buffer cells for average accumulation arrays
-   const unsigned int m = Hybrid::outputFieldId[species->popid-1];
-   Real* nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
-   Real* vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
-   size_t startBufferCells = simClasses->pargrid.getNumberOfLocalCells()*block::SIZE;
-   size_t endBufferCells   = simClasses->pargrid.getNumberOfAllCells()  *block::SIZE;
-   for (pargrid::CellID b=startBufferCells;b<endBufferCells;++b) {
-      const size_t b3 = b*3;
-      nAve[b] = 0.0;
-      for(size_t l=0;l<3;++l) { vAve[b3+l] = 0.0; }
+   const int m = Hybrid::outputFieldId[species->popid-1];
+   if(m >= 0) {
+      Real* nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
+      Real* vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
+      size_t startBufferCells = simClasses->pargrid.getNumberOfLocalCells()*block::SIZE;
+      size_t endBufferCells   = simClasses->pargrid.getNumberOfAllCells()  *block::SIZE;
+      for (pargrid::CellID b=startBufferCells;b<endBufferCells;++b) {
+         const size_t b3 = b*3;
+         nAve[b] = 0.0;
+         for(size_t l=0;l<3;++l) { vAve[b3+l] = 0.0; }
+      }
    }
 #endif
    return success;
