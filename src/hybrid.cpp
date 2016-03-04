@@ -120,8 +120,10 @@ unsigned int Hybrid::N_outputPopVars;
 vector<string> Hybrid::outputPopVarStr;
 // id of output particle variables for each population (<0 means no output)
 vector<int> Hybrid::outputPopVarId;
-// ids of particle populations included in each output particle variables
+// popids of particle populations included in each output particle variables
 vector< vector<unsigned int> > Hybrid::outputPopVarIdVector;
+// popids of particle populations included in the total plasma variables
+vector<unsigned int> Hybrid::outputPlasmaPopId;
 
 vector<ofstream*> Hybrid::plog;
 ofstream Hybrid::flog;

@@ -253,7 +253,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"cellB0",false},
       {"n",false},
       {"T",false},
-      {"v",false}
+      {"v",false},
+      {"n_tot",false},
+      {"T_tot",false},
+      {"v_tot",false}
    };
    istringstream iss(outputParams);
    while(iss) {
@@ -262,7 +265,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       if(p.find_first_not_of(' ') != string::npos) {
          if(Hybrid::outParams.count(p) > 0) {
             Hybrid::outParams[p] = true;
-            //simClasses.logger << "Substring: |" << p << "|" << endl;
          }
       }
    }
@@ -893,6 +895,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // population output configurations
    for(unsigned int i=0;i<particleLists.size();++i) {
       const Species* species = reinterpret_cast<const Species*>(particleLists[i]->getSpecies());
+      if(species->outIncludeInPlasma == true) {
+         Hybrid::outputPlasmaPopId.push_back(i);
+      }
+      if(species->outStr == string("tot")) {
+         simClasses.logger << "(USER) ERROR: Particle species cannot have output_str = tot (" << species->name << ")" << endl << write;         
+         return false;
+      }
       if(species->outStr == string("-")) {
          Hybrid::outputPopVarId.push_back(-1);
          continue;
@@ -920,6 +929,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
        (Hybrid::N_populations   != Hybrid::populationNames.size()) || 
        (Hybrid::N_populations   != Hybrid::outputPopVarId.size()) ||
        (Hybrid::N_populations    < Hybrid::N_outputPopVars) ||
+       (Hybrid::N_populations    < Hybrid::outputPlasmaPopId.size()) ||
        (Hybrid::N_outputPopVars != Hybrid::outputPopVarIdVector.size()) ) {
       simClasses.logger << "(HYBRID) ERROR: Something went wrong in particle list initialization" << endl << write;
       return false;
@@ -935,6 +945,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
       simClasses.logger << endl;
    }
+   simClasses.logger << "plasma: ";
+   for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
+      simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
+   }
+   simClasses.logger << endl << write;
    simClasses.logger << "- (n/a): ";
    for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
       if(Hybrid::outputPopVarId[i] < 0) {

@@ -127,6 +127,7 @@ struct Hybrid {
    static std::vector<std::string> outputPopVarStr;
    static std::vector<int> outputPopVarId;
    static std::vector< std::vector<unsigned int> > outputPopVarIdVector;
+   static std::vector<unsigned int> outputPlasmaPopId;
 
    static std::vector<std::ofstream*> plog;
    static std::ofstream flog;

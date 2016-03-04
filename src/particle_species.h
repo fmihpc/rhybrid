@@ -36,6 +36,7 @@ struct Species {
    int popid;
    bool accumulate;
    bool accelerate;
+   bool outIncludeInPlasma;
    std::string outStr;
    
    bool finalize();

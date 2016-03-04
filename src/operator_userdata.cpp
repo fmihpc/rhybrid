@@ -216,7 +216,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(B0[0])) == false) { success = false; }
    }
 #endif
-   // particle bulk parameters
+   // particle bulk parameters (output populations)
    if(Hybrid::outParams["n"] == true || Hybrid::outParams["v"] == true || Hybrid::outParams["T"] == true) {
       for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
          vector<Real> n,T,U;
@@ -243,7 +243,34 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
          }
       }
    }
-   
+   // particle bulk parameters (total plasma)
+   if( (Hybrid::outputPlasmaPopId.size() > 0) &&
+       ( (Hybrid::outParams["n_tot"] == true) ||
+         (Hybrid::outParams["v_tot"] == true) ||
+         (Hybrid::outParams["T_tot"] == true) )) {
+      vector<Real> ntot,Ttot,Utot;
+      for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+         ntot.push_back(0.0);
+         Ttot.push_back(0.0);
+         Utot.push_back(0.0);
+         Utot.push_back(0.0);
+         Utot.push_back(0.0);
+      }
+      calcCellParticleBulkParameters(ntot,Ttot,Utot,particleLists,Hybrid::Hybrid::outputPlasmaPopId);
+      const uint64_t arraySize = N_blocks*block::SIZE;
+      if(Hybrid::outParams["n_tot"] == true) {
+         attribs["name"] = string("n_tot");
+         if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(ntot[0])) == false) { success = false; }
+      }
+      if(Hybrid::outParams["T_tot"] == true) {
+         attribs["name"] = string("T_tot");
+         if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(Ttot[0])) == false) { success = false; }
+      }
+      if(Hybrid::outParams["v_tot"] == true) {
+         attribs["name"] = string("v_tot");
+         if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(Utot[0])) == false) { success = false; }
+      }
+   }
 #ifdef ION_SPECTRA_ALONG_ORBIT
    bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
    pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
@@ -254,7 +281,6 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       }
    }
 #endif
-   
    profile::stop();
    return success;
 }

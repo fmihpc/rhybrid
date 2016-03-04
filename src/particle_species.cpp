@@ -51,6 +51,7 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
    cr.add(name+".accumulate","Whether accumulate the species or not (bool).",1);
    cr.add(name+".accelerate","Whether accelerate the species or not (bool).",1);
    cr.add(name+".output_str","Output field (string).",string("-"));
+   cr.add(name+".output_plasma","Whether include the species in total plasma variables (bool).",1);
    cr.parse();
    cr.get(name+".mass_unit",m_unit);
    cr.get(name+".charge_unit",q_unit);
@@ -60,7 +61,8 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
    cr.get(name+".accumulate",accumulate);
    cr.get(name+".accelerate",accelerate);
    cr.get(name+".output_str",outStr);
-      
+   cr.get(name+".output_plasma",outIncludeInPlasma);
+
    // Check input parameters for sanity:
    Real charge = simClasses.constants.get(q_unit);
    if(charge == simClasses.constants.notFound()) {
@@ -100,6 +102,7 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
      << "accumulate = " << accumulate << endl 
      << "accelerate = " << accelerate << endl
      << "output str = " << outStr << endl
+     << "output in plasma = " << outIncludeInPlasma << endl
      << write;
    
    return success;
