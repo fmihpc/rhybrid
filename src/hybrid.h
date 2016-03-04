@@ -122,11 +122,11 @@ struct Hybrid {
    static unsigned int N_populations;
    static unsigned int N_ionospherePopulations;
    static unsigned int N_exospherePopulations;
-   static unsigned int N_outputFields;
+   static unsigned int N_outputPopVars;
    static std::vector<std::string> populationNames;
-   static std::vector<std::string> outputFieldStr;
-   static std::vector<int> outputFieldId;
-   static std::vector< std::vector<unsigned int> > outputFieldIdVector;
+   static std::vector<std::string> outputPopVarStr;
+   static std::vector<int> outputPopVarId;
+   static std::vector< std::vector<unsigned int> > outputPopVarIdVector;
 
    static std::vector<std::ofstream*> plog;
    static std::ofstream flog;

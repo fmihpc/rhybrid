@@ -136,7 +136,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    }
    // particle populations
    if(Hybrid::outParams["n_ave"] == true || Hybrid::outParams["v_ave"] == true) {
-      for(unsigned int m=0;m<Hybrid::N_outputFields;++m) {
+      for(unsigned int m=0;m<Hybrid::N_outputPopVars;++m) {
          Real* nAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageDensityID[m]));
          Real* vAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageVelocityID[m]));
          vector<Real> averageDensity;
@@ -163,11 +163,11 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
             }
          }
          if(Hybrid::outParams["n_ave"] == true) {
-            attribs["name"] = string("n_") + Hybrid::outputFieldStr[m] + "_ave";
+            attribs["name"] = string("n_") + Hybrid::outputPopVarStr[m] + "_ave";
             if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(averageDensity[0])) == false) { success = false; }
          }
          if(Hybrid::outParams["v_ave"] == true) {
-            attribs["name"] = string("v_") + Hybrid::outputFieldStr[m] + "_ave";
+            attribs["name"] = string("v_") + Hybrid::outputPopVarStr[m] + "_ave";
             if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(averageVelocity[0])) == false) { success = false; }
          }
       }
@@ -218,7 +218,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
 #endif
    // particle bulk parameters
    if(Hybrid::outParams["n"] == true || Hybrid::outParams["v"] == true || Hybrid::outParams["T"] == true) {
-      for(size_t i=0;i<Hybrid::N_outputFields;++i) {
+      for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
          vector<Real> n,T,U;
          for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
             n.push_back(0.0);
@@ -227,18 +227,18 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
             U.push_back(0.0);
             U.push_back(0.0);
          }
-         calcCellParticleBulkParameters(n,T,U,particleLists,Hybrid::outputFieldIdVector[i]);
+         calcCellParticleBulkParameters(n,T,U,particleLists,Hybrid::outputPopVarIdVector[i]);
          const uint64_t arraySize = N_blocks*block::SIZE;
          if(Hybrid::outParams["n"] == true) {
-            attribs["name"] = string("n_") + Hybrid::outputFieldStr[i];
+            attribs["name"] = string("n_") + Hybrid::outputPopVarStr[i];
             if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(n[0])) == false) { success = false; }
          }
          if(Hybrid::outParams["T"] == true) {
-            attribs["name"] = string("T_") + Hybrid::outputFieldStr[i];
+            attribs["name"] = string("T_") + Hybrid::outputPopVarStr[i];
             if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(T[0])) == false) { success = false; }
          }
          if(Hybrid::outParams["v"] == true) {
-            attribs["name"] = string("v_") + Hybrid::outputFieldStr[i];
+            attribs["name"] = string("v_") + Hybrid::outputPopVarStr[i];
             if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(U[0])) == false) { success = false; }
          }
       }

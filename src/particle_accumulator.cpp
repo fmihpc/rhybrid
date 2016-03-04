@@ -207,7 +207,7 @@ bool Accumulator::accumulateBoundaryCells(pargrid::DataID particleDataID,const u
 #ifdef WRITE_POPULATION_AVERAGES
    Real* nAve = NULL;
    Real* vAve = NULL;
-   const int m = Hybrid::outputFieldId[species->popid-1];
+   const int m = Hybrid::outputPopVarId[species->popid-1];
    if(m >=0 ) {
       nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
       vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
@@ -234,7 +234,7 @@ bool Accumulator::accumulateInnerCells(pargrid::DataID particleDataID,const unsi
 #ifdef WRITE_POPULATION_AVERAGES
    Real* nAve = NULL;
    Real* vAve = NULL;
-   const int m = Hybrid::outputFieldId[species->popid-1];
+   const int m = Hybrid::outputPopVarId[species->popid-1];
    if(m >=0 ) {
       nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
       vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
@@ -286,7 +286,7 @@ bool Accumulator::addRemoteUpdates() {
       }
    }
 #ifdef WRITE_POPULATION_AVERAGES
-   for(unsigned int m = 0;m<Hybrid::N_outputFields;++m) {
+   for(unsigned int m = 0;m<Hybrid::N_outputPopVars;++m) {
       Real* nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
       Real* vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
       unsigned int* offsetsCellAverageDensity = NULL;
@@ -339,7 +339,7 @@ bool Accumulator::clearAccumulationArrays() {
    }
 #ifdef WRITE_POPULATION_AVERAGES
    // zero buffer cells for average accumulation arrays
-   const int m = Hybrid::outputFieldId[species->popid-1];
+   const int m = Hybrid::outputPopVarId[species->popid-1];
    if(m >= 0) {
       Real* nAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageDensityID[m]);
       Real* vAve = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageVelocityID[m]);
@@ -379,7 +379,7 @@ bool Accumulator::sendUpdates() {
    if(simClasses->pargrid.startNeighbourExchange(Hybrid::accumulationStencilID,Hybrid::dataCellRhoQiID) == false) { success = false; }
    if(simClasses->pargrid.startNeighbourExchange(Hybrid::accumulationStencilID,Hybrid::dataCellJiID) == false) { success = false; }
 #ifdef WRITE_POPULATION_AVERAGES
-   for(unsigned int m = 0;m<Hybrid::N_outputFields;++m) {
+   for(unsigned int m = 0;m<Hybrid::N_outputPopVars;++m) {
       if(simClasses->pargrid.startNeighbourExchange(Hybrid::accumulationStencilID,Hybrid::dataCellAverageDensityID[m]) == false) { success = false; }
       if(simClasses->pargrid.startNeighbourExchange(Hybrid::accumulationStencilID,Hybrid::dataCellAverageVelocityID[m]) == false) { success = false; }
    }
@@ -394,7 +394,7 @@ bool Accumulator::wait() {
    if(simClasses->pargrid.wait(Hybrid::accumulationStencilID,Hybrid::dataCellRhoQiID) == false) { success = false; }
    if(simClasses->pargrid.wait(Hybrid::accumulationStencilID,Hybrid::dataCellJiID) == false) { success = false; }
 #ifdef WRITE_POPULATION_AVERAGES
-   for(unsigned int m = 0;m<Hybrid::N_outputFields;++m) {
+   for(unsigned int m = 0;m<Hybrid::N_outputPopVars;++m) {
       if(simClasses->pargrid.wait(Hybrid::accumulationStencilID,Hybrid::dataCellAverageDensityID[m]) == false) { success = false; }
       if(simClasses->pargrid.wait(Hybrid::accumulationStencilID,Hybrid::dataCellAverageVelocityID[m]) == false) { success = false; }
    }

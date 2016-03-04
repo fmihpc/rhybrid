@@ -894,50 +894,50 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    for(unsigned int i=0;i<particleLists.size();++i) {
       const Species* species = reinterpret_cast<const Species*>(particleLists[i]->getSpecies());
       if(species->outStr == string("-")) {
-         Hybrid::outputFieldId.push_back(-1);
+         Hybrid::outputPopVarId.push_back(-1);
          continue;
       }
       bool strFound = false;
-      for(unsigned int j=0;j<Hybrid::outputFieldStr.size();++j) {
-         if(species->outStr == Hybrid::outputFieldStr[j]) {
-            Hybrid::outputFieldId.push_back(j);
-            Hybrid::outputFieldIdVector[j].push_back(i);
+      for(unsigned int j=0;j<Hybrid::outputPopVarStr.size();++j) {
+         if(species->outStr == Hybrid::outputPopVarStr[j]) {
+            Hybrid::outputPopVarId.push_back(j);
+            Hybrid::outputPopVarIdVector[j].push_back(i);
             strFound = true;
          }
       }
       if(strFound == false) {
-         const int newOutputId = static_cast<int>( Hybrid::outputFieldStr.size() );
-         Hybrid::outputFieldId.push_back(newOutputId);
-         Hybrid::outputFieldStr.push_back(species->outStr);
+         const int newOutputId = static_cast<int>( Hybrid::outputPopVarStr.size() );
+         Hybrid::outputPopVarId.push_back(newOutputId);
+         Hybrid::outputPopVarStr.push_back(species->outStr);
          vector<unsigned int> a;
          a.push_back(i);
-         Hybrid::outputFieldIdVector.push_back(a);
+         Hybrid::outputPopVarIdVector.push_back(a);
       }
    }
-   Hybrid::N_outputFields =  Hybrid::outputFieldStr.size();
+   Hybrid::N_outputPopVars =  Hybrid::outputPopVarStr.size();
    // check number of particle lists and populations
-   if( (Hybrid::N_populations  != particleLists.size()) || 
-       (Hybrid::N_populations  != Hybrid::populationNames.size()) || 
-       (Hybrid::N_populations  != Hybrid::outputFieldId.size()) ||
-       (Hybrid::N_populations   < Hybrid::N_outputFields) ||
-       (Hybrid::N_outputFields != Hybrid::outputFieldIdVector.size()) ) {
+   if( (Hybrid::N_populations   != particleLists.size()) || 
+       (Hybrid::N_populations   != Hybrid::populationNames.size()) || 
+       (Hybrid::N_populations   != Hybrid::outputPopVarId.size()) ||
+       (Hybrid::N_populations    < Hybrid::N_outputPopVars) ||
+       (Hybrid::N_outputPopVars != Hybrid::outputPopVarIdVector.size()) ) {
       simClasses.logger << "(HYBRID) ERROR: Something went wrong in particle list initialization" << endl << write;
       return false;
    }
    // write log entry of output configs
    simClasses.logger << "(HYBRID) Particle population output configurations" << endl;
-   for(unsigned int i=0;i<Hybrid::N_outputFields;++i) {
-      simClasses.logger << Hybrid::outputFieldStr[i] << ": ";
-      for(unsigned int j=0;j<Hybrid::outputFieldId.size();++j) {
-         if(Hybrid::outputFieldId[j] == static_cast<int>(i)) {
+   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+      simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
+      for(unsigned int j=0;j<Hybrid::outputPopVarId.size();++j) {
+         if(Hybrid::outputPopVarId[j] == static_cast<int>(i)) {
             simClasses.logger << Hybrid::populationNames[j] << " ";
          }
       }
       simClasses.logger << endl;
    }
    simClasses.logger << "- (n/a): ";
-   for(unsigned int i=0;i<Hybrid::outputFieldId.size();++i) {
-      if(Hybrid::outputFieldId[i] < 0) {
+   for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
+      if(Hybrid::outputPopVarId[i] < 0) {
          simClasses.logger << Hybrid::populationNames[i] << " ";
       }
    }
@@ -1018,7 +1018,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // particle populations
    vector<Real*> nAve;
    vector<Real*> vAve;
-   for(unsigned int i=0;i<Hybrid::N_outputFields;++i) {
+   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
       Hybrid::dataCellAverageDensityID.push_back(simClasses.pargrid.invalidDataID());
       Hybrid::dataCellAverageVelocityID.push_back(simClasses.pargrid.invalidDataID());
       Hybrid::dataCellAverageDensityID[i] = simClasses.pargrid.addUserData<Real>("cellDensityAverage_pop" + to_string(i),block::SIZE);
@@ -1049,7 +1049,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initial values
    if(sim.restarted == false) {
       for(size_t i=0; i<vectorArraySize;   ++i) { cellAverageB[i] = 0.0; }
-      for(size_t i=0;i<Hybrid::N_outputFields;++i) {
+      for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
          for(size_t j=0; j<scalarArraySize;++j) { nAve[i][j] = 0.0; }
          for(size_t j=0; j<vectorArraySize;++j) { vAve[i][j] = 0.0; }
       }
@@ -1092,7 +1092,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
 #endif
 #ifdef WRITE_POPULATION_AVERAGES
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)      == false) { success = false; }
-   for(size_t i=0;i<Hybrid::N_outputFields;++i) {
+   for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
       if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageDensityID[i])  == false) { success = false; }
       if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageVelocityID[i]) == false) { success = false; }
    }

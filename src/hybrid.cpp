@@ -115,13 +115,13 @@ unsigned int Hybrid::N_exospherePopulations;
 // names of particle populations
 vector<string> Hybrid::populationNames;
 // number of output particle variables
-unsigned int Hybrid::N_outputFields;
+unsigned int Hybrid::N_outputPopVars;
 // names of output particle variables
-vector<string> Hybrid::outputFieldStr;
+vector<string> Hybrid::outputPopVarStr;
 // id of output particle variables for each population (<0 means no output)
-vector<int> Hybrid::outputFieldId;
+vector<int> Hybrid::outputPopVarId;
 // ids of particle populations included in each output particle variables
-vector< vector<unsigned int> > Hybrid::outputFieldIdVector;
+vector< vector<unsigned int> > Hybrid::outputPopVarIdVector;
 
 vector<ofstream*> Hybrid::plog;
 ofstream Hybrid::flog;
