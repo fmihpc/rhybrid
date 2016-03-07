@@ -124,6 +124,8 @@ vector<int> Hybrid::outputPopVarId;
 vector< vector<unsigned int> > Hybrid::outputPopVarIdVector;
 // popids of particle populations included in the total plasma variables
 vector<unsigned int> Hybrid::outputPlasmaPopId;
+// output cell variables
+map<string,bool> Hybrid::outputCellParams;
 
 vector<ofstream*> Hybrid::plog;
 ofstream Hybrid::flog;
@@ -141,5 +143,4 @@ vector<pargrid::DataID> Hybrid::dataCellAverageVelocityID;
 int Hybrid::averageCounter;
 #endif
 
-map<string,bool> Hybrid::outParams;
 

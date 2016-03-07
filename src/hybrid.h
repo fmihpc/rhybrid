@@ -128,6 +128,7 @@ struct Hybrid {
    static std::vector<int> outputPopVarId;
    static std::vector< std::vector<unsigned int> > outputPopVarIdVector;
    static std::vector<unsigned int> outputPlasmaPopId;
+   static std::map<std::string,bool> outputCellParams;
 
    static std::vector<std::ofstream*> plog;
    static std::ofstream flog;
@@ -143,8 +144,6 @@ struct Hybrid {
    static std::vector<pargrid::DataID> dataCellAverageVelocityID;
    static int averageCounter;
 #endif
-   
-   static std::map<std::string,bool> outParams;
 };
 
 #endif

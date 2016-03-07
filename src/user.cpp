@@ -227,7 +227,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
    // set parameters written in vlsv files
-   Hybrid::outParams = {
+   Hybrid::outputCellParams = {
       {"faceB",false},
       {"faceJ",false},
       {"cellRhoQi",false},
@@ -258,31 +258,34 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"T_tot",false},
       {"v_tot",false}
    };
-   istringstream iss(outputParams);
-   while(iss) {
-      string p;
-      iss >> p;
-      if(p.find_first_not_of(' ') != string::npos) {
-         if(Hybrid::outParams.count(p) > 0) {
-            Hybrid::outParams[p] = true;
-         }
-      }
-   }
+   // process output parameter selection
+     {
+        istringstream iss(outputParams);
+        while(iss) {
+           string p;
+           iss >> p;
+           if(p.find_first_not_of(' ') != string::npos) {
+              if(Hybrid::outputCellParams.count(p) > 0) {
+                 Hybrid::outputCellParams[p] = true;
+              }
+           }
+        }
+     }
    simClasses.logger << "(HYBRID) Available output parameters: ";
-   for(auto p: Hybrid::outParams) { simClasses.logger << p.first << " "; }
+   for(auto p: Hybrid::outputCellParams) { simClasses.logger << p.first << " "; }
    simClasses.logger << endl;
    simClasses.logger << "(HYBRID) Selected output parameters: ";
-   for(auto p: Hybrid::outParams) {
+   for(auto p: Hybrid::outputCellParams) {
       if(p.second == true) { simClasses.logger << p.first << " "; }
    }
    simClasses.logger << endl;
 #ifndef WRITE_POPULATION_AVERAGES
-   if(Hybrid::outParams["n_ave"] == true || Hybrid::outParams["v_ave"] == true || Hybrid::outParams["cellBAverage"] == true) {
+   if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true) {
       simClasses.logger << "(HYBRID) WARNING: Average output parameters selected but WRITE_POPULATION_AVERAGES not defined in Makefile" << endl;
    }
 #endif
 #ifndef USE_B_CONSTANT
-   if(Hybrid::outParams["cellB0"] == true) {
+   if(Hybrid::outputCellParams["cellB0"] == true) {
       simClasses.logger << "(HYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
    }
 #endif
@@ -933,28 +936,32 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
        (Hybrid::N_outputPopVars != Hybrid::outputPopVarIdVector.size()) ) {
       simClasses.logger << "(HYBRID) ERROR: Something went wrong in particle list initialization" << endl << write;
       return false;
-   }
+   }   
+   
    // write log entry of output configs
    simClasses.logger << "(HYBRID) Particle population output configurations" << endl;
    for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
       simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
-      for(unsigned int j=0;j<Hybrid::outputPopVarId.size();++j) {
-         if(Hybrid::outputPopVarId[j] == static_cast<int>(i)) {
-            simClasses.logger << Hybrid::populationNames[j] << " ";
-         }
+      for(unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
+         simClasses.logger << Hybrid::populationNames[Hybrid::outputPopVarIdVector[i][j]] << " ";
       }
       simClasses.logger << endl;
    }
-   simClasses.logger << "plasma: ";
-   for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
-      simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
-   }
-   simClasses.logger << endl << write;
-   simClasses.logger << "- (n/a): ";
+   simClasses.logger << "-: ";
    for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
       if(Hybrid::outputPopVarId[i] < 0) {
          simClasses.logger << Hybrid::populationNames[i] << " ";
       }
+   }
+   simClasses.logger << endl;
+   simClasses.logger << "tot plasma (snapshot): ";
+   for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
+      simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
+   }
+   simClasses.logger << endl;
+   simClasses.logger << "tot plasma (average): ";
+   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+      simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
    }
    simClasses.logger << endl << write;
 
