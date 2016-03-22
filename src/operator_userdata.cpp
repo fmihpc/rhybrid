@@ -307,13 +307,15 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    }
 #ifdef ION_SPECTRA_ALONG_ORBIT
    bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
+   attribs["name"] = string("spectra_flag");
+   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,spectraFlag) == false) { success = false; }
    pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
    //Real* globalIDs = static_cast<double>(simClasses->pargrid.getGlobalIDs());
-   for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+   /*for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       if(spectraFlag[b] == true) {
          Dist* spectra = wrapperSpectra.data()[b];
       }
-   }
+   }*/
 #endif
    profile::stop();
    return success;
