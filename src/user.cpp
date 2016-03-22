@@ -125,6 +125,39 @@ bool checkOrbit(vector< vector<Real> > xyz) {
    return true;
 }
 
+// broadcast 2d vector from master to all PEs
+bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
+   int NN[2];
+   if(sim.mpiRank == sim.MASTER_RANK) {
+      NN[0]=d.size();
+      if(NN[0] > 0) { NN[1]=d[0].size(); }
+      else { return false; }
+      // check that all vector rows have same number of columns
+      for(unsigned int i = 0;i<NN[0];i++) {
+         if(d[i].size() != NN[1]) { return false; }
+      }
+   }
+   // distribute orbit coordinates read by master to all processes
+   MPI_Bcast(NN,2,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
+   Real* buff = new Real[NN[1]];
+   for(int i=0;i<NN[0];i++) {
+      if(sim.mpiRank == sim.MASTER_RANK) {
+	 for(int j=0;j<NN[1];j++) {
+	    buff[j] = d[i][j];
+	 }
+      }
+      MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
+      if(sim.mpiRank != sim.MASTER_RANK) {
+	 d.push_back(vector<Real>());
+	 for(int j=0;j<NN[1];j++)  {
+	    d[i].push_back(buff[j]);
+	 }
+      }
+   }
+   delete buff;
+   return true;
+}
+
 bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const ObjectFactories& objectFactories,
 			    vector<ParticleListBase*>& particleLists) {
 
@@ -678,7 +711,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.parse();
    cr.get("Analysis.orbitfile",orbitFiles);
    vector< vector<Real> > orbitCoordinates;
-   int NN[2];
    // only master reads orbit coordinates from files
    if(sim.mpiRank==sim.MASTER_RANK) {
       for (vector<string>::iterator it=orbitFiles.begin(); it!=orbitFiles.end(); ++it) {
@@ -691,28 +723,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          }
          orbitCoordinates.insert(orbitCoordinates.end(),tmpCrd.begin(),tmpCrd.end());
       }
-      NN[0]=orbitCoordinates.size();
-      NN[1]=orbitCoordinates[0].size();
-      simClasses.logger << "(HYBRID) CELL SPECTRA: Total of " << NN[0] << " orbit points read" << endl << write;
+      simClasses.logger << "(HYBRID) CELL SPECTRA: Total of " << orbitCoordinates.size() << " orbit points read" << endl << write;
    }
-   // distribute orbit coordinates read by master to all processes
-   MPI_Bcast(NN,2,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
-   Real* buff = new Real[NN[1]];
-   for(int i=0;i<NN[0];i++) {
-      if(sim.mpiRank==sim.MASTER_RANK) {
-	 for(int j=0;j<NN[1];j++) {
-	    buff[j] = orbitCoordinates[i][j];
-	 }
-      }
-      MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-      if(sim.mpiRank != sim.MASTER_RANK) {
-	 orbitCoordinates.push_back(vector<Real>());
-	 for(int j=0;j<NN[1];j++)  {
-	    orbitCoordinates[i].push_back(buff[j]);
-	 }
-      }
+   if(MPI_BcastFromMaster2DVector(sim,orbitCoordinates) == false) {
+      simClasses.logger << "(HYBRID) ERROR: CELL SPECTRA: failed to distribute orbit coordinates to all MPI PEs" << endl << write;
+      return false;
    }
-   delete buff;
    /*cerr << sim.mpiRank << ") " << orbitCoordinates.size() << endl;
    if(sim.mpiRank==sim.MASTER_RANK) {
       for(unsigned int i=0;i<orbitCoordinates.size();++i) {
@@ -756,7 +772,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       for(size_t i=0; i<scalarArraySize; ++i) { cellMinRhoQi[i] = 0.0; }
       for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
       for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
-      
+
+#ifdef ION_SPECTRA_ALONG_ORBIT
+      // variable to record cellid and cell centroid coordinates for output
+      vector< vector<Real> > spectraCellIDXYZ;
+#endif      
       // create flags for inner boundary
       const Real* crd = getBlockCoordinateArray(sim,simClasses);
       for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
@@ -807,6 +827,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                         wrapper.push_back(b,Dist());
                      }
                   }
+                  vector<Real> tmp1 = {simClasses.pargrid.getGlobalIDs()[b],xCellCenter,yCellCenter,zCellCenter};
+                  spectraCellIDXYZ.push_back(tmp1);
                   break;
                }
             }
@@ -823,11 +845,47 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             }
          }
       }
-      // sum Hybrid::N_spectraCells of all PEs
+      // sum N_spectraCells of all PEs
       int N_spectraCellsGlobalSum = 0.0;
       MPI_Reduce(&N_spectraCells,&N_spectraCellsGlobalSum,1,MPI_Type<int>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-      if(sim.mpiRank==sim.MASTER_RANK) {
+      // send (cellid,x,y,z) rows from PEs to master (this could be optimized using MPI_Gatherv)
+      MPI_Barrier(sim.comm);
+      if(sim.mpiRank != sim.MASTER_RANK) {
+         for(unsigned int i = 0;i<spectraCellIDXYZ.size();++i) {
+            if(spectraCellIDXYZ[i].size() != 4) {
+               simClasses.logger << "(HYBRID) ERROR: CELL SPECTRA: Error with cell indices and coordinates row" << endl << write;
+               return false;
+            }
+            MPI_Send(&spectraCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
+         }
+      }
+      if(sim.mpiRank == sim.MASTER_RANK) {
+         int N_rowsToReceive = N_spectraCellsGlobalSum - N_spectraCells;
+         for(unsigned int i = 0;i<N_rowsToReceive;++i) { 
+            vector<Real> tmpRecv;
+            tmpRecv.resize(4);
+            MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
+            spectraCellIDXYZ.push_back(tmpRecv);
+         }
+      }
+      MPI_Barrier(sim.comm);
+      if(sim.mpiRank == sim.MASTER_RANK) {
          simClasses.logger << "(HYBRID) CELL SPECTRA: Recording ion spectra in " << N_spectraCellsGlobalSum << " cells" << endl << write;
+         // write spectra cell indices file
+         ofstream spectraCellIndicesFile;
+         spectraCellIndicesFile.open("spectra_cell_indices.dat",ios_base::out);
+         spectraCellIndicesFile.precision(10);
+         spectraCellIndicesFile << scientific;
+         spectraCellIndicesFile << "% cellid x y z" << endl;
+         for(unsigned int i = 0;i<spectraCellIDXYZ.size();++i) {
+            if(spectraCellIDXYZ[i].size() != 4) {
+               simClasses.logger << "(HYBRID) ERROR: CELL SPECTRA: Error when creating cell indices file" << endl << write;
+               return false;
+            }
+            spectraCellIndicesFile << static_cast<long long>(spectraCellIDXYZ[i][0]) << " " << spectraCellIDXYZ[i][1] << " " << spectraCellIDXYZ[i][2] << " " << spectraCellIDXYZ[i][3] << endl;
+         }
+         spectraCellIndicesFile << flush;
+         spectraCellIndicesFile.close();
       }
 #endif
 #ifdef USE_B_INITIAL
