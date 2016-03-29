@@ -130,7 +130,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
 	 acc2[ind111*3+l] += w111*v[l];
       }
 #ifdef ION_SPECTRA_ALONG_ORBIT
-      /*if(spectraFlag[blockID] == true) {
+      /*if(spectraFlag[blockID] == true && Hybrid::recordSpectra == true) {
          spectra[species.popid].f[0] += w;
       }*/
 #endif

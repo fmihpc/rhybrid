@@ -157,6 +157,9 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
       particles[p].state[particle::INI_Z] = zBlock + particles[p].state[particle::Z];
+      particles[p].state[particle::INI_VX] =  particles[p].state[particle::VX];
+      particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
+      particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif
       // inject counter
@@ -272,6 +275,9 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
       particles[p].state[particle::INI_Z] = zBlock + particles[p].state[particle::Z];
+      particles[p].state[particle::INI_VX] =  particles[p].state[particle::VX];
+      particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
+      particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif
       // inject counter
@@ -416,6 +422,9 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
       particles[p].state[particle::INI_Z] = zBlock + particles[p].state[particle::Z];
+      particles[p].state[particle::INI_VX] =  particles[p].state[particle::VX];
+      particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
+      particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif
       // inject counter
@@ -664,6 +673,9 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
       particles[p].state[particle::INI_Z] = zBlock + particles[p].state[particle::Z];
+      particles[p].state[particle::INI_VX] =  particles[p].state[particle::VX];
+      particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
+      particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif
       // inject counter

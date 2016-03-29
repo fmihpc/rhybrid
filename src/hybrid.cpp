@@ -59,6 +59,10 @@ pargrid::DataID Hybrid::dataXminFlagID;
 #ifdef ION_SPECTRA_ALONG_ORBIT
 pargrid::DataID Hybrid::dataSpectraFlagID;
 //pargrid::DataID Hybrid::dataSpectraID;
+Real Hybrid::tStartSpectra;
+Real Hybrid::tEndSpectra;
+Real Hybrid::maxRecordedSpectraParticles;
+bool Hybrid::recordSpectra = false;
 vector<Real> Hybrid::spectraParticleOutput;
 #endif
 

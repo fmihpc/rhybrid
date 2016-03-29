@@ -80,10 +80,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(nodeJi       == NULL) {cerr << "ERROR: obtained NULL nodeJi array!"       << endl; exit(1);}
    if(innerFlag    == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
    if(innerFlagNode== NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   bool* spectraFlag  = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataSpectraFlagID);
-   if(spectraFlag== NULL)   {cerr << "ERROR: obtained NULL spectraFlag array!"  << endl; exit(1);}
-#endif
    
    // get block vectors
    const vector<pargrid::CellID>& innerBlocks = simClasses.pargrid.getInnerCells(pargrid::DEFAULT_STENCIL);

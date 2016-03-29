@@ -45,6 +45,10 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
          if(writeLogs(sim,simClasses,particleLists) == false) { rvalue = false; }
       }
    }
+#ifdef ION_SPECTRA_ALONG_ORBIT
+   if(sim.t >= Hybrid::tStartSpectra && sim.t <= Hybrid::tEndSpectra) { Hybrid::recordSpectra = true; }
+   else { Hybrid::recordSpectra = false; }
+#endif
    setupGetFields(sim,simClasses);
    // Propagate all particles:
    for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->propagateBoundaryCellParticles() == false) { rvalue = false; }  }
@@ -707,14 +711,22 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef ION_SPECTRA_ALONG_ORBIT
    bool* spectraFlag       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataSpectraFlagID));
    vector<string> orbitFiles;
+   cr.add("Analysis.orbit_spectra_t_start","Simulation time to start orbit spectra analysis (real)",-1);
+   cr.add("Analysis.orbit_spectra_t_end","Simulation time to end orbit spectra analysis (real)",-1);
+   cr.add("Analysis.orbit_spectra_max_particles","Maximum number of recorded particles for orbit spectra (real)",1e5);
    cr.addComposed("Analysis.orbitfile","File names of spacecraft orbits for spectra (string)");
    cr.parse();
+   cr.get("Analysis.orbit_spectra_t_start",Hybrid::tStartSpectra);
+   cr.get("Analysis.orbit_spectra_t_end",Hybrid::tEndSpectra);
+   cr.get("Analysis.orbit_spectra_max_particles",Hybrid::maxRecordedSpectraParticles);
    cr.get("Analysis.orbitfile",orbitFiles);
+   simClasses.logger << "(HYBRID) CELL SPECTRA: Recording particle spectra between: t = " << Hybrid::tStartSpectra << " ... " << Hybrid::tEndSpectra << " s" << endl;
+   simClasses.logger << "(HYBRID) CELL SPECTRA: Maximum number of recorded  spectra particles: " << Hybrid::maxRecordedSpectraParticles << endl;
    vector< vector<Real> > orbitCoordinates;
    // only master reads orbit coordinates from files
    if(sim.mpiRank==sim.MASTER_RANK) {
       for (vector<string>::iterator it=orbitFiles.begin(); it!=orbitFiles.end(); ++it) {
-         simClasses.logger << "(HYBRID) CELL SPECTRA: Reading a spacecraft orbit file: " << *it << endl << write;
+         simClasses.logger << "(HYBRID) CELL SPECTRA: Reading a spacecraft orbit file: " << *it << endl;
          vector< vector<Real> > tmpCrd;
          tmpCrd = readRealsFromFile(*it);
          if(checkOrbit(tmpCrd) == false) {
@@ -723,7 +735,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          }
          orbitCoordinates.insert(orbitCoordinates.end(),tmpCrd.begin(),tmpCrd.end());
       }
-      simClasses.logger << "(HYBRID) CELL SPECTRA: Total of " << orbitCoordinates.size() << " orbit points read" << endl << write;
+      simClasses.logger << "(HYBRID) CELL SPECTRA: Total of " << orbitCoordinates.size() << " orbit points read" << endl;
    }
    if(MPI_BcastFromMaster2DVector(sim,orbitCoordinates) == false) {
       simClasses.logger << "(HYBRID) ERROR: CELL SPECTRA: failed to distribute orbit coordinates to all MPI PEs" << endl << write;

@@ -22,7 +22,11 @@
 #include <mpi.h>
 
 namespace particle {
-   enum STATE {X,Y,Z,VX,VY,VZ,WEIGHT,INI_CELLID,INI_X,INI_Y,INI_Z,INI_TIME,INI_RECORDED,SIZE};
+#ifdef ION_SPECTRA_ALONG_ORBIT
+   enum STATE {X,Y,Z,VX,VY,VZ,WEIGHT,INI_CELLID,INI_TIME,INI_X,INI_Y,INI_Z,INI_VX,INI_VY,INI_VZ,SIZE};
+#else
+   enum STATE {X,Y,Z,VX,VY,VZ,WEIGHT,SIZE};
+#endif
 }
 
 template<typename REAL>
