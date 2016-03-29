@@ -22,7 +22,7 @@
 #include <mpi.h>
 
 namespace particle {
-   enum STATE {X,Y,Z,VX,VY,VZ,WEIGHT,SIZE};
+   enum STATE {X,Y,Z,VX,VY,VZ,WEIGHT,INI_CELLID,INI_X,INI_Y,INI_Z,INI_TIME,INI_RECORDED,SIZE};
 }
 
 template<typename REAL>

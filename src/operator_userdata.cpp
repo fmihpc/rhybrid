@@ -306,16 +306,66 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       }
    }
 #ifdef ION_SPECTRA_ALONG_ORBIT
+   // write spectra cell mask
    bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
    attribs["name"] = string("spectra_flag");
    if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,spectraFlag) == false) { success = false; }
-   pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
-   //Real* globalIDs = static_cast<double>(simClasses->pargrid.getGlobalIDs());
-   /*for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+   
+   // energy spectra writer not implemented yet
+   /*pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
+   Real* globalIDs = static_cast<double>(simClasses->pargrid.getGlobalIDs());
+   for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       if(spectraFlag[b] == true) {
          Dist* spectra = wrapperSpectra.data()[b];
       }
    }*/
+   
+   // ascii output writer for gathered particles
+   
+   // gather all recorded spectra particles on master and write in file
+   int N_plesLocal = Hybrid::spectraParticleOutput.size();
+   vector<int> N_plesGlobal(sim->mpiProcesses);
+   MPI_Allgather(&N_plesLocal,1,MPI_Type<int>(),&N_plesGlobal[0],1,MPI_Type<int>(),sim->comm);
+   int N_plesTotal = accumulate(N_plesGlobal.begin(),N_plesGlobal.end(),0);
+   vector<Real> spectraParticleOutputGlobal(N_plesTotal);
+   // create displacement vector for spectraParticleOutputGlobal
+   int displ[sim->mpiProcesses];
+   if(sim->mpiRank == sim->MASTER_RANK) {
+      int sum = 0.0;
+      for (int i = 0; i < sim->mpiProcesses; ++i) {
+         displ[i] = sum;
+         sum += N_plesGlobal[i];
+      }
+   }
+   // gather in master
+   MPI_Gatherv(&Hybrid::spectraParticleOutput[0],N_plesLocal,MPI_Type<Real>(),&spectraParticleOutputGlobal[0],&N_plesGlobal[0],&displ[0],MPI_Type<Real>(),sim->MASTER_RANK,sim->comm);
+   // master writes
+   if(sim->mpiRank == sim->MASTER_RANK) {
+      if(spectraParticleOutputGlobal.size() % SPECTRA_FILE_VARIABLES != 0) {
+         simClasses->logger << "(HYBRID) ERROR: CELL SPECTRA: error when writing particle file" << endl << write;
+         return false;
+      }
+      ofstream spectraFile;
+      spectraFile.open("spectra_particles.dat",ios_base::app);
+      spectraFile.precision(3);
+      spectraFile << scientific;
+      for(unsigned int i=0;i<spectraParticleOutputGlobal.size();i+=SPECTRA_FILE_VARIABLES) {
+         spectraFile
+           << spectraParticleOutputGlobal[i+0] << " "                             // 01 t_detected
+           << static_cast<unsigned int>(spectraParticleOutputGlobal[i+1]) << " "  // 02 popid
+           << spectraParticleOutputGlobal[i+2] << " "                             // 03 weight
+           << static_cast<unsigned int>(spectraParticleOutputGlobal[i+3]) << " "  // 04 global block id detected
+           << spectraParticleOutputGlobal[i+4] << " "                             // 05 vx_detected
+           << spectraParticleOutputGlobal[i+5] << " "                             // 06 vy_detected
+           << spectraParticleOutputGlobal[i+6] << " "                             // 07 vz_detected
+           << static_cast<unsigned int>(spectraParticleOutputGlobal[i+7]) << " "  // 08 ini block id
+           << spectraParticleOutputGlobal[i+8] << endl;                           // 09 ini t
+      }
+      spectraFile << flush;
+      spectraFile.close();
+   }
+   // empty spectra particle list
+   Hybrid::spectraParticleOutput.clear();
 #endif
    profile::stop();
    return success;

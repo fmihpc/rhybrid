@@ -55,9 +55,9 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
    const Real q = species.q;
 
 #ifdef ION_SPECTRA_ALONG_ORBIT
-   bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
+   /*bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
    pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
-   Dist* spectra = wrapperSpectra.data()[blockID];
+   Dist* spectra = wrapperSpectra.data()[blockID];*/
 #endif
 
    #if PROFILE_LEVEL > 1
@@ -130,9 +130,9 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
 	 acc2[ind111*3+l] += w111*v[l];
       }
 #ifdef ION_SPECTRA_ALONG_ORBIT
-      if(spectraFlag[blockID] == true) {
+      /*if(spectraFlag[blockID] == true) {
          spectra[species.popid].f[0] += w;
-      }
+      }*/
 #endif
    }
    

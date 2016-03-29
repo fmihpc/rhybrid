@@ -30,6 +30,7 @@
 #define normvec(a) (sqrt(vecsqr(a)))
 
 #ifdef ION_SPECTRA_ALONG_ORBIT
+#define SPECTRA_FILE_VARIABLES 9
 #define EBINS 10
 struct Dist {
    Real f[EBINS];
@@ -86,7 +87,8 @@ struct Hybrid {
 #endif
 #ifdef ION_SPECTRA_ALONG_ORBIT
    static pargrid::DataID dataSpectraFlagID;
-   static pargrid::DataID dataSpectraID;
+   //static pargrid::DataID dataSpectraID;
+   static std::vector<Real> spectraParticleOutput;
 #endif
    
    // bit masks

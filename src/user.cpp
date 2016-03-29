@@ -617,12 +617,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add spectraFlag array to ParGrid!" << endl << write;
       return false;
    }
-   // dynamic pargrid array
-   Hybrid::dataSpectraID = simClasses.pargrid.addUserData<Dist>("spectra",0,true);
+   // dynamic pargrid array for energy spectra
+   /*Hybrid::dataSpectraID = simClasses.pargrid.addUserData<Dist>("spectra",0,true);
    if(Hybrid::dataSpectraID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add spectra array to ParGrid!" << endl << write;
       return false;
-   }
+   }*/
 #endif
    
    // Create data transfers
@@ -739,11 +739,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
    }*/
    int N_spectraCells = 0;
-   pargrid::DataWrapper<Dist> wrapper = simClasses.pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
+   /*pargrid::DataWrapper<Dist> wrapper = simClasses.pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
    if (wrapper.valid() == false) {
       simClasses.logger << "(HYBRID) ERROR: CELL SPECTRA: dynamic user data wrapper failed" << endl << write;
       return false;
-   }
+   }*/
 #endif
 
    const size_t scalarArraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE;
@@ -822,11 +822,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                   spectraFlag[b] = true;
                   N_spectraCells += 1;
                   // introduce Dists only once per block
-                  if(wrapper.size(b) <= 0) {
+                  /*if(wrapper.size(b) <= 0) {
                      for(unsigned int l = 0;l<Hybrid::N_populations;++l) {
                         wrapper.push_back(b,Dist());
                      }
-                  }
+                  }*/
                   vector<Real> tmp1 = {simClasses.pargrid.getGlobalIDs()[b],xCellCenter,yCellCenter,zCellCenter};
                   spectraCellIDXYZ.push_back(tmp1);
                   break;
@@ -836,15 +836,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 }
       }
 #ifdef ION_SPECTRA_ALONG_ORBIT
-      // zero spectra counters
-      for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      // zero energy spectra counters
+      /*for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
          Dist* s = wrapper.data()[b];
          if(s != NULL) {
             for(unsigned int i = 0;i<wrapper.size(b);++i) {
                s[i].reset();
             }
          }
-      }
+      }*/
       // sum N_spectraCells of all PEs
       int N_spectraCellsGlobalSum = 0.0;
       MPI_Reduce(&N_spectraCells,&N_spectraCellsGlobalSum,1,MPI_Type<int>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
@@ -874,9 +874,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          // write spectra cell indices file
          ofstream spectraCellIndicesFile;
          spectraCellIndicesFile.open("spectra_cell_indices.dat",ios_base::out);
-         spectraCellIndicesFile.precision(10);
+         spectraCellIndicesFile.precision(3);
          spectraCellIndicesFile << scientific;
-         spectraCellIndicesFile << "% cellid x y z" << endl;
+         spectraCellIndicesFile << "% globalid x y z" << endl;
          for(unsigned int i = 0;i<spectraCellIDXYZ.size();++i) {
             if(spectraCellIDXYZ[i].size() != 4) {
                simClasses.logger << "(HYBRID) ERROR: CELL SPECTRA: Error when creating cell indices file" << endl << write;
@@ -1168,6 +1168,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataXminFlagID)          == false) { success = false; }
 #endif
 #ifdef ION_SPECTRA_ALONG_ORBIT
+   //if(simClasses.pargrid.removeUserData(Hybrid::dataSpectraID            == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataSpectraFlagID)       == false) { success = false; }
 #endif
 #ifdef WRITE_POPULATION_AVERAGES

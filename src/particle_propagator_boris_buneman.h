@@ -47,7 +47,7 @@ class BorisBuneman: public ParticlePropagatorBase {
  private:
    const Species* species;
    
-   void propagate(const Real xBlock,const Real yBlock,const Real zBlock,pargrid::CellID blockID,const Species& species,PARTICLE& particle);
+   void propagate(const Real xBlock,const Real yBlock,const Real zBlock,pargrid::CellID blockID,const Species& species,PARTICLE& particle,pargrid::CellID globalID);
 };
 
 template<class PARTICLE>
@@ -65,12 +65,11 @@ template<class PARTICLE>
 bool BorisBuneman<PARTICLE>::finalize() {return true;}
 
 template<class PARTICLE>
-void BorisBuneman<PARTICLE>::propagate(const Real xBlock,const Real yBlock,const Real zBlock,pargrid::CellID blockID,const Species& species,PARTICLE& particle) {
+  void BorisBuneman<PARTICLE>::propagate(const Real xBlock,const Real yBlock,const Real zBlock,pargrid::CellID blockID,const Species& species,PARTICLE& particle,pargrid::CellID globalID) {
    bool accelerate = species.accelerate;
    if(simClasses->pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
       accelerate = false;
    }
-   
    /*if(accelerate == true) {
       Real dU[3] = { particle.state[particle::VX]-Ue[0], particle.state[particle::VY]-Ue[1], particle.state[particle::VZ]-Ue[2] };
       const Real half_alpha = 0.5*species.q*sim->dt/species.m;
@@ -139,6 +138,24 @@ void BorisBuneman<PARTICLE>::propagate(const Real xBlock,const Real yBlock,const
 	 cellMaxVi[blockID]++;
       }
    }
+
+#ifdef ION_SPECTRA_ALONG_ORBIT
+   bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
+   if(spectraFlag[blockID] == true) {
+      if(particle.state[particle::INI_TIME] >= 0.0) {
+         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
+         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
+         Hybrid::spectraParticleOutput.push_back( particle.state[particle::WEIGHT] );                        // 3
+         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(globalID) );                             // 4
+         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VX] );                            // 5
+         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VY] );                            // 6
+         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VZ] );                            // 7
+         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) ); // 8
+         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_TIME] );                      // 9 = SPECTRA_FILE_VARIABLES
+         particle.state[particle::INI_TIME] = -100.0;
+      }
+   }
+#endif
    
    // move particle
    particle.state[particle::X] += sim->dt*particle.state[particle::VX]; 
@@ -155,7 +172,8 @@ bool BorisBuneman<PARTICLE>::propagateCell(pargrid::CellID blockID,pargrid::Data
    const Real xBlock = crd[b3+0];
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
-   for(size_t p=0;p<N_particles;++p) { propagate(xBlock,yBlock,zBlock,blockID,*species,wrapper.data()[blockID][p]); }
+   const pargrid::CellID globalID = simClasses->pargrid.getGlobalIDs()[blockID];
+   for(size_t p=0;p<N_particles;++p) { propagate(xBlock,yBlock,zBlock,blockID,*species,wrapper.data()[blockID][p],globalID); }
    return true;
 }
 

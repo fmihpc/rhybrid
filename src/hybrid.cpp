@@ -58,7 +58,8 @@ pargrid::DataID Hybrid::dataXminFlagID;
 #endif
 #ifdef ION_SPECTRA_ALONG_ORBIT
 pargrid::DataID Hybrid::dataSpectraFlagID;
-pargrid::DataID Hybrid::dataSpectraID;
+//pargrid::DataID Hybrid::dataSpectraID;
+vector<Real> Hybrid::spectraParticleOutput;
 #endif
 
 // bit masks to check the existence of +x, -x, +y, -y, +z, -z neighbour cell
