@@ -46,7 +46,10 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       }
    }
 #ifdef ION_SPECTRA_ALONG_ORBIT
-   if(sim.t >= Hybrid::tStartSpectra && sim.t <= Hybrid::tEndSpectra) { Hybrid::recordSpectra = true; }
+   if(sim.t >= Hybrid::tStartSpectra && sim.t <= Hybrid::tEndSpectra && Hybrid::spectraFileLineCnt < Hybrid::maxRecordedSpectraParticles) {
+      Hybrid::recordSpectra = true;
+      Hybrid::spectraTimestepCnt++;
+   }
    else { Hybrid::recordSpectra = false; }
 #endif
    setupGetFields(sim,simClasses);
@@ -64,6 +67,14 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    for(size_t p=0;p<particleLists.size();++p) {
       if(particleLists[p]->injectParticles() == false) { rvalue = false; } 
    }
+#ifdef ION_SPECTRA_ALONG_ORBIT   
+   if(Hybrid::recordSpectra == true) {
+      if(Hybrid::spectraTimestepCnt >= Hybrid::writeIntervalTimesteps) {
+	 bool ok = writeSpectraParticles(sim,simClasses);
+	 Hybrid::spectraTimestepCnt = 0;
+      }
+   }
+#endif
    // propagate magnetic field
    if(propagateB(sim,simClasses,particleLists) == false) { rvalue = false; }
    return rvalue;
@@ -710,18 +721,24 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
 #ifdef ION_SPECTRA_ALONG_ORBIT
    bool* spectraFlag       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataSpectraFlagID));
+   Hybrid::spectraFileLineCnt = 0;
    vector<string> orbitFiles;
    cr.add("Analysis.orbit_spectra_t_start","Simulation time to start orbit spectra analysis (real)",-1);
    cr.add("Analysis.orbit_spectra_t_end","Simulation time to end orbit spectra analysis (real)",-1);
    cr.add("Analysis.orbit_spectra_max_particles","Maximum number of recorded particles for orbit spectra (real)",1e5);
+   cr.add("Analysis.orbit_spectra_write_interval_timesteps","Interval of spectra file writing (real)",10);
    cr.addComposed("Analysis.orbitfile","File names of spacecraft orbits for spectra (string)");
    cr.parse();
    cr.get("Analysis.orbit_spectra_t_start",Hybrid::tStartSpectra);
    cr.get("Analysis.orbit_spectra_t_end",Hybrid::tEndSpectra);
    cr.get("Analysis.orbit_spectra_max_particles",Hybrid::maxRecordedSpectraParticles);
+   cr.get("Analysis.orbit_spectra_write_interval_timesteps",Hybrid::writeIntervalTimesteps);
    cr.get("Analysis.orbitfile",orbitFiles);
-   simClasses.logger << "(HYBRID) CELL SPECTRA: Recording particle spectra between: t = " << Hybrid::tStartSpectra << " ... " << Hybrid::tEndSpectra << " s" << endl;
-   simClasses.logger << "(HYBRID) CELL SPECTRA: Maximum number of recorded  spectra particles: " << Hybrid::maxRecordedSpectraParticles << endl;
+   simClasses.logger
+     << "(HYBRID) CELL SPECTRA: Recording particle spectra between: t = " << Hybrid::tStartSpectra << " ... " << Hybrid::tEndSpectra << " s" << endl
+     << "(HYBRID) CELL SPECTRA: Maximum number of recorded spectra particles: " << Hybrid::maxRecordedSpectraParticles << endl
+     << "(HYBRID) CELL SPECTRA: Writing interval of spectra particles: " << Hybrid::writeIntervalTimesteps << " timesteps" << endl;
+   
    vector< vector<Real> > orbitCoordinates;
    // only master reads orbit coordinates from files
    if(sim.mpiRank==sim.MASTER_RANK) {

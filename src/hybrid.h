@@ -91,6 +91,9 @@ struct Hybrid {
    static Real tStartSpectra;
    static Real tEndSpectra;
    static Real maxRecordedSpectraParticles;
+   static Real writeIntervalTimesteps;
+   static Real spectraTimestepCnt;
+   static Real spectraFileLineCnt;
    static bool recordSpectra;
    static std::vector<Real> spectraParticleOutput;
 #endif

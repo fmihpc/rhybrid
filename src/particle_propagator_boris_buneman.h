@@ -142,7 +142,7 @@ template<class PARTICLE>
 #ifdef ION_SPECTRA_ALONG_ORBIT
    bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
      if(spectraFlag[blockID] == true && Hybrid::recordSpectra == true) {
-      if(particle.state[particle::INI_TIME] >= 0.0) {
+      //if(particle.state[particle::INI_TIME] >= 0.0) {
          Hybrid::spectraParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
          Hybrid::spectraParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
          Hybrid::spectraParticleOutput.push_back( particle.state[particle::WEIGHT] );                        // 3
@@ -158,8 +158,8 @@ template<class PARTICLE>
          Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VX] );                        // 13
          Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VY] );                        // 14
          Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VZ] );                        // 15 = SPECTRA_FILE_VARIABLES
-         particle.state[particle::INI_TIME] = -100.0; // only detect each particle once
-      }
+	 //particle.state[particle::INI_TIME] = -100.0; // only detect each particle once
+      //}
    }
 #endif
    

@@ -51,5 +51,8 @@ class UserDataOP: public DataOperator {
 void calcParticleLog(Simulation& sim,SimulationClasses& simClasses,std::vector<ParticleLogData>& plogData,const std::vector<ParticleListBase*>& particleLists);
 void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& flogData);
 bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particles);
+#ifdef ION_SPECTRA_ALONG_ORBIT
+bool writeSpectraParticles(Simulation& sim,SimulationClasses& simClasses);
+#endif
 
 #endif

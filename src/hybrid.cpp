@@ -62,6 +62,9 @@ pargrid::DataID Hybrid::dataSpectraFlagID;
 Real Hybrid::tStartSpectra;
 Real Hybrid::tEndSpectra;
 Real Hybrid::maxRecordedSpectraParticles;
+Real Hybrid::writeIntervalTimesteps;
+Real Hybrid::spectraTimestepCnt;
+Real Hybrid::spectraFileLineCnt;
 bool Hybrid::recordSpectra = false;
 vector<Real> Hybrid::spectraParticleOutput;
 #endif
