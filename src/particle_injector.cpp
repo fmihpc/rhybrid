@@ -759,7 +759,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
 	 a.k0 = k0;
 	 a.R_exobase = R_exobase;
 	 a.R_shadow = R_shadow;
-	 cellExosphere[nExo] = getNeutralDensity(simClasses,neutralProfileName,xCell,yCell,zCell,a);
+	 cellExosphere[nExo] = getNeutralDensity(simClasses,neutralProfileName,xCell,yCell,zCell,a)*Hybrid::dV;
 	 if(cellExosphere[nExo] < 0.0) {
 	    simClasses.logger << "(" << species->name << ") ERROR: Neutral profile init failed" << endl << write;
 	    initialized = false;

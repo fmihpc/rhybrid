@@ -45,6 +45,9 @@ pargrid::DataID Hybrid::dataNodeBID;
 pargrid::DataID Hybrid::dataNodeJID;
 pargrid::DataID Hybrid::dataNodeUeID;
 pargrid::DataID Hybrid::dataNodeJiID;
+#ifdef USE_RESISTIVITY
+pargrid::DataID Hybrid::dataNodeEtaID;
+#endif
 
 // stencils
 pargrid::StencilID Hybrid::accumulationStencilID;
@@ -90,11 +93,16 @@ Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::minRhoQi;
-Real Hybrid::eta;
 bool Hybrid::useHallElectricField;
 Real Hybrid::swMacroParticlesCellPerDt;
 int Hybrid::Efilter;
-
+#ifdef USE_RESISTIVITY
+Real Hybrid::resistivityEta;
+Real Hybrid::resistivityEtaC;
+Real Hybrid::resistivityR2;
+Real Hybrid::resistivityGridUnit;
+Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
+#endif
 Real Hybrid::IMFBx;
 Real Hybrid::IMFBy;
 Real Hybrid::IMFBz;

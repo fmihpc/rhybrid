@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -74,6 +75,9 @@ struct Hybrid {
    static pargrid::DataID dataNodeJID;
    static pargrid::DataID dataNodeUeID;
    static pargrid::DataID dataNodeJiID;
+#ifdef USE_RESISTIVITY
+   static pargrid::DataID dataNodeEtaID;
+#endif
 
    // stencils
    static pargrid::StencilID accumulationStencilID; /**< ParGrid Stencil used to exchange accumulation array(s).*/
@@ -119,7 +123,13 @@ struct Hybrid {
    static Real maxUe2;
    static Real maxVi2;
    static Real minRhoQi;
-   static Real eta;
+#ifdef USE_RESISTIVITY
+   static Real resistivityEta;
+   static Real resistivityEtaC;
+   static Real resistivityR2;
+   static Real resistivityGridUnit;
+   static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
+#endif
    static bool useHallElectricField;
    static Real swMacroParticlesCellPerDt;
    static int Efilter;

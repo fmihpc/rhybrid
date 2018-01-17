@@ -78,6 +78,9 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeJID,         "nodeJ",           N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeUeID,        "nodeUe",          N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeJiID,        "nodeJi",          N_blocks,3);
+#ifdef USE_RESISTIVITY
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEtaID,       "nodeEta",          N_blocks,1);
+#endif
    // write production rates of ionosphere populations
    if(Hybrid::outputCellParams["prod_rate_iono"] == true) {
       Real* const cellIonosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellIonosphereID));

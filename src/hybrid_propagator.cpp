@@ -59,6 +59,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    Real* nodeJ        = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeJID);
    Real* nodeUe       = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeUeID);
    Real* nodeJi       = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeJiID);
+#ifdef USE_RESISTIVITY
+   Real* nodeEta      = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEtaID);
+#endif
    bool* innerFlag    = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
    bool* innerFlagNode= simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagNodeID);
 
@@ -78,6 +81,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(nodeJ        == NULL) {cerr << "ERROR: obtained NULL nodeJ array!"        << endl; exit(1);}
    if(nodeUe       == NULL) {cerr << "ERROR: obtained NULL nodeUe array!"       << endl; exit(1);}
    if(nodeJi       == NULL) {cerr << "ERROR: obtained NULL nodeJi array!"       << endl; exit(1);}
+#ifdef USE_RESISTIVITY
+   if(nodeEta      == NULL) {cerr << "ERROR: obtained NULL nodeEta array!"      << endl; exit(1);}
+#endif
    if(innerFlag    == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
    if(innerFlagNode== NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
    
@@ -266,7 +272,13 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    
    // calculate nodeE
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { calcNodeE(nodeUe,nodeB,nodeJ,nodeE,innerFlagNode,sim,simClasses,b); }
+   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+#ifdef USE_RESISTIVITY
+      calcNodeE(nodeUe,nodeB,nodeEta,nodeJ,nodeE,innerFlagNode,sim,simClasses,b);
+#else
+      calcNodeE(nodeUe,nodeB,nodeJ,nodeE,innerFlagNode,sim,simClasses,b);
+#endif
+   }
    profile::stop();
 
    // E filtering
@@ -824,7 +836,11 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
    
 
 // E = -Ue x B + eta*J
+#ifdef USE_RESISTIVITY
+void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+#else
 void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeJ,Real* nodeE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+#endif
 {
    int di=0;
    int dj=0;
@@ -858,11 +874,11 @@ void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeJ,Real* nodeE,bool* innerFlag,
       nodeE[n3+0] = -(nodeUe[n3+1]*Btot[2] - nodeUe[n3+2]*Btot[1]);
       nodeE[n3+1] = -(nodeUe[n3+2]*Btot[0] - nodeUe[n3+0]*Btot[2]);
       nodeE[n3+2] = -(nodeUe[n3+0]*Btot[1] - nodeUe[n3+1]*Btot[0]);
-      if(innerFlag[n] == false) {
-	 nodeE[n3+0] += Hybrid::eta*nodeJ[n3+0];
-	 nodeE[n3+1] += Hybrid::eta*nodeJ[n3+1];
-	 nodeE[n3+2] += Hybrid::eta*nodeJ[n3+2];
-      }
+#ifdef USE_RESISTIVITY
+      nodeE[n3+0] += nodeEta[n]*nodeJ[n3+0];
+      nodeE[n3+1] += nodeEta[n]*nodeJ[n3+1];
+      nodeE[n3+2] += nodeEta[n]*nodeJ[n3+2];      
+#endif
    }
 }
 

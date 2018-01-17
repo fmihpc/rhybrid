@@ -32,6 +32,9 @@
 #include "particle_injector.h"
 #include "particle_list_hybrid.h"
 #include "operator_userdata.h"
+#ifdef USE_RESISTIVITY
+#include "resistivity.h"
+#endif
 #ifdef USE_B_INITIAL
 #include "magnetic_field.h"
 #endif
@@ -103,6 +106,9 @@ bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,Confi
 #endif
 #ifdef USE_XMIN_BOUNDARY
      << "USE_XMIN_BOUNDARY" << endl
+#endif
+#ifdef USE_RESISTIVITY
+     << "USE_RESISTIVITY" << endl
 #endif
 #ifdef WRITE_POPULATION_AVERAGES
      << "WRITE_POPULATION_AVERAGES" << endl
@@ -199,7 +205,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dV=cube(Hybrid::dx);
    const Real defaultValue = 0.0;
    string outputParams = "";
+#if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    string magneticFieldProfileName = "";
+#endif
+#ifdef USE_RESISTIVITY
+   string resistivityProfileName = "";
+#endif
    cr.add("Hybrid.log_interval","Log interval in units of timestep [-] (int)",0);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)","");
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
@@ -212,9 +223,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.minRhoQi","Minimum value of ion charge density [C/m^3] (float)",defaultValue);
-   cr.add("Hybrid.eta","Dimensionless resistivity [-] (float)",defaultValue);
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
+#ifdef USE_RESISTIVITY
+   cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
+   cr.add("Resistivity.etaC","Dimensionless resistivity constant [-] (float)",defaultValue);
+   cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
+#endif
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
@@ -245,9 +260,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
-   cr.get("Hybrid.eta",Hybrid::eta);
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
+#ifdef USE_RESISTIVITY
+   cr.get("Resistivity.profile_name",resistivityProfileName);
+   cr.get("Resistivity.etaC",Hybrid::resistivityEtaC);
+   cr.get("Resistivity.R",Hybrid::resistivityR2);
+   Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
+   Hybrid::resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
+   Hybrid::resistivityEta = Hybrid::resistivityEtaC*Hybrid::resistivityGridUnit;
+   if(setResistivityProfile(resistivityProfileName) == false) {
+      simClasses.logger << "(HYBRID) ERROR: Given profile profile not found (" << resistivityProfileName << ")" << endl << write;
+      exit(1);
+   }
+#endif
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
@@ -291,6 +317,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"nodeJ",false},
       {"nodeUe",false},
       {"nodeJi",false},
+      {"nodeEta",false},
       {"prod_rate_iono",false},
       {"prod_rate_exo",false},
       {"cellBAverage",false},
@@ -349,9 +376,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::maxVi2 = 0.9*Hybrid::dx/sim.dt;
    }
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
-   Hybrid::eta *= constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
    if(Hybrid::Efilter < 0) { Hybrid::Efilter = 0; }
-       
    simClasses.logger
      << "(HYBRID): Simulation parameters" << endl
      << "R_object  = " << Hybrid::R_object/1e3 << " km" << endl
@@ -376,7 +401,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s" << endl
      << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s" << endl
      << "minRhoQi = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 " << endl
-     << "eta = " << Hybrid::eta << " Ohm m = " << Hybrid::eta/(constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt) << " mu_0*dx^2/dt" << endl
      << "Hall term = " << Hybrid::useHallElectricField << endl
      << "Efilter = " << Hybrid::Efilter << "" << endl
      << "dV = " << Hybrid::dV << " m^3" << endl
@@ -386,6 +410,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "IMF Bx = " << Hybrid::IMFBx/1e-9 << " nT" << endl
      << "IMF By = " << Hybrid::IMFBy/1e-9 << " nT" << endl
      << "IMF Bz = " << Hybrid::IMFBz/1e-9 << " nT" << endl << endl;
+#ifdef USE_RESISTIVITY
+   simClasses.logger
+     << "(RESISTIVITY)" << endl
+     << "Resistivity profile = " << resistivityProfileName << endl
+     << "eta = " << Hybrid::resistivityEtaC << " mu_0*dx^2/dt = "
+     << Hybrid::resistivityEta << " Ohm m" << endl
+     << "R = " << sqrt(Hybrid::resistivityR2)/1e3 << " km = "
+     << sqrt(Hybrid::resistivityR2)/Hybrid::R_object << " R_object = "
+     << (sqrt(Hybrid::resistivityR2) - Hybrid::R_object)/1e3 << " km + R_object" << endl << endl;
+#endif
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    simClasses.logger
      << "(INTRINSIC MAGNETIC FIELD)" << endl
@@ -501,6 +535,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataNodeJID             = simClasses.pargrid.invalidDataID();
    Hybrid::dataNodeUeID            = simClasses.pargrid.invalidDataID();
    Hybrid::dataNodeJiID            = simClasses.pargrid.invalidDataID();
+#ifdef USE_RESISTIVITY
+   Hybrid::dataNodeEtaID           = simClasses.pargrid.invalidDataID();
+#endif
    Hybrid::dataInnerFlagFieldID    = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagNodeID     = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagParticleID = simClasses.pargrid.invalidDataID();
@@ -599,7 +636,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add nodeJi array to ParGrid!" << endl << write;
       return false;
    }
-   
+#ifdef USE_RESISTIVITY
+   Hybrid::dataNodeEtaID = simClasses.pargrid.addUserData<Real>("nodeEta",block::SIZE*1);
+   if(Hybrid::dataNodeEtaID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add nodeEta array to ParGrid!" << endl << write;
+      return false;
+   }
+#endif   
    // create stencils
    Hybrid::accumulationStencilID = sim.inverseStencilID;
    
@@ -693,6 +736,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeJiID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeJi data transfer!" << endl << write; return false;
    }
+#ifdef USE_RESISTIVITY
+   if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeEtaID,pargrid::DEFAULT_STENCIL) == false) {
+      simClasses.logger << "(USER) ERROR: Failed to add nodeEta data transfer!" << endl << write; return false;
+   }
+#endif
 
    Real* faceB             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
    Real* faceJ             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceJID));
@@ -712,6 +760,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real* nodeJ             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJID));
    Real* nodeUe            = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeUeID));
    Real* nodeJi            = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJiID));
+#ifdef USE_RESISTIVITY
+   Real* nodeEta           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEtaID));
+#endif
    bool* innerFlagField    = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagFieldID));   
    bool* innerFlagNode     = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagNodeID));
    bool* innerFlagParticle = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagParticleID));
@@ -794,6 +845,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       for(size_t i=0; i<vectorArraySize; ++i) { nodeJ[i] = 0.0; }
       for(size_t i=0; i<vectorArraySize; ++i) { nodeUe[i] = 0.0; }
       for(size_t i=0; i<vectorArraySize; ++i) { nodeJi[i] = 0.0; }
+#ifdef USE_RESISTIVITY
+      for(size_t i=0; i<scalarArraySize; ++i) { nodeEta[i] = 0.0; }
+#endif
       for(size_t i=0; i<scalarArraySize; ++i) { nodeRhoQi[i] = 0.0; }
       for(size_t i=0; i<scalarArraySize; ++i) { cellRhoQi[i] = 0.0; }
       for(size_t i=0; i<scalarArraySize; ++i) { cellMaxUe[i] = 0.0; }
@@ -832,6 +886,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    const Real rNode2 = sqr(xNode) + sqr(yNode) + sqr(zNode);
 	    if(rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; }
 	    else                                  { innerFlagNode[n] = false; }
+#ifdef USE_RESISTIVITY
+            nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
+#endif
 #ifdef USE_XMIN_BOUNDARY
             if(xCellCenter < Hybrid::xMinBoundary) { xMinFlag[n] = true; }
             else                                   { xMinFlag[n] = false; }
@@ -1191,6 +1248,9 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeJID)             == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeUeID)            == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeJiID)            == false) { success = false; }
+#ifdef USE_RESISTIVITY
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEtaID)           == false) { success = false; }
+#endif
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)    == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID) == false) { success = false; }
 #ifdef USE_XMIN_BOUNDARY
