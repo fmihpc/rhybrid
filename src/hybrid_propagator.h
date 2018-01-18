@@ -32,11 +32,15 @@ void cell2Node(Real* celldata,Real* nodeData,Simulation& sim,SimulationClasses& 
 void node2Cell(Real* nodeData,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,Real* cellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
+void calcNodeE(Real* nodeUe,Real* nodeB,
 #ifdef USE_RESISTIVITY
-void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
-#else
-void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeJ,Real* nodeE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
+Real* nodeEta,
 #endif
+Real* nodeJ,Real* nodeE,
+#ifdef USE_ECUT
+Real* nodeCntEcut,
+#endif
+bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcNodeJ(Real* faceB,Real* nodeJ,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,Real* cellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);

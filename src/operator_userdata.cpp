@@ -73,6 +73,9 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    writeCellDataVariable(spatMeshName,Hybrid::dataCellMaxUeID,     "cellMaxUeCnt",    N_blocks,1);
    writeCellDataVariable(spatMeshName,Hybrid::dataCellMaxViID,     "cellMaxViCnt",    N_blocks,1);
    writeCellDataVariable(spatMeshName,Hybrid::dataCellMinRhoQiID,  "cellMinRhoQiCnt", N_blocks,1);
+#ifdef USE_ECUT
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeCntEcutID,   "nodeCntEcut",     N_blocks,1);
+#endif
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeEID,         "nodeE",           N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeBID,         "nodeB",           N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeJID,         "nodeJ",           N_blocks,3);

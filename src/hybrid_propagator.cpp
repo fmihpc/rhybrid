@@ -53,6 +53,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    Real* cellMaxUe    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellMaxUeID);
    Real* cellMaxVi    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellMaxViID);
    Real* cellMinRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellMinRhoQiID);
+#ifdef USE_ECUT
+   Real* nodeCntEcut  = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeCntEcutID);
+#endif
    Real* nodeRhoQi    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeRhoQiID);
    Real* nodeE        = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    Real* nodeB        = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeBID);
@@ -75,6 +78,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(cellMaxUe    == NULL) {cerr << "ERROR: obtained NULL cellMaxUe array!"    << endl; exit(1);}
    if(cellMaxVi    == NULL) {cerr << "ERROR: obtained NULL cellMaxVi array!"    << endl; exit(1);}
    if(cellMinRhoQi == NULL) {cerr << "ERROR: obtained NULL cellMinRhoQi array!" << endl; exit(1);}
+#ifdef USE_ECUT
+   if(nodeCntEcut  == NULL) {cerr << "ERROR: obtained NULL nodeCntEcut array!"  << endl; exit(1);}
+#endif
    if(nodeRhoQi    == NULL) {cerr << "ERROR: obtained NULL nodeRhoQi array!"    << endl; exit(1);}
    if(nodeE        == NULL) {cerr << "ERROR: obtained NULL nodeE array!"        << endl; exit(1);}
    if(nodeB        == NULL) {cerr << "ERROR: obtained NULL nodeB array!"        << endl; exit(1);}
@@ -99,6 +105,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 	 cellMaxUe[n]=0.0;
 	 cellMaxVi[n]=0.0;
 	 cellMinRhoQi[n]=0.0;
+#ifdef USE_ECUT
+         nodeCntEcut[n]=0.0;
+#endif
       }
       saveStepHappened = false;
    }
@@ -273,11 +282,15 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // calculate nodeE
    profile::start("field propag",profPropagFieldID);
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      calcNodeE(nodeUe,nodeB,
 #ifdef USE_RESISTIVITY
-      calcNodeE(nodeUe,nodeB,nodeEta,nodeJ,nodeE,innerFlagNode,sim,simClasses,b);
-#else
-      calcNodeE(nodeUe,nodeB,nodeJ,nodeE,innerFlagNode,sim,simClasses,b);
+      nodeEta,
 #endif
+      nodeJ,nodeE,
+#ifdef USE_ECUT
+      nodeCntEcut,
+#endif
+      innerFlagNode,sim,simClasses,b);
    }
    profile::stop();
 
@@ -836,11 +849,15 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
    
 
 // E = -Ue x B + eta*J
+void calcNodeE(Real* nodeUe,Real* nodeB,
 #ifdef USE_RESISTIVITY
-void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
-#else
-void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeJ,Real* nodeE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+Real* nodeEta,
 #endif
+Real* nodeJ,Real* nodeE,
+#ifdef USE_ECUT
+Real* nodeCntEcut,
+#endif
+bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    int di=0;
    int dj=0;
@@ -877,7 +894,19 @@ void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeJ,Real* nodeE,bool* innerFlag,
 #ifdef USE_RESISTIVITY
       nodeE[n3+0] += nodeEta[n]*nodeJ[n3+0];
       nodeE[n3+1] += nodeEta[n]*nodeJ[n3+1];
-      nodeE[n3+2] += nodeEta[n]*nodeJ[n3+2];      
+      nodeE[n3+2] += nodeEta[n]*nodeJ[n3+2];
+#endif
+#ifdef USE_ECUT
+      if(Hybrid::Ecut2 > 0) {
+         const Real E2 = sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]);
+         if (E2 > Hybrid::Ecut2) {
+            Real scaling = sqrt(Hybrid::Ecut2/E2);
+            nodeE[n3+0] *= scaling;
+            nodeE[n3+1] *= scaling;
+            nodeE[n3+2] *= scaling;
+            //nodeCntEcut[n]++;
+         }
+      }
 #endif
    }
 }

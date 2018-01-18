@@ -223,6 +223,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.minRhoQi","Minimum value of ion charge density [C/m^3] (float)",defaultValue);
+#ifdef USE_ECUT
+   cr.add("Hybrid.Ecut","Maximum value of node electric field [V/m] (float)",defaultValue);
+#endif
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
 #ifdef USE_RESISTIVITY
@@ -260,6 +263,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
+#ifdef USE_ECUT
+   cr.get("Hybrid.Ecut",Hybrid::Ecut2);
+   Hybrid::Ecut2 = sqr(Hybrid::Ecut2);
+#endif
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
 #ifdef USE_RESISTIVITY
@@ -312,12 +319,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"cellMaxUeCnt",false},
       {"cellMaxViCnt",false},
       {"cellMinRhoQiCnt",false},
+#ifdef USE_ECUT
+      {"nodeCntEcut",false},
+#endif
       {"nodeE",false},
       {"nodeB",false},
       {"nodeJ",false},
       {"nodeUe",false},
       {"nodeJi",false},
+#ifdef USE_RESISTIVITY
       {"nodeEta",false},
+#endif
       {"prod_rate_iono",false},
       {"prod_rate_exo",false},
       {"cellBAverage",false},
@@ -401,6 +413,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s" << endl
      << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s" << endl
      << "minRhoQi = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 " << endl
+#ifdef USE_ECUT
+     << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m" << endl
+#endif
      << "Hall term = " << Hybrid::useHallElectricField << endl
      << "Efilter = " << Hybrid::Efilter << "" << endl
      << "dV = " << Hybrid::dV << " m^3" << endl
@@ -527,6 +542,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataCellMaxUeID         = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellMaxViID         = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellMinRhoQiID      = simClasses.pargrid.invalidDataID();
+#ifdef USE_ECUT
+   Hybrid::dataNodeCntEcutID       = simClasses.pargrid.invalidDataID();
+#endif
    Hybrid::dataCellIonosphereID    = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellExosphereID     = simClasses.pargrid.invalidDataID();
    Hybrid::dataNodeRhoQiID         = simClasses.pargrid.invalidDataID();
@@ -596,6 +614,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add cellMinRhoQi array to ParGrid!" << endl << write;
       return false;
    }
+#ifdef USE_ECUT
+   Hybrid::dataNodeCntEcutID = simClasses.pargrid.addUserData<Real>("nodeCntEcut",block::SIZE*1);
+   if(Hybrid::dataNodeCntEcutID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add nodeCntEcut array to ParGrid!" << endl << write;
+      return false;
+   }
+#endif
    Hybrid::dataCellIonosphereID = simClasses.pargrid.addUserData<Real>("cellIonosphere",block::SIZE*Hybrid::N_ionospherePopulations);
    if(Hybrid::dataCellIonosphereID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellIonosphere array to ParGrid!" << endl << write;
@@ -736,11 +761,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeJiID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeJi data transfer!" << endl << write; return false;
    }
-#ifdef USE_RESISTIVITY
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeEtaID,pargrid::DEFAULT_STENCIL) == false) {
-      simClasses.logger << "(USER) ERROR: Failed to add nodeEta data transfer!" << endl << write; return false;
-   }
-#endif
 
    Real* faceB             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
    Real* faceJ             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceJID));
@@ -752,6 +772,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real* cellMaxUe         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellMaxUeID));
    Real* cellMaxVi         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellMaxViID));
    Real* cellMinRhoQi      = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellMinRhoQiID));
+#ifdef USE_ECUT
+   Real* nodeCntEcut       = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeCntEcutID));
+#endif
    Real* cellIonosphere    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellIonosphereID));
    Real* cellExosphere     = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellExosphereID));
    Real* nodeRhoQi         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeRhoQiID));
@@ -853,6 +876,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       for(size_t i=0; i<scalarArraySize; ++i) { cellMaxUe[i] = 0.0; }
       for(size_t i=0; i<scalarArraySize; ++i) { cellMaxVi[i] = 0.0; }
       for(size_t i=0; i<scalarArraySize; ++i) { cellMinRhoQi[i] = 0.0; }
+#ifdef USE_ECUT
+      for(size_t i=0; i<scalarArraySize; ++i) { nodeCntEcut[i] = 0.0; }
+#endif
       for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
       for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
 
@@ -1240,6 +1266,9 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellMaxUeID)         == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellMaxViID)         == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellMinRhoQiID)      == false) { success = false; }
+#ifdef USE_ECUT
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeCntEcutID)       == false) { success = false; }
+#endif
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellIonosphereID)    == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellExosphereID)     == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeRhoQiID)         == false) { success = false; }

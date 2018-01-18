@@ -75,6 +75,9 @@ struct Hybrid {
    static pargrid::DataID dataNodeJID;
    static pargrid::DataID dataNodeUeID;
    static pargrid::DataID dataNodeJiID;
+#ifdef USE_ECUT
+   static pargrid::DataID dataNodeCntEcutID;
+#endif
 #ifdef USE_RESISTIVITY
    static pargrid::DataID dataNodeEtaID;
 #endif
@@ -123,6 +126,9 @@ struct Hybrid {
    static Real maxUe2;
    static Real maxVi2;
    static Real minRhoQi;
+#ifdef USE_ECUT
+   static Real Ecut2;
+#endif
 #ifdef USE_RESISTIVITY
    static Real resistivityEta;
    static Real resistivityEtaC;

@@ -45,6 +45,9 @@ pargrid::DataID Hybrid::dataNodeBID;
 pargrid::DataID Hybrid::dataNodeJID;
 pargrid::DataID Hybrid::dataNodeUeID;
 pargrid::DataID Hybrid::dataNodeJiID;
+#ifdef USE_ECUT
+pargrid::DataID Hybrid::dataNodeCntEcutID;
+#endif
 #ifdef USE_RESISTIVITY
 pargrid::DataID Hybrid::dataNodeEtaID;
 #endif
@@ -93,6 +96,9 @@ Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::minRhoQi;
+#ifdef USE_ECUT
+Real Hybrid::Ecut2;
+#endif
 bool Hybrid::useHallElectricField;
 Real Hybrid::swMacroParticlesCellPerDt;
 int Hybrid::Efilter;

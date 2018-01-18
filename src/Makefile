@@ -4,6 +4,7 @@ USE_B_INITIAL := true
 USE_B_CONSTANT := false
 USE_XMIN_BOUNDARY := false
 USE_RESISTIVITY := true
+USE_ECUT := false
 WRITE_POPULATION_AVERAGES := true
 ION_SPECTRA_ALONG_ORBIT := false
 
@@ -38,6 +39,10 @@ endif
 
 ifeq ($(USE_RESISTIVITY),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_RESISTIVITY
+endif
+
+ifeq ($(USE_ECUT),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_ECUT
 endif
 
 ifeq ($(WRITE_POPULATION_AVERAGES),true)
