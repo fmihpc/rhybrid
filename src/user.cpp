@@ -86,32 +86,14 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
 bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,vector<ParticleListBase*>& particleLists) {
    Hybrid hybrid;
 #if defined(USE_B_INITIAL) && defined(USE_B_CONSTANT)
-#error                  "(HYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the sama time"
-   simClasses.logger << "(HYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the sama time" << endl << write;
+#error                  "(HYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time"
+   simClasses.logger << "(HYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time" << endl << write;
    return false;
 #endif
    simClasses.logger
-     << "(HYBRID): Defined Makefile options: " << endl
-#ifdef USE_NODE_UE
-     << "USE_NODE_UE" << endl
-#endif
-#ifdef USE_EDGE_J
-     << "USE_EDGE_J" << endl
-#endif
-#ifdef USE_B_INITIAL
-     << "USE_B_INITIAL" << endl
-#endif
-#ifdef USE_B_CONSTANT
-     << "USE_B_CONSTANT" << endl
-#endif
-#ifdef USE_XMIN_BOUNDARY
-     << "USE_XMIN_BOUNDARY" << endl
-#endif
-#ifdef USE_RESISTIVITY
-     << "USE_RESISTIVITY" << endl
-#endif
-#ifdef WRITE_POPULATION_AVERAGES
-     << "WRITE_POPULATION_AVERAGES" << endl
+     << "(HYBRID): Compile information and Makefile options: " << endl
+#ifdef COMPILEINFO
+     << COMPILEINFO << endl
 #endif
      << write;
    Hybrid::X_POS_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+1,+0,+0));   
@@ -422,9 +404,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "dt = " << sim.dt << " s" << endl
      << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
      << "dx/dt  = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl
-     << "IMF Bx = " << Hybrid::IMFBx/1e-9 << " nT" << endl
-     << "IMF By = " << Hybrid::IMFBy/1e-9 << " nT" << endl
-     << "IMF Bz = " << Hybrid::IMFBz/1e-9 << " nT" << endl << endl;
+     << "IMF Bx  = " << Hybrid::IMFBx/1e-9 << " nT" << endl
+     << "IMF By  = " << Hybrid::IMFBy/1e-9 << " nT" << endl
+     << "IMF Bz  = " << Hybrid::IMFBz/1e-9 << " nT" << endl
+     << "IMF |B| = " << sqrt( sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz) )/1e-9 << " nT" << endl
+     << "IMF Bperp = sqrt(By^2 + Bz^2)     = " << sqrt( sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz) )/1e-9 << " nT" << endl
+     << "IMF Cone angle  = atan2(Bperp,Bx) = " << atan2(sqrt( sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz) ),Hybrid::IMFBx)*180.0/M_PI << " deg" << endl
+     << "IMF Clock angle = atan2(By,Bz)    = " << atan2(Hybrid::IMFBy,Hybrid::IMFBz)*180.0/M_PI << " deg" << endl
+     << endl;
+   
 #ifdef USE_RESISTIVITY
    simClasses.logger
      << "(RESISTIVITY)" << endl

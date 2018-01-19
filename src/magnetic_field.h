@@ -104,6 +104,11 @@ inline void lineDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[2] += D*( sqr(z) - sqr(x) )/( sqr(r2) );
 }
 
+inline void translateDipoleBAndLaminarFlowAroundSphereBx(Real x,Real y,Real z,Real B[3]) {
+   translateDipoleB(x,y,z,B);
+   laminarFlowAroundSphereBx(x,y,z,B);
+}
+
 inline bool setMagneticFieldProfile(std::string name) {
    Hybrid::magneticFieldProfilePtr = NULL;
    if(name.compare("laminarFlowAroundSphereBx") == 0) {
@@ -117,6 +122,9 @@ inline bool setMagneticFieldProfile(std::string name) {
    }
    else if(name.compare("lineDipoleB") == 0) {
       Hybrid::magneticFieldProfilePtr = &lineDipoleB;
+   }
+   else if(name.compare("translateDipoleBAndLaminarFlowAroundSphereBx") == 0) {
+      Hybrid::magneticFieldProfilePtr = &translateDipoleBAndLaminarFlowAroundSphereBx;
    }
    else {
       return false;
