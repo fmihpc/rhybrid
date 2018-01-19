@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -436,12 +437,13 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
 }
 
 bool InjectorIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
-   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".night","Night side emission factor [-] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
-   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".profile_name","Ionospheric emission profile name [-] (string)","");
+   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".night","Night side emission factor [-] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".temperature","Temperature [K] (float)",(Real)0.0);
+   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (Real)",(Real)-1.0);
    return true;
 }
 
@@ -449,17 +451,23 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 				    const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
+   string profileName = "";
    Real noonFactor = -1.0;
    Real nightFactor = -1.0;
    Real T = 0.0;
    Real totalRate = 0.0;
    cr.parse();
+   cr.get(configRegionName+".profile_name",profileName);
    cr.get(configRegionName+".emission_radius",R);
    cr.get(configRegionName+".noon",noonFactor);
    cr.get(configRegionName+".night",nightFactor);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".total_production_rate",totalRate);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+   if(noonFactor < 0.0 || nightFactor < 0.0) {
+      simClasses.logger
+        << "(" << species->name << ") WARNING: negative noon or night factor" << endl << write;
+   }
    if(Hybrid::swMacroParticlesCellPerDt > 0.0) {
       N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
    }
@@ -477,11 +485,12 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
    if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
    simClasses.logger
-     << "(" << species->name << ") emission radius = " << radiusToString(R) << endl
-     << "(" << species->name << ") noon emission   = " << noonFactor << endl
-     << "(" << species->name << ") night emission  = " << nightFactor << endl
-     << "(" << species->name << ") temperature     = " << T << " K" << endl
-     << "(" << species->name << ") thermal speed   = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") emission profile = " << profileName << endl
+     << "(" << species->name << ") emission radius  = " << radiusToString(R) << endl
+     << "(" << species->name << ") noon emission    = " << noonFactor << endl
+     << "(" << species->name << ") night emission   = " << nightFactor << endl
+     << "(" << species->name << ") temperature      = " << T << " K" << endl
+     << "(" << species->name << ") thermal speed    = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
@@ -528,19 +537,32 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 	       N_inside++;
 	    }
 	 }
-         // cos(sza) dependency
-         if(noonFactor >= 0.0 && nightFactor >= 0.0) {
+         // dayside: cos(sza) dependency and nightside: constant
+         if(profileName.compare("ionoCosSzaDayConstantNight") == 0) {
             const Real rr = sqrt(sqr(xCell) + sqr(yCell) + sqr(zCell));
             const Real sza = acos(xCell/rr);
             Real a = 0.0;
             if(sza < M_PI/2) {
-               a = noonFactor + (nightFactor - noonFactor) * ( 1-cos(sza) );
+               a = noonFactor + (nightFactor - noonFactor) * ( 1 - cos(sza) );
             } else {
                a = nightFactor;
             }
             N_inside *= a;
          }
-         else if(noonFactor < 0.0 && nightFactor < 0.0) { // polar cap source
+         // dayside: constant and nightside: constant
+         else if(profileName.compare("ionoConstantDayConstantNight") == 0) {
+            const Real rr = sqrt(sqr(xCell) + sqr(yCell) + sqr(zCell));
+            const Real sza = acos(xCell/rr);
+            Real a = 0.0;
+            if(sza < M_PI/2) {
+               a = noonFactor;
+            } else {
+               a = nightFactor;
+            }
+            N_inside *= a;
+         }
+         // polar cap source
+         else if(profileName.compare("ionoPolarCap") == 0) {
             // angle towards noon
             const Real t = fabs(noonFactor)*M_PI/180.0;
             // half angle of polar cap in degrees

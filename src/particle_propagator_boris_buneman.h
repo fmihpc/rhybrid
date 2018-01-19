@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -89,8 +90,8 @@ template<class PARTICLE>
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
 	 particle.state[particle::VZ] *= norm;
-	 Real* cellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellMaxViID));
-	 cellMaxVi[blockID]++;
+	 Real* counterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
+	 counterCellMaxVi[blockID]++;
       }
    }*/
    
@@ -134,8 +135,8 @@ template<class PARTICLE>
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
 	 particle.state[particle::VZ] *= norm;
-	 Real* cellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellMaxViID));
-	 cellMaxVi[blockID]++;
+	 Real* counterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
+	 counterCellMaxVi[blockID]++;
       }
    }
 

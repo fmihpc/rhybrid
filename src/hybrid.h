@@ -62,9 +62,6 @@ struct Hybrid {
    static pargrid::DataID dataCellJID;
    static pargrid::DataID dataCellUeID;
    static pargrid::DataID dataCellJiID;
-   static pargrid::DataID dataCellMaxUeID;
-   static pargrid::DataID dataCellMaxViID;
-   static pargrid::DataID dataCellMinRhoQiID;
    static pargrid::DataID dataCellIonosphereID;
    static pargrid::DataID dataCellExosphereID;
    
@@ -75,13 +72,19 @@ struct Hybrid {
    static pargrid::DataID dataNodeJID;
    static pargrid::DataID dataNodeUeID;
    static pargrid::DataID dataNodeJiID;
-#ifdef USE_ECUT
-   static pargrid::DataID dataNodeCntEcutID;
-#endif
+
 #ifdef USE_RESISTIVITY
    static pargrid::DataID dataNodeEtaID;
 #endif
 
+   // counters
+   static pargrid::DataID dataCounterCellMaxUeID;
+   static pargrid::DataID dataCounterCellMaxViID;
+   static pargrid::DataID dataCounterCellMinRhoQiID;
+#ifdef USE_ECUT
+   static pargrid::DataID dataCounterNodeEcutID;
+#endif
+   
    // stencils
    static pargrid::StencilID accumulationStencilID; /**< ParGrid Stencil used to exchange accumulation array(s).*/
    

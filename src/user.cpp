@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -298,12 +299,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"cellJ",false},
       {"cellUe",false},
       {"cellJi",false},
-      {"cellMaxUeCnt",false},
-      {"cellMaxViCnt",false},
-      {"cellMinRhoQiCnt",false},
-#ifdef USE_ECUT
-      {"nodeCntEcut",false},
-#endif
       {"nodeE",false},
       {"nodeB",false},
       {"nodeJ",false},
@@ -311,6 +306,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"nodeJi",false},
 #ifdef USE_RESISTIVITY
       {"nodeEta",false},
+#endif
+      {"counterCellMaxUe",false},
+      {"counterCellMaxVi",false},
+      {"counterCellMinRhoQi",false},
+#ifdef USE_ECUT
+      {"counterNodeEcut",false},
 #endif
       {"prod_rate_iono",false},
       {"prod_rate_exo",false},
@@ -520,35 +521,35 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::N_ionospherePopulations = static_cast<unsigned int>( ionospherePopulations.size() );
    Hybrid::N_exospherePopulations = static_cast<unsigned int>( exospherePopulations.size() );
 
-   Hybrid::dataFaceBID             = simClasses.pargrid.invalidDataID();
-   Hybrid::dataFaceJID             = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellRhoQiID         = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellBID             = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellJID             = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellUeID            = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellJiID            = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellMaxUeID         = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellMaxViID         = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellMinRhoQiID      = simClasses.pargrid.invalidDataID();
-#ifdef USE_ECUT
-   Hybrid::dataNodeCntEcutID       = simClasses.pargrid.invalidDataID();
-#endif
-   Hybrid::dataCellIonosphereID    = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCellExosphereID     = simClasses.pargrid.invalidDataID();
-   Hybrid::dataNodeRhoQiID         = simClasses.pargrid.invalidDataID();
-   Hybrid::dataNodeEID             = simClasses.pargrid.invalidDataID();
-   Hybrid::dataNodeBID             = simClasses.pargrid.invalidDataID();
-   Hybrid::dataNodeJID             = simClasses.pargrid.invalidDataID();
-   Hybrid::dataNodeUeID            = simClasses.pargrid.invalidDataID();
-   Hybrid::dataNodeJiID            = simClasses.pargrid.invalidDataID();
+   Hybrid::dataFaceBID               = simClasses.pargrid.invalidDataID();
+   Hybrid::dataFaceJID               = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCellRhoQiID           = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCellBID               = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCellJID               = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCellUeID              = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCellJiID              = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCellIonosphereID      = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCellExosphereID       = simClasses.pargrid.invalidDataID();
+   Hybrid::dataNodeRhoQiID           = simClasses.pargrid.invalidDataID();
+   Hybrid::dataNodeEID               = simClasses.pargrid.invalidDataID();
+   Hybrid::dataNodeBID               = simClasses.pargrid.invalidDataID();
+   Hybrid::dataNodeJID               = simClasses.pargrid.invalidDataID();
+   Hybrid::dataNodeUeID              = simClasses.pargrid.invalidDataID();
+   Hybrid::dataNodeJiID              = simClasses.pargrid.invalidDataID();
 #ifdef USE_RESISTIVITY
-   Hybrid::dataNodeEtaID           = simClasses.pargrid.invalidDataID();
+   Hybrid::dataNodeEtaID             = simClasses.pargrid.invalidDataID();
 #endif
-   Hybrid::dataInnerFlagFieldID    = simClasses.pargrid.invalidDataID();
-   Hybrid::dataInnerFlagNodeID     = simClasses.pargrid.invalidDataID();
-   Hybrid::dataInnerFlagParticleID = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCounterCellMaxUeID    = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCounterCellMaxViID    = simClasses.pargrid.invalidDataID();
+   Hybrid::dataCounterCellMinRhoQiID = simClasses.pargrid.invalidDataID();
+#ifdef USE_ECUT
+   Hybrid::dataCounterNodeEcutID     = simClasses.pargrid.invalidDataID();
+#endif
+   Hybrid::dataInnerFlagFieldID      = simClasses.pargrid.invalidDataID();
+   Hybrid::dataInnerFlagNodeID       = simClasses.pargrid.invalidDataID();
+   Hybrid::dataInnerFlagParticleID   = simClasses.pargrid.invalidDataID();
 #ifdef USE_XMIN_BOUNDARY
-   Hybrid::dataXminFlagID          = simClasses.pargrid.invalidDataID();
+   Hybrid::dataXminFlagID            = simClasses.pargrid.invalidDataID();
 #endif
    
    // Create a parallel data arrays
@@ -587,28 +588,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add cellJi array to ParGrid!" << endl << write;
       return false;
    }
-   Hybrid::dataCellMaxUeID = simClasses.pargrid.addUserData<Real>("cellMaxUe",block::SIZE*1);
-   if(Hybrid::dataCellMaxUeID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add cellMaxUe array to ParGrid!" << endl << write;
-      return false;
-   }
-   Hybrid::dataCellMaxViID = simClasses.pargrid.addUserData<Real>("cellMaxVi",block::SIZE*1);
-   if(Hybrid::dataCellMaxViID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add cellMaxVi array to ParGrid!" << endl << write;
-      return false;
-   }
-   Hybrid::dataCellMinRhoQiID = simClasses.pargrid.addUserData<Real>("cellMinRhoQi",block::SIZE*1);
-   if(Hybrid::dataCellMinRhoQiID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add cellMinRhoQi array to ParGrid!" << endl << write;
-      return false;
-   }
-#ifdef USE_ECUT
-   Hybrid::dataNodeCntEcutID = simClasses.pargrid.addUserData<Real>("nodeCntEcut",block::SIZE*1);
-   if(Hybrid::dataNodeCntEcutID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add nodeCntEcut array to ParGrid!" << endl << write;
-      return false;
-   }
-#endif
    Hybrid::dataCellIonosphereID = simClasses.pargrid.addUserData<Real>("cellIonosphere",block::SIZE*Hybrid::N_ionospherePopulations);
    if(Hybrid::dataCellIonosphereID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellIonosphere array to ParGrid!" << endl << write;
@@ -655,7 +634,31 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add nodeEta array to ParGrid!" << endl << write;
       return false;
    }
-#endif   
+#endif
+   // counters
+   Hybrid::dataCounterCellMaxUeID = simClasses.pargrid.addUserData<Real>("counterCellMaxUe",block::SIZE*1);
+   if(Hybrid::dataCounterCellMaxUeID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add counterCellMaxUe array to ParGrid!" << endl << write;
+      return false;
+   }
+   Hybrid::dataCounterCellMaxViID = simClasses.pargrid.addUserData<Real>("counterCellMaxVi",block::SIZE*1);
+   if(Hybrid::dataCounterCellMaxViID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add counterCellMaxVi array to ParGrid!" << endl << write;
+      return false;
+   }
+   Hybrid::dataCounterCellMinRhoQiID = simClasses.pargrid.addUserData<Real>("counterCellMinRhoQi",block::SIZE*1);
+   if(Hybrid::dataCounterCellMinRhoQiID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add counterCellMinRhoQi array to ParGrid!" << endl << write;
+      return false;
+   }
+#ifdef USE_ECUT
+   Hybrid::dataCounterNodeEcutID = simClasses.pargrid.addUserData<Real>("counterNodeEcut",block::SIZE*1);
+   if(Hybrid::dataCounterNodeEcutID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add counterNodeEcut array to ParGrid!" << endl << write;
+      return false;
+   }
+#endif
+   
    // create stencils
    Hybrid::accumulationStencilID = sim.inverseStencilID;
    
@@ -750,39 +753,39 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add nodeJi data transfer!" << endl << write; return false;
    }
 
-   Real* faceB             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
-   Real* faceJ             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceJID));
-   Real* cellRhoQi         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiID));
-   Real* cellB             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellBID));
-   Real* cellJ             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellJID));
-   Real* cellUe            = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellUeID));
-   Real* cellJi            = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellJiID));
-   Real* cellMaxUe         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellMaxUeID));
-   Real* cellMaxVi         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellMaxViID));
-   Real* cellMinRhoQi      = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellMinRhoQiID));
-#ifdef USE_ECUT
-   Real* nodeCntEcut       = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeCntEcutID));
-#endif
-   Real* cellIonosphere    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellIonosphereID));
-   Real* cellExosphere     = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellExosphereID));
-   Real* nodeRhoQi         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeRhoQiID));
-   Real* nodeE             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEID));
-   Real* nodeB             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeBID));
-   Real* nodeJ             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJID));
-   Real* nodeUe            = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeUeID));
-   Real* nodeJi            = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJiID));
+   Real* faceB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
+   Real* faceJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceJID));
+   Real* cellRhoQi           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiID));
+   Real* cellB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellBID));
+   Real* cellJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellJID));
+   Real* cellUe              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellUeID));
+   Real* cellJi              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellJiID));
+   Real* cellIonosphere      = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellIonosphereID));
+   Real* cellExosphere       = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellExosphereID));
+   Real* nodeRhoQi           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeRhoQiID));
+   Real* nodeE               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEID));
+   Real* nodeB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeBID));
+   Real* nodeJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJID));
+   Real* nodeUe              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeUeID));
+   Real* nodeJi              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJiID));
 #ifdef USE_RESISTIVITY
-   Real* nodeEta           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEtaID));
+   Real* nodeEta             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEtaID));
 #endif
-   bool* innerFlagField    = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagFieldID));   
-   bool* innerFlagNode     = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagNodeID));
-   bool* innerFlagParticle = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagParticleID));
+   Real* counterCellMaxUe    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMaxUeID));
+   Real* counterCellMaxVi    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
+   Real* counterCellMinRhoQi = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMinRhoQiID));
+#ifdef USE_ECUT
+   Real* counterNodeEcut     = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterNodeEcutID));
+#endif
+   bool* innerFlagField      = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagFieldID));   
+   bool* innerFlagNode       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagNodeID));
+   bool* innerFlagParticle   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagParticleID));
 #ifdef USE_XMIN_BOUNDARY
-   bool* xMinFlag          = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataXminFlagID));
+   bool* xMinFlag            = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataXminFlagID));
 #endif
 
 #ifdef ION_SPECTRA_ALONG_ORBIT
-   bool* spectraFlag       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataSpectraFlagID));
+   bool* spectraFlag        = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataSpectraFlagID));
    Hybrid::spectraFileLineCnt = 0;
    vector<string> orbitFiles;
    cr.add("Analysis.orbit_spectra_t_start","Simulation time to start orbit spectra analysis (real)",-1);
@@ -861,14 +864,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
       for(size_t i=0; i<scalarArraySize; ++i) { nodeRhoQi[i] = 0.0; }
       for(size_t i=0; i<scalarArraySize; ++i) { cellRhoQi[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { cellMaxUe[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { cellMaxVi[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { cellMinRhoQi[i] = 0.0; }
-#ifdef USE_ECUT
-      for(size_t i=0; i<scalarArraySize; ++i) { nodeCntEcut[i] = 0.0; }
-#endif
       for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
       for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
+      // counters
+      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMaxUe[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMaxVi[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMinRhoQi[i] = 0.0; }
+#ifdef USE_ECUT
+      for(size_t i=0; i<scalarArraySize; ++i) { counterNodeEcut[i] = 0.0; }
+#endif
 
 #ifdef ION_SPECTRA_ALONG_ORBIT
       // variable to record cellid and cell centroid coordinates for output
@@ -1244,41 +1248,41 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
  * @return If true, finalization completed successfully.*/
 bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool success = true;
-   if(simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)             == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)             == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)         == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellBID)             == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellJID)             == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellUeID)            == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellJiID)            == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellMaxUeID)         == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellMaxViID)         == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellMinRhoQiID)      == false) { success = false; }
-#ifdef USE_ECUT
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeCntEcutID)       == false) { success = false; }
-#endif
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellIonosphereID)    == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellExosphereID)     == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeRhoQiID)         == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEID)             == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeBID)             == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeJID)             == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeUeID)            == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeJiID)            == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCellBID)               == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCellJID)               == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCellUeID)              == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCellJiID)              == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCellIonosphereID)      == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCellExosphereID)       == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeRhoQiID)           == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEID)               == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeBID)               == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeJID)               == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeUeID)              == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeJiID)              == false) { success = false; }
 #ifdef USE_RESISTIVITY
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEtaID)           == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEtaID)             == false) { success = false; }
 #endif
-   if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)    == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID) == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMaxUeID)    == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMaxViID)    == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMinRhoQiID) == false) { success = false; }
+#ifdef USE_ECUT
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterNodeEcutID)     == false) { success = false; }
+#endif
+   if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)      == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID)   == false) { success = false; }
 #ifdef USE_XMIN_BOUNDARY
-   if(simClasses.pargrid.removeUserData(Hybrid::dataXminFlagID)          == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataXminFlagID)            == false) { success = false; }
 #endif
 #ifdef ION_SPECTRA_ALONG_ORBIT
    //if(simClasses.pargrid.removeUserData(Hybrid::dataSpectraID            == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataSpectraFlagID)       == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataSpectraFlagID)         == false) { success = false; }
 #endif
 #ifdef WRITE_POPULATION_AVERAGES
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)      == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)        == false) { success = false; }
    for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
       if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageDensityID[i])  == false) { success = false; }
       if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageVelocityID[i]) == false) { success = false; }

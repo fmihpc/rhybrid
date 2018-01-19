@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -32,9 +33,6 @@ pargrid::DataID Hybrid::dataCellBID;
 pargrid::DataID Hybrid::dataCellJID;
 pargrid::DataID Hybrid::dataCellUeID;
 pargrid::DataID Hybrid::dataCellJiID;
-pargrid::DataID Hybrid::dataCellMaxUeID;
-pargrid::DataID Hybrid::dataCellMaxViID;
-pargrid::DataID Hybrid::dataCellMinRhoQiID;
 pargrid::DataID Hybrid::dataCellIonosphereID;
 pargrid::DataID Hybrid::dataCellExosphereID;
 
@@ -45,11 +43,17 @@ pargrid::DataID Hybrid::dataNodeBID;
 pargrid::DataID Hybrid::dataNodeJID;
 pargrid::DataID Hybrid::dataNodeUeID;
 pargrid::DataID Hybrid::dataNodeJiID;
-#ifdef USE_ECUT
-pargrid::DataID Hybrid::dataNodeCntEcutID;
-#endif
+
 #ifdef USE_RESISTIVITY
 pargrid::DataID Hybrid::dataNodeEtaID;
+#endif
+
+// counters
+pargrid::DataID Hybrid::dataCounterCellMaxUeID;
+pargrid::DataID Hybrid::dataCounterCellMaxViID;
+pargrid::DataID Hybrid::dataCounterCellMinRhoQiID;
+#ifdef USE_ECUT
+pargrid::DataID Hybrid::dataCounterNodeEcutID;
 #endif
 
 // stencils

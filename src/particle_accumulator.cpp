@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -262,7 +263,7 @@ bool Accumulator::addRemoteUpdates() {
    if (myOrderNumber != N_accumulators-1) { return success; }
    Real* cellJi    = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
-   Real* cellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellMinRhoQiID);
+   Real* counterCellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCounterCellMinRhoQiID);
    unsigned int* offsetsCellRhoQi = NULL;
    Real* buffersCellRhoQi = NULL;
    unsigned int* offsetsCellJi = NULL;
@@ -320,7 +321,7 @@ bool Accumulator::addRemoteUpdates() {
 	 cellRhoQi[n] /= Hybrid::dV;
 	 if(cellRhoQi[n] < Hybrid::minRhoQi) {
 	    cellRhoQi[n] = Hybrid::minRhoQi;
-	    cellMinRhoQi[n]++;
+	    counterCellMinRhoQi[n]++;
 	 }
 	 for(int l=0;l<3;++l) { cellJi[n3+l] /= Hybrid::dV; }
       }

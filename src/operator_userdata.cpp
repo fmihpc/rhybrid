@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -63,26 +64,26 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    map<string,string> attribs;
    attribs["mesh"] = spatMeshName;
    attribs["type"] = "celldata";
-   writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,         "faceB",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,         "faceJ",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,     "cellRhoQi",       N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellBID,         "cellB",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellJID,         "cellJ",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellUeID,        "cellUe",          N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellJiID,        "cellJi",          N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellMaxUeID,     "cellMaxUeCnt",    N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellMaxViID,     "cellMaxViCnt",    N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellMinRhoQiID,  "cellMinRhoQiCnt", N_blocks,1);
-#ifdef USE_ECUT
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeCntEcutID,   "nodeCntEcut",     N_blocks,1);
-#endif
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEID,         "nodeE",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeBID,         "nodeB",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJID,         "nodeJ",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeUeID,        "nodeUe",          N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJiID,        "nodeJi",          N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,              "faceB",                N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,               "faceJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,           "cellRhoQi",           N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellBID,               "cellB",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellJID,               "cellJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellUeID,              "cellUe",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellJiID,              "cellJi",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEID,               "nodeE",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeBID,               "nodeB",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJID,               "nodeJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeUeID,              "nodeUe",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJiID,              "nodeJi",              N_blocks,3);
 #ifdef USE_RESISTIVITY
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEtaID,       "nodeEta",          N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEtaID,             "nodeEta",             N_blocks,1);
+#endif
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxUeID,    "counterCellMaxUe",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxViID,    "counterCellMaxVi",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMinRhoQiID, "counterCellMinRhoQi", N_blocks,1);
+#ifdef USE_ECUT
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeEcutID,     "counterNodeEcut",     N_blocks,1);
 #endif
    // write production rates of ionosphere populations
    if(Hybrid::outputCellParams["prod_rate_iono"] == true) {
