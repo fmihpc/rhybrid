@@ -64,7 +64,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    map<string,string> attribs;
    attribs["mesh"] = spatMeshName;
    attribs["type"] = "celldata";
-   writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,              "faceB",                N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,               "faceB",               N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,               "faceJ",               N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,           "cellRhoQi",           N_blocks,1);
    writeCellDataVariable(spatMeshName,Hybrid::dataCellBID,               "cellB",               N_blocks,3);
@@ -144,27 +144,33 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    // particle populations
    if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true) {
       vector<Real> averageDensityTot;
+      vector<Real> averageDensityTotForVelNorm;
       vector<Real> averageVelocityTot;
       for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
          for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
             averageDensityTot.push_back(0.0);
+            averageDensityTotForVelNorm.push_back(0.0);
             for(int l=0;l<3;l++) { averageVelocityTot.push_back(0.0); }
          }
       }
       for(unsigned int m=0;m<Hybrid::N_outputPopVars;++m) {
-         Real* nAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageDensityID[m]));
-         Real* vAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageVelocityID[m]));
+         Real* nAveArray  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageDensityID[m]));
+         Real* vAveArray  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageVelocityID[m]));
+         // use first particle population in the output particle variable vector to get species
+         const Species* species = reinterpret_cast<const Species*>(particleLists[Hybrid::outputPopVarIdVector[m][0]]->getSpecies());
+         const Real q = species->q;
          vector<Real> averageDensity;
          vector<Real> averageVelocity;
          for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
             for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
                const int n = (b*block::SIZE+block::index(i,j,k));
                const int n3 = n*3;
-               averageDensity.push_back(nAve[n]/Hybrid::dV/constants::CHARGE_ELEMENTARY*invAveCnt);
-               if(nAve[n] > 0) {
-                  averageVelocity.push_back( vAve[n3+0]/nAve[n] );
-                  averageVelocity.push_back( vAve[n3+1]/nAve[n] );
-                  averageVelocity.push_back( vAve[n3+2]/nAve[n] );
+               Real nAve = nAveArray[n]/(q*Hybrid::dV)*invAveCnt;
+               averageDensity.push_back(nAve);
+               if(nAveArray[n] > 0) {
+                  averageVelocity.push_back( vAveArray[n3+0]/nAveArray[n] );
+                  averageVelocity.push_back( vAveArray[n3+1]/nAveArray[n] );
+                  averageVelocity.push_back( vAveArray[n3+2]/nAveArray[n] );
                }
                else {
                   averageVelocity.push_back(0.0);
@@ -172,15 +178,16 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
                   averageVelocity.push_back(0.0);
                }
                //total average plasma variables
-               averageDensityTot[n] += nAve[n];
-               averageVelocityTot[n3+0] += vAve[n3+0];
-               averageVelocityTot[n3+1] += vAve[n3+1];
-               averageVelocityTot[n3+2] += vAve[n3+2];
+               averageDensityTot[n] += nAve;
+               averageDensityTotForVelNorm[n] += nAveArray[n];
+               averageVelocityTot[n3+0] += vAveArray[n3+0];
+               averageVelocityTot[n3+1] += vAveArray[n3+1];
+               averageVelocityTot[n3+2] += vAveArray[n3+2];
                // zero average variables
-               nAve[n] = 0.0;
-               vAve[n3+0] = 0.0;
-               vAve[n3+1] = 0.0;
-               vAve[n3+2] = 0.0;
+               nAveArray[n] = 0.0;
+               vAveArray[n3+0] = 0.0;
+               vAveArray[n3+1] = 0.0;
+               vAveArray[n3+2] = 0.0;
             }
          }
          if(Hybrid::outputCellParams["n_ave"] == true) {
@@ -196,12 +203,11 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
          for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
             const int n = (b*block::SIZE+block::index(i,j,k));
             const int n3 = n*3;
-            if(averageDensityTot[n] > 0.0) {
-               averageVelocityTot[n3+0] /= averageDensityTot[n];
-               averageVelocityTot[n3+1] /= averageDensityTot[n];
-               averageVelocityTot[n3+2] /= averageDensityTot[n];
+            if(averageDensityTotForVelNorm[n] > 0.0) {
+               averageVelocityTot[n3+0] /= averageDensityTotForVelNorm[n];
+               averageVelocityTot[n3+1] /= averageDensityTotForVelNorm[n];
+               averageVelocityTot[n3+2] /= averageDensityTotForVelNorm[n];
             }
-            averageDensityTot[n] = averageDensityTot[n]/Hybrid::dV/constants::CHARGE_ELEMENTARY*invAveCnt;
          }
       }
       if(Hybrid::outputCellParams["n_ave"] == true) {

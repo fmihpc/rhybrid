@@ -144,9 +144,9 @@ vector<string> Hybrid::populationNames;
 unsigned int Hybrid::N_outputPopVars;
 // names of output particle variables
 vector<string> Hybrid::outputPopVarStr;
-// id of output particle variables for each population (<0 means no output)
+// ids of output particle variables for each population (<0 means no output)
 vector<int> Hybrid::outputPopVarId;
-// popids of particle populations included in each output particle variables
+// ids (=popid-1) of particle populations included in each output particle variable
 vector< vector<unsigned int> > Hybrid::outputPopVarIdVector;
 // popids of particle populations included in the total plasma variables
 vector<unsigned int> Hybrid::outputPlasmaPopId;
