@@ -737,6 +737,65 @@ void node2Cell(Real* nodeData,Real* cellData,Simulation& sim,SimulationClasses& 
    }
 }
 
+// node data average from all neighbors
+void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim)
+{
+   int di=0;
+   int dj=0;
+   int dk=0;
+   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
+      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
+      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
+      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
+      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
+      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
+      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
+   }
+   const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
+   Real array[size*vectorDim];
+   fetchData(nodeData,array,simClasses,blockID,vectorDim);
+   // loop through all nodes in the simulation domain, but should actually treat boundary nodes separately since there is no boundary conditions for nodes
+   for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
+      const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
+      for(int l=0;l<vectorDim;++l) {
+         // coefficients
+         const Real C1 = 1.0; // node itself
+         const Real C2 = 0.5; // direct neighbors (distance = dx)
+         const Real C3 = 1.0/sqrt(2); // diagonal neighbors (distance = sqrt(2)*dx)
+         const Real C4 = 1.0/sqrt(3); // diagonal neighbors (distance = sqrt(3)*dx)
+         
+	 nodeData[n+l] = (
+           C1*(array[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l]) +
+           C2*(array[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l] +
+               array[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
+               array[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l] +
+               array[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l] +
+               array[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l]) +
+           C3*(array[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l] +
+               array[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l] +
+               array[(block::arrayIndex(i+1,j+2,k+0))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+1,k+0))*vectorDim+l] +
+               array[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l] +
+               array[(block::arrayIndex(i+0,j+2,k+1))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+0,k+1))*vectorDim+l] +
+               array[(block::arrayIndex(i+0,j+1,k+2))*vectorDim+l] +
+               array[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l] +
+               array[(block::arrayIndex(i+1,j+0,k+2))*vectorDim+l]) +
+           C4*(array[(block::arrayIndex(i+0,j+0,k+2))*vectorDim+l] +
+               array[(block::arrayIndex(i+0,j+2,k+2))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+0,k+2))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l] +
+               array[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l] +
+               array[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l] +
+               array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l]) )/27.0;
+      }
+   }
+}
+
 // upwind nodeB using cellData and nodeUe
 void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID) {
    int di=0;
