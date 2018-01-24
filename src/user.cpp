@@ -162,6 +162,16 @@ bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
    return true;
 }
 
+// gaussian distribution
+Real getGaussianDistr(Real x,Real sigma) {
+   if(sigma > 0) {
+      return exp( -0.5*sqr(x/sigma) );
+   }
+   else {
+      return -1.0;
+   }
+}
+
 bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const ObjectFactories& objectFactories,
 			    vector<ParticleListBase*>& particleLists) {
 
@@ -211,6 +221,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
+   cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
 #ifdef USE_RESISTIVITY
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
    cr.add("Resistivity.etaC","Dimensionless resistivity constant [-] (float)",defaultValue);
@@ -252,6 +263,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
+   cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
 #ifdef USE_RESISTIVITY
    cr.get("Resistivity.profile_name",resistivityProfileName);
    cr.get("Resistivity.etaC",Hybrid::resistivityEtaC);
@@ -372,6 +384,19 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
    if(Hybrid::Efilter < 0) { Hybrid::Efilter = 0; }
+   if(Hybrid::EfilterNodeGaussSigma <= 0) { Hybrid::EfilterNodeGaussSigma = 0; }
+   else {
+      // determined gaussian smoothing coefficients
+      const Real C1 = getGaussianDistr(0.0,Hybrid::EfilterNodeGaussSigma); // node itself to be filtered
+      const Real C2 = getGaussianDistr(1.0,Hybrid::EfilterNodeGaussSigma); // direct neighbors (at dx)
+      const Real C3 = getGaussianDistr(sqrt(2.0),Hybrid::EfilterNodeGaussSigma); // diagonal neighbors (at sqrt(2)*dx)
+      const Real C4 = getGaussianDistr(sqrt(3.0),Hybrid::EfilterNodeGaussSigma); // diagonal neighbors (at sqrt(3)*dx)
+      const Real Csum = C1+C2+C3+C4;
+      Hybrid::EfilterNodeGaussCoeffs[0] = C1/Csum;
+      Hybrid::EfilterNodeGaussCoeffs[1] = C2/Csum;
+      Hybrid::EfilterNodeGaussCoeffs[2] = C3/Csum;
+      Hybrid::EfilterNodeGaussCoeffs[3] = C4/Csum;
+   }
    simClasses.logger
      << "(HYBRID): Simulation parameters" << endl
      << "R_object  = " << Hybrid::R_object/1e3 << " km" << endl
@@ -400,7 +425,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m" << endl
 #endif
      << "Hall term = " << Hybrid::useHallElectricField << endl
-     << "Efilter = " << Hybrid::Efilter << "" << endl
      << "dV = " << Hybrid::dV << " m^3" << endl
      << "dt = " << sim.dt << " s" << endl
      << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
@@ -413,7 +437,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "IMF Cone angle  = atan2(Bperp,Bx) = " << atan2(sqrt( sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz) ),Hybrid::IMFBx)*180.0/M_PI << " deg" << endl
      << "IMF Clock angle = atan2(By,Bz)    = " << atan2(Hybrid::IMFBy,Hybrid::IMFBz)*180.0/M_PI << " deg" << endl
      << endl;
-   
+   simClasses.logger
+     << "(FILTERING)" << endl
+     << "Number of E intpol smoothings = " << Hybrid::Efilter << " (node2cell2node interpolation technique)" << endl
+     << "Sigma of E gaussian smoothing = " << Hybrid::EfilterNodeGaussSigma << " dx (gaussian average technique)" << endl;
+   if(Hybrid::EfilterNodeGaussSigma > 0) {
+      simClasses.logger
+        //<< "Number of E gaussian smoothings = " << Hybrid::EfilterNodeGaussN << " (gaussian average technique)" << endl;
+        << "Kernel coefficients: " << endl
+        << "C1 = " << Hybrid::EfilterNodeGaussCoeffs[0] << " (d = 0)" << endl
+        << "C2 = " << Hybrid::EfilterNodeGaussCoeffs[1] << " (d = 1dx)" << endl
+        << "C3 = " << Hybrid::EfilterNodeGaussCoeffs[2] << " (d = sqrt(2)dx)" << endl
+        << "C4 = " << Hybrid::EfilterNodeGaussCoeffs[3] << " (d = sqrt(3)dx)" << endl;
+   }
+   simClasses.logger << endl;
 #ifdef USE_RESISTIVITY
    simClasses.logger
      << "(RESISTIVITY)" << endl

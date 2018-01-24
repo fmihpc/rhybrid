@@ -754,17 +754,16 @@ void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargri
    const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real array[size*vectorDim];
    fetchData(nodeData,array,simClasses,blockID,vectorDim);
+   // coefficients
+   const Real C1 = Hybrid::EfilterNodeGaussCoeffs[0]; // node itself
+   const Real C2 = Hybrid::EfilterNodeGaussCoeffs[1]; // direct neighbors (distance = dx)
+   const Real C3 = Hybrid::EfilterNodeGaussCoeffs[2]; // diagonal neighbors (distance = sqrt(2)*dx)
+   const Real C4 = Hybrid::EfilterNodeGaussCoeffs[3]; // diagonal neighbors (distance = sqrt(3)*dx)
    // loop through all nodes in the simulation domain, but should actually treat boundary nodes separately since there is no boundary conditions for nodes
    for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
       for(int l=0;l<vectorDim;++l) {
-         // coefficients
-         const Real C1 = 1.0; // node itself
-         const Real C2 = 0.5; // direct neighbors (distance = dx)
-         const Real C3 = 1.0/sqrt(2); // diagonal neighbors (distance = sqrt(2)*dx)
-         const Real C4 = 1.0/sqrt(3); // diagonal neighbors (distance = sqrt(3)*dx)
-         
-	 nodeData[n+l] = (
+	 nodeData[n+l] =
            C1*(array[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l]) +
            C2*(array[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l] +
                array[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
@@ -791,7 +790,7 @@ void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargri
                array[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l] +
                array[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l] +
                array[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l]) )/27.0;
+               array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l]);
       }
    }
 }

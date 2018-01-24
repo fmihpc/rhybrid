@@ -142,6 +142,8 @@ struct Hybrid {
    static bool useHallElectricField;
    static Real swMacroParticlesCellPerDt;
    static int Efilter;
+   static Real EfilterNodeGaussSigma;
+   static Real EfilterNodeGaussCoeffs[4];
    static Real IMFBx,IMFBy,IMFBz;
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    static Real laminarR2,laminarR3,coeffDip,coeffQuad,dipSurfB,dipSurfR,dipMinR2,dipMomCoeff,xDip,yDip,zDip,thetaDip,phiDip;

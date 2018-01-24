@@ -106,6 +106,8 @@ Real Hybrid::Ecut2;
 bool Hybrid::useHallElectricField;
 Real Hybrid::swMacroParticlesCellPerDt;
 int Hybrid::Efilter;
+Real Hybrid::EfilterNodeGaussSigma;
+Real Hybrid::EfilterNodeGaussCoeffs[4];
 #ifdef USE_RESISTIVITY
 Real Hybrid::resistivityEta;
 Real Hybrid::resistivityEtaC;
