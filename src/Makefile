@@ -53,7 +53,7 @@ ifeq ($(ION_SPECTRA_ALONG_ORBIT),true)
 CXXFLAGS := $(CXXFLAGS) -DION_SPECTRA_ALONG_ORBIT
 endif
 
-override CXXFLAGS += -std=gnu++0x
+#override CXXFLAGS += -std=gnu++0x
 
 # Compile information (date___user___host___folder___cxxflags)
 COMPILEINFO := \"$(shell date --iso-8601=seconds)___$(shell whoami)___$(shell hostname)___$(shell pwd)___$(shell echo ${CXXFLAGS})\"

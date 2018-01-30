@@ -387,11 +387,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if(Hybrid::EfilterNodeGaussSigma <= 0) { Hybrid::EfilterNodeGaussSigma = 0; }
    else {
       // determined gaussian smoothing coefficients
-      const Real C1 = getGaussianDistr(0.0,Hybrid::EfilterNodeGaussSigma); // node itself to be filtered
-      const Real C2 = getGaussianDistr(1.0,Hybrid::EfilterNodeGaussSigma); // direct neighbors (at dx)
-      const Real C3 = getGaussianDistr(sqrt(2.0),Hybrid::EfilterNodeGaussSigma); // diagonal neighbors (at sqrt(2)*dx)
-      const Real C4 = getGaussianDistr(sqrt(3.0),Hybrid::EfilterNodeGaussSigma); // diagonal neighbors (at sqrt(3)*dx)
-      const Real Csum = C1+C2+C3+C4;
+      const Real C1 = getGaussianDistr(0.0,Hybrid::EfilterNodeGaussSigma); // 1 node itself to be filtered
+      const Real C2 = getGaussianDistr(1.0,Hybrid::EfilterNodeGaussSigma); // 6 direct neighbors (at dx)
+      const Real C3 = getGaussianDistr(sqrt(2.0),Hybrid::EfilterNodeGaussSigma); // 12 near diagonal neighbors (at sqrt(2)*dx)
+      const Real C4 = getGaussianDistr(sqrt(3.0),Hybrid::EfilterNodeGaussSigma); // 8 far diagonal neighbors (at sqrt(3)*dx)
+      const Real Csum = 1.0*C1 + 6.0*C2 + 12.0*C3 + 8.0*C4; // normalization such that sum_i C_i = 1 over all 27 nodes
       Hybrid::EfilterNodeGaussCoeffs[0] = C1/Csum;
       Hybrid::EfilterNodeGaussCoeffs[1] = C2/Csum;
       Hybrid::EfilterNodeGaussCoeffs[2] = C3/Csum;
