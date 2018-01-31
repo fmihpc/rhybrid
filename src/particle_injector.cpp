@@ -332,6 +332,13 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    if(swPopCnt == 1) {
       Hybrid::swMacroParticlesCellPerDt = N_macroParticlesPerCellPerDt*N_yz_cells/N_macroParticlesPerCell;
    }
+   solarWindPopulation swpop;
+   swpop.m = species->m;
+   swpop.q = species->q;
+   swpop.U = U;
+   swpop.n = n;
+   swpop.vth = vth;
+   Hybrid::swPops.push_back(swpop);
    return initialized;
 }
 

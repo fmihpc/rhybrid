@@ -50,6 +50,10 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[2] = a[0]*b[1] - a[1]*b[0];
 }
 
+struct solarWindPopulation {
+   Real m,q,U,n,vth;
+};
+
 struct Hybrid {
 
    // face data
@@ -153,6 +157,7 @@ struct Hybrid {
    static unsigned int N_ionospherePopulations;
    static unsigned int N_exospherePopulations;
    static unsigned int N_outputPopVars;
+   static std::vector<solarWindPopulation> swPops;
    static std::vector<std::string> populationNames;
    static std::vector<std::string> outputPopVarStr;
    static std::vector<int> outputPopVarId;

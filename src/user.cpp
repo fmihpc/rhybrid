@@ -426,9 +426,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
      << "Hall term = " << Hybrid::useHallElectricField << endl
      << "dV = " << Hybrid::dV << " m^3" << endl
-     << "dt = " << sim.dt << " s" << endl
-     << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
-     << "dx/dt  = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl
      << "IMF Bx  = " << Hybrid::IMFBx/1e-9 << " nT" << endl
      << "IMF By  = " << Hybrid::IMFBy/1e-9 << " nT" << endl
      << "IMF Bz  = " << Hybrid::IMFBz/1e-9 << " nT" << endl
@@ -1136,6 +1133,48 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(HYBRID) ERROR: Something went wrong in particle list initialization" << endl << write;
       return false;
    }   
+
+   // determine solar wind properties
+   Real ne = 0.0; // total electron density
+   Real rhom = 0.0; // total ion mass density
+   //cout << Hybrid::swPops.size() << endl;
+   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+      ne += Hybrid::swPops[s].q*Hybrid::swPops[s].n;
+      rhom += Hybrid::swPops[s].m*Hybrid::swPops[s].n;
+      //cout << s << endl;
+   }
+   ne /= constants::CHARGE_ELEMENTARY;
+   const Real Btot = sqrt( sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz) );
+   // alfven velocity
+   Real vA = 0.0;
+   if(rhom > 0.0) { vA = Btot/( sqrt(constants::PERMEABILITY*rhom) ); }
+   // plasma frequency
+   const Real omega_pe = sqrt( ne*sqr(constants::CHARGE_ELEMENTARY)/( constants::MASS_ELECTRON*constants::PERMITTIVITY  ) );
+   // plasma period
+   Real tP = 0.0;
+   // electron inertial length
+   Real le = 0.0;
+   if(omega_pe > 0.0) {
+      tP = 2*M_PI/omega_pe;
+      le = constants::SPEED_LIGHT/omega_pe;
+   }   
+   
+   simClasses.logger
+     << "(CFL CONDITION)" << endl
+     << "dt = " << sim.dt << " s" << endl
+     << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
+     << "dx/dt   = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl
+     << "alfven velocity = " << vA/1e3 << " km/s" << endl
+     << "plasma period   = " << tP << " s = " << tP/sim.dt << " dt" << endl
+     << "electron inertial length = " << le/1e3 << " km = " << le/Hybrid::dx << " dx" << endl;
+   
+   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+      Real tL = 0.0;
+      if(Btot > 0.0) { tL = 2*M_PI*Hybrid::swPops[s].m/(Hybrid::swPops[s].q*Btot); }
+      simClasses.logger << "tLarmor(swpop" << s << ") = " << tL << " s = " << tL/sim.dt << " dt" << endl;
+   }
+
+   simClasses.logger << endl;
    
    // write log entry of output configs
    simClasses.logger << "(HYBRID) Particle population output configurations" << endl;

@@ -140,6 +140,8 @@ unsigned int Hybrid::N_populations;
 unsigned int Hybrid::N_ionospherePopulations;
 // number of exospheric particle populations
 unsigned int Hybrid::N_exospherePopulations;
+// properties of all solar wind populations
+vector<solarWindPopulation> Hybrid::swPops;
 // names of particle populations
 vector<string> Hybrid::populationNames;
 // number of output particle variables
