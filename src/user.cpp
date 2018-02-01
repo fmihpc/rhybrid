@@ -1137,43 +1137,127 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // determine solar wind properties
    Real ne = 0.0; // total electron density
    Real rhom = 0.0; // total ion mass density
-   //cout << Hybrid::swPops.size() << endl;
+   Real Ubulk = 0.0; // bulk speed
+   Real vA = 0.0; // alfven velocity
    for (size_t s=0;s<Hybrid::swPops.size();++s) {
       ne += Hybrid::swPops[s].q*Hybrid::swPops[s].n;
       rhom += Hybrid::swPops[s].m*Hybrid::swPops[s].n;
-      //cout << s << endl;
+      Ubulk += Hybrid::swPops[s].m*Hybrid::swPops[s].n*Hybrid::swPops[s].U;
    }
    ne /= constants::CHARGE_ELEMENTARY;
-   const Real Btot = sqrt( sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz) );
-   // alfven velocity
-   Real vA = 0.0;
-   if(rhom > 0.0) { vA = Btot/( sqrt(constants::PERMEABILITY*rhom) ); }
-   // plasma frequency
+   const Real Btot2 = sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz);
+   const Real Btot = sqrt(Btot2);
+   if(rhom > 0.0) {
+      vA = Btot/( sqrt(constants::PERMEABILITY*rhom) );
+      Ubulk /= rhom;
+   }
+   else {
+      Ubulk = 0.0;
+   }
+   Real Esw[3] = {0.0,0.0,0.0};
+   Real Bsw[3] = {Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz};
+   Real Usw[3] = {-Ubulk,0.0,0.0};
+   Real VExB[3] = {0.0,0.0,0.0};
+   cross(Bsw,Usw,Esw); // Esw = B x (-Ubulk,0,0)
+   cross(Esw,Bsw,VExB); // VExB = E x B/B^2
+   VExB[0] /= Btot2;
+   VExB[1] /= Btot2;
+   VExB[2] /= Btot2;
+   const Real VExBMagnitude = normvec(VExB);
+   Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
+   if(ne > 0.0 && Hybrid::dx > 0.0) {
+      vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
+   }
+   simClasses.logger
+     << "(UPSTREAM CFL CONDITIONS)" << endl
+     << "dt = " << sim.dt << " s = " << sim.dt/1e-3 << " ms" << endl
+     << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
+     << "dx/dt = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl
+     << "bulk speed = " << Ubulk/1e3 << " km/s" << endl
+     << "alfven velocity = " << vA/1e3 << " km/s" << endl
+     << "ExB drift velocity = (" << VExB[0]/1e3 << "," << VExB[1]/1e3 << "," << VExB[2]/1e3 << ") km/s" << endl
+     << "ExB drift speed = " << VExBMagnitude/1e3 << " km/s" << endl
+     << "Pickup ion avg speed (4*VExB/pi) = " << 4.0*VExBMagnitude/M_PI/1e3 << " km/s" << endl
+     << "Pickup ion max speed (2*VExB) = " << 2.0*VExBMagnitude/1e3 << " km/s" << endl
+     << "Fastest whistler speed = " << vw/1e3 << " km/s" << endl
+     << "==== SOLAR WIND POPULATIONS ====" << endl;
+   // solar wind populations
+   // electron plasma frequency
    const Real omega_pe = sqrt( ne*sqr(constants::CHARGE_ELEMENTARY)/( constants::MASS_ELECTRON*constants::PERMITTIVITY  ) );
-   // plasma period
-   Real tP = 0.0;
+   // electron plasma period
+   Real tPe = 0.0;
    // electron inertial length
    Real le = 0.0;
    if(omega_pe > 0.0) {
-      tP = 2*M_PI/omega_pe;
+      tPe = 2.0*M_PI/omega_pe;
       le = constants::SPEED_LIGHT/omega_pe;
-   }   
-   
-   simClasses.logger
-     << "(CFL CONDITION)" << endl
-     << "dt = " << sim.dt << " s" << endl
-     << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
-     << "dx/dt   = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl
-     << "alfven velocity = " << vA/1e3 << " km/s" << endl
-     << "plasma period   = " << tP << " s = " << tP/sim.dt << " dt" << endl
-     << "electron inertial length = " << le/1e3 << " km = " << le/Hybrid::dx << " dx" << endl;
-   
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
-      Real tL = 0.0;
-      if(Btot > 0.0) { tL = 2*M_PI*Hybrid::swPops[s].m/(Hybrid::swPops[s].q*Btot); }
-      simClasses.logger << "tLarmor(swpop" << s << ") = " << tL << " s = " << tL/sim.dt << " dt" << endl;
    }
-
+   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+      // ion plasma frequency
+      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPops[s].q)/( Hybrid::swPops[s].m*constants::PERMITTIVITY  ) );
+      // ion plasma period
+      Real tPi = 0.0;
+      if(omega_pi > 0.0) {
+         tPi = 2.0*M_PI/omega_pi;
+      }
+      simClasses.logger
+        << "plasma period(" << Hybrid::swPops[s].name << ") = " << tPi << " s = " << tPi/sim.dt << " dt" << endl;
+   }
+   simClasses.logger
+     << "plasma period(e-) = " << tPe << " s = " << tPe/sim.dt << " dt" << endl;
+   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+      // ion plasma frequency
+      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPops[s].q)/( Hybrid::swPops[s].m*constants::PERMITTIVITY  ) );
+      // ion inertial length
+      Real li = 0.0;
+      if(omega_pi > 0.0) {
+         li = constants::SPEED_LIGHT/omega_pi;
+      }
+      simClasses.logger
+        << "inertial length(" << Hybrid::swPops[s].name << ") = " << li/1e3 << " km = " << li/Hybrid::dx << " dx" << endl;
+   }
+   simClasses.logger
+     << "inertial length(e-) = " << le/1e3 << " km = " << le/Hybrid::dx << " dx" << endl;
+   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+      Real rLth = 0.0; // thermal larmor radius
+      if(Btot > 0.0) {
+         rLth = Hybrid::swPops[s].m*Hybrid::swPops[s].vth/(Hybrid::swPops[s].q*Btot);
+      }
+      simClasses.logger
+        << "thermal Larmor radius(" << Hybrid::swPops[s].name << ") = " << rLth/1e3 << " km = " << rLth/Hybrid::dx << " dx" << endl;
+   }
+   simClasses.logger
+     << "==== ALL POPULATIONS AS PICKUP IONS ====" << endl;
+   for(size_t s=0;s<particleLists.size();++s) {
+      const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
+      Real tL = 0.0; // larmor period
+      if(Btot > 0.0) {
+         tL = 2.0*M_PI*species->m/(species->q*Btot);
+      }
+      simClasses.logger
+        << "Larmor period(" << species->name << ") = " << tL << " s = " << tL/sim.dt << " dt" << endl;
+   }
+   Real tLe = 0.0;
+   if(Btot > 0.0) {
+      tLe = 2.0*M_PI*constants::MASS_ELECTRON/(constants::CHARGE_ELEMENTARY*Btot);
+   }
+   simClasses.logger
+     << "Larmor period(e-) = " << tLe << " s = " << tLe/sim.dt << " dt" << endl;
+   for(size_t s=0;s<particleLists.size();++s) {
+      const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
+      Real rL = 0.0; // larmor radius
+      if(Btot > 0.0) {
+         rL = species->m*VExBMagnitude/(species->q*Btot);
+      }
+      simClasses.logger
+        << "Larmor radius(" << species->name << ") = " << rL/1e3 << " km = " << rL/Hybrid::dx << " dx" << endl;
+   }
+   Real rLe = 0.0;
+   if(Btot > 0.0) {
+      rLe = constants::MASS_ELECTRON*VExBMagnitude/(constants::CHARGE_ELEMENTARY*Btot);
+   }
+   simClasses.logger
+     << "Larmor radius(e-) = " << rLe/1e3 << " km = " << rLe/Hybrid::dx << " dx" << endl;
    simClasses.logger << endl;
    
    // write log entry of output configs

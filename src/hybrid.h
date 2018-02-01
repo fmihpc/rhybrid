@@ -52,6 +52,7 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
 
 struct solarWindPopulation {
    Real m,q,U,n,vth;
+   std::string name;
 };
 
 struct Hybrid {

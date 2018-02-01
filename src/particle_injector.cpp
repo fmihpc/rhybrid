@@ -338,6 +338,7 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    swpop.U = U;
    swpop.n = n;
    swpop.vth = vth;
+   swpop.name = species->name;
    Hybrid::swPops.push_back(swpop);
    return initialized;
 }
