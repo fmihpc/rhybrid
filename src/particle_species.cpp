@@ -94,7 +94,7 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
    q_per_m = q/m;
 
    simClasses.logger
-     << "(SPECIES): Created a particle species: " << name << endl
+     << "(SPECIES) Created a particle species " << name << endl
      << "popid = " << popid << endl
      << "q = " << q << " C = " << q/constants::CHARGE_ELEMENTARY << " e" << endl
      << "m = " << m << " kg = " << m/constants::MASS_PROTON << " mp" << endl 

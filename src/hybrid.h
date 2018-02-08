@@ -89,7 +89,10 @@ struct Hybrid {
 #ifdef USE_ECUT
    static pargrid::DataID dataCounterNodeEcutID;
 #endif
-   
+#ifdef USE_MAXVW
+   static pargrid::DataID dataCounterNodeMaxVwID;
+#endif
+
    // stencils
    static pargrid::StencilID accumulationStencilID; /**< ParGrid Stencil used to exchange accumulation array(s).*/
    
@@ -136,6 +139,9 @@ struct Hybrid {
    static Real minRhoQi;
 #ifdef USE_ECUT
    static Real Ecut2;
+#endif
+#ifdef USE_MAXVW
+   static Real maxVw;
 #endif
 #ifdef USE_RESISTIVITY
    static Real resistivityEta;

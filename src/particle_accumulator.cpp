@@ -367,7 +367,7 @@ bool Accumulator::initialize(Simulation& sim,SimulationClasses& simClasses,Confi
 			     const std::string& regionName,const ParticleListBase* plist) {
    bool success = true;
    if (ParticleAccumulatorBase::initialize(sim,simClasses,cr,regionName,plist) == false) {
-      simClasses.logger << "(HYBRID ACCUMULATOR) ERROR: ParticleAccumulatorBase initialization failed" << endl << write;
+      simClasses.logger << "(RHYBRID ACCUMULATOR) ERROR: ParticleAccumulatorBase initialization failed" << endl << write;
    }
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    return success;

@@ -5,6 +5,7 @@ USE_B_CONSTANT := false
 USE_XMIN_BOUNDARY := false
 USE_RESISTIVITY := true
 USE_ECUT := true
+USE_MAXVW := true
 WRITE_POPULATION_AVERAGES := true
 ION_SPECTRA_ALONG_ORBIT := false
 
@@ -43,6 +44,10 @@ endif
 
 ifeq ($(USE_ECUT),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_ECUT
+endif
+
+ifeq ($(USE_MAXVW),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_MAXVW
 endif
 
 ifeq ($(WRITE_POPULATION_AVERAGES),true)
@@ -99,7 +104,7 @@ register_objects.o: ${DEPS_REG_OBJS}
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c register_objects.cpp ${INCS_REG}
 
 user.o: ${DEPS_USER}
-	${CMP} ${CXXFLAGS} -DCOMPILEINFO=${COMPILEINFO} ${MATHFLAGS} ${FLAGS} -c user.cpp ${INCS}
+	${CMP} ${CXXFLAGS} -DCOMPILEINFO=${COMPILEINFO} ${MATHFLAGS} ${FLAGS} -c user.cpp ${INCS} ${INCS_REG}
 
 hybrid_propagator.o: ${DEPS_ADV_PROP}
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c hybrid_propagator.cpp ${INCS}

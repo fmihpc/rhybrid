@@ -43,7 +43,11 @@ Real* nodeJ,Real* nodeE,
 Real* counterNodeEcut,
 #endif
 bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
-void calcNodeJ(Real* faceB,Real* nodeJ,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
+void calcNodeJ(Real* faceB,Real* nodeB,Real* nodeRhoQi,Real* nodeJ,
+#ifdef USE_MAXVW
+Real* counterNodeMaxVw,
+#endif
+Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void face2r(Real* r,Real* faceData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result);

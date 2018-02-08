@@ -66,6 +66,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #ifdef USE_ECUT
    Real* counterNodeEcut     = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCounterNodeEcutID);
 #endif
+#ifdef USE_MAXVW
+   Real* counterNodeMaxVw    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCounterNodeMaxVwID);
+#endif
    bool* innerFlag           = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
    bool* innerFlagNode       = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagNodeID);
 
@@ -91,6 +94,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #ifdef USE_ECUT
    if(counterNodeEcut     == NULL) {cerr << "ERROR: obtained NULL counterNodeEcut array!"     << endl; exit(1);}
 #endif
+#ifdef USE_MAXVW
+   if(counterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL counterNodeMaxVw array!"    << endl; exit(1);}
+#endif
    if(innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
    if(innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
    
@@ -108,6 +114,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 	 counterCellMinRhoQi[n]=0.0;
 #ifdef USE_ECUT
          counterNodeEcut[n]=0.0;
+#endif
+#ifdef USE_MAXVW
+         counterNodeMaxVw[n]=0.0;
 #endif
       }
       saveStepHappened = false;
@@ -160,19 +169,49 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { cell2Node(cellB,nodeB,sim,simClasses,b); }
    profile::stop();
 
+#ifdef USE_NODE_UE
+   // cell -> node RhoQi and Ji
+   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
+   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
+   profile::start("intpol",profIntpolID);
+   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,innerBlocks[b],1); }
+   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,innerBlocks[b]); }
+   profile::stop();
+   profile::start("MPI waits",mpiWaitID);   
+   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
+   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
+   profile::stop();
+   profile::start("intpol",profIntpolID);
+   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,boundaryBlocks[b],1); }
+   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
+   profile::stop();
+#endif
+   
    // calculate J
 #ifdef USE_EDGE_J
    neumannFace(faceB,sim,simClasses,exteriorBlocks);
    // nodeJ = avg(edgeJ) = avg(curl(faceB)/mu0)
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { calcNodeJ(faceB,nodeJ,sim,simClasses,innerBlocks[b]); }
+   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) {
+      calcNodeJ(faceB,nodeB,nodeRhoQi,nodeJ,
+#ifdef USE_MAXVW
+                counterNodeMaxVw,
+#endif
+                sim,simClasses,innerBlocks[b]);
+   }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::stop();
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { calcNodeJ(faceB,nodeJ,sim,simClasses,boundaryBlocks[b]); }
+   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) {
+      calcNodeJ(faceB,nodeB,nodeRhoQi,nodeJ,
+#ifdef USE_MAXVW
+                counterNodeMaxVw,
+#endif
+                sim,simClasses,boundaryBlocks[b]);
+   }
    profile::stop(); 
    // node->cell J
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeJID);
@@ -244,7 +283,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // calculate nodeUe
 #ifdef USE_NODE_UE
    // cell -> node RhoQi and Ji
-   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
+   /*simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
    profile::start("intpol",profIntpolID);
    for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,innerBlocks[b],1); }
@@ -257,7 +296,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::start("intpol",profIntpolID);
    for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,boundaryBlocks[b],1); }
    for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
-   profile::stop();
+   profile::stop();*/
    profile::start("field propag",profPropagFieldID);
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { calcNodeUe(nodeRhoQi,nodeJi,nodeJ,nodeUe,innerFlagNode,counterCellMaxUe,sim,simClasses,b); }
    profile::stop();
@@ -971,7 +1010,11 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
 }
 
 // nodeJ = nabla x faceB/mu0
-void calcNodeJ(Real* faceB,Real* nodeJ,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+void calcNodeJ(Real* faceB,Real* nodeB,Real* nodeRhoQi,Real* nodeJ,
+#ifdef USE_MAXVW
+Real* counterNodeMaxVw,
+#endif
+Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    int di=0;
    int dj=0;
@@ -1020,7 +1063,20 @@ void calcNodeJ(Real* faceB,Real* nodeJ,Simulation& sim,SimulationClasses& simCla
         + Bf[(block::arrayIndex(i+1,j+1,k+2))*3+0]
         + Bf[(block::arrayIndex(i+2,j+1,k+2))*3+1]
         - Bf[(block::arrayIndex(i+1,j+2,k+2))*3+0];      
-      const Real a = 0.5/(Hybrid::dx*constants::PERMEABILITY);
+      const Real vwMax = 4000e3;
+      Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
+      const Real ne = nodeRhoQi[n]/constants::CHARGE_ELEMENTARY;
+      const Real Btot = sqrt( sqr(nodeB[n3+0]) + sqr(nodeB[n3+1]) + sqr(nodeB[n3+2]) );
+      if(ne > 0.0 && Hybrid::dx > 0.0) {
+         vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
+      }
+      Real d = 1.0;
+      if (vw > vwMax) {
+         d = vw/vwMax;
+         //simClasses.logger << "SCALING MU0 DOWN: d = " << d << endl;
+         counterNodeMaxVw[n]++;
+      }
+      const Real a = 0.5/(Hybrid::dx*constants::PERMEABILITY*d);
       nodeJ[n3+0] = (edgeJx1 + edgeJx2)*a;
       nodeJ[n3+1] = (edgeJy1 + edgeJy2)*a;
       nodeJ[n3+2] = (edgeJz1 + edgeJz2)*a;

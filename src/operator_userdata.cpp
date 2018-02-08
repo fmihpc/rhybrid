@@ -85,6 +85,9 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
 #ifdef USE_ECUT
    writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeEcutID,     "counterNodeEcut",     N_blocks,1);
 #endif
+#ifdef USE_MAXVW
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeMaxVwID,    "counterNodeMaxVw",    N_blocks,1);
+#endif
    // write production rates of ionosphere populations
    if(Hybrid::outputCellParams["prod_rate_iono"] == true) {
       Real* const cellIonosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellIonosphereID));
@@ -734,7 +737,7 @@ bool writeSpectraParticles(Simulation& sim,SimulationClasses& simClasses) {
    if(sim.mpiRank == sim.MASTER_RANK) {
       if(Hybrid::spectraFileLineCnt <= Hybrid::maxRecordedSpectraParticles) {
 	 if(spectraParticleOutputGlobal.size() % SPECTRA_FILE_VARIABLES != 0) {
-	    simClasses.logger << "(HYBRID) ERROR: CELL SPECTRA: error when writing particle file" << endl << write;
+	    simClasses.logger << "(RHYBRID) ERROR: CELL SPECTRA: error when writing particle file" << endl << write;
 	    return false;
 	 }
 	 ofstream spectraFile;

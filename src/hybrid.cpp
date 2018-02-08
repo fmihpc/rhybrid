@@ -55,6 +55,9 @@ pargrid::DataID Hybrid::dataCounterCellMinRhoQiID;
 #ifdef USE_ECUT
 pargrid::DataID Hybrid::dataCounterNodeEcutID;
 #endif
+#ifdef USE_MAXVW
+pargrid::DataID Hybrid::dataCounterNodeMaxVwID;
+#endif
 
 // stencils
 pargrid::StencilID Hybrid::accumulationStencilID;
@@ -102,6 +105,9 @@ Real Hybrid::maxVi2;
 Real Hybrid::minRhoQi;
 #ifdef USE_ECUT
 Real Hybrid::Ecut2;
+#endif
+#ifdef USE_MAXVW
+Real Hybrid::maxVw;
 #endif
 bool Hybrid::useHallElectricField;
 Real Hybrid::swMacroParticlesCellPerDt;
