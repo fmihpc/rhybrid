@@ -1203,11 +1203,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real Usw[3] = {-Ubulk,0.0,0.0};
    Real VExB[3] = {0.0,0.0,0.0};
    cross(Bsw,Usw,Esw); // Esw = B x (-Ubulk,0,0)
-   cross(Esw,Bsw,VExB); // VExB = E x B/B^2
    const Real EswMagnitude = normvec(Esw);
-   VExB[0] /= Btot2;
-   VExB[1] /= Btot2;
-   VExB[2] /= Btot2;
+   // VExB = E x B/B^2
+   if(Btot2 > 0.0) {
+      cross(Esw,Bsw,VExB);
+      VExB[0] /= Btot2;
+      VExB[1] /= Btot2;
+      VExB[2] /= Btot2;
+   }
    const Real VExBMagnitude = normvec(VExB);
    Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
    if(ne > 0.0 && Hybrid::dx > 0.0) {
