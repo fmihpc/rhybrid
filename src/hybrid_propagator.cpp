@@ -1062,20 +1062,20 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
         - Bf[(block::arrayIndex(i+1,j+1,k+2))*3+1]
         + Bf[(block::arrayIndex(i+1,j+1,k+2))*3+0]
         + Bf[(block::arrayIndex(i+2,j+1,k+2))*3+1]
-        - Bf[(block::arrayIndex(i+1,j+2,k+2))*3+0];      
-      const Real vwMax = 4000e3;
+        - Bf[(block::arrayIndex(i+1,j+2,k+2))*3+0];
+      Real d = 1.0;
+#ifdef USE_MAXVW
       Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
       const Real ne = nodeRhoQi[n]/constants::CHARGE_ELEMENTARY;
       const Real Btot = sqrt( sqr(nodeB[n3+0]) + sqr(nodeB[n3+1]) + sqr(nodeB[n3+2]) );
       if(ne > 0.0 && Hybrid::dx > 0.0) {
-         vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
+	vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
       }
-      Real d = 1.0;
-      if (vw > vwMax) {
-         d = vw/vwMax;
-         //simClasses.logger << "SCALING MU0 DOWN: d = " << d << endl;
-         counterNodeMaxVw[n]++;
+      if (vw > Hybrid::maxVw && Hybrid::maxVw > 0.0) {
+	d = vw/Hybrid::maxVw;
+	counterNodeMaxVw[n]++;
       }
+#endif
       const Real a = 0.5/(Hybrid::dx*constants::PERMEABILITY*d);
       nodeJ[n3+0] = (edgeJx1 + edgeJx2)*a;
       nodeJ[n3+1] = (edgeJy1 + edgeJy2)*a;
