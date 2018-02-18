@@ -612,12 +612,12 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 {
    const int vectorDim = 3;
    const unsigned int tempArraySize = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-   Real* tempArrayCellData = new Real[tempArraySize*vectorDim];
+   Real* tempArrayFaceData = new Real[tempArraySize*vectorDim];
    const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
    
    for(pargrid::CellID eb=0;eb<exteriorBlocks.size();++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
-      fetchData(faceData,tempArrayCellData,simClasses,b,vectorDim);
+      fetchData(faceData,tempArrayFaceData,simClasses,b,vectorDim);
       int di=0; if(block::WIDTH_X > 1) { di=block::WIDTH_X-1; }
       int dj=0; if(block::WIDTH_Y > 1) { dj=block::WIDTH_Y-1; }
       int dk=0; if(block::WIDTH_Z > 1) { dk=block::WIDTH_Z-1; }
@@ -628,8 +628,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	    const int i = 0+di;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+2,j+1,k+1)*vectorDim;
-	    faceData[n+1] = tempArrayCellData[m+1];
-            faceData[n+2] = tempArrayCellData[m+2];
+	    faceData[n+1] = tempArrayFaceData[m+1];
+            faceData[n+2] = tempArrayFaceData[m+2];
 	 }
       }
       // side (+y) wall
@@ -638,8 +638,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	    const int j = block::WIDTH_Y-1-dj;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+0,k+1)*vectorDim;
-	    faceData[n+0] = tempArrayCellData[m+0];
-            faceData[n+2] = tempArrayCellData[m+2];
+	    faceData[n+0] = tempArrayFaceData[m+0];
+            faceData[n+2] = tempArrayFaceData[m+2];
 	 }
       }
       // side (-y) wall
@@ -648,8 +648,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	    const int j = 0+dj;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+2,k+1)*vectorDim;
-	    faceData[n+0] = tempArrayCellData[m+0];
-            faceData[n+2] = tempArrayCellData[m+2];
+	    faceData[n+0] = tempArrayFaceData[m+0];
+            faceData[n+2] = tempArrayFaceData[m+2];
 	 }
       }
       // side (+z) wall
@@ -658,8 +658,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	    const int k = block::WIDTH_Z-1-dk;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+1,k+0)*vectorDim;
-	    faceData[n+0] = tempArrayCellData[m+0];
-            faceData[n+1] = tempArrayCellData[m+1];
+	    faceData[n+0] = tempArrayFaceData[m+0];
+            faceData[n+1] = tempArrayFaceData[m+1];
 	 }
       }
       // side (-z) wall
@@ -668,8 +668,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	    const int k = 0+dk;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+1,k+2)*vectorDim;
-	    faceData[n+0] = tempArrayCellData[m+0];
-            faceData[n+1] = tempArrayCellData[m+1];
+	    faceData[n+0] = tempArrayFaceData[m+0];
+            faceData[n+1] = tempArrayFaceData[m+1];
 	 }
       }
       // front (+x) wall
@@ -678,12 +678,153 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+0,j+1,k+1)*vectorDim;
-	    faceData[n+1] = tempArrayCellData[m+1];
-            faceData[n+2] = tempArrayCellData[m+2];
+	    faceData[n+1] = tempArrayFaceData[m+1];
+            faceData[n+2] = tempArrayFaceData[m+2];
 	 }
       }
+      // NOTE: block indices not correct for these yet
+      // edge (-x+y)
+      /*if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+0,k+1)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (-x-y)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+2,k+1)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (-x+z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+1,k+0)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (-x-z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+1,k+2)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (+y+z)
+      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+1,j+0,k+0)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (+y-z)
+      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+1,j+0,k+2)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (-y+z)
+      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+1,j+2,k+0)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (-y-z)
+      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+1,j+2,k+2)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (+x+y)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+0,k+1)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (+x-y)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+2,k+1)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (+x+z)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+1,k+0)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // edge (+x-z)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+1,k+2)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // corner (-x-y-z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+2,k+2)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // corner (-x-y+z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+2,k+0)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // corner (-x+y+z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+0,k+0)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // corner (-x+y-z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+0,k+2)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // corner (+x-y-z)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+2,k+2)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // corner (+x+y-z)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+0,k+2)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // corner (+x-y+z)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+2,k+0)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }
+      // corner (+x+y+z)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+0,k+0)*vectorDim;
+	 //for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayFaceData[m+l]; }
+      }*/
    }
-   delete [] tempArrayCellData; tempArrayCellData = NULL;
+   delete [] tempArrayFaceData; tempArrayFaceData = NULL;
 }
 
 void setIMF(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const vector<pargrid::CellID>& exteriorBlocks)
