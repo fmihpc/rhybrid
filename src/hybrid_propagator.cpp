@@ -1308,7 +1308,8 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = 3*n;
 #ifdef USE_XMIN_BOUNDARY
-      if(xMinFlag[n] == true) { continue; }
+      // no field propagation at x < xmin
+      if(xMinFlag[n] == true && doFaraday == true) { continue; }
 #endif
 
       Real node1x = array[(block::arrayIndex(i+0,j+0,k+1))*3+0];

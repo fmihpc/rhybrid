@@ -211,7 +211,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
    cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
 #ifdef USE_XMIN_BOUNDARY
-   cr.add("Hybrid.xmin","Back X boundary [m] (float)",defaultValue);
+   cr.add("Hybrid.xMinBoundary","Back X boundary [m] (float)",defaultValue);
 #endif
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
@@ -255,7 +255,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.R_fieldObstacle",Hybrid::R2_fieldObstacle);
    cr.get("Hybrid.R_particleObstacle",Hybrid::R2_particleObstacle);
 #ifdef USE_XMIN_BOUNDARY
-   cr.get("Hybrid.xmin",Hybrid::xMinBoundary);
+   cr.get("Hybrid.xMinBoundary",Hybrid::xMinBoundary);
 #endif
    cr.get("Hybrid.M_object",Hybrid::M_object);
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
@@ -415,6 +415,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "x [R_object] = " << xmin/Hybrid::R_object << " ... " << xmax/Hybrid::R_object << endl
      << "y [R_object] = " << ymin/Hybrid::R_object << " ... " << ymax/Hybrid::R_object << endl
      << "z [R_object] = " << zmin/Hybrid::R_object << " ... " << zmax/Hybrid::R_object << endl
+#ifdef USE_XMIN_BOUNDARY
+     << "xmin boundary = " << Hybrid::xMinBoundary/1e3 << " km = " << Hybrid::xMinBoundary/Hybrid::R_object << " R_object" << endl
+#endif
      << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
      << "dV = " << Hybrid::dV << " m^3" << endl << endl
      << "(BASIC PARAMETERS)" << endl

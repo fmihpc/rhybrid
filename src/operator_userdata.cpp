@@ -481,7 +481,19 @@ void calcParticleLog(Simulation& sim,SimulationClasses& simClasses,vector<Partic
       plogData[s].sumV = 0.0;
       plogData[s].sumWV2 = 0.0;
    }
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {   
+#ifdef USE_XMIN_BOUNDARY
+   bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
+#endif
+   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+#ifdef USE_XMIN_BOUNDARY
+      // do not include particles if this block has a cell with xMinFlag == true
+      bool skipBlock = false;
+      for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+	 const int n = (b*block::SIZE+block::index(i,j,k));
+         if(xMinFlag[n] == true) { skipBlock = true; }
+      }
+      if(skipBlock == true) { continue; }
+#endif
       for(size_t s=0;s<particleLists.size();++s) {
 	 pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
 	 if(particleLists[s]->getParticles(speciesDataID) == false) { continue; }
@@ -525,13 +537,20 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
    flogData.maxDivBPerB = 0.0;
    flogData.sumB2 = 0.0;
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
+#ifdef USE_XMIN_BOUNDARY
+   bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
+#endif
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       if(simClasses.pargrid.getNeighbourFlags(b) != pargrid::ALL_NEIGHBOURS_EXIST) { continue; }
       const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
       Real array[size*3];
       fetchData(faceB,array,simClasses,b,3);
       for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
-	 //const int n = (b*block::SIZE+block::index(i,j,k));
+	 const int n = (b*block::SIZE+block::index(i,j,k));
+#ifdef USE_XMIN_BOUNDARY
+         // do not include cells at x < xmin
+         if(xMinFlag[n] == true) { continue; }
+#endif
 	 Real divB = ((array[(block::arrayIndex(i+1,j+1,k+1))*3+0] - array[(block::arrayIndex(i+0,j+1,k+1))*3+0])
 		    + (array[(block::arrayIndex(i+1,j+1,k+1))*3+1] - array[(block::arrayIndex(i+1,j+0,k+1))*3+1])
 		    + (array[(block::arrayIndex(i+1,j+1,k+1))*3+2] - array[(block::arrayIndex(i+1,j+1,k+0))*3+2]))/Hybrid::dx;
