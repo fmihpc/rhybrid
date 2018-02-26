@@ -963,15 +963,19 @@ void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargri
       if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
       if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
-   const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-   Real array[size*vectorDim];
+   const unsigned int arraySize = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2)*vectorDim;
+   Real array[arraySize] = {0};
    fetchData(nodeData,array,simClasses,blockID,vectorDim);
    // coefficients
    const Real C1 = Hybrid::EfilterNodeGaussCoeffs[0]; // node itself
    const Real C2 = Hybrid::EfilterNodeGaussCoeffs[1]; // direct neighbors (distance = dx)
    const Real C3 = Hybrid::EfilterNodeGaussCoeffs[2]; // diagonal neighbors (distance = sqrt(2)*dx)
    const Real C4 = Hybrid::EfilterNodeGaussCoeffs[3]; // diagonal neighbors (distance = sqrt(3)*dx)
-   // loop through all nodes in the simulation domain, but should actually treat boundary nodes separately since there is no boundary conditions for nodes
+   // loop through all nodes in the simulation domain
+   // (should actually treat boundary nodes separately
+   // since there is no boundary conditions for nodes,
+   // but since we initialized array as zeros, this
+   // should be not an issue)
    for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
       for(int l=0;l<vectorDim;++l) {
