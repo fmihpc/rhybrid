@@ -691,6 +691,9 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	 const int m121 = block::arrayIndex(i+1,j+2,k+1)*vectorDim;
          const int m211 = block::arrayIndex(i+2,j+1,k+1)*vectorDim;
          const int m221 = block::arrayIndex(i+2,j+2,k+1)*vectorDim;
+         faceData[n+0] = tempArrayFaceData[m121+0];
+         faceData[n+1] = tempArrayFaceData[m211+1];
+         faceData[n+2] = tempArrayFaceData[m221+2];
       }
       // edge (-x,+y)
       if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
@@ -698,6 +701,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
          const int m101 = block::arrayIndex(i+1,j+0,k+1)*vectorDim;
          const int m201 = block::arrayIndex(i+2,j+0,k+1)*vectorDim;
+         faceData[n+0] = tempArrayFaceData[m101+0];
+         faceData[n+2] = tempArrayFaceData[m201+2];
       }
       // edge (+x,-y)
       if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
@@ -705,12 +710,15 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m011 = block::arrayIndex(i+0,j+1,k+1)*vectorDim;
          const int m021 = block::arrayIndex(i+0,j+2,k+1)*vectorDim;
+         faceData[n+1] = tempArrayFaceData[m011+1];
+         faceData[n+2] = tempArrayFaceData[m021+2];
       }
       // edge (+x,+y)
       if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m001 = block::arrayIndex(i+0,j+0,k+1)*vectorDim;
+         faceData[n+2] = tempArrayFaceData[m001+2];
       }
       // edge (-x,-z)
       if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
@@ -745,8 +753,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
       if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m212 = block::arrayIndex(i+2,j+1,k+2)*vectorDim;
-         faceData[n+1] = tempArrayFaceData[m212+1];
+	 const int m010 = block::arrayIndex(i+0,j+1,k+0)*vectorDim;
+         faceData[n+1] = tempArrayFaceData[m010+1];
       }
       // edge (-y,-z)
       if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
