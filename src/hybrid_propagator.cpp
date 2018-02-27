@@ -461,14 +461,9 @@ void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,co
 	    for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
 	 }
       }
+      
       // NOTE: block indices not correct for these yet
-      // edge (-x,+y)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+2,j+0,k+1)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
+
       // edge (-x,-y)
       if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
@@ -476,53 +471,11 @@ void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,co
 	 const int m = block::arrayIndex(i+2,j+2,k+1)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
-      // edge (-x,+z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      // edge (-x,+y)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+2,j+1,k+0)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
-      // edge (-x,-z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+2,j+1,k+2)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
-      // edge (+y,+z)
-      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+1,j+0,k+0)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
-      // edge (+y,-z)
-      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+1,j+0,k+2)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
-      // edge (-y,+z)
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+1,j+2,k+0)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
-      // edge (-y,-z)
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+1,j+2,k+2)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
-      // edge (+x,+y)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+0,j+0,k+1)*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+0,k+1)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
       // edge (+x,-y)
@@ -532,11 +485,25 @@ void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,co
 	 const int m = block::arrayIndex(i+0,j+2,k+1)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
-      // edge (+x,+z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      // edge (+x,+y)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+0,j+1,k+0)*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+0,k+1)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // edge (-x,-z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+1,k+2)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // edge (-x,+z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+1,k+0)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
       // edge (+x,-z)
@@ -544,6 +511,41 @@ void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,co
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+1,k+2)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // edge (+x,+z)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+1,k+0)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // edge (-y,-z)
+      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+1,j+2,k+2)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // edge (-y,+z)
+      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+1,j+2,k+0)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // edge (+y,-z)
+      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+1,j+0,k+2)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // edge (+y,+z)
+      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+1,j+0,k+0)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
       // corner (-x,-y,-z)
@@ -560,18 +562,18 @@ void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,co
 	 const int m = block::arrayIndex(i+2,j+2,k+0)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
-      // corner (-x,+y,+z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+2,j+0,k+0)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
       // corner (-x,+y,-z)
       if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+0,k+2)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // corner (-x,+y,+z)
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+2,j+0,k+0)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
       // corner (+x,-y,-z)
@@ -581,18 +583,18 @@ void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,co
 	 const int m = block::arrayIndex(i+0,j+2,k+2)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
-      // corner (+x,+y,-z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
-	 const int i=0,j=0,k=0;
-	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
-	 const int m = block::arrayIndex(i+0,j+0,k+2)*vectorDim;
-	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
-      }
       // corner (+x,-y,+z)
       if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+2,k+0)*vectorDim;
+	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
+      }
+      // corner (+x,+y,-z)
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 const int i=0,j=0,k=0;
+	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
+	 const int m = block::arrayIndex(i+0,j+0,k+2)*vectorDim;
 	 for(int l=0;l<vectorDim;++l) { cellData[n+l] = tempArrayCellData[m+l]; }
       }
       // corner (+x,+y,+z)
