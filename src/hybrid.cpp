@@ -66,6 +66,7 @@ pargrid::StencilID Hybrid::accumulationStencilID;
 pargrid::DataID Hybrid::dataInnerFlagFieldID;
 pargrid::DataID Hybrid::dataInnerFlagNodeID;
 pargrid::DataID Hybrid::dataInnerFlagParticleID;
+pargrid::DataID Hybrid::dataOuterBoundaryFlagID;
 #ifdef USE_XMIN_BOUNDARY
 pargrid::DataID Hybrid::dataXminFlagID;
 #endif
@@ -103,6 +104,8 @@ Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::minRhoQi;
+Real Hybrid::minRhoQiOuterBoundary;
+int Hybrid::outerBoundarySize;
 #ifdef USE_ECUT
 Real Hybrid::Ecut2;
 #endif

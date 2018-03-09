@@ -100,6 +100,7 @@ struct Hybrid {
    static pargrid::DataID dataInnerFlagFieldID;
    static pargrid::DataID dataInnerFlagNodeID;
    static pargrid::DataID dataInnerFlagParticleID;
+   static pargrid::DataID dataOuterBoundaryFlagID;
 #ifdef USE_XMIN_BOUNDARY
    static pargrid::DataID dataXminFlagID;
 #endif
@@ -137,6 +138,8 @@ struct Hybrid {
    static Real maxUe2;
    static Real maxVi2;
    static Real minRhoQi;
+   static Real minRhoQiOuterBoundary;
+   static int outerBoundarySize;
 #ifdef USE_ECUT
    static Real Ecut2;
 #endif

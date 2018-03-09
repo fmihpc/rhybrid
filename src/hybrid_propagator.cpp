@@ -71,7 +71,8 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #endif
    bool* innerFlag           = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
    bool* innerFlagNode       = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagNodeID);
-
+   bool* outerBoundaryFlag   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
+   
    if(faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; exit(1);}
    if(faceJ               == NULL) {cerr << "ERROR: obtained NULL faceJ array!"        << endl; exit(1);}
    if(cellRhoQi           == NULL) {cerr << "ERROR: obtained NULL cellRhoQi array!"    << endl; exit(1);}
@@ -99,6 +100,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #endif
    if(innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
    if(innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
+   if(outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; exit(1);}
    
    // get block vectors
    const vector<pargrid::CellID>& innerBlocks = simClasses.pargrid.getInnerCells(pargrid::DEFAULT_STENCIL);
@@ -190,6 +192,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // calculate J
 #ifdef USE_EDGE_J
    neumannFace(faceB,sim,simClasses,exteriorBlocks);
+   //setIMFFace(faceB,sim,simClasses,exteriorBlocks); // to be tested
    // nodeJ = avg(edgeJ) = avg(curl(faceB)/mu0)
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::start("field propag",profPropagFieldID);
@@ -875,6 +878,24 @@ void setIMF(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const vect
 	    cellB[n+0] = Hybrid::IMFBx; // IMF Bx
 	    cellB[n+1] = Hybrid::IMFBy; // IMF By
 	    cellB[n+2] = Hybrid::IMFBz; // IMF Bz
+	 }
+      }
+   }
+}
+
+void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const vector<pargrid::CellID>& exteriorBlocks)
+{
+   const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
+   for(pargrid::CellID eb=0; eb<exteriorBlocks.size(); ++eb) {
+      const pargrid::CellID b = exteriorBlocks[eb];
+      const uint32_t& nf = neighbourFlags[b];
+      // front (+x) wall
+      if((nf & Hybrid::X_POS_EXISTS) == 0) {
+	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+	    const int i = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    faceB[n+1] = Hybrid::IMFBy; // IMF By
+	    faceB[n+2] = Hybrid::IMFBz; // IMF Bz
 	 }
       }
    }
