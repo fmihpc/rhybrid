@@ -250,6 +250,8 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       }
    }
    if(Hybrid::outputCellParams["cellDivB"] == true) {
+      simClasses->pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
+      simClasses->pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
       Real* const faceB = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataFaceBID));
       calcCellDiv(faceB,divB);
       attribs["name"] = "cellDivB";
