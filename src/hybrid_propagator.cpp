@@ -192,7 +192,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // calculate J
 #ifdef USE_EDGE_J
    neumannFace(faceB,sim,simClasses,exteriorBlocks);
-   //setIMFFace(faceB,sim,simClasses,exteriorBlocks); // to be tested
+   setIMFFace(faceB,sim,simClasses,exteriorBlocks);
    // nodeJ = avg(edgeJ) = avg(curl(faceB)/mu0)
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::start("field propag",profPropagFieldID);
