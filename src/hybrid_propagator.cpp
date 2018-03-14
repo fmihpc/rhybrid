@@ -995,41 +995,130 @@ void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargri
    const Real C3 = Hybrid::EfilterNodeGaussCoeffs[2]; // diagonal neighbors (distance = sqrt(2)*dx)
    const Real C4 = Hybrid::EfilterNodeGaussCoeffs[3]; // diagonal neighbors (distance = sqrt(3)*dx)
    // loop through all nodes in the simulation domain
-   // (should actually treat boundary nodes separately
-   // since there is no boundary conditions for nodes,
-   // but since we initialized array as zeros, this
-   // should be not an issue)
    for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
       for(int l=0;l<vectorDim;++l) {
-	 nodeData[n+l] =
-           C1*(array[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l]) +
-           C2*(array[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
-               array[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l] +
-               array[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l] +
-               array[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l]) +
-           C3*(array[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+1,j+2,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+1,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l] +
-               array[(block::arrayIndex(i+0,j+2,k+1))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+0,k+1))*vectorDim+l] +
-               array[(block::arrayIndex(i+0,j+1,k+2))*vectorDim+l] +
-               array[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l] +
-               array[(block::arrayIndex(i+1,j+0,k+2))*vectorDim+l]) +
-           C4*(array[(block::arrayIndex(i+0,j+0,k+2))*vectorDim+l] +
-               array[(block::arrayIndex(i+0,j+2,k+2))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+0,k+2))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l] +
-               array[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l] +
-               array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l]);
+         // electric field component l (x=0,y=1,z=2) at 27 nodes
+         const Real nodeEl111 = array[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l];
+         const Real nodeEl110 = array[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l];
+         const Real nodeEl011 = array[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l];
+         const Real nodeEl121 = array[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l];
+         const Real nodeEl211 = array[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l];
+         const Real nodeEl101 = array[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l];
+         const Real nodeEl112 = array[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l];
+         const Real nodeEl010 = array[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l];
+         const Real nodeEl100 = array[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l];
+         const Real nodeEl120 = array[(block::arrayIndex(i+1,j+2,k+0))*vectorDim+l];
+         const Real nodeEl210 = array[(block::arrayIndex(i+2,j+1,k+0))*vectorDim+l];
+         const Real nodeEl001 = array[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l];
+         const Real nodeEl021 = array[(block::arrayIndex(i+0,j+2,k+1))*vectorDim+l];
+         const Real nodeEl221 = array[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l];
+         const Real nodeEl201 = array[(block::arrayIndex(i+2,j+0,k+1))*vectorDim+l];
+         const Real nodeEl012 = array[(block::arrayIndex(i+0,j+1,k+2))*vectorDim+l];
+         const Real nodeEl122 = array[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l];
+         const Real nodeEl212 = array[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l];
+         const Real nodeEl102 = array[(block::arrayIndex(i+1,j+0,k+2))*vectorDim+l];
+         const Real nodeEl002 = array[(block::arrayIndex(i+0,j+0,k+2))*vectorDim+l];
+         const Real nodeEl022 = array[(block::arrayIndex(i+0,j+2,k+2))*vectorDim+l];
+         const Real nodeEl202 = array[(block::arrayIndex(i+2,j+0,k+2))*vectorDim+l];
+         const Real nodeEl222 = array[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l];
+         const Real nodeEl000 = array[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l];
+         const Real nodeEl020 = array[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l];
+         const Real nodeEl200 = array[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l];
+         const Real nodeEl220 = array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l];
+         
+         // weight coefficients for each node (if the electric field value is exactly
+         // zero, the node is excluedd as it should be a boudary node)
+         bool zeroFound = false;
+         Real C111 = C1; if(nodeEl111 == 0.0) { C111 = 0.0; zeroFound = true; }
+         Real C110 = C2; if(nodeEl110 == 0.0) { C110 = 0.0; zeroFound = true; }
+         Real C011 = C2; if(nodeEl011 == 0.0) { C011 = 0.0; zeroFound = true; }
+         Real C121 = C2; if(nodeEl121 == 0.0) { C121 = 0.0; zeroFound = true; }
+         Real C211 = C2; if(nodeEl211 == 0.0) { C211 = 0.0; zeroFound = true; }
+         Real C101 = C2; if(nodeEl101 == 0.0) { C101 = 0.0; zeroFound = true; }
+         Real C112 = C2; if(nodeEl112 == 0.0) { C112 = 0.0; zeroFound = true; }
+         Real C010 = C3; if(nodeEl010 == 0.0) { C010 = 0.0; zeroFound = true; }
+         Real C100 = C3; if(nodeEl100 == 0.0) { C100 = 0.0; zeroFound = true; }
+         Real C120 = C3; if(nodeEl120 == 0.0) { C120 = 0.0; zeroFound = true; }
+         Real C210 = C3; if(nodeEl210 == 0.0) { C210 = 0.0; zeroFound = true; }
+         Real C001 = C3; if(nodeEl001 == 0.0) { C001 = 0.0; zeroFound = true; }
+         Real C021 = C3; if(nodeEl021 == 0.0) { C021 = 0.0; zeroFound = true; }
+         Real C221 = C3; if(nodeEl221 == 0.0) { C221 = 0.0; zeroFound = true; }
+         Real C201 = C3; if(nodeEl201 == 0.0) { C201 = 0.0; zeroFound = true; }
+         Real C012 = C3; if(nodeEl012 == 0.0) { C012 = 0.0; zeroFound = true; }
+         Real C122 = C3; if(nodeEl122 == 0.0) { C122 = 0.0; zeroFound = true; }
+         Real C212 = C3; if(nodeEl212 == 0.0) { C212 = 0.0; zeroFound = true; }
+         Real C102 = C3; if(nodeEl102 == 0.0) { C102 = 0.0; zeroFound = true; }
+         Real C002 = C4; if(nodeEl002 == 0.0) { C002 = 0.0; zeroFound = true; }
+         Real C022 = C4; if(nodeEl022 == 0.0) { C022 = 0.0; zeroFound = true; }
+         Real C202 = C4; if(nodeEl202 == 0.0) { C202 = 0.0; zeroFound = true; }
+         Real C222 = C4; if(nodeEl222 == 0.0) { C222 = 0.0; zeroFound = true; }
+         Real C000 = C4; if(nodeEl000 == 0.0) { C000 = 0.0; zeroFound = true; }
+         Real C020 = C4; if(nodeEl020 == 0.0) { C020 = 0.0; zeroFound = true; }
+         Real C200 = C4; if(nodeEl200 == 0.0) { C200 = 0.0; zeroFound = true; }
+         Real C220 = C4; if(nodeEl220 == 0.0) { C220 = 0.0; zeroFound = true; }
+         // renormalize if boundary node found
+         if(zeroFound == true) {
+            const Real Csum = C111+C110+C011+C121+C211+C101+C112+C010+C100+C120+C210+C001+C021+C221+C201+C012+C122+C212+C102+C002+C022+C202+C222+C000+C020+C200+C220;
+            if(Csum > 0.0) {
+               C111 /= Csum;
+               C110 /= Csum;
+               C011 /= Csum;
+               C121 /= Csum;
+               C211 /= Csum;
+               C101 /= Csum;
+               C112 /= Csum;
+               C010 /= Csum;
+               C100 /= Csum;
+               C120 /= Csum;
+               C210 /= Csum;
+               C001 /= Csum;
+               C021 /= Csum;
+               C221 /= Csum;
+               C201 /= Csum;
+               C012 /= Csum;
+               C122 /= Csum;
+               C212 /= Csum;
+               C102 /= Csum;
+               C002 /= Csum;
+               C022 /= Csum;
+               C202 /= Csum;
+               C222 /= Csum;
+               C000 /= Csum;
+               C020 /= Csum;
+               C200 /= Csum;
+               C220 /= Csum;
+            }
+         }
+	 // calculate average
+         nodeData[n+l] =
+           C111*array[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
+           C110*array[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l] +
+           C011*array[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
+           C121*array[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l] +
+           C211*array[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l] +
+           C101*array[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l] +
+           C112*array[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l] +
+           C010*array[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l] +
+           C100*array[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l] +
+           C120*array[(block::arrayIndex(i+1,j+2,k+0))*vectorDim+l] +
+           C210*array[(block::arrayIndex(i+2,j+1,k+0))*vectorDim+l] +
+           C001*array[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l] +
+           C021*array[(block::arrayIndex(i+0,j+2,k+1))*vectorDim+l] +
+           C221*array[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l] +
+           C201*array[(block::arrayIndex(i+2,j+0,k+1))*vectorDim+l] +
+           C012*array[(block::arrayIndex(i+0,j+1,k+2))*vectorDim+l] +
+           C122*array[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l] +
+           C212*array[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l] +
+           C102*array[(block::arrayIndex(i+1,j+0,k+2))*vectorDim+l] +
+           C002*array[(block::arrayIndex(i+0,j+0,k+2))*vectorDim+l] +
+           C022*array[(block::arrayIndex(i+0,j+2,k+2))*vectorDim+l] +
+           C202*array[(block::arrayIndex(i+2,j+0,k+2))*vectorDim+l] +
+           C222*array[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l] +
+           C000*array[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l] +
+           C020*array[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l] +
+           C200*array[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l] +
+           C220*array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l];
       }
    }
 }
