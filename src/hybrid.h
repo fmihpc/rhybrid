@@ -138,8 +138,7 @@ struct Hybrid {
    static Real maxUe2;
    static Real maxVi2;
    static Real minRhoQi;
-   static Real minRhoQiOuterBoundary;
-   static int outerBoundarySize;
+   static Real minRhoQiOuterBoundaryZone;
 #ifdef USE_ECUT
    static Real Ecut2;
 #endif

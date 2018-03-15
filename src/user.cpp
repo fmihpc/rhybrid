@@ -217,8 +217,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.minRhoQi","Global minimum value of ion charge density [C/m^3] (float)",defaultValue);
-   cr.add("Hybrid.minRhoQiOuterBoundary","Minimum value of ion charge density at outer boundaries [C/m^3] (float)",defaultValue);
-   cr.add("Hybrid.outerBoundarySize","Size of outer boundary zone in dx [-] (int)",0);
+   cr.add("Hybrid.minRhoQiOuterBoundaryZone","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
+   cr.add("Hybrid.outerBoundaryZoneType","Type of the outer boundary zone: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
+   cr.add("Hybrid.outerBoundaryZoneSize","Size of the outer boundary zone [dx] (int)",0);
 #ifdef USE_ECUT
    cr.add("Hybrid.Ecut","Maximum value of node electric field [V/m] (float)",defaultValue);
 #endif
@@ -263,8 +264,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
-   cr.get("Hybrid.minRhoQiOuterBoundary",Hybrid::minRhoQiOuterBoundary);
-   cr.get("Hybrid.outerBoundarySize",Hybrid::outerBoundarySize);
+   cr.get("Hybrid.minRhoQiOuterBoundaryZone",Hybrid::minRhoQiOuterBoundaryZone);
+   int outerBoundaryZoneType = 0;
+   int outerBoundaryZoneSize = 0;
+   cr.get("Hybrid.outerBoundaryZoneType",outerBoundaryZoneType);
+   cr.get("Hybrid.outerBoundaryZoneSize",outerBoundaryZoneSize);
 #ifdef USE_ECUT
    cr.get("Hybrid.Ecut",Hybrid::Ecut2);
    Hybrid::Ecut2 = sqr(Hybrid::Ecut2);
@@ -999,13 +1003,60 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
 #endif
-            const Real bZone = Hybrid::outerBoundarySize*Hybrid::dx; // boundary zone
-            if(xCellCenter < (xmin + bZone) || xCellCenter > (xmax - bZone) ||
-               yCellCenter < (ymin + bZone) || yCellCenter > (ymax - bZone) ||
-               zCellCenter < (zmin + bZone) || zCellCenter > (zmax - bZone)) {
-               outerBoundaryFlag[n] = true;
+            const Real bZone = outerBoundaryZoneSize*Hybrid::dx; // boundary zone
+            if(outerBoundaryZoneType == 0) {
+               outerBoundaryFlag[n] = false;
             }
-            else { outerBoundaryFlag[n] = false; }
+            else if(outerBoundaryZoneType == 1) {
+               // all walls
+               if(xCellCenter < (xmin + bZone) || xCellCenter > (xmax - bZone) ||
+                  yCellCenter < (ymin + bZone) || yCellCenter > (ymax - bZone) ||
+                  zCellCenter < (zmin + bZone) || zCellCenter > (zmax - bZone)) {
+                  outerBoundaryFlag[n] = true;
+               }
+               else { outerBoundaryFlag[n] = false; }
+            }
+            else if(outerBoundaryZoneType == 2) {
+               // all edges except +x
+               if( (xCellCenter < (xmin + bZone)) && (yCellCenter < (ymin + bZone)) ) {
+                  // (-x,-y) edge
+                  outerBoundaryFlag[n] = true;
+               }
+               else if( (xCellCenter < (xmin + bZone)) && (yCellCenter > (ymax - bZone)) ) {
+                  // (-x,+y) edge
+                  outerBoundaryFlag[n] = true;
+               }
+               else if( (xCellCenter < (xmin + bZone)) && (zCellCenter < (zmin + bZone)) ) {
+                  // (-x,-z) edge
+                  outerBoundaryFlag[n] = true;
+               }
+               else if( (xCellCenter < (xmin + bZone)) && (zCellCenter > (zmax - bZone)) ) {
+                  // (-x,+z) edge
+                  outerBoundaryFlag[n] = true;
+               }
+               else if( (yCellCenter < (ymin + bZone)) && (zCellCenter < (zmin + bZone)) ) {
+                  // (-y,-z) edge
+                  outerBoundaryFlag[n] = true;
+               }
+               else if( (yCellCenter < (ymin + bZone)) && (zCellCenter > (zmax - bZone)) ) {
+                  // (-y,+z) edge
+                  outerBoundaryFlag[n] = true;
+               }
+               else if( (yCellCenter > (ymax - bZone)) && (zCellCenter < (zmin + bZone)) ) {
+                  // (+y,-z) edge
+                  outerBoundaryFlag[n] = true;
+               }
+               else if( (yCellCenter > (ymax - bZone)) && (zCellCenter > (zmax - bZone)) ) {
+                  // (+y,+z) edge
+                  outerBoundaryFlag[n] = true;
+               }
+               else { outerBoundaryFlag[n] = false; }
+            }
+            else {
+               simClasses.logger << "(RHYBRID) ERROR: unknown outer boundary zone type" << endl << write;
+               return false;
+            }
+
 #ifdef USE_XMIN_BOUNDARY
             if(xCellCenter < Hybrid::xMinBoundary) { xMinFlag[n] = true; }
             else                                   { xMinFlag[n] = false; }
@@ -1346,8 +1397,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s" << endl
      << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s" << endl
      << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 " << endl
-     << "minRhoQi (outer boundary) = " << Hybrid::minRhoQiOuterBoundary << " C/m^3 = " << Hybrid::minRhoQiOuterBoundary/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 " << endl
-     << "outer boundary size = " << Hybrid::outerBoundarySize << " dx" << endl
+     << "minRhoQi (outer boundary zone) = " << Hybrid::minRhoQiOuterBoundaryZone << " C/m^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 " << endl
+     << "outer boundary zone type = " << outerBoundaryZoneType << endl
+     << "outer boundary zone size = " << outerBoundaryZoneSize << " dx" << endl
 #ifdef USE_ECUT
      << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m" << endl
 #endif

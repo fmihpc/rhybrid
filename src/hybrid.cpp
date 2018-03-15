@@ -104,8 +104,7 @@ Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::minRhoQi;
-Real Hybrid::minRhoQiOuterBoundary;
-int Hybrid::outerBoundarySize;
+Real Hybrid::minRhoQiOuterBoundaryZone;
 #ifdef USE_ECUT
 Real Hybrid::Ecut2;
 #endif
