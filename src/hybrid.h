@@ -126,6 +126,7 @@ struct Hybrid {
    static uint32_t Z_NEG_EXISTS;
 
    static int logInterval;
+   static bool includeInnerCellsInFieldLog;
    static Real dx;
    static Real dV;
    static Real R_object;

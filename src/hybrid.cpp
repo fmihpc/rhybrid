@@ -92,6 +92,7 @@ uint32_t Hybrid::Z_POS_EXISTS;
 uint32_t Hybrid::Z_NEG_EXISTS;
 
 int Hybrid::logInterval;
+bool Hybrid::includeInnerCellsInFieldLog;
 Real Hybrid::dx;
 Real Hybrid::dV;
 Real Hybrid::R_object;

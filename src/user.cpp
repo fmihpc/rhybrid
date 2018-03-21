@@ -206,6 +206,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    string resistivityProfileName = "";
 #endif
    cr.add("Hybrid.log_interval","Log interval in units of timestep [-] (int)",0);
+   cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)","");
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
@@ -253,6 +254,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    cr.parse();
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
+   cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
    cr.get("Hybrid.R_object",Hybrid::R_object);
    cr.get("Hybrid.R_fieldObstacle",Hybrid::R2_fieldObstacle);
@@ -520,6 +522,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "phi   = " << Hybrid::phiDip << " deg" << endl
      << endl;   
 #endif
+   simClasses.logger
+     << "(LOGGING)" << endl
+     << "Particle and field log file interval = " << Hybrid::logInterval*sim.dt << " s = " << Hybrid::logInterval << " dt" << endl
+     << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl << endl;
    
    // read particle populations: uniform
    vector<string> uniformPopulations;

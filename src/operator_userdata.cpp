@@ -539,6 +539,7 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
    flogData.maxDivBPerB = 0.0;
    flogData.sumB2 = 0.0;
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
+   bool* innerFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
 #ifdef USE_XMIN_BOUNDARY
    bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
 #endif
@@ -549,6 +550,10 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
       fetchData(faceB,array,simClasses,b,3);
       for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
+	 // do not include cells inside the inner boundary
+	 if(Hybrid::includeInnerCellsInFieldLog == false) {
+	    if(innerFlag[n] == true) { continue; }
+	 }
 #ifdef USE_XMIN_BOUNDARY
          // do not include cells at x < xmin
          if(xMinFlag[n] == true) { continue; }
