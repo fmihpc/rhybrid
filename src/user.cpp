@@ -1257,15 +1257,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }   
 
    // determine solar wind properties
+   Real ni = 0.0; //total ion number density
    Real ne = 0.0; // total electron density
    Real rhom = 0.0; // total ion mass density
    Real Ubulk = 0.0; // bulk speed
    Real vA = 0.0; // alfven velocity
    for (size_t s=0;s<Hybrid::swPops.size();++s) {
+      ni += Hybrid::swPops[s].n;
       ne += Hybrid::swPops[s].q*Hybrid::swPops[s].n;
       rhom += Hybrid::swPops[s].m*Hybrid::swPops[s].n;
       Ubulk += Hybrid::swPops[s].m*Hybrid::swPops[s].n*Hybrid::swPops[s].U;
    }
+   const Real rhoq = ne;
    ne /= constants::CHARGE_ELEMENTARY;
    const Real Btot2 = sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz);
    const Real Btot = sqrt(Btot2);
@@ -1299,12 +1302,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "(CFL CONDITION)" << endl
      << "dt = " << sim.dt << " s = " << sim.dt/1e-3 << " ms" << endl
      << "dx/dt = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl << endl
-     << "(UNDISTURBED UPSTREAM REGION)" << endl
-     << "bulk speed = " << Ubulk/1e3 << " km/s" << endl
-     << "alfven velocity = " << vA/1e3 << " km/s" << endl
-     << "Esw = -VxB = (" << Esw[0]/1e-3 << "," << Esw[1]/1e-3 << "," << Esw[2]/1e-3 << ") mV/m" << endl
-     << "|Esw| = " << EswMagnitude/1e-3 << " mV/m" << endl
-     << "dE = |Esw|*dx = " << EswMagnitude*Hybrid::dx << " V" << endl
+     << "(UNDISTURBED UPSTREAM SOLAR WIND)" << endl
+     << "ni = ion number density = " << ni/1e6 << " cm^-3 = " << ni*Hybrid::dV << " dV^-1" << endl
+     << "ne = electron number density = " << ne/1e6 << " cm^-3 = " << ne*Hybrid::dV << " dV^-1" << endl
+     << "rhoqi = total ion charge density = -electron charge density = " << rhoq << " C/m^3 = " << rhoq*Hybrid::dV << " C/dV" << endl
+     << "U = bulk speed = " << Ubulk/1e3 << " km/s" << endl
+     << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
+     << "Econv = -UxB = (" << Esw[0]/1e-3 << "," << Esw[1]/1e-3 << "," << Esw[2]/1e-3 << ") mV/m" << endl
+     << "|Econv| = " << EswMagnitude/1e-3 << " mV/m" << endl
+     << "dE = |Econv|*dx = " << EswMagnitude*Hybrid::dx << " V" << endl
      << "vE(H+) = sqrt(2*e*dE/mp) = " << sqrt(2.0*constants::CHARGE_ELEMENTARY*EswMagnitude*Hybrid::dx/constants::MASS_PROTON )/1e3 << " km/s" << endl
      << "ExB drift velocity = (" << VExB[0]/1e3 << "," << VExB[1]/1e3 << "," << VExB[2]/1e3 << ") km/s" << endl
      << "ExB drift speed = " << VExBMagnitude/1e3 << " km/s" << endl
@@ -1400,19 +1406,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    
    simClasses.logger
      << "(CONSTRAINTS)" << endl
-     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s" << endl
-     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s" << endl
-     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 " << endl
-     << "minRhoQi (outer boundary zone) = " << Hybrid::minRhoQiOuterBoundaryZone << " C/m^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 " << endl
-     << "outer boundary zone type = " << outerBoundaryZoneType << endl
-     << "outer boundary zone size = " << outerBoundaryZoneSize << " dx" << endl
-#ifdef USE_ECUT
-     << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m" << endl
-#endif
+     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
+     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
 #ifdef USE_MAXVW
-     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s" << endl
+     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " U(undisturbed solar wind) (nodeJ limiter)" << endl
 #endif
-     << endl;
+#ifdef USE_ECUT
+     << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m = " << sqrt(Hybrid::Ecut2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
+#endif
+     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
+     << "minRhoQi (obzone) = " << Hybrid::minRhoQiOuterBoundaryZone << " C/m^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
+     << "outer boundary zone type = " << outerBoundaryZoneType << endl
+     << "outer boundary zone size = " << outerBoundaryZoneSize << " dx" << endl << endl;
    
    // write log entry of output configs
    simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
