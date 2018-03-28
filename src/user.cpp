@@ -1262,14 +1262,24 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real rhom = 0.0; // total ion mass density
    Real Ubulk = 0.0; // bulk speed
    Real vA = 0.0; // alfven velocity
+   Real vstmp1 = 0.0;
+   Real vstmp2 = 0.0;
    for (size_t s=0;s<Hybrid::swPops.size();++s) {
       ni += Hybrid::swPops[s].n;
       ne += Hybrid::swPops[s].q*Hybrid::swPops[s].n;
       rhom += Hybrid::swPops[s].m*Hybrid::swPops[s].n;
       Ubulk += Hybrid::swPops[s].m*Hybrid::swPops[s].n*Hybrid::swPops[s].U;
+      vstmp1 += 5.0/3.0*Hybrid::swPops[s].T;
+      vstmp2 += Hybrid::swPops[s].m;
    }
    const Real rhoq = ne;
    ne /= constants::CHARGE_ELEMENTARY;
+   // sound velocity approximated as vs = sqrt( kB*gamma*sum_i(Ti)/sum_i(mi) ),
+   // where gamma = 5/3 and sum is over all solar wind populations
+   Real vs = 0.0;
+   if(vstmp2 > 0) {
+      vs = sqrt(constants::BOLTZMANN*vstmp1/vstmp2);
+   }
    const Real Btot2 = sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz);
    const Real Btot = sqrt(Btot2);
    if(rhom > 0.0) {
@@ -1308,6 +1318,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "rhoqi = total ion charge density = -electron charge density = " << rhoq << " C/m^3 = " << rhoq*Hybrid::dV << " C/dV" << endl
      << "U = bulk speed = " << Ubulk/1e3 << " km/s" << endl
      << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
+     << "vs = sound velocity = " << vs/1e3 << " km/s" << endl
+     << "vms = magnetosonic velocity = " << sqrt(vA*vA + vs*vs)/1e3 << " km/s" << endl 
+     << "MA = Alfven mach number = " << vA/(Ubulk + 1e-30) << endl
+     << "Ms = sonic mach number = " << vs/(Ubulk + 1e-30) << endl
+     << "Mms = magnetosonic mach number = " << sqrt(vA*vA + vs*vs)/(Ubulk + 1e-30) << endl
      << "Econv = -UxB = (" << Esw[0]/1e-3 << "," << Esw[1]/1e-3 << "," << Esw[2]/1e-3 << ") mV/m" << endl
      << "|Econv| = " << EswMagnitude/1e-3 << " mV/m" << endl
      << "dE = |Econv|*dx = " << EswMagnitude*Hybrid::dx << " V" << endl
