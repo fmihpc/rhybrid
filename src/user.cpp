@@ -1318,11 +1318,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "rhoqi = total ion charge density = -electron charge density = " << rhoq << " C/m^3 = " << rhoq*Hybrid::dV << " C/dV" << endl
      << "U = bulk speed = " << Ubulk/1e3 << " km/s" << endl
      << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
-     << "vs = sound velocity = " << vs/1e3 << " km/s" << endl
+     << "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(Ti) )/sum_i(mi) )  = " << vs/1e3 << " km/s" << endl
      << "vms = magnetosonic velocity = " << sqrt(vA*vA + vs*vs)/1e3 << " km/s" << endl 
-     << "MA = Alfven mach number = " << vA/(Ubulk + 1e-30) << endl
-     << "Ms = sonic mach number = " << vs/(Ubulk + 1e-30) << endl
-     << "Mms = magnetosonic mach number = " << sqrt(vA*vA + vs*vs)/(Ubulk + 1e-30) << endl
+     << "MA = Alfven mach number = " << Ubulk/(vA + 1e-30) << endl
+     << "Ms = sonic mach number = " << Ubulk/(vs + 1e-30) << endl
+     << "Mms = magnetosonic mach number = " << Ubulk/(sqrt(vA*vA + vs*vs) + 1e-30) << endl
      << "Econv = -UxB = (" << Esw[0]/1e-3 << "," << Esw[1]/1e-3 << "," << Esw[2]/1e-3 << ") mV/m" << endl
      << "|Econv| = " << EswMagnitude/1e-3 << " mV/m" << endl
      << "dE = |Econv|*dx = " << EswMagnitude*Hybrid::dx << " V" << endl
