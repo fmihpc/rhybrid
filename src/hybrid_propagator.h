@@ -32,7 +32,7 @@ void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const 
 void face2Cell(Real* faceData,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void cell2Node(Real* celldata,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim = 3);
 void node2Cell(Real* nodeData,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
-void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim = 3);
+void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim = 3);
 void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcNodeE(Real* nodeUe,Real* nodeB,

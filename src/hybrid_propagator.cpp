@@ -337,7 +337,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    }
    profile::stop();
 
-   // E filtering
+   // nodeE filter
    for(int i=0;i<Hybrid::Efilter;i++) {
       // node->cell E
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
@@ -374,6 +374,19 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 	    cellJ[n3+l]  = 0.0;
 	 }
       }
+   }
+   // nodeE gaussian filter
+   if(Hybrid::EfilterNodeGaussSigma > 0) {
+      simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
+      simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
+      const size_t N = simClasses.pargrid.getNumberOfAllCells()*simClasses.pargrid.getUserDataStaticElements(Hybrid::dataNodeEID);
+      Real* nodeEOld = new Real[N];
+      *nodeEOld = *nodeE;
+      for(size_t i=0;i<N;++i) { nodeEOld[i] = nodeE[i]; }
+      for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { nodeAvg(nodeEOld,nodeE,sim,simClasses,innerBlocks[b]); }
+      for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { nodeAvg(nodeEOld,nodeE,sim,simClasses,boundaryBlocks[b]); }
+      delete [] nodeEOld;
+      nodeEOld = NULL;
    }
 
    // propagate faceB by Faraday's law using nodeE
@@ -973,7 +986,7 @@ void node2Cell(Real* nodeData,Real* cellData,Simulation& sim,SimulationClasses& 
 }
 
 // node data average from all neighbors
-void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim)
+void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim)
 {
    int di=0;
    int dj=0;
@@ -987,8 +1000,9 @@ void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargri
       if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
    const unsigned int arraySize = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2)*vectorDim;
-   Real array[arraySize] = {0};
-   fetchData(nodeData,array,simClasses,blockID,vectorDim);
+   const Real initVal = numeric_limits<Real>::max();
+   Real array[arraySize] = {initVal};
+   fetchData(nodeDataOld,array,simClasses,blockID,vectorDim);
    // coefficients
    const Real C1 = Hybrid::EfilterNodeGaussCoeffs[0]; // node itself
    const Real C2 = Hybrid::EfilterNodeGaussCoeffs[1]; // direct neighbors (distance = dx)
@@ -999,64 +1013,64 @@ void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargri
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
       for(int l=0;l<vectorDim;++l) {
          // electric field component l (x=0,y=1,z=2) at 27 nodes
-         const Real nodeEl111 = array[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l];
-         const Real nodeEl110 = array[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l];
-         const Real nodeEl011 = array[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l];
-         const Real nodeEl121 = array[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l];
-         const Real nodeEl211 = array[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l];
-         const Real nodeEl101 = array[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l];
-         const Real nodeEl112 = array[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l];
-         const Real nodeEl010 = array[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l];
-         const Real nodeEl100 = array[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l];
-         const Real nodeEl120 = array[(block::arrayIndex(i+1,j+2,k+0))*vectorDim+l];
-         const Real nodeEl210 = array[(block::arrayIndex(i+2,j+1,k+0))*vectorDim+l];
-         const Real nodeEl001 = array[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l];
-         const Real nodeEl021 = array[(block::arrayIndex(i+0,j+2,k+1))*vectorDim+l];
-         const Real nodeEl221 = array[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l];
-         const Real nodeEl201 = array[(block::arrayIndex(i+2,j+0,k+1))*vectorDim+l];
-         const Real nodeEl012 = array[(block::arrayIndex(i+0,j+1,k+2))*vectorDim+l];
-         const Real nodeEl122 = array[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l];
-         const Real nodeEl212 = array[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l];
-         const Real nodeEl102 = array[(block::arrayIndex(i+1,j+0,k+2))*vectorDim+l];
-         const Real nodeEl002 = array[(block::arrayIndex(i+0,j+0,k+2))*vectorDim+l];
-         const Real nodeEl022 = array[(block::arrayIndex(i+0,j+2,k+2))*vectorDim+l];
-         const Real nodeEl202 = array[(block::arrayIndex(i+2,j+0,k+2))*vectorDim+l];
-         const Real nodeEl222 = array[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l];
-         const Real nodeEl000 = array[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l];
-         const Real nodeEl020 = array[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l];
-         const Real nodeEl200 = array[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l];
-         const Real nodeEl220 = array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l];
+         Real nodeEl111 = array[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l];
+         Real nodeEl110 = array[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l];
+         Real nodeEl011 = array[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l];
+         Real nodeEl121 = array[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l];
+         Real nodeEl211 = array[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l];
+         Real nodeEl101 = array[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l];
+         Real nodeEl112 = array[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l];
+         Real nodeEl010 = array[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l];
+         Real nodeEl100 = array[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l];
+         Real nodeEl120 = array[(block::arrayIndex(i+1,j+2,k+0))*vectorDim+l];
+         Real nodeEl210 = array[(block::arrayIndex(i+2,j+1,k+0))*vectorDim+l];
+         Real nodeEl001 = array[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l];
+         Real nodeEl021 = array[(block::arrayIndex(i+0,j+2,k+1))*vectorDim+l];
+         Real nodeEl221 = array[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l];
+         Real nodeEl201 = array[(block::arrayIndex(i+2,j+0,k+1))*vectorDim+l];
+         Real nodeEl012 = array[(block::arrayIndex(i+0,j+1,k+2))*vectorDim+l];
+         Real nodeEl122 = array[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l];
+         Real nodeEl212 = array[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l];
+         Real nodeEl102 = array[(block::arrayIndex(i+1,j+0,k+2))*vectorDim+l];
+         Real nodeEl002 = array[(block::arrayIndex(i+0,j+0,k+2))*vectorDim+l];
+         Real nodeEl022 = array[(block::arrayIndex(i+0,j+2,k+2))*vectorDim+l];
+         Real nodeEl202 = array[(block::arrayIndex(i+2,j+0,k+2))*vectorDim+l];
+         Real nodeEl222 = array[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l];
+         Real nodeEl000 = array[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l];
+         Real nodeEl020 = array[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l];
+         Real nodeEl200 = array[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l];
+         Real nodeEl220 = array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l];
          
          // weight coefficients for each node (if the electric field value is exactly
          // zero, the node is excluedd as it should be a boudary node)
          bool zeroFound = false;
-         Real C111 = C1; if(nodeEl111 == 0.0) { C111 = 0.0; zeroFound = true; }
-         Real C110 = C2; if(nodeEl110 == 0.0) { C110 = 0.0; zeroFound = true; }
-         Real C011 = C2; if(nodeEl011 == 0.0) { C011 = 0.0; zeroFound = true; }
-         Real C121 = C2; if(nodeEl121 == 0.0) { C121 = 0.0; zeroFound = true; }
-         Real C211 = C2; if(nodeEl211 == 0.0) { C211 = 0.0; zeroFound = true; }
-         Real C101 = C2; if(nodeEl101 == 0.0) { C101 = 0.0; zeroFound = true; }
-         Real C112 = C2; if(nodeEl112 == 0.0) { C112 = 0.0; zeroFound = true; }
-         Real C010 = C3; if(nodeEl010 == 0.0) { C010 = 0.0; zeroFound = true; }
-         Real C100 = C3; if(nodeEl100 == 0.0) { C100 = 0.0; zeroFound = true; }
-         Real C120 = C3; if(nodeEl120 == 0.0) { C120 = 0.0; zeroFound = true; }
-         Real C210 = C3; if(nodeEl210 == 0.0) { C210 = 0.0; zeroFound = true; }
-         Real C001 = C3; if(nodeEl001 == 0.0) { C001 = 0.0; zeroFound = true; }
-         Real C021 = C3; if(nodeEl021 == 0.0) { C021 = 0.0; zeroFound = true; }
-         Real C221 = C3; if(nodeEl221 == 0.0) { C221 = 0.0; zeroFound = true; }
-         Real C201 = C3; if(nodeEl201 == 0.0) { C201 = 0.0; zeroFound = true; }
-         Real C012 = C3; if(nodeEl012 == 0.0) { C012 = 0.0; zeroFound = true; }
-         Real C122 = C3; if(nodeEl122 == 0.0) { C122 = 0.0; zeroFound = true; }
-         Real C212 = C3; if(nodeEl212 == 0.0) { C212 = 0.0; zeroFound = true; }
-         Real C102 = C3; if(nodeEl102 == 0.0) { C102 = 0.0; zeroFound = true; }
-         Real C002 = C4; if(nodeEl002 == 0.0) { C002 = 0.0; zeroFound = true; }
-         Real C022 = C4; if(nodeEl022 == 0.0) { C022 = 0.0; zeroFound = true; }
-         Real C202 = C4; if(nodeEl202 == 0.0) { C202 = 0.0; zeroFound = true; }
-         Real C222 = C4; if(nodeEl222 == 0.0) { C222 = 0.0; zeroFound = true; }
-         Real C000 = C4; if(nodeEl000 == 0.0) { C000 = 0.0; zeroFound = true; }
-         Real C020 = C4; if(nodeEl020 == 0.0) { C020 = 0.0; zeroFound = true; }
-         Real C200 = C4; if(nodeEl200 == 0.0) { C200 = 0.0; zeroFound = true; }
-         Real C220 = C4; if(nodeEl220 == 0.0) { C220 = 0.0; zeroFound = true; }
+         Real C111 = C1; if(nodeEl111 == initVal) { nodeEl111 = 0.0; C111 = 0.0; zeroFound = true; }
+         Real C110 = C2; if(nodeEl110 == initVal) { nodeEl110 = 0.0; C110 = 0.0; zeroFound = true; }
+         Real C011 = C2; if(nodeEl011 == initVal) { nodeEl011 = 0.0; C011 = 0.0; zeroFound = true; }
+         Real C121 = C2; if(nodeEl121 == initVal) { nodeEl121 = 0.0; C121 = 0.0; zeroFound = true; }
+         Real C211 = C2; if(nodeEl211 == initVal) { nodeEl211 = 0.0; C211 = 0.0; zeroFound = true; }
+         Real C101 = C2; if(nodeEl101 == initVal) { nodeEl101 = 0.0; C101 = 0.0; zeroFound = true; }
+         Real C112 = C2; if(nodeEl112 == initVal) { nodeEl112 = 0.0; C112 = 0.0; zeroFound = true; }
+         Real C010 = C3; if(nodeEl010 == initVal) { nodeEl010 = 0.0; C010 = 0.0; zeroFound = true; }
+         Real C100 = C3; if(nodeEl100 == initVal) { nodeEl100 = 0.0; C100 = 0.0; zeroFound = true; }
+         Real C120 = C3; if(nodeEl120 == initVal) { nodeEl120 = 0.0; C120 = 0.0; zeroFound = true; }
+         Real C210 = C3; if(nodeEl210 == initVal) { nodeEl210 = 0.0; C210 = 0.0; zeroFound = true; }
+         Real C001 = C3; if(nodeEl001 == initVal) { nodeEl001 = 0.0; C001 = 0.0; zeroFound = true; }
+         Real C021 = C3; if(nodeEl021 == initVal) { nodeEl021 = 0.0; C021 = 0.0; zeroFound = true; }
+         Real C221 = C3; if(nodeEl221 == initVal) { nodeEl221 = 0.0; C221 = 0.0; zeroFound = true; }
+         Real C201 = C3; if(nodeEl201 == initVal) { nodeEl201 = 0.0; C201 = 0.0; zeroFound = true; }
+         Real C012 = C3; if(nodeEl012 == initVal) { nodeEl012 = 0.0; C012 = 0.0; zeroFound = true; }
+         Real C122 = C3; if(nodeEl122 == initVal) { nodeEl122 = 0.0; C122 = 0.0; zeroFound = true; }
+         Real C212 = C3; if(nodeEl212 == initVal) { nodeEl212 = 0.0; C212 = 0.0; zeroFound = true; }
+         Real C102 = C3; if(nodeEl102 == initVal) { nodeEl102 = 0.0; C102 = 0.0; zeroFound = true; }
+         Real C002 = C4; if(nodeEl002 == initVal) { nodeEl002 = 0.0; C002 = 0.0; zeroFound = true; }
+         Real C022 = C4; if(nodeEl022 == initVal) { nodeEl022 = 0.0; C022 = 0.0; zeroFound = true; }
+         Real C202 = C4; if(nodeEl202 == initVal) { nodeEl202 = 0.0; C202 = 0.0; zeroFound = true; }
+         Real C222 = C4; if(nodeEl222 == initVal) { nodeEl222 = 0.0; C222 = 0.0; zeroFound = true; }
+         Real C000 = C4; if(nodeEl000 == initVal) { nodeEl000 = 0.0; C000 = 0.0; zeroFound = true; }
+         Real C020 = C4; if(nodeEl020 == initVal) { nodeEl020 = 0.0; C020 = 0.0; zeroFound = true; }
+         Real C200 = C4; if(nodeEl200 == initVal) { nodeEl200 = 0.0; C200 = 0.0; zeroFound = true; }
+         Real C220 = C4; if(nodeEl220 == initVal) { nodeEl220 = 0.0; C220 = 0.0; zeroFound = true; }
          // renormalize if boundary node found
          if(zeroFound == true) {
             const Real Csum = C111+C110+C011+C121+C211+C101+C112+C010+C100+C120+C210+C001+C021+C221+C201+C012+C122+C212+C102+C002+C022+C202+C222+C000+C020+C200+C220;
@@ -1092,33 +1106,33 @@ void nodeAvg(Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargri
          }
 	 // calculate average
          nodeData[n+l] =
-           C111*array[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
-           C110*array[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l] +
-           C011*array[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
-           C121*array[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l] +
-           C211*array[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l] +
-           C101*array[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l] +
-           C112*array[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l] +
-           C010*array[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l] +
-           C100*array[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l] +
-           C120*array[(block::arrayIndex(i+1,j+2,k+0))*vectorDim+l] +
-           C210*array[(block::arrayIndex(i+2,j+1,k+0))*vectorDim+l] +
-           C001*array[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l] +
-           C021*array[(block::arrayIndex(i+0,j+2,k+1))*vectorDim+l] +
-           C221*array[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l] +
-           C201*array[(block::arrayIndex(i+2,j+0,k+1))*vectorDim+l] +
-           C012*array[(block::arrayIndex(i+0,j+1,k+2))*vectorDim+l] +
-           C122*array[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l] +
-           C212*array[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l] +
-           C102*array[(block::arrayIndex(i+1,j+0,k+2))*vectorDim+l] +
-           C002*array[(block::arrayIndex(i+0,j+0,k+2))*vectorDim+l] +
-           C022*array[(block::arrayIndex(i+0,j+2,k+2))*vectorDim+l] +
-           C202*array[(block::arrayIndex(i+2,j+0,k+2))*vectorDim+l] +
-           C222*array[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l] +
-           C000*array[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l] +
-           C020*array[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l] +
-           C200*array[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l] +
-           C220*array[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l];
+           C111*nodeEl111 +
+           C110*nodeEl110 +
+           C011*nodeEl011 +
+           C121*nodeEl121 +
+           C211*nodeEl211 +
+           C101*nodeEl101 +
+           C112*nodeEl112 +
+           C010*nodeEl010 +
+           C100*nodeEl100 +
+           C120*nodeEl120 +
+           C210*nodeEl210 +
+           C001*nodeEl001 +
+           C021*nodeEl021 +
+           C221*nodeEl221 +
+           C201*nodeEl201 +
+           C012*nodeEl012 +
+           C122*nodeEl122 +
+           C212*nodeEl212 +
+           C102*nodeEl102 +
+           C002*nodeEl002 +
+           C022*nodeEl022 +
+           C202*nodeEl202 +
+           C222*nodeEl222 +
+           C000*nodeEl000 +
+           C020*nodeEl020 +
+           C200*nodeEl200 +
+           C220*nodeEl220;
       }
    }
 }
