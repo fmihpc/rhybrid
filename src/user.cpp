@@ -1005,7 +1005,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
 	    const Real rNode2 = sqr(xNode) + sqr(yNode) + sqr(zNode);
-	    if(rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; }
+	    if(rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0;*/ }
 	    else                                  { innerFlagNode[n] = false; }
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
