@@ -53,7 +53,50 @@ inline bool setResistivityProfile(std::string name) {
 }
 
 Real getResistivity(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z) {
-   return Hybrid::resistivityProfilePtr(sim,simClasses,x,y,z);
+   Real res = Hybrid::resistivityProfilePtr(sim,simClasses,x,y,z);
+   const Real bZone = Hybrid::outerBoundaryZoneSize;
+   if(Hybrid::outerBoundaryZoneType == 1) {
+      if(x < (Hybrid::box.xmin + bZone) || x > (Hybrid::box.xmax - bZone) ||
+         y < (Hybrid::box.ymin + bZone) || y > (Hybrid::box.ymax - bZone) ||
+         z < (Hybrid::box.zmin + bZone) || z > (Hybrid::box.zmax - bZone)) {
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+   }
+   else if(Hybrid::outerBoundaryZoneType == 2) {
+      if( (x < (Hybrid::box.xmin + bZone)) && (y < (Hybrid::box.ymin + bZone)) ) {
+         // (-x,-y) edge
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+      else if( (x < (Hybrid::box.xmin + bZone)) && (y > (Hybrid::box.ymax - bZone)) ) {
+         // (-x,+y) edge
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+      else if( (x < (Hybrid::box.xmin + bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
+         // (-x,-z) edge
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+      else if( (x < (Hybrid::box.xmin + bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
+         // (-x,+z) edge
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+      else if( (y < (Hybrid::box.ymin + bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
+         // (-y,-z) edge
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+      else if( (y < (Hybrid::box.ymin + bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
+         // (-y,+z) edge
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+      else if( (y > (Hybrid::box.ymax - bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
+         // (+y,-z) edge
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+      else if( (y > (Hybrid::box.ymax - bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
+         // (+y,+z) edge
+         res += Hybrid::resistivityEtaOuterBoundaryZone;
+      }
+   }
+   return res;
 }
 
 #endif

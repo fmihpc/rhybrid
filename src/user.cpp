@@ -218,9 +218,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.minRhoQi","Global minimum value of ion charge density [C/m^3] (float)",defaultValue);
-   cr.add("Hybrid.minRhoQiOuterBoundaryZone","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
-   cr.add("Hybrid.outerBoundaryZoneType","Type of the outer boundary zone: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
-   cr.add("Hybrid.outerBoundaryZoneSize","Size of the outer boundary zone [dx] (int)",0);
 #ifdef USE_ECUT
    cr.add("Hybrid.Ecut","Maximum value of node electric field [V/m] (float)",defaultValue);
 #endif
@@ -230,10 +227,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.type","Type of the outer boundary zone: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
+   cr.add("OuterBoundaryZone.size","Size of the outer boundary zone [dx] (int)",0);
+   cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
 #ifdef USE_RESISTIVITY
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
    cr.add("Resistivity.etaC","Dimensionless resistivity constant [-] (float)",defaultValue);
    cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
 #endif
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
@@ -266,11 +267,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
-   cr.get("Hybrid.minRhoQiOuterBoundaryZone",Hybrid::minRhoQiOuterBoundaryZone);
-   int outerBoundaryZoneType = 0;
-   int outerBoundaryZoneSize = 0;
-   cr.get("Hybrid.outerBoundaryZoneType",outerBoundaryZoneType);
-   cr.get("Hybrid.outerBoundaryZoneSize",outerBoundaryZoneSize);
 #ifdef USE_ECUT
    cr.get("Hybrid.Ecut",Hybrid::Ecut2);
    Hybrid::Ecut2 = sqr(Hybrid::Ecut2);
@@ -281,13 +277,19 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
+   cr.get("OuterBoundaryZone.type",Hybrid::outerBoundaryZoneType);
+   cr.get("OuterBoundaryZone.size",Hybrid::outerBoundaryZoneSize);
+   cr.get("OuterBoundaryZone.minRhoQi",Hybrid::minRhoQiOuterBoundaryZone);
+   Hybrid::outerBoundaryZoneSize *= Hybrid::dx;
 #ifdef USE_RESISTIVITY
    cr.get("Resistivity.profile_name",resistivityProfileName);
    cr.get("Resistivity.etaC",Hybrid::resistivityEtaC);
    cr.get("Resistivity.R",Hybrid::resistivityR2);
+   cr.get("OuterBoundaryZone.etaC",Hybrid::resistivityEtaOuterBoundaryZone);
    Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
    Hybrid::resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
    Hybrid::resistivityEta = Hybrid::resistivityEtaC*Hybrid::resistivityGridUnit;
+   Hybrid::resistivityEtaOuterBoundaryZone *= Hybrid::resistivityGridUnit;
    if(setResistivityProfile(resistivityProfileName) == false) {
       simClasses.logger << "(RHYBRID) ERROR: Given profile profile not found (" << resistivityProfileName << ")" << endl << write;
       exit(1);
@@ -410,21 +412,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "total cells = " << Ncells << " = " << Ncells/1e6 << " x 10^6" << endl << endl;
    
    // a hack as there is no access to the grid builder easily from here
-   Real xmin=0.0,xmax=0.0,ymin=0.0,ymax=0.0,zmin=0.0,zmax=0.0;
-   cr.get("LogicallyCartesian.x_min",xmin);
-   cr.get("LogicallyCartesian.x_max",xmax);
-   cr.get("LogicallyCartesian.y_min",ymin);
-   cr.get("LogicallyCartesian.y_max",ymax);
-   cr.get("LogicallyCartesian.z_min",zmin);
-   cr.get("LogicallyCartesian.z_max",zmax);
+   cr.get("LogicallyCartesian.x_min",Hybrid::box.xmin);
+   cr.get("LogicallyCartesian.x_max",Hybrid::box.xmax);
+   cr.get("LogicallyCartesian.y_min",Hybrid::box.ymin);
+   cr.get("LogicallyCartesian.y_max",Hybrid::box.ymax);
+   cr.get("LogicallyCartesian.z_min",Hybrid::box.zmin);
+   cr.get("LogicallyCartesian.z_max",Hybrid::box.zmax);
    simClasses.logger
      << "(SIMULATION DOMAIN)" << endl
-     << "x [km] = " << xmin/1e3 << " ... " << xmax/1e3 << endl
-     << "y [km] = " << ymin/1e3 << " ... " << ymax/1e3 << endl
-     << "z [km] = " << zmin/1e3 << " ... " << zmax/1e3 << endl
-     << "x [R_object] = " << xmin/Hybrid::R_object << " ... " << xmax/Hybrid::R_object << endl
-     << "y [R_object] = " << ymin/Hybrid::R_object << " ... " << ymax/Hybrid::R_object << endl
-     << "z [R_object] = " << zmin/Hybrid::R_object << " ... " << zmax/Hybrid::R_object << endl
+     << "x [km] = " << Hybrid::box.xmin/1e3 << " ... " << Hybrid::box.xmax/1e3 << endl
+     << "y [km] = " << Hybrid::box.ymin/1e3 << " ... " << Hybrid::box.ymax/1e3 << endl
+     << "z [km] = " << Hybrid::box.zmin/1e3 << " ... " << Hybrid::box.zmax/1e3 << endl
+     << "x [R_object] = " << Hybrid::box.xmin/Hybrid::R_object << " ... " << Hybrid::box.xmax/Hybrid::R_object << endl
+     << "y [R_object] = " << Hybrid::box.ymin/Hybrid::R_object << " ... " << Hybrid::box.ymax/Hybrid::R_object << endl
+     << "z [R_object] = " << Hybrid::box.zmin/Hybrid::R_object << " ... " << Hybrid::box.zmax/Hybrid::R_object << endl
 #ifdef USE_XMIN_BOUNDARY
      << "xmin boundary = " << Hybrid::xMinBoundary/1e3 << " km = " << Hybrid::xMinBoundary/Hybrid::R_object << " R_object" << endl
 #endif
@@ -1009,50 +1010,50 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
 #endif
-            const Real bZone = outerBoundaryZoneSize*Hybrid::dx; // boundary zone
-            if(outerBoundaryZoneType == 0) {
+            const Real bZone = Hybrid::outerBoundaryZoneSize; // boundary zone
+            if(Hybrid::outerBoundaryZoneType == 0) {
                outerBoundaryFlag[n] = false;
             }
-            else if(outerBoundaryZoneType == 1) {
+            else if(Hybrid::outerBoundaryZoneType == 1) {
                // all walls
-               if(xCellCenter < (xmin + bZone) || xCellCenter > (xmax - bZone) ||
-                  yCellCenter < (ymin + bZone) || yCellCenter > (ymax - bZone) ||
-                  zCellCenter < (zmin + bZone) || zCellCenter > (zmax - bZone)) {
+               if(xCellCenter < (Hybrid::box.xmin + bZone) || xCellCenter > (Hybrid::box.xmax - bZone) ||
+                  yCellCenter < (Hybrid::box.ymin + bZone) || yCellCenter > (Hybrid::box.ymax - bZone) ||
+                  zCellCenter < (Hybrid::box.zmin + bZone) || zCellCenter > (Hybrid::box.zmax - bZone)) {
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
             }
-            else if(outerBoundaryZoneType == 2) {
+            else if(Hybrid::outerBoundaryZoneType == 2) {
                // all edges except +x
-               if( (xCellCenter < (xmin + bZone)) && (yCellCenter < (ymin + bZone)) ) {
+               if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (yCellCenter < (Hybrid::box.ymin + bZone)) ) {
                   // (-x,-y) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (xmin + bZone)) && (yCellCenter > (ymax - bZone)) ) {
+               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (yCellCenter > (Hybrid::box.ymax - bZone)) ) {
                   // (-x,+y) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (xmin + bZone)) && (zCellCenter < (zmin + bZone)) ) {
+               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
                   // (-x,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (xmin + bZone)) && (zCellCenter > (zmax - bZone)) ) {
+               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
                   // (-x,+z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter < (ymin + bZone)) && (zCellCenter < (zmin + bZone)) ) {
+               else if( (yCellCenter < (Hybrid::box.ymin + bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
                   // (-y,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter < (ymin + bZone)) && (zCellCenter > (zmax - bZone)) ) {
+               else if( (yCellCenter < (Hybrid::box.ymin + bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
                   // (-y,+z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter > (ymax - bZone)) && (zCellCenter < (zmin + bZone)) ) {
+               else if( (yCellCenter > (Hybrid::box.ymax - bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
                   // (+y,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter > (ymax - bZone)) && (zCellCenter > (zmax - bZone)) ) {
+               else if( (yCellCenter > (Hybrid::box.ymax - bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
                   // (+y,+z) edge
                   outerBoundaryFlag[n] = true;
                }
@@ -1429,10 +1430,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_ECUT
      << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m = " << sqrt(Hybrid::Ecut2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
 #endif
-     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
-     << "minRhoQi (obzone) = " << Hybrid::minRhoQiOuterBoundaryZone << " C/m^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
-     << "outer boundary zone type = " << outerBoundaryZoneType << endl
-     << "outer boundary zone size = " << outerBoundaryZoneSize << " dx" << endl << endl;
+     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl << endl;
+
+   simClasses.logger
+     << "(OUTER BOUNDARY ZONE)" << endl
+     << "type = " << Hybrid::outerBoundaryZoneType << endl
+     << "size = " << Hybrid::outerBoundaryZoneSize/Hybrid::dx << " dx" << endl
+     << "minRhoQi = " << Hybrid::minRhoQiOuterBoundaryZone << " C/m^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
+#ifdef USE_RESISTIVITY
+     << "eta = " << Hybrid::resistivityEtaOuterBoundaryZone/Hybrid::resistivityGridUnit << " mu_0*dx^2/dt = "
+     << Hybrid::resistivityEtaOuterBoundaryZone << " Ohm m" << endl
+#endif
+     << endl;
    
    // write log entry of output configs
    simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;

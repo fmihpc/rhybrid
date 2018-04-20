@@ -94,6 +94,7 @@ uint32_t Hybrid::Z_NEG_EXISTS;
 int Hybrid::logInterval;
 bool Hybrid::includeInnerCellsInFieldLog;
 Real Hybrid::dx;
+Box Hybrid::box;
 Real Hybrid::dV;
 Real Hybrid::R_object;
 Real Hybrid::R2_fieldObstacle;
@@ -105,6 +106,8 @@ Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::minRhoQi;
+int Hybrid::outerBoundaryZoneType;
+Real Hybrid::outerBoundaryZoneSize;
 Real Hybrid::minRhoQiOuterBoundaryZone;
 #ifdef USE_ECUT
 Real Hybrid::Ecut2;
@@ -121,6 +124,7 @@ Real Hybrid::EfilterNodeGaussCoeffs[4];
 Real Hybrid::resistivityEta;
 Real Hybrid::resistivityEtaC;
 Real Hybrid::resistivityR2;
+Real Hybrid::resistivityEtaOuterBoundaryZone;
 Real Hybrid::resistivityGridUnit;
 Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
 #endif
