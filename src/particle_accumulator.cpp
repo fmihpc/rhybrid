@@ -321,8 +321,8 @@ bool Accumulator::addRemoteUpdates() {
 	 const int n3 = n*3;
 	 cellRhoQi[n] /= Hybrid::dV;
          if(outerBoundaryFlag[n] == true) {
-            if(cellRhoQi[n] < Hybrid::minRhoQiOuterBoundaryZone) {
-               cellRhoQi[n] = Hybrid::minRhoQiOuterBoundaryZone;
+            if(cellRhoQi[n] < Hybrid::outerBoundaryZone.minRhoQi) {
+               cellRhoQi[n] = Hybrid::outerBoundaryZone.minRhoQi;
                counterCellMinRhoQi[n]++;
             }
          }

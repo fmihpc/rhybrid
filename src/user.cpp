@@ -227,14 +227,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.type","Type of the outer boundary zone: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
-   cr.add("OuterBoundaryZone.size","Size of the outer boundary zone [dx] (int)",0);
+   cr.add("OuterBoundaryZone.typeEta","Type of the outer boundary zone for resistivity: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-], 3 = -x wall and all edges except +x edges (int)",0);
+   cr.add("OuterBoundaryZone.typeMinRhoQi","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
+   cr.add("OuterBoundaryZone.sizeEta","Size of the outer boundary zone for resitivity [dx] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.sizeMinRhoQi","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
    cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
 #ifdef USE_RESISTIVITY
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
    cr.add("Resistivity.etaC","Dimensionless resistivity constant [-] (float)",defaultValue);
    cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
 #endif
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
@@ -277,19 +279,23 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
-   cr.get("OuterBoundaryZone.type",Hybrid::outerBoundaryZoneType);
-   cr.get("OuterBoundaryZone.size",Hybrid::outerBoundaryZoneSize);
-   cr.get("OuterBoundaryZone.minRhoQi",Hybrid::minRhoQiOuterBoundaryZone);
-   Hybrid::outerBoundaryZoneSize *= Hybrid::dx;
+   
+   cr.get("OuterBoundaryZone.typeEta",Hybrid::outerBoundaryZone.typeEta);
+   cr.get("OuterBoundaryZone.typeMinRhoQi",Hybrid::outerBoundaryZone.typeMinRhoQi);
+   cr.get("OuterBoundaryZone.sizeEta",Hybrid::outerBoundaryZone.sizeEta);
+   cr.get("OuterBoundaryZone.sizeMinRhoQi",Hybrid::outerBoundaryZone.sizeMinRhoQi);
+   cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
+   cr.get("OuterBoundaryZone.etaC",Hybrid::outerBoundaryZone.eta);
+   Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
+   Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
 #ifdef USE_RESISTIVITY
    cr.get("Resistivity.profile_name",resistivityProfileName);
    cr.get("Resistivity.etaC",Hybrid::resistivityEtaC);
    cr.get("Resistivity.R",Hybrid::resistivityR2);
-   cr.get("OuterBoundaryZone.etaC",Hybrid::resistivityEtaOuterBoundaryZone);
    Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
    Hybrid::resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
    Hybrid::resistivityEta = Hybrid::resistivityEtaC*Hybrid::resistivityGridUnit;
-   Hybrid::resistivityEtaOuterBoundaryZone *= Hybrid::resistivityGridUnit;
+   Hybrid::outerBoundaryZone.eta *= Hybrid::resistivityGridUnit;
    if(setResistivityProfile(resistivityProfileName) == false) {
       simClasses.logger << "(RHYBRID) ERROR: Given profile profile not found (" << resistivityProfileName << ")" << endl << write;
       exit(1);
@@ -1010,11 +1016,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
 #endif
-            const Real bZone = Hybrid::outerBoundaryZoneSize; // boundary zone
-            if(Hybrid::outerBoundaryZoneType == 0) {
+            const Real bZone = Hybrid::outerBoundaryZone.sizeMinRhoQi; // boundary zone
+            if(Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
                outerBoundaryFlag[n] = false;
             }
-            else if(Hybrid::outerBoundaryZoneType == 1) {
+            else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 1) {
                // all walls
                if(xCellCenter < (Hybrid::box.xmin + bZone) || xCellCenter > (Hybrid::box.xmax - bZone) ||
                   yCellCenter < (Hybrid::box.ymin + bZone) || yCellCenter > (Hybrid::box.ymax - bZone) ||
@@ -1023,7 +1029,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                }
                else { outerBoundaryFlag[n] = false; }
             }
-            else if(Hybrid::outerBoundaryZoneType == 2) {
+            else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 2) {
                // all edges except +x
                if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (yCellCenter < (Hybrid::box.ymin + bZone)) ) {
                   // (-x,-y) edge
@@ -1434,12 +1440,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    simClasses.logger
      << "(OUTER BOUNDARY ZONE)" << endl
-     << "type = " << Hybrid::outerBoundaryZoneType << endl
-     << "size = " << Hybrid::outerBoundaryZoneSize/Hybrid::dx << " dx" << endl
-     << "minRhoQi = " << Hybrid::minRhoQiOuterBoundaryZone << " C/m^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQiOuterBoundaryZone/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
+     << "type (eta)       = " << Hybrid::outerBoundaryZone.typeEta << endl
+     << "type (minRhoQi)  = " << Hybrid::outerBoundaryZone.typeMinRhoQi << endl
+     << "size (eta)       = " << Hybrid::outerBoundaryZone.sizeEta/(Hybrid::dx + 1e-30) << " dx" << endl
+     << "size (minRhoQi)  = " << Hybrid::outerBoundaryZone.sizeMinRhoQi/(Hybrid::dx + 1e-30) << " dx" << endl
+     << "minRhoQi(obzone) = " << Hybrid::outerBoundaryZone.minRhoQi << " C/m^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
 #ifdef USE_RESISTIVITY
-     << "eta = " << Hybrid::resistivityEtaOuterBoundaryZone/Hybrid::resistivityGridUnit << " mu_0*dx^2/dt = "
-     << Hybrid::resistivityEtaOuterBoundaryZone << " Ohm m" << endl
+     << "eta(obzone)      = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityGridUnit + 1e-30) << " mu_0*dx^2/dt = "
+     << Hybrid::outerBoundaryZone.eta << " Ohm m = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityEta + 1e-30) << " eta(global)" << endl
 #endif
      << endl;
    

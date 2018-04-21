@@ -54,46 +54,84 @@ inline bool setResistivityProfile(std::string name) {
 
 Real getResistivity(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z) {
    Real res = Hybrid::resistivityProfilePtr(sim,simClasses,x,y,z);
-   const Real bZone = Hybrid::outerBoundaryZoneSize;
-   if(Hybrid::outerBoundaryZoneType == 1) {
+   const Real bZone = Hybrid::outerBoundaryZone.sizeEta;
+   if(Hybrid::outerBoundaryZone.typeEta == 1) { // all walls
       if(x < (Hybrid::box.xmin + bZone) || x > (Hybrid::box.xmax - bZone) ||
          y < (Hybrid::box.ymin + bZone) || y > (Hybrid::box.ymax - bZone) ||
          z < (Hybrid::box.zmin + bZone) || z > (Hybrid::box.zmax - bZone)) {
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
       }
    }
-   else if(Hybrid::outerBoundaryZoneType == 2) {
+   else if(Hybrid::outerBoundaryZone.typeEta == 2) { // all edges except +x
       if( (x < (Hybrid::box.xmin + bZone)) && (y < (Hybrid::box.ymin + bZone)) ) {
          // (-x,-y) edge
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
       }
       else if( (x < (Hybrid::box.xmin + bZone)) && (y > (Hybrid::box.ymax - bZone)) ) {
          // (-x,+y) edge
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
       }
       else if( (x < (Hybrid::box.xmin + bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
          // (-x,-z) edge
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
       }
       else if( (x < (Hybrid::box.xmin + bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
          // (-x,+z) edge
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
       }
       else if( (y < (Hybrid::box.ymin + bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
          // (-y,-z) edge
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
       }
       else if( (y < (Hybrid::box.ymin + bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
          // (-y,+z) edge
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
       }
       else if( (y > (Hybrid::box.ymax - bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
          // (+y,-z) edge
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
       }
       else if( (y > (Hybrid::box.ymax - bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
          // (+y,+z) edge
-         res += Hybrid::resistivityEtaOuterBoundaryZone;
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+   }
+   else if(Hybrid::outerBoundaryZone.typeEta == 3) { // -x wall and all edges except +x
+      if( x < (Hybrid::box.xmin + bZone) ) {
+         // -x wall
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+      else if( (x < (Hybrid::box.xmin + bZone)) && (y < (Hybrid::box.ymin + bZone)) ) {
+         // (-x,-y) edge
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+      else if( (x < (Hybrid::box.xmin + bZone)) && (y > (Hybrid::box.ymax - bZone)) ) {
+         // (-x,+y) edge
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+      else if( (x < (Hybrid::box.xmin + bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
+         // (-x,-z) edge
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+      else if( (x < (Hybrid::box.xmin + bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
+         // (-x,+z) edge
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+      else if( (y < (Hybrid::box.ymin + bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
+         // (-y,-z) edge
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+      else if( (y < (Hybrid::box.ymin + bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
+         // (-y,+z) edge
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+      else if( (y > (Hybrid::box.ymax - bZone)) && (z < (Hybrid::box.zmin + bZone)) ) {
+         // (+y,-z) edge
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+      else if( (y > (Hybrid::box.ymax - bZone)) && (z > (Hybrid::box.zmax - bZone)) ) {
+         // (+y,+z) edge
+         res += Hybrid::outerBoundaryZone.eta;
       }
    }
    return res;

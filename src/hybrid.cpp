@@ -106,9 +106,7 @@ Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::minRhoQi;
-int Hybrid::outerBoundaryZoneType;
-Real Hybrid::outerBoundaryZoneSize;
-Real Hybrid::minRhoQiOuterBoundaryZone;
+OuterBoundaryZone Hybrid::outerBoundaryZone;
 #ifdef USE_ECUT
 Real Hybrid::Ecut2;
 #endif
@@ -124,7 +122,6 @@ Real Hybrid::EfilterNodeGaussCoeffs[4];
 Real Hybrid::resistivityEta;
 Real Hybrid::resistivityEtaC;
 Real Hybrid::resistivityR2;
-Real Hybrid::resistivityEtaOuterBoundaryZone;
 Real Hybrid::resistivityGridUnit;
 Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
 #endif

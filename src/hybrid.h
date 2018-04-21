@@ -59,6 +59,11 @@ struct Box {
    Real xmin=0.0,xmax=0.0,ymin=0.0,ymax=0.0,zmin=0.0,zmax=0.0;
 };
 
+struct OuterBoundaryZone {
+   int typeEta=0,typeMinRhoQi=0;
+   Real sizeEta=0.0,sizeMinRhoQi=0.0,minRhoQi=0.0,eta=0.0;
+};
+
 struct Hybrid {
 
    // face data
@@ -144,9 +149,7 @@ struct Hybrid {
    static Real maxUe2;
    static Real maxVi2;
    static Real minRhoQi;
-   static int outerBoundaryZoneType;
-   static Real outerBoundaryZoneSize;
-   static Real minRhoQiOuterBoundaryZone;
+   static OuterBoundaryZone outerBoundaryZone;
 #ifdef USE_ECUT
    static Real Ecut2;
 #endif
@@ -157,7 +160,6 @@ struct Hybrid {
    static Real resistivityEta;
    static Real resistivityEtaC;
    static Real resistivityR2;
-   static Real resistivityEtaOuterBoundaryZone;
    static Real resistivityGridUnit;
    static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
 #endif
