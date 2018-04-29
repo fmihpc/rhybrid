@@ -64,6 +64,16 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    map<string,string> attribs;
    attribs["mesh"] = spatMeshName;
    attribs["type"] = "celldata";
+   // write selected ParGrid arrays
+   /*for(auto const& p : Hybrid::varReal) {
+      if(Hybrid::outputCellParams[p.first] == false) { continue; }
+      const uint64_t arraySize = N_blocks*block::SIZE;
+      map<string,string> attribs;
+      attribs["name"] = p.first;
+      attribs["mesh"] = spatMeshName;
+      attribs["type"] = "celldata";
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,p.second.vectorDim,p.second.ptr) == false) { success = false; }
+   }*/
    writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,               "faceB",               N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,               "faceJ",               N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,           "cellRhoQi",           N_blocks,1);

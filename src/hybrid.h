@@ -22,6 +22,7 @@
 
 #include <cstdlib>
 #include <vector>
+#include <map>
 
 #include <simulationclasses.h>
 
@@ -29,6 +30,15 @@
 #define cube(x) (x)*(x)*(x)
 #define vecsqr(a) (sqr(a[0])+sqr(a[1])+sqr(a[2]))
 #define normvec(a) (sqrt(vecsqr(a)))
+
+template<typename T>
+struct HybridVariable {
+   std::string name = "";
+   std::string type = "";
+   std::size_t vectorDim = 0;
+   pargrid::DataID id = pargrid::INVALID_DATAID;
+   T* ptr = NULL;
+};
 
 #ifdef ION_SPECTRA_ALONG_ORBIT
 #define SPECTRA_FILE_VARIABLES 15
@@ -65,6 +75,8 @@ struct OuterBoundaryZone {
 };
 
 struct Hybrid {
+   static std::map< std::string, HybridVariable<Real> > varReal;
+   static std::map< std::string, HybridVariable<bool> > varBool;
 
    // face data
    static pargrid::DataID dataFaceBID;

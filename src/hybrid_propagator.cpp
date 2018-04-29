@@ -44,6 +44,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::start("propagateB",totalID);   
    
    // get data array pointers
+   //Real* faceB_ = Hybrid::varReal["faceB_"].ptr;
    Real* faceB               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
    Real* faceJ               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceJID);
    Real* cellRhoQi           = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);

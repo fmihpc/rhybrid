@@ -173,6 +173,40 @@ Real getGaussianDistr(Real x,Real sigma) {
    }
 }
 
+bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
+   if(vectorDim <= 0) { return true; }
+   // create pargrid array struct
+   HybridVariable <Real>d;
+   d.vectorDim = vectorDim;
+   d.id = simClasses.pargrid.invalidDataID();
+   d.id = simClasses.pargrid.addUserData<Real>(name,block::SIZE*vectorDim);
+   if(d.id == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: failed to create ParGrid user data array: " << name << endl << write;
+      return false;
+   }
+   // add data transfers
+   for(auto p : stencilID) {
+      if(simClasses.pargrid.addDataTransfer(d.id,p) == false) {
+	 simClasses.logger << "(USER) ERROR: failed to create ParGrid data transfer: " << name  << endl << write;
+	 return false;
+      }
+   }
+   // create pointer
+   d.ptr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.id));
+   if(d.ptr == NULL) {
+      simClasses.logger << "(USER) ERROR: failed to create ParGrid data pointer: " << name  << endl << write;
+      return false;
+   }
+   if(sim.restarted == false) {
+      const size_t arraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*vectorDim;
+      for(size_t i=0; i<arraySize; ++i) { d.ptr[i] = 0.0; }
+   }
+   // add variable to global map
+   Hybrid::varReal[name] = d;
+   simClasses.logger << "(USER): created ParGrid used data array: " << name << " (Real[" << vectorDim << "])" << endl << write;
+   return true;
+}
+
 bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const ObjectFactories& objectFactories,
 			    vector<ParticleListBase*>& particleLists) {
    simClasses.logger << "(RHYBRID) INITIALIZATION" << endl << endl << write;
@@ -326,80 +360,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       exit(1);
    }
 #endif
-   if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
-   // set parameters written in vlsv files
-   Hybrid::outputCellParams = {
-      {"faceB",false},
-      {"faceJ",false},
-      {"cellRhoQi",false},
-      {"cellB",false},
-      {"cellJ",false},
-      {"cellUe",false},
-      {"cellJi",false},
-      {"nodeE",false},
-      {"nodeB",false},
-      {"nodeJ",false},
-      {"nodeUe",false},
-      {"nodeJi",false},
-#ifdef USE_RESISTIVITY
-      {"nodeEta",false},
-#endif
-      {"counterCellMaxUe",false},
-      {"counterCellMaxVi",false},
-      {"counterCellMinRhoQi",false},
-#ifdef USE_ECUT
-      {"counterNodeEcut",false},
-#endif
-#ifdef USE_MAXVW
-      {"counterNodeMaxVw",false},
-#endif
-      {"prod_rate_iono",false},
-      {"prod_rate_exo",false},
-      {"cellBAverage",false},
-      {"n_ave",false},
-      {"v_ave",false},
-      {"cellDivB",false},
-      {"cellNPles",false},
-      {"cellB0",false},
-      {"n",false},
-      {"T",false},
-      {"v",false},
-      {"n_tot",false},
-      {"T_tot",false},
-      {"v_tot",false}
-   };
-   // process output parameter selection
-     {
-        istringstream iss(outputParams);
-        while(iss) {
-           string p;
-           iss >> p;
-           if(p.find_first_not_of(' ') != string::npos) {
-              if(Hybrid::outputCellParams.count(p) > 0) {
-                 Hybrid::outputCellParams[p] = true;
-              }
-           }
-        }
-     }
-   simClasses.logger << "(RHYBRID) Available output parameters: ";
-   for(auto p: Hybrid::outputCellParams) { simClasses.logger << p.first << " "; }
-   simClasses.logger << endl;
-   simClasses.logger << "(RHYBRID) Selected output parameters: ";
-   for(auto p: Hybrid::outputCellParams) {
-      if(p.second == true) { simClasses.logger << p.first << " "; }
-   }
-   simClasses.logger << endl;
-#ifndef WRITE_POPULATION_AVERAGES
-   if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true) {
-      simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_POPULATION_AVERAGES not defined in Makefile" << endl;
-   }
-#endif
-#ifndef USE_B_CONSTANT
-   if(Hybrid::outputCellParams["cellB0"] == true) {
-      simClasses.logger << "(RHYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
-   }
-#endif
-   
+   if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }   
    if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if(Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
    else { Hybrid::R2_fieldObstacle = -1; }
@@ -641,8 +602,55 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_XMIN_BOUNDARY
    Hybrid::dataXminFlagID            = simClasses.pargrid.invalidDataID();
 #endif
+
+   // id of a stencil used for particle accumulation into grid
+   Hybrid::accumulationStencilID = sim.inverseStencilID;
    
-   // Create a parallel data arrays
+   // create a parallel data arrays
+   //vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
+   //vector<pargrid::StencilID> sIDAcc = {pargrid::DEFAULT_STENCIL,Hybrid::accumulationStencilID};
+   //vector<pargrid::StencilID> sIDEmpty;
+   //addVarReal(sim,simClasses,"faceB_",3,sID);
+#ifndef USE_EDGE_J
+   //addVarReal(sim,simClasses,"faceJ_",3,sID);
+#endif
+   //addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);
+   //addVarReal(sim,simClasses,"cellB_",3,sID);
+   //addVarReal(sim,simClasses,"cellJ_",3,sID);
+   //addVarReal(sim,simClasses,"cellUe_",3,sID);
+   //addVarReal(sim,simClasses,"cellJi_",3,sIDAcc);
+   //addVarReal(sim,simClasses,"nodeRhoQi_",1,sID);
+   //addVarReal(sim,simClasses,"nodeE_",3,sID);
+   //addVarReal(sim,simClasses,"nodeB_",3,sID);
+   //addVarReal(sim,simClasses,"nodeJ_",3,sID);   
+   //addVarReal(sim,simClasses,"nodeUe_",3,sID);
+   //addVarReal(sim,simClasses,"nodeJi_",3,sID);
+#ifdef USE_RESITIVITY
+   //addVarReal(sim,simClasses,"nodeEta_",1,sIDEmpty);
+#endif
+   //addVarReal(sim,simClasses,"counterCellMaxUe_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"counterCellMaxVi_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"counterCellMinRhoQi_",1,sIDEmpty);
+#ifdef USE_ECUT
+   //addVarReal(sim,simClasses,"counterNodeEcut_",1,sIDEmpty);
+#endif
+#ifdef USE_MAXVW
+   //addVarReal(sim,simClasses,"counterNodeMaxVw_",1,sIDEmpty);
+#endif
+   //addVarBool(sim,simClasses,"innerFlagField_",1,sIDEmpty);
+   //addVarBool(sim,simClasses,"innerFlagNode_",1,sIDEmpty);
+   //addVarBool(sim,simClasses,"innerFlagParticle_",1,sIDEmpty);
+   //addVarBool(sim,simClasses,"outerBoundaryFlag_",1,sIDEmpty);
+#ifdef USE_XMIN_BOUNDARY
+   //addVarBool(sim,simClasses,"xMinFlag_",1,sIDEmpty);
+#endif
+#ifdef ION_SPECTRA_ALONG_ORBIT
+   //addVarBool(sim,simClasses,"spectraFlag_",1,sIDEmpty);
+#endif
+#ifdef WRITE_POPULATION_AVERAGES
+   //addVarReal(sim,simClasses,"cellAverageB",3,sIDEmpty);
+#endif
+      
    Hybrid::dataFaceBID = simClasses.pargrid.addUserData<Real>("faceB",block::SIZE*3);
    if(Hybrid::dataFaceBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add faceB array to ParGrid!" << endl << write;
@@ -755,9 +763,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
 #endif
-   
-   // create stencils
-   Hybrid::accumulationStencilID = sim.inverseStencilID;
    
    // flags
    Hybrid::dataInnerFlagFieldID = simClasses.pargrid.addUserData<bool>("innerFlagField",block::SIZE*1);
@@ -1174,12 +1179,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             // +x face
             setInitialB(xFaceXCenter,yFaceXCenter,zFaceXCenter,B_initial);
             faceB[n*3+0] = B_initial[0];
+	    //Hybrid::varReal["faceB_"].ptr[n*3+0] = B_initial[0];
             // +y face
             setInitialB(xFaceYCenter,yFaceYCenter,zFaceYCenter,B_initial);
             faceB[n*3+1] = B_initial[1];
+	    //Hybrid::varReal["faceB_"].ptr[n*3+1] = B_initial[1];
             // +z face
             setInitialB(xFaceZCenter,yFaceZCenter,zFaceZCenter,B_initial);
             faceB[n*3+2] = B_initial[2];
+	    //Hybrid::varReal["faceB_"].ptr[n*3+2] = B_initial[2];
 	    const Real xCellCenter = crd[b3+0] + (i+0.5)*Hybrid::dx;
 	    const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
 	    const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
@@ -1581,6 +1589,99 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       nAve.push_back(reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellAverageDensityID[i])));
       vAve.push_back(reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellAverageVelocityID[i])));
    }
+   
+   // set parameters written in vlsv files
+   Hybrid::outputCellParams = {
+      {"faceB",false},
+      {"faceJ",false},
+      {"cellRhoQi",false},
+      {"cellB",false},
+      {"cellJ",false},
+      {"cellUe",false},
+      {"cellJi",false},
+      {"nodeE",false},
+      {"nodeB",false},
+      {"nodeJ",false},
+      {"nodeUe",false},
+      {"nodeJi",false},
+#ifdef USE_RESISTIVITY
+      {"nodeEta",false},
+#endif
+      {"counterCellMaxUe",false},
+      {"counterCellMaxVi",false},
+      {"counterCellMinRhoQi",false},
+#ifdef USE_ECUT
+      {"counterNodeEcut",false},
+#endif
+#ifdef USE_MAXVW
+      {"counterNodeMaxVw",false},
+#endif
+      {"prod_rate_iono",false},
+      {"prod_rate_exo",false},
+      {"cellBAverage",false},
+      {"n_ave",false},
+      {"v_ave",false},
+      {"cellDivB",false},
+      {"cellNPles",false},
+      {"cellB0",false},
+      {"n",false},
+      {"T",false},
+      {"v",false},
+      {"n_tot",false},
+      {"T_tot",false},
+      {"v_tot",false}
+   };
+   /*for(auto p : Hybrid::varReal) {
+      if(Hybrid::outputCellParams.count(p.first) < 1) {
+	 Hybrid::outputCellParams[p.first] = false;
+      }
+      else {
+	 simClasses.logger << "(RHYBRID) WARNING: output parameter defined twice: " << p.first << endl;
+      }
+   }*/
+   // process output parameter selection
+   if(Hybrid::outputCellParams.size() > 0 && outputParams.length() > 0) {
+      istringstream iss(outputParams);
+      while(iss) {
+	 string p;
+	 iss >> p;
+	 const auto strBegin = p.find_first_not_of(" \t");
+	 if(strBegin != string::npos) {
+	    const auto strEnd = p.find_last_not_of(" \t");
+	    const auto strRange = strEnd - strBegin + 1;
+	    p = p.substr(strBegin,strRange);
+	    if(Hybrid::outputCellParams.count(p) > 0) {
+	       Hybrid::outputCellParams[p] = true;
+	    }
+	    else {
+	       simClasses.logger << "(RHYBRID) WARNING: parameter requested for output does not exist: " << p << endl;
+	    }
+	 }
+      }
+   }
+   else {
+      simClasses.logger << "(RHYBRID) WARNING: no output parameters" << endl;
+   }
+   simClasses.logger << "(RHYBRID) selected output parameters:" << endl;
+   for(auto p: Hybrid::outputCellParams) {
+      if(p.second == true) { simClasses.logger << p.first << endl; }
+   }
+   simClasses.logger << endl << "(RHYBRID) not-selected available output parameters:" << endl;
+   for(auto p: Hybrid::outputCellParams) {
+      if(p.second == false) { simClasses.logger << p.first << endl; }
+   }
+   simClasses.logger << endl;
+#ifndef WRITE_POPULATION_AVERAGES
+   if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true) {
+      simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_POPULATION_AVERAGES not defined in Makefile" << endl;
+   }
+#endif
+#ifndef USE_B_CONSTANT
+   if(Hybrid::outputCellParams["cellB0"] == true) {
+      simClasses.logger << "(RHYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
+   }
+#endif
+   
    // initial values
    if(sim.restarted == false) {
       for(size_t i=0; i<vectorArraySize;   ++i) { cellAverageB[i] = 0.0; }
@@ -1599,6 +1700,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
  * @return If true, finalization completed successfully.*/
 bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool success = true;
+   for(const auto &p : Hybrid::varReal) {
+      simClasses.logger << "(USER) removed ParGrid array: " << p.first << endl << write;
+   }
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }

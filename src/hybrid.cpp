@@ -23,6 +23,9 @@ using namespace std;
 
 // Init static variables:
 
+map< string , HybridVariable<Real> > Hybrid::varReal;
+map< string , HybridVariable<bool> > Hybrid::varBool;
+
 // face data
 pargrid::DataID Hybrid::dataFaceBID;
 pargrid::DataID Hybrid::dataFaceJID;
