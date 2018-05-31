@@ -1718,8 +1718,12 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellJID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellUeID)              == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellJiID)              == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellIonosphereID)      == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellExosphereID)       == false) { success = false; }
+   if(Hybrid::N_ionospherePopulations > 0) {
+      if(simClasses.pargrid.removeUserData(Hybrid::dataCellIonosphereID)   == false) { success = false; }
+   }
+   if(Hybrid::N_exospherePopulations > 0) {
+      if(simClasses.pargrid.removeUserData(Hybrid::dataCellExosphereID)    == false) { success = false; }
+   }
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeRhoQiID)           == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeBID)               == false) { success = false; }
