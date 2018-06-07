@@ -45,6 +45,11 @@ using namespace std;
 
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool rvalue = true;
+   // Apply boundary conditions: remove illegal macroparticles after a restart
+   if(sim.restarted == true && Hybrid::filterParticlesAfterRestartDone == false) {
+       for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
+       Hybrid::filterParticlesAfterRestartDone = true;
+   }
    if(Hybrid::logInterval > 0) {
       if( (sim.timestep)%(Hybrid::logInterval) == 0.0) {
          if(writeLogs(sim,simClasses,particleLists) == false) { rvalue = false; }
@@ -1277,7 +1282,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
        (Hybrid::N_outputPopVars != Hybrid::outputPopVarIdVector.size()) ) {
       simClasses.logger << "(RHYBRID) ERROR: Something went wrong in particle list initialization" << endl << write;
       return false;
-   }   
+   }
 
    // determine solar wind properties
    Real ni = 0.0; //total ion number density
@@ -1441,6 +1446,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::maxVi2 = 0.9*Hybrid::dx/sim.dt;
    }
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
+   Hybrid::maxVi = sqrt(Hybrid::maxVi2);
    
    simClasses.logger
      << "(CONSTRAINTS)" << endl
@@ -1698,6 +1704,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          for(size_t j=0; j<vectorArraySize;++j) { vAve[i][j] = 0.0; }
       }
       Hybrid::averageCounter = 0;
+   }
+   else {
+      Hybrid::filterParticlesAfterRestartDone = false;
    }
 #endif
    return true;

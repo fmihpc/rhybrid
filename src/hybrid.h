@@ -23,13 +23,20 @@
 #include <cstdlib>
 #include <vector>
 #include <map>
-
+#include <sstream>
 #include <simulationclasses.h>
 
 #define sqr(x) ((x)*(x))
 #define cube(x) (x)*(x)*(x)
 #define vecsqr(a) (sqr(a[0])+sqr(a[1])+sqr(a[2]))
 #define normvec(a) (sqrt(vecsqr(a)))
+
+inline std::string real2str(Real x,unsigned int prec) {
+    std::stringstream ss;
+    ss.precision(prec);
+    ss << x;
+    return ss.str();
+}
 
 template<typename T>
 struct HybridVariable {
@@ -59,6 +66,11 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[1] = a[2]*b[0] - a[0]*b[2];
    result[2] = a[0]*b[1] - a[1]*b[0];
 }
+
+struct particlePopulation {
+    Real w;
+    std::string name;
+};
 
 struct solarWindPopulation {
    Real m,q,U,n,vth,T;
@@ -160,6 +172,7 @@ struct Hybrid {
    static Real M_object;
    static Real maxUe2;
    static Real maxVi2;
+   static Real maxVi;
    static Real minRhoQi;
    static OuterBoundaryZone outerBoundaryZone;
 #ifdef USE_ECUT
@@ -189,6 +202,7 @@ struct Hybrid {
    static unsigned int N_ionospherePopulations;
    static unsigned int N_exospherePopulations;
    static unsigned int N_outputPopVars;
+   static std::vector<particlePopulation> allPops;
    static std::vector<solarWindPopulation> swPops;
    static std::vector<std::string> populationNames;
    static std::vector<std::string> outputPopVarStr;
@@ -204,6 +218,8 @@ struct Hybrid {
    static std::vector<Real> particleCounterInject;
    static std::vector<Real> particleCounterInjectMacroparticles;
    static Real particleCounterTimeStart;
+
+   static bool filterParticlesAfterRestartDone;
    
 #ifdef WRITE_POPULATION_AVERAGES
    static pargrid::DataID dataCellAverageBID;

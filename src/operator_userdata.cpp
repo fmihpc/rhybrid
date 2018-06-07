@@ -52,6 +52,28 @@ bool UserDataOP::initialize(ConfigReader& cr,Simulation& sim,SimulationClasses& 
    return DataOperator::initialize(cr,sim,simClasses);
 }
 
+// log amounts of macroparticles
+void logMacroparticles(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
+    simClasses.logger << "(RHYBRID) Number of macroparticles per population:" << endl;
+    for(size_t s=0;s<particleLists.size();++s) {
+	Real N_macroParticles = 0.0;
+	// For now skip particles with invalid data id:
+	pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
+	if(particleLists[s]->getParticles(speciesDataID) == true) {
+	    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses.pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
+	    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+		pargrid::ArraySizetype N_particles = wrapper.size(b);
+		N_macroParticles += N_particles;
+	    }
+	}
+	Real N_macroParticlesGlobal = 0.0;
+	MPI_Reduce(&N_macroParticles,&N_macroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+	const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
+	simClasses.logger << "N(" << species->name << ") = " << real2str(N_macroParticlesGlobal,15) << " = " << real2str(N_macroParticlesGlobal/1.0e9,15) << " x 10^9" << endl;
+    }
+    simClasses.logger << write;
+}
+
 bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<ParticleListBase*>& particleLists) {
    bool success = true;
    if(getInitialized() == false) { return false; }
@@ -348,6 +370,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       }
    }*/
 #endif
+   logMacroparticles(*sim,*simClasses,particleLists);
    profile::stop();
    return success;
 }

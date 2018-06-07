@@ -108,6 +108,7 @@ Real Hybrid::xMinBoundary;
 Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
+Real Hybrid::maxVi;
 Real Hybrid::minRhoQi;
 OuterBoundaryZone Hybrid::outerBoundaryZone;
 #ifdef USE_ECUT
@@ -153,6 +154,8 @@ unsigned int Hybrid::N_populations;
 unsigned int Hybrid::N_ionospherePopulations;
 // number of exospheric particle populations
 unsigned int Hybrid::N_exospherePopulations;
+// properties of all particle populations
+vector<particlePopulation> Hybrid::allPops;
 // properties of all solar wind populations
 vector<solarWindPopulation> Hybrid::swPops;
 // names of particle populations
@@ -178,6 +181,8 @@ vector<Real> Hybrid::particleCounterImpact;
 vector<Real> Hybrid::particleCounterInject;
 vector<Real> Hybrid::particleCounterInjectMacroparticles;
 Real Hybrid::particleCounterTimeStart;
+
+bool Hybrid::filterParticlesAfterRestartDone = true;
 
 #ifdef WRITE_POPULATION_AVERAGES
 pargrid::DataID Hybrid::dataCellAverageBID;

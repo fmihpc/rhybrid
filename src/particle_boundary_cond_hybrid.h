@@ -20,7 +20,6 @@
 #define PARTICLE_BOUNDARY_COND_HYBRID_H
 
 #include <base_class_particle_boundary_condition.h>
-
 #include <hybrid.h>
 
 template<class SPECIES,class PARTICLE>
@@ -57,6 +56,56 @@ template<class SPECIES,class PARTICLE> inline
 bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particleDataID,unsigned int* N_particles,
 							 const std::vector<pargrid::CellID>& exteriorBlocks) {
    pargrid::DataWrapper<PARTICLE> wrapper = simClasses->pargrid.getUserDataDynamic<PARTICLE>(particleDataID);
+
+   // filter corrupted particles after a restart
+   if(sim->restarted == true && Hybrid::filterParticlesAfterRestartDone == false) {
+       simClasses->logger << "(RHYBRID) Removing corrupted macroparticles after a restart (" << species.name << ")" << std::endl;
+       Real N_macroParticles = 0.0;
+       Real N_badMacroParticles = 0.0;
+       for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+	   // get block sizes
+	   Real bs[3];
+	   getBlockSize(*simClasses,*sim,b,bs);
+	   PARTICLE* particles = wrapper.data()[b];
+	   int current = 0;
+	   int end = N_particles[b]-1;
+	   while (current <= end) {
+	       N_macroParticles++;
+	       const Real x = particles[current].state[particle::X];
+	       const Real y = particles[current].state[particle::Y];
+	       const Real z = particles[current].state[particle::Z];
+	       const Real vx = particles[current].state[particle::VX];
+	       const Real vy = particles[current].state[particle::VY];
+	       const Real vz = particles[current].state[particle::VZ];
+	       const Real w = particles[current].state[particle::WEIGHT];
+	       // check coordinates, velocities and weight: remove if the particle is corrupted
+	       if(x < 0 || y < 0 || z < 0 || x > bs[0] || y > bs[1] || z > bs[2] ||
+		  fabs(vx) > Hybrid::maxVi || fabs(vy) > Hybrid::maxVi || fabs(vz) > Hybrid::maxVi ||
+		  w != Hybrid::allPops[species.popid-1].w) {
+		   particles[current] = particles[end];
+		   --end;
+		   N_badMacroParticles++;
+		   continue;
+	       }
+	       ++current;
+	   }
+	   wrapper.resize(b,current);
+	   N_particles[b] = current;
+       }
+       Real N_macroParticlesGlobal = 0.0;
+       Real N_badMacroParticlesGlobal = 0.0;
+       MPI_Reduce(&N_macroParticles,&N_macroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim->MASTER_RANK,sim->comm);
+       MPI_Reduce(&N_badMacroParticles,&N_badMacroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim->MASTER_RANK,sim->comm);
+       if(sim->mpiRank == sim->MASTER_RANK) {
+	   simClasses->logger
+	       << "Number of corrupted macroparticles removed: "
+	       << real2str(N_badMacroParticlesGlobal,15) << " (" << species.name << ")" << std::endl;
+	   simClasses->logger
+	       << "Number of macroparticles checked: "
+	       << real2str(N_macroParticlesGlobal,15) << " (" << species.name << ")" << std::endl << write;
+       }
+       return true;
+   }
    
    // Remove particles on exterior cells:
    Real t_propag = 0.0;
