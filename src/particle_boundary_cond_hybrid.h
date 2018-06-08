@@ -81,7 +81,10 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	       // check coordinates, velocities and weight: remove if the particle is corrupted
 	       if(x < 0 || y < 0 || z < 0 || x > bs[0] || y > bs[1] || z > bs[2] ||
 		  fabs(vx) > Hybrid::maxVi || fabs(vy) > Hybrid::maxVi || fabs(vz) > Hybrid::maxVi ||
-		  w != Hybrid::allPops[species.popid-1].w) {
+		  w != Hybrid::allPops[species.popid-1].w ||
+		  std::isnan(x) == true || std::isnan(y) == true || std::isnan(z) == true ||
+		  std::isnan(vx) == true || std::isnan(vy) == true || std::isnan(vz) == true ||
+		  std::isnan(w) == true) {
 		   particles[current] = particles[end];
 		   --end;
 		   N_badMacroParticles++;
