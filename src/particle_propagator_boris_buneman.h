@@ -151,19 +151,19 @@ template<class PARTICLE>
       //if(particle.state[particle::INI_TIME] >= 0.0) {
          Hybrid::spectraParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
          Hybrid::spectraParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::WEIGHT] );                        // 3
-         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(globalID) );                             // 4
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VX] );                            // 5
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VY] );                            // 6
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VZ] );                            // 7
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_TIME] );                      // 8
-         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) ); // 9
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_X] );                         // 10
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_Y] );                         // 11
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_Z] );                         // 12
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VX] );                        // 13
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VY] );                        // 14
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VZ] );                        // 15 = SPECTRA_FILE_VARIABLES
+         //Hybrid::spectraParticleOutput.push_back( particle.state[particle::WEIGHT] );                        //
+         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(globalID) );                             // 3
+         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VX] );                            // 4
+         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VY] );                            // 5
+         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VZ] );                            // 6
+         //Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_TIME] );                      // 
+         //Hybrid::spectraParticleOutput.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) ); // 
+         //Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_X] );                         // 
+         //Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_Y] );                         // 
+         //Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_Z] );                         // 
+         //Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VX] );                        // 
+         //Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VY] );                        // 
+         //Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VZ] );                        // 
 	 //particle.state[particle::INI_TIME] = -100.0; // only detect each particle once
       //}
    }

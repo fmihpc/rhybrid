@@ -114,13 +114,13 @@ bool InjectorUniform::inject(pargrid::DataID speciesDataID,unsigned int* N_parti
 
 bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef ION_SPECTRA_ALONG_ORBIT
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
-#endif
+#endif*/
    vector<Real> xinj,yinj,zinj;
    for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
       const Real xCell = (i+0.5)*Hybrid::dx;
@@ -153,7 +153,7 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef ION_SPECTRA_ALONG_ORBIT
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -162,7 +162,7 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
       Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
@@ -250,13 +250,13 @@ bool InjectorSolarWind::inject(pargrid::DataID speciesDataID,unsigned int* N_par
 
 bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef ION_SPECTRA_ALONG_ORBIT
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
-#endif
+#endif*/
    Real blockSize[3];
    getBlockSize(*simClasses,*sim,blockID,blockSize);
    // probround
@@ -275,7 +275,7 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef ION_SPECTRA_ALONG_ORBIT
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -284,7 +284,7 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
       Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
@@ -435,7 +435,7 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
       particles[p].state[particle::VY] = vy;
       particles[p].state[particle::VZ] = vz;
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef ION_SPECTRA_ALONG_ORBIT
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -444,7 +444,7 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
       Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
@@ -669,13 +669,13 @@ bool InjectorExosphere::inject(pargrid::DataID speciesDataID,unsigned int* N_par
 
 bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef ION_SPECTRA_ALONG_ORBIT
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
-#endif
+#endif*/
    Real* cellExosphere = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellExosphereID);
    vector<Real> xinj,yinj,zinj;
    for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
@@ -711,7 +711,7 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef ION_SPECTRA_ALONG_ORBIT
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -720,7 +720,7 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
       Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;

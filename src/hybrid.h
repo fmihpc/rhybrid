@@ -38,6 +38,14 @@ inline std::string real2str(Real x,unsigned int prec) {
     return ss.str();
 }
 
+inline std::string int2str(int x,unsigned int N) {
+    std::stringstream ss;
+    ss.width(N);
+    ss.fill('0');
+    ss << x;
+    return ss.str();
+}
+
 template<typename T>
 struct HybridVariable {
    std::string name = "";
@@ -48,8 +56,8 @@ struct HybridVariable {
 };
 
 #ifdef ION_SPECTRA_ALONG_ORBIT
-#define SPECTRA_FILE_VARIABLES 15
-#define EBINS 10
+#define SPECTRA_FILE_VARIABLES 6
+/*#define EBINS 10
 struct Dist {
    Real f[EBINS];
  public:
@@ -58,7 +66,7 @@ struct Dist {
          f[i] = 0.0;
       }
    }
-};
+};*/
 #endif
 
 inline void cross(const Real a[3], const Real b[3], Real result[3]) {

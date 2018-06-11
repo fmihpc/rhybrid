@@ -54,7 +54,7 @@ bool UserDataOP::initialize(ConfigReader& cr,Simulation& sim,SimulationClasses& 
 
 // log amounts of macroparticles
 void logMacroparticles(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
-    simClasses.logger << "(RHYBRID) Number of macroparticles per population:" << endl;
+    simClasses.logger << "(RHYBRID) Number of macroparticles per population in the simulation:" << endl;
     for(size_t s=0;s<particleLists.size();++s) {
 	Real N_macroParticles = 0.0;
 	// For now skip particles with invalid data id:
@@ -800,32 +800,40 @@ bool writeSpectraParticles(Simulation& sim,SimulationClasses& simClasses) {
 	    return false;
 	 }
 	 ofstream spectraFile;
-	 spectraFile.open(string("spectra_particles_") + to_string(sim.timestep) + string(".dat"),ios_base::app);
-	 spectraFile.precision(3);
+	 string spectraFileName = string("spectra_particles_") + int2str(sim.timestep,7) + string(".dat");
+	 spectraFile.open(spectraFileName,ios_base::app);
+	 spectraFile.precision(6);
 	 spectraFile << scientific;
+	 unsigned long fileLineCnt = 0;
 	 for(unsigned int i=0;i<spectraParticleOutputGlobal.size();i+=SPECTRA_FILE_VARIABLES) {
 	    spectraFile
 	      << spectraParticleOutputGlobal[i+0] << " "                             // 01 det: t
 	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+1]) << " "  // 02 det: popid
-	      << spectraParticleOutputGlobal[i+2] << " "                             // 03 det: weight
-	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+3]) << " "  // 04 det: block id
-	      << spectraParticleOutputGlobal[i+4] << " "                             // 05 det: vx
-	      << spectraParticleOutputGlobal[i+5] << " "                             // 06 det: vy
-	      << spectraParticleOutputGlobal[i+6] << " "                             // 07 det: vz
-	      << spectraParticleOutputGlobal[i+7] << " "                             // 08 ini: t
-	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+8]) << " "  // 09 ini: block id
-	      << spectraParticleOutputGlobal[i+9] << " "                             // 10 ini: x
-	      << spectraParticleOutputGlobal[i+10] << " "                            // 11 ini: y
-	      << spectraParticleOutputGlobal[i+11] << " "                            // 12 ini: z
-	      << spectraParticleOutputGlobal[i+12] << " "                            // 13 ini: vx
-	      << spectraParticleOutputGlobal[i+13] << " "                            // 14 ini: vy
-	      << spectraParticleOutputGlobal[i+14] << endl;                          // 15 ini: vz
-	    Hybrid::spectraFileLineCnt++;
+	      //<< spectraParticleOutputGlobal[i+2] << " "                             //  det: weight
+	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+2]) << " "  // 03 det: block id
+	      << spectraParticleOutputGlobal[i+3] << " "                             // 04 det: vx
+	      << spectraParticleOutputGlobal[i+4] << " "                             // 05 det: vy
+	      << spectraParticleOutputGlobal[i+5] << endl;                           // 06 det: vz
+	      /*<< spectraParticleOutputGlobal[i+7] << " "                             // ini: t
+	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+8]) << " "  // ini: block id
+	      << spectraParticleOutputGlobal[i+9] << " "                             // ini: x
+	      << spectraParticleOutputGlobal[i+10] << " "                            // ini: y
+	      << spectraParticleOutputGlobal[i+11] << " "                            // ini: z
+	      << spectraParticleOutputGlobal[i+12] << " "                            // ini: vx
+	      << spectraParticleOutputGlobal[i+13] << " "                            // ini: vy
+	      << spectraParticleOutputGlobal[i+14] << endl;                          // ini: vz*/
+	    fileLineCnt++;
 	 }
 	 spectraFile << flush;
 	 spectraFile.close();
+	 Hybrid::spectraFileLineCnt += fileLineCnt;
+	 simClasses.logger
+	   << "(RHYBRID) CELL SPECTRA: written " << spectraFileName << " with " << fileLineCnt << " particles" << endl
+	   << "(RHYBRID) CELL SPECTRA: maximum particle counter: " << static_cast<long long>(Hybrid::spectraFileLineCnt) << "/" << static_cast<long long>(Hybrid::maxRecordedSpectraParticles) << endl << write;
       }
    }
+   MPI_Barrier(sim.comm);
+   MPI_Bcast(&Hybrid::spectraFileLineCnt,1,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
    // empty spectra particle list
    Hybrid::spectraParticleOutput.clear();
    return true;
