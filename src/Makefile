@@ -7,7 +7,7 @@ USE_RESISTIVITY := true
 USE_ECUT := true
 USE_MAXVW := true
 WRITE_POPULATION_AVERAGES := true
-ION_SPECTRA_ALONG_ORBIT := false
+USE_DETECTORS := false
 
 include ../../../Makefile.${ARCH}
 
@@ -16,7 +16,7 @@ include ../../../Makefile.${ARCH}
 
 OBJS = register_objects.o user.o hybrid_propagator.o hybrid.o\
 	particle_accumulator.o particle_injector.o\
-	operator_userdata.o particle_species.o
+	operator_userdata.o particle_species.o detectors.o
 
 ifeq ($(USE_NODE_UE),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_NODE_UE
@@ -54,8 +54,8 @@ ifeq ($(WRITE_POPULATION_AVERAGES),true)
 CXXFLAGS := $(CXXFLAGS) -DWRITE_POPULATION_AVERAGES
 endif
 
-ifeq ($(ION_SPECTRA_ALONG_ORBIT),true)
-CXXFLAGS := $(CXXFLAGS) -DION_SPECTRA_ALONG_ORBIT
+ifeq ($(USE_DETECTORS),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_DETECTORS
 endif
 
 #override CXXFLAGS += -std=gnu++0x
@@ -124,3 +124,5 @@ particle_injector.o: ${DEPS_INJECTOR}
 particle_species.o: ${DEPS_SPECIES}
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c particle_species.cpp ${INCS_REG}
 
+detectors.o: detectors.h detectors.cpp
+	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c detectors.cpp ${INCS}

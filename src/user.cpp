@@ -40,6 +40,7 @@
 #ifdef USE_B_INITIAL
 #include "magnetic_field.h"
 #endif
+#include "detectors.h"
 
 using namespace std;
 
@@ -55,12 +56,12 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
          if(writeLogs(sim,simClasses,particleLists) == false) { rvalue = false; }
       }
    }
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   if(sim.t >= Hybrid::tStartSpectra && sim.t <= Hybrid::tEndSpectra && Hybrid::spectraFileLineCnt < Hybrid::maxRecordedSpectraParticles) {
-      Hybrid::recordSpectra = true;
-      Hybrid::spectraTimestepCnt++;
+#ifdef USE_DETECTORS
+   if(sim.t >= Hybrid::detStartTimePle && sim.t <= Hybrid::detEndTimePle && Hybrid::detFileLineCntParticles < Hybrid::detMaxRecordedParticles) {
+      Hybrid::detRecordParticles = true;
+      Hybrid::detTimestepCntParticles++;
    }
-   else { Hybrid::recordSpectra = false; }
+   else { Hybrid::detRecordParticles = false; }
 #endif
    setupGetFields(sim,simClasses);
    // Propagate all particles:
@@ -77,11 +78,11 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    for(size_t p=0;p<particleLists.size();++p) {
       if(particleLists[p]->injectParticles() == false) { rvalue = false; } 
    }
-#ifdef ION_SPECTRA_ALONG_ORBIT   
-   if(Hybrid::recordSpectra == true) {
-      if(Hybrid::spectraTimestepCnt >= Hybrid::writeIntervalTimesteps) {
-	 bool ok = writeSpectraParticles(sim,simClasses);
-	 Hybrid::spectraTimestepCnt = 0;
+#ifdef USE_DETECTORS   
+   if(Hybrid::detRecordParticles == true) {
+      if(Hybrid::detTimestepCntParticles >= Hybrid::detWriteIntervalParticles) {
+	 bool ok = writeDetectorParticles(sim,simClasses);
+	 Hybrid::detTimestepCntParticles = 0;
       }
    }
 #endif
@@ -649,8 +650,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_XMIN_BOUNDARY
    //addVarBool(sim,simClasses,"xMinFlag_",1,sIDEmpty);
 #endif
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   //addVarBool(sim,simClasses,"spectraFlag_",1,sIDEmpty);
+#ifdef USE_DETECTORS
+   //addVarBool(sim,simClasses,"detPleFlag_",1,sIDEmpty);
 #endif
 #ifdef WRITE_POPULATION_AVERAGES
    //addVarReal(sim,simClasses,"cellAverageB",3,sIDEmpty);
@@ -801,10 +802,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
 #endif
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   Hybrid::dataSpectraFlagID = simClasses.pargrid.addUserData<bool>("spectraFlag",1);
-   if(Hybrid::dataSpectraFlagID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add spectraFlag array to ParGrid!" << endl << write;
+#ifdef USE_DETECTORS
+   Hybrid::dataDetectorParticleFlagID = simClasses.pargrid.addUserData<bool>("detPleFlag",1);
+   if(Hybrid::dataDetectorParticleFlagID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add detPleFlag array to ParGrid!" << endl << write;
       return false;
    }
    // dynamic pargrid array for energy spectra
@@ -908,43 +909,43 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* xMinFlag            = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataXminFlagID));
 #endif
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   bool* spectraFlag        = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataSpectraFlagID));
-   Hybrid::spectraFileLineCnt = 0;
+#ifdef USE_DETECTORS
+   bool* detPleFlag        = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+   Hybrid::detFileLineCntParticles = 0;
    vector<string> orbitFiles;
-   cr.add("Analysis.orbit_spectra_t_start","Simulation time to start orbit spectra analysis (real)",-1);
-   cr.add("Analysis.orbit_spectra_t_end","Simulation time to end orbit spectra analysis (real)",-1);
-   cr.add("Analysis.orbit_spectra_max_particles","Maximum number of recorded particles for orbit spectra (real)",1e5);
-   cr.add("Analysis.orbit_spectra_write_interval_timesteps","Interval of spectra file writing (real)",10);
-   cr.addComposed("Analysis.orbitfile","File names of spacecraft orbits for spectra (string)");
+   cr.add("Detectors.particle_t_start","Simulation time to start particle detector recording (real)",-1);
+   cr.add("Detectors.particle_t_end","Simulation time to end particle detector recording (real)",-1);
+   cr.add("Detectors.particle_max_amount","Maximum number of recorded particles by all detectors (real)",1e5);
+   cr.add("Detectors.particle_write_interval_timestep","Write interval of particle detector file in timesteps (real)",10);
+   cr.addComposed("Detectors.particle_orbitfile","File names of orbit for particle detectors (string)");
    cr.parse();
-   cr.get("Analysis.orbit_spectra_t_start",Hybrid::tStartSpectra);
-   cr.get("Analysis.orbit_spectra_t_end",Hybrid::tEndSpectra);
-   cr.get("Analysis.orbit_spectra_max_particles",Hybrid::maxRecordedSpectraParticles);
-   cr.get("Analysis.orbit_spectra_write_interval_timesteps",Hybrid::writeIntervalTimesteps);
-   cr.get("Analysis.orbitfile",orbitFiles);
+   cr.get("Detectors.particle_t_start",Hybrid::detStartTimePle);
+   cr.get("Detectors.particle_t_end",Hybrid::detEndTimePle);
+   cr.get("Detectors.particle_max_amount",Hybrid::detMaxRecordedParticles);
+   cr.get("Detectors.particle_write_interval_timestep",Hybrid::detWriteIntervalParticles);
+   cr.get("Detectors.particle_orbitfile",orbitFiles);
    simClasses.logger
-     << "(RHYBRID) CELL SPECTRA: Recording particle spectra between: t = " << Hybrid::tStartSpectra << " ... " << Hybrid::tEndSpectra << " s" << endl
-     << "(RHYBRID) CELL SPECTRA: Maximum number of recorded spectra particles: " << Hybrid::maxRecordedSpectraParticles << endl
-     << "(RHYBRID) CELL SPECTRA: Writing interval of spectra particles: " << Hybrid::writeIntervalTimesteps << " timesteps" << endl;
+     << "(RHYBRID) DETECTORS: recording particles at t = " << Hybrid::detStartTimePle << " ... " << Hybrid::detEndTimePle << " s" << endl
+     << "(RHYBRID) DETECTORS: maximum number of recorded particles: " << Hybrid::detMaxRecordedParticles << endl
+     << "(RHYBRID) DETECTORS: writing interval of particles: " << Hybrid::detWriteIntervalParticles << " timesteps" << endl;
    
    vector< vector<Real> > orbitCoordinates;
    // only master reads orbit coordinates from files
    if(sim.mpiRank==sim.MASTER_RANK) {
       for (vector<string>::iterator it=orbitFiles.begin(); it!=orbitFiles.end(); ++it) {
-         simClasses.logger << "(RHYBRID) CELL SPECTRA: Reading a spacecraft orbit file: " << *it << endl;
+         simClasses.logger << "(RHYBRID) DETECTORS: reading a spacecraft orbit file: " << *it << endl;
          vector< vector<Real> > tmpCrd;
          tmpCrd = readRealsFromFile(*it);
          if(checkOrbit(tmpCrd) == false) {
-            simClasses.logger << "(RHYBRID) ERROR: CELL SPECTRA: Bad orbit file (" << *it << ")" << endl << write;
+            simClasses.logger << "(RHYBRID) DETECTORS: ERROR: bad orbit file (" << *it << ")" << endl << write;
             return false;
          }
          orbitCoordinates.insert(orbitCoordinates.end(),tmpCrd.begin(),tmpCrd.end());
       }
-      simClasses.logger << "(RHYBRID) CELL SPECTRA: Total of " << orbitCoordinates.size() << " orbit points read" << endl;
+      simClasses.logger << "(RHYBRID) DETECTORS: Total of " << orbitCoordinates.size() << " orbit points read" << endl;
    }
    if(MPI_BcastFromMaster2DVector(sim,orbitCoordinates) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: CELL SPECTRA: failed to distribute orbit coordinates to all MPI PEs" << endl << write;
+      simClasses.logger << "(RHYBRID) DETECTORS: ERROR: failed to distribute orbit coordinates to all MPI PEs" << endl << write;
       return false;
    }
    /*cerr << sim.mpiRank << ") " << orbitCoordinates.size() << endl;
@@ -956,10 +957,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          cout << endl;
       }
    }*/
-   int N_spectraCells = 0;
+   int N_detectorCellsParticle = 0;
    /*pargrid::DataWrapper<Dist> wrapper = simClasses.pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
    if (wrapper.valid() == false) {
-      simClasses.logger << "(RHYBRID) ERROR: CELL SPECTRA: dynamic user data wrapper failed" << endl << write;
+      simClasses.logger << "(RHYBRID) DETECTORS: ERROR: dynamic user data wrapper failed" << endl << write;
       return false;
    }*/
 #endif
@@ -1001,17 +1002,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       for(size_t i=0; i<scalarArraySize; ++i) { counterNodeMaxVw[i] = 0.0; }
 #endif
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
+#ifdef USE_DETECTORS
       // variable to record cellid and cell centroid coordinates for output
-      vector< vector<Real> > spectraCellIDXYZ;
+      vector< vector<Real> > detCellIDXYZ;
 #endif      
       // create flags for inner boundary
       const Real* crd = getBlockCoordinateArray(sim,simClasses);
       for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
 	 const size_t b3 = 3*b;
 	 innerFlagParticle[b] = false;
-#ifdef ION_SPECTRA_ALONG_ORBIT
-         spectraFlag[b] = false;
+#ifdef USE_DETECTORS
+         detPleFlag[b] = false;
 #endif
 	 for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
 	    const int n = (b*block::SIZE+block::index(i,j,k));
@@ -1092,7 +1093,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             if(xCellCenter < Hybrid::xMinBoundary) { xMinFlag[n] = true; }
             else                                   { xMinFlag[n] = false; }
 #endif
-#ifdef ION_SPECTRA_ALONG_ORBIT
+#ifdef USE_DETECTORS
             const Real xmin = xCellCenter - 0.5*Hybrid::dx;
             const Real xmax = xCellCenter + 0.5*Hybrid::dx;
             const Real ymin = yCellCenter - 0.5*Hybrid::dx;
@@ -1104,8 +1105,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                const Real yi = orbitCoordinates[i][1];
                const Real zi = orbitCoordinates[i][2];
                if( (xi >= xmin && xi <= xmax) && (yi >= ymin && yi <= ymax) && (zi >= zmin && zi <= zmax) ) {
-                  spectraFlag[b] = true;
-                  N_spectraCells += 1;
+                  detPleFlag[b] = true;
+                  N_detectorCellsParticle += 1;
                   // introduce Dists only once per block
                   /*if(wrapper.size(b) <= 0) {
                      for(unsigned int l = 0;l<Hybrid::N_populations;++l) {
@@ -1113,14 +1114,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                      }
                   }*/
                   vector<Real> tmp1 = {simClasses.pargrid.getGlobalIDs()[b],xCellCenter,yCellCenter,zCellCenter};
-                  spectraCellIDXYZ.push_back(tmp1);
+                  detCellIDXYZ.push_back(tmp1);
                   break;
                }
             }
 #endif
 	 }
       }
-#ifdef ION_SPECTRA_ALONG_ORBIT
+#ifdef USE_DETECTORS
       // zero energy spectra counters
       /*for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
          Dist* s = wrapper.data()[b];
@@ -1130,47 +1131,47 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             }
          }
       }*/
-      // sum N_spectraCells of all PEs
-      int N_spectraCellsGlobalSum = 0.0;
-      MPI_Reduce(&N_spectraCells,&N_spectraCellsGlobalSum,1,MPI_Type<int>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+      // sum N_detectorCellsParticle of all PEs
+      int N_detectorCellsParticleGlobalSum = 0.0;
+      MPI_Reduce(&N_detectorCellsParticle,&N_detectorCellsParticleGlobalSum,1,MPI_Type<int>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       // send (cellid,x,y,z) rows from PEs to master (this could be optimized using MPI_Gatherv)
       MPI_Barrier(sim.comm);
       if(sim.mpiRank != sim.MASTER_RANK) {
-         for(unsigned int i = 0;i<spectraCellIDXYZ.size();++i) {
-            if(spectraCellIDXYZ[i].size() != 4) {
-               simClasses.logger << "(RHYBRID) ERROR: CELL SPECTRA: Error with cell indices and coordinates row" << endl << write;
+         for(unsigned int i = 0;i<detCellIDXYZ.size();++i) {
+            if(detCellIDXYZ[i].size() != 4) {
+               simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error with cell indices and coordinates row" << endl << write;
                return false;
             }
-            MPI_Send(&spectraCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
+            MPI_Send(&detCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
          }
       }
       if(sim.mpiRank == sim.MASTER_RANK) {
-         int N_rowsToReceive = N_spectraCellsGlobalSum - N_spectraCells;
+         int N_rowsToReceive = N_detectorCellsParticleGlobalSum - N_detectorCellsParticle;
          for(unsigned int i = 0;i<N_rowsToReceive;++i) { 
             vector<Real> tmpRecv;
             tmpRecv.resize(4);
             MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
-            spectraCellIDXYZ.push_back(tmpRecv);
+            detCellIDXYZ.push_back(tmpRecv);
          }
       }
       MPI_Barrier(sim.comm);
       if(sim.mpiRank == sim.MASTER_RANK) {
-         simClasses.logger << "(RHYBRID) CELL SPECTRA: Recording ion spectra in " << N_spectraCellsGlobalSum << " cells" << endl << write;
-         // write spectra cell indices file
-         ofstream spectraCellIndicesFile;
-         spectraCellIndicesFile.open("spectra_cell_indices.dat",ios_base::out);
-         spectraCellIndicesFile.precision(3);
-         spectraCellIndicesFile << scientific;
-         spectraCellIndicesFile << "% globalid x y z" << endl;
-         for(unsigned int i = 0;i<spectraCellIDXYZ.size();++i) {
-            if(spectraCellIDXYZ[i].size() != 4) {
-               simClasses.logger << "(RHYBRID) ERROR: CELL SPECTRA: Error when creating cell indices file" << endl << write;
+         simClasses.logger << "(RHYBRID) DETECTORS: recording particles in " << N_detectorCellsParticleGlobalSum << " cells" << endl << write;
+         // write detector cell indices in a file
+         ofstream detCellIndicesFile;
+         detCellIndicesFile.open("detector_cell_indices.dat",ios_base::out);
+         detCellIndicesFile.precision(6);
+         detCellIndicesFile << scientific;
+         detCellIndicesFile << "% globalid x y z" << endl;
+         for(unsigned int i = 0;i<detCellIDXYZ.size();++i) {
+            if(detCellIDXYZ[i].size() != 4) {
+               simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
                return false;
             }
-            spectraCellIndicesFile << static_cast<long long>(spectraCellIDXYZ[i][0]) << " " << spectraCellIDXYZ[i][1] << " " << spectraCellIDXYZ[i][2] << " " << spectraCellIDXYZ[i][3] << endl;
+            detCellIndicesFile << static_cast<long long>(detCellIDXYZ[i][0]) << " " << detCellIDXYZ[i][1] << " " << detCellIDXYZ[i][2] << " " << detCellIDXYZ[i][3] << endl;
          }
-         spectraCellIndicesFile << flush;
-         spectraCellIndicesFile.close();
+         detCellIndicesFile << flush;
+         detCellIndicesFile.close();
       }
 #endif
 #ifdef USE_B_INITIAL
@@ -1757,9 +1758,9 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
 #ifdef USE_XMIN_BOUNDARY
    if(simClasses.pargrid.removeUserData(Hybrid::dataXminFlagID)            == false) { success = false; }
 #endif
-#ifdef ION_SPECTRA_ALONG_ORBIT
+#ifdef USE_DETECTORS
    //if(simClasses.pargrid.removeUserData(Hybrid::dataSpectraID            == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataSpectraFlagID)         == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataDetectorParticleFlagID)         == false) { success = false; }
 #endif
 #ifdef WRITE_POPULATION_AVERAGES
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)        == false) { success = false; }

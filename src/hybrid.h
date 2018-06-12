@@ -55,8 +55,8 @@ struct HybridVariable {
    T* ptr = NULL;
 };
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
-#define SPECTRA_FILE_VARIABLES 6
+#ifdef USE_DETECTORS
+#define DETECTOR_PARTICLE_FILE_VARIABLES 6
 /*#define EBINS 10
 struct Dist {
    Real f[EBINS];
@@ -145,17 +145,17 @@ struct Hybrid {
 #ifdef USE_XMIN_BOUNDARY
    static pargrid::DataID dataXminFlagID;
 #endif
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   static pargrid::DataID dataSpectraFlagID;
+#ifdef USE_DETECTORS
+   static pargrid::DataID dataDetectorParticleFlagID;
    //static pargrid::DataID dataSpectraID;
-   static Real tStartSpectra;
-   static Real tEndSpectra;
-   static Real maxRecordedSpectraParticles;
-   static Real writeIntervalTimesteps;
-   static Real spectraTimestepCnt;
-   static Real spectraFileLineCnt;
-   static bool recordSpectra;
-   static std::vector<Real> spectraParticleOutput;
+   static Real detStartTimePle;
+   static Real detEndTimePle;
+   static Real detMaxRecordedParticles;
+   static Real detWriteIntervalParticles;
+   static Real detTimestepCntParticles;
+   static Real detFileLineCntParticles;
+   static bool detRecordParticles;
+   static std::vector<Real> detParticleOutput;
 #endif
    
    // bit masks

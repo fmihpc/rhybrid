@@ -355,17 +355,17 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
          if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(Utot[0])) == false) { success = false; }
       }
    }
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   // write spectra cell mask
-   bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
-   attribs["name"] = string("spectra_flag");
-   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,spectraFlag) == false) { success = false; }
+#ifdef USE_DETECTORS
+   // write detector cell mask
+   bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+   attribs["name"] = string("detector_flag_particle");
+   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detPleFlag) == false) { success = false; }
    
    // energy spectra writer not implemented yet
    /*pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
    Real* globalIDs = static_cast<double>(simClasses->pargrid.getGlobalIDs());
    for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-      if(spectraFlag[b] == true) {
+      if(detPleFlag[b] == true) {
          Dist* spectra = wrapperSpectra.data()[b];
       }
    }*/
@@ -772,71 +772,4 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
    return success;
 }
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
-// ascii output writer for gathered particles
-bool writeSpectraParticles(Simulation& sim,SimulationClasses& simClasses) {
-   // gather all recorded spectra particles on master and write in file
-   int N_plesLocal = Hybrid::spectraParticleOutput.size();
-   vector<int> N_plesGlobal(sim.mpiProcesses);
-   MPI_Allgather(&N_plesLocal,1,MPI_Type<int>(),&N_plesGlobal[0],1,MPI_Type<int>(),sim.comm);
-   int N_plesTotal = accumulate(N_plesGlobal.begin(),N_plesGlobal.end(),0);
-   vector<Real> spectraParticleOutputGlobal(N_plesTotal);
-   // create displacement vector for spectraParticleOutputGlobal
-   int displ[sim.mpiProcesses];
-   if(sim.mpiRank == sim.MASTER_RANK) {
-      int sum = 0.0;
-      for (int i = 0; i < sim.mpiProcesses; ++i) {
-	 displ[i] = sum;
-	 sum += N_plesGlobal[i];
-      }
-   }
-   // gather in master
-   MPI_Gatherv(&Hybrid::spectraParticleOutput[0],N_plesLocal,MPI_Type<Real>(),&spectraParticleOutputGlobal[0],&N_plesGlobal[0],&displ[0],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-   // master writes
-   if(sim.mpiRank == sim.MASTER_RANK) {
-      if(Hybrid::spectraFileLineCnt <= Hybrid::maxRecordedSpectraParticles) {
-	 if(spectraParticleOutputGlobal.size() % SPECTRA_FILE_VARIABLES != 0) {
-	    simClasses.logger << "(RHYBRID) ERROR: CELL SPECTRA: error when writing particle file" << endl << write;
-	    return false;
-	 }
-	 ofstream spectraFile;
-	 string spectraFileName = string("spectra_particles_") + int2str(sim.timestep,7) + string(".dat");
-	 spectraFile.open(spectraFileName,ios_base::app);
-	 spectraFile.precision(6);
-	 spectraFile << scientific;
-	 unsigned long fileLineCnt = 0;
-	 for(unsigned int i=0;i<spectraParticleOutputGlobal.size();i+=SPECTRA_FILE_VARIABLES) {
-	    spectraFile
-	      << spectraParticleOutputGlobal[i+0] << " "                             // 01 det: t
-	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+1]) << " "  // 02 det: popid
-	      //<< spectraParticleOutputGlobal[i+2] << " "                             //  det: weight
-	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+2]) << " "  // 03 det: block id
-	      << spectraParticleOutputGlobal[i+3] << " "                             // 04 det: vx
-	      << spectraParticleOutputGlobal[i+4] << " "                             // 05 det: vy
-	      << spectraParticleOutputGlobal[i+5] << endl;                           // 06 det: vz
-	      /*<< spectraParticleOutputGlobal[i+7] << " "                             // ini: t
-	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+8]) << " "  // ini: block id
-	      << spectraParticleOutputGlobal[i+9] << " "                             // ini: x
-	      << spectraParticleOutputGlobal[i+10] << " "                            // ini: y
-	      << spectraParticleOutputGlobal[i+11] << " "                            // ini: z
-	      << spectraParticleOutputGlobal[i+12] << " "                            // ini: vx
-	      << spectraParticleOutputGlobal[i+13] << " "                            // ini: vy
-	      << spectraParticleOutputGlobal[i+14] << endl;                          // ini: vz*/
-	    fileLineCnt++;
-	 }
-	 spectraFile << flush;
-	 spectraFile.close();
-	 Hybrid::spectraFileLineCnt += fileLineCnt;
-	 simClasses.logger
-	   << "(RHYBRID) CELL SPECTRA: written " << spectraFileName << " with " << fileLineCnt << " particles" << endl
-	   << "(RHYBRID) CELL SPECTRA: maximum particle counter: " << static_cast<long long>(Hybrid::spectraFileLineCnt) << "/" << static_cast<long long>(Hybrid::maxRecordedSpectraParticles) << endl << write;
-      }
-   }
-   MPI_Barrier(sim.comm);
-   MPI_Bcast(&Hybrid::spectraFileLineCnt,1,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-   // empty spectra particle list
-   Hybrid::spectraParticleOutput.clear();
-   return true;
-}
-#endif
 

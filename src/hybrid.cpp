@@ -73,17 +73,17 @@ pargrid::DataID Hybrid::dataOuterBoundaryFlagID;
 #ifdef USE_XMIN_BOUNDARY
 pargrid::DataID Hybrid::dataXminFlagID;
 #endif
-#ifdef ION_SPECTRA_ALONG_ORBIT
-pargrid::DataID Hybrid::dataSpectraFlagID;
+#ifdef USE_DETECTORS
+pargrid::DataID Hybrid::dataDetectorParticleFlagID;
 //pargrid::DataID Hybrid::dataSpectraID;
-Real Hybrid::tStartSpectra;
-Real Hybrid::tEndSpectra;
-Real Hybrid::maxRecordedSpectraParticles;
-Real Hybrid::writeIntervalTimesteps;
-Real Hybrid::spectraTimestepCnt;
-Real Hybrid::spectraFileLineCnt;
-bool Hybrid::recordSpectra = false;
-vector<Real> Hybrid::spectraParticleOutput;
+Real Hybrid::detStartTimePle;
+Real Hybrid::detEndTimePle;
+Real Hybrid::detMaxRecordedParticles;
+Real Hybrid::detWriteIntervalParticles;
+Real Hybrid::detTimestepCntParticles;
+Real Hybrid::detFileLineCntParticles;
+bool Hybrid::detRecordParticles = false;
+vector<Real> Hybrid::detParticleOutput;
 #endif
 
 // bit masks to check the existence of +x, -x, +y, -y, +z, -z neighbour cell

@@ -114,7 +114,7 @@ bool InjectorUniform::inject(pargrid::DataID speciesDataID,unsigned int* N_parti
 
 bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-/*#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
@@ -153,7 +153,7 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-/*#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -250,7 +250,7 @@ bool InjectorSolarWind::inject(pargrid::DataID speciesDataID,unsigned int* N_par
 
 bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-/*#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
@@ -275,7 +275,7 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-/*#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -435,7 +435,7 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
       particles[p].state[particle::VY] = vy;
       particles[p].state[particle::VZ] = vz;
       particles[p].state[particle::WEIGHT] = w;
-/*#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -669,7 +669,7 @@ bool InjectorExosphere::inject(pargrid::DataID speciesDataID,unsigned int* N_par
 
 bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-/*#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
@@ -711,7 +711,7 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-/*#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];

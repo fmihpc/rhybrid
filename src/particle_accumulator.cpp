@@ -55,8 +55,8 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
    for(int i=0;i<accBlockSize*3;++i) { acc2[i] = 0.0; }
    const Real q = species.q;
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   /*bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
+#ifdef USE_DETECTORS
+   /*bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
    pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
    Dist* spectra = wrapperSpectra.data()[blockID];*/
 #endif
@@ -130,8 +130,8 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
 	 acc2[ind011*3+l] += w011*v[l];
 	 acc2[ind111*3+l] += w111*v[l];
       }
-#ifdef ION_SPECTRA_ALONG_ORBIT
-      /*if(spectraFlag[blockID] == true && Hybrid::recordSpectra == true) {
+#ifdef USE_DETECTORS
+      /*if(detPleFlag[blockID] == true && Hybrid::detRecordParticles == true) {
          spectra[species.popid].f[0] += w;
       }*/
 #endif
