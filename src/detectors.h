@@ -25,8 +25,9 @@
 #include <simulation.h>
 #include <simulationclasses.h>
 
-bool writeDetectorBulkParams(Simulation& sim,SimulationClasses& simClasses);
-bool writeDetectorParticles(Simulation& sim,SimulationClasses& simClasses);
+bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses);
+bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses);
+bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses);
 
 #endif
 #endif

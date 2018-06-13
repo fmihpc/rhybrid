@@ -356,19 +356,13 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       }
    }
 #ifdef USE_DETECTORS
-   // write detector cell mask
+   // write detector cell masks
    bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
    attribs["name"] = string("detector_flag_particle");
    if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detPleFlag) == false) { success = false; }
-   
-   // energy spectra writer not implemented yet
-   /*pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
-   Real* globalIDs = static_cast<double>(simClasses->pargrid.getGlobalIDs());
-   for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-      if(detPleFlag[b] == true) {
-         Dist* spectra = wrapperSpectra.data()[b];
-      }
-   }*/
+   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
+   attribs["name"] = string("detector_flag_bulk_param");
+   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detBlkFlag) == false) { success = false; }
 #endif
    logMacroparticles(*sim,*simClasses,particleLists);
    profile::stop();

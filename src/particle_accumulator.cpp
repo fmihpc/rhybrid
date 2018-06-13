@@ -131,7 +131,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
 	 acc2[ind111*3+l] += w111*v[l];
       }
 #ifdef USE_DETECTORS
-      /*if(detPleFlag[blockID] == true && Hybrid::detRecordParticles == true) {
+      /*if(detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
          spectra[species.popid].f[0] += w;
       }*/
 #endif

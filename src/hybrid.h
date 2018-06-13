@@ -25,6 +25,7 @@
 #include <map>
 #include <sstream>
 #include <simulationclasses.h>
+#include <detectors.h>
 
 #define sqr(x) ((x)*(x))
 #define cube(x) (x)*(x)*(x)
@@ -54,20 +55,6 @@ struct HybridVariable {
    pargrid::DataID id = pargrid::INVALID_DATAID;
    T* ptr = NULL;
 };
-
-#ifdef USE_DETECTORS
-#define DETECTOR_PARTICLE_FILE_VARIABLES 6
-/*#define EBINS 10
-struct Dist {
-   Real f[EBINS];
- public:
-   void reset() {
-      for(unsigned int i=0;i<EBINS;i++){
-         f[i] = 0.0;
-      }
-   }
-};*/
-#endif
 
 inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[0] = a[1]*b[2] - a[2]*b[1];
@@ -146,16 +133,26 @@ struct Hybrid {
    static pargrid::DataID dataXminFlagID;
 #endif
 #ifdef USE_DETECTORS
+   // detector: particles
    static pargrid::DataID dataDetectorParticleFlagID;
-   //static pargrid::DataID dataSpectraID;
-   static Real detStartTimePle;
-   static Real detEndTimePle;
-   static Real detMaxRecordedParticles;
-   static Real detWriteIntervalParticles;
-   static Real detTimestepCntParticles;
-   static Real detFileLineCntParticles;
-   static bool detRecordParticles;
+   static Real detParticleStartTime;
+   static Real detParticleEndTime;
+   static Real N_detParticleMaxFileLines;
+   static Real detParticleWriteInterval;
+   static Real detParticleTimestepCnt;
+   static Real detParticleFileLineCnt;
+   static bool detParticleRecording;
    static std::vector<Real> detParticleOutput;
+   // detector: bulk parameters
+   static pargrid::DataID dataDetectorBulkParamFlagID;
+   static Real detBulkParamStartTime;
+   static Real detBulkParamEndTime;
+   static Real N_detBulkParamMaxFileLines;
+   static Real detBulkParamWriteInterval;
+   static Real detBulkParamTimestepCnt;
+   static Real detBulkParamFileLineCnt;
+   static bool detBulkParamRecording;
+   static std::vector<Real> detBulkParamOutput;
 #endif
    
    // bit masks

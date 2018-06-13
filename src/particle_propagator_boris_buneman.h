@@ -147,7 +147,7 @@ template<class PARTICLE>
 
 #ifdef USE_DETECTORS
    bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
-     if(detPleFlag[blockID] == true && Hybrid::detRecordParticles == true) {
+     if(detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
       //if(particle.state[particle::INI_TIME] >= 0.0) {
          Hybrid::detParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
          Hybrid::detParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
