@@ -201,4 +201,4 @@ vector<pargrid::DataID> Hybrid::dataCellAverageVelocityID;
 int Hybrid::averageCounter;
 #endif
 
-
+int Hybrid::repartitionCheckIntervalTmp = -1;

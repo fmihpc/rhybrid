@@ -232,6 +232,7 @@ struct Hybrid {
    static std::vector<pargrid::DataID> dataCellAverageVelocityID;
    static int averageCounter;
 #endif
+   static int repartitionCheckIntervalTmp;
 };
 
 #endif

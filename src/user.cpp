@@ -67,6 +67,19 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       Hybrid::detBulkParamTimestepCnt++;
    }
    else { Hybrid::detBulkParamRecording = false; }
+   // set repartitioning off if detectors are recording
+   if(Hybrid::detParticleRecording == true || Hybrid::detBulkParamRecording == true) {
+      if(sim.repartitionCheckInterval > 0) {
+	 simClasses.logger << "(RHYBRID) DETECTORS: detectors recording, setting repartitioning off" << endl << write;
+      }
+      sim.repartitionCheckInterval = -100;
+   }
+   else {
+      if(sim.repartitionCheckInterval < 0 && Hybrid::repartitionCheckIntervalTmp > 0) {
+	 simClasses.logger << "(RHYBRID) DETECTORS: detectors not recording anymore, setting repartitioning back on" << endl << write;
+      }
+      sim.repartitionCheckInterval = Hybrid::repartitionCheckIntervalTmp;
+   }
 #endif
    setupGetFields(sim,simClasses);
    // Propagate all particles:
@@ -1797,6 +1810,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::filterParticlesAfterRestartDone = false;
    }
 #endif
+   Hybrid::repartitionCheckIntervalTmp = sim.repartitionCheckInterval;
    return true;
 }
 
