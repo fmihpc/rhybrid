@@ -27,7 +27,7 @@
 #include "detectors.h"
 
 #define DETECTOR_PARTICLE_FILE_VARIABLES 6
-#define DETECTOR_BULK_PARAMETER_FILE_VARIABLES 15
+#define DETECTOR_BULK_PARAMETER_FILE_VARIABLES 18
 
 using namespace std;
 
@@ -65,15 +65,18 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
 	 unsigned long fileLineCnt = 0;
 	 particleFile << "% t popid cellid vx vy vz" << endl;
 	 for(unsigned int i=0;i<detParticleOutputGlobal.size();i+=DETECTOR_PARTICLE_FILE_VARIABLES) {
+	    particleFile.precision(6);
 	    particleFile
-	      << detParticleOutputGlobal[i+0] << " "                             // 01 det: t
-	      << static_cast<unsigned int>(detParticleOutputGlobal[i+1]) << " "  // 02 det: popid
-	      //<< detParticleOutputGlobal[i+2] << " "                             //  det: weight
-	      << static_cast<unsigned int>(detParticleOutputGlobal[i+2]) << " "  // 03 det: blockid
-	      << detParticleOutputGlobal[i+3] << " "                             // 04 det: vx
-	      << detParticleOutputGlobal[i+4] << " "                             // 05 det: vy
-	      << detParticleOutputGlobal[i+5] << endl;                           // 06 det: vz
-	      /*<< detParticleOutputGlobal[i+7] << " "                             // ini: t
+	      << detParticleOutputGlobal[i+0] << " "                             // 01 t
+	      << static_cast<unsigned int>(detParticleOutputGlobal[i+1]) << " "  // 02 popid
+	      << static_cast<unsigned int>(detParticleOutputGlobal[i+2]) << " "; // 03 blockid
+	    particleFile.precision(4);
+	    particleFile
+	      << detParticleOutputGlobal[i+3] << " "                             // 04 vx
+	      << detParticleOutputGlobal[i+4] << " "                             // 05 vy
+	      << detParticleOutputGlobal[i+5] << endl;                           // 06 vz
+	      /*<< detParticleOutputGlobal[i+2] << " "                           // weight
+	      << detParticleOutputGlobal[i+7] << " "                             // ini: t
 	      << static_cast<unsigned int>(detParticleOutputGlobal[i+8]) << " "  // ini: block id
 	      << detParticleOutputGlobal[i+9] << " "                             // ini: x
 	      << detParticleOutputGlobal[i+10] << " "                            // ini: y
@@ -124,12 +127,15 @@ bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+0]  ); //  7. Jx
 	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+1]  ); //  8. Jy
 	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+2]  ); //  9. Jz
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+0] ); // 10. Jix
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+1] ); // 11. Jiy
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+2] ); // 12. Jiz
-	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+0]  ); // 13. Ex(node)
-	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+1]  ); // 14. Ey(node)
-	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+2]  ); // 15. Ez(node)
+	    Hybrid::detBulkParamOutput.push_back( cellUe[n3+0] ); // 10. Uex
+	    Hybrid::detBulkParamOutput.push_back( cellUe[n3+1] ); // 11. Uey
+	    Hybrid::detBulkParamOutput.push_back( cellUe[n3+2] ); // 12. Uez
+	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+0] ); // 13. Jix
+	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+1] ); // 14. Jiy
+	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+2] ); // 15. Jiz
+	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+0]  ); // 16. Ex(node)
+	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+1]  ); // 17. Ey(node)
+	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+2]  ); // 18. Ez(node)
 	 }
       }
    }
@@ -168,7 +174,7 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	 bulkParamFile.precision(6);
 	 bulkParamFile << scientific;
 	 unsigned long fileLineCnt = 0;
-	 bulkParamFile << "% t cellid rhoqi Bx By Bz Jx Jy Jz Jix Jiy Jiz Ex(node) Ey(node) Ez(node)" << endl;
+	 bulkParamFile << "% t cellid rhoqi Bx By Bz Jx Jy Jz Uex Uey Uez Jix Jiy Jiz Ex(node) Ey(node) Ez(node)" << endl;
 	 for(unsigned int i=0;i<detBulkParamOutputGlobal.size();i+=DETECTOR_BULK_PARAMETER_FILE_VARIABLES) {
 	    bulkParamFile
 	      << detBulkParamOutputGlobal[i+0] << " "
@@ -185,7 +191,10 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	      << detBulkParamOutputGlobal[i+11] << " "
 	      << detBulkParamOutputGlobal[i+12] << " "
 	      << detBulkParamOutputGlobal[i+13] << " "
-	      << detBulkParamOutputGlobal[i+14] << endl;
+	      << detBulkParamOutputGlobal[i+14] << " "
+	      << detBulkParamOutputGlobal[i+15] << " "
+	      << detBulkParamOutputGlobal[i+16] << " "
+	      << detBulkParamOutputGlobal[i+17] << endl;
 	    fileLineCnt++;
 	 }
 	 bulkParamFile << flush;
