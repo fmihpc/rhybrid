@@ -96,6 +96,8 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    for(size_t p=0;p<particleLists.size();++p) {
       if(particleLists[p]->injectParticles() == false) { rvalue = false; } 
    }
+   // propagate magnetic field
+   if(propagateB(sim,simClasses,particleLists) == false) { rvalue = false; }
 #ifdef USE_DETECTORS
    if(Hybrid::detParticleRecording == true) {
       if(Hybrid::detParticleTimestepCnt >= Hybrid::detParticleWriteInterval) {
@@ -111,8 +113,6 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       }
    }
 #endif
-   // propagate magnetic field
-   if(propagateB(sim,simClasses,particleLists) == false) { rvalue = false; }
    return rvalue;
 }
 

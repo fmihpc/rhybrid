@@ -27,7 +27,7 @@
 #include "detectors.h"
 
 #define DETECTOR_PARTICLE_FILE_VARIABLES 6
-#define DETECTOR_BULK_PARAMETER_FILE_VARIABLES 9
+#define DETECTOR_BULK_PARAMETER_FILE_VARIABLES 15
 
 using namespace std;
 
@@ -101,9 +101,12 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
 bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
    bool success = true;
    bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
-   Real* cellB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellBID);
    Real* cellRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
+   Real* cellB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellBID);
+   Real* cellJ = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJID);
+   Real* cellUe = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellUeID);
    Real* cellJi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
+   Real* nodeE  = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    // loop all blocks and cells in this process
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
@@ -112,15 +115,21 @@ bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	 const int n3 = n*3;
 	 // record bulk parameters in flagged cells
 	 if(detBlkFlag[n] == true && Hybrid::detBulkParamRecording == true) {
-	    Hybrid::detBulkParamOutput.push_back( static_cast<Real>(sim.t) );
-	    Hybrid::detBulkParamOutput.push_back( static_cast<Real>(globalID) );
-	    Hybrid::detBulkParamOutput.push_back( cellRhoQi[n] ); // rhoqi
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+0] ); // Jix
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+1] ); // Jiy
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+2] ); // Jiz
-	    Hybrid::detBulkParamOutput.push_back( cellB[n3+0] ); // Bx
-	    Hybrid::detBulkParamOutput.push_back( cellB[n3+1] ); // By
-	    Hybrid::detBulkParamOutput.push_back( cellB[n3+2] ); // Bz
+	    Hybrid::detBulkParamOutput.push_back( static_cast<Real>(sim.t)    ); // 1. t
+	    Hybrid::detBulkParamOutput.push_back( static_cast<Real>(globalID) ); // 2. cellid
+	    Hybrid::detBulkParamOutput.push_back( cellRhoQi[n] ); //  3. rhoqi
+	    Hybrid::detBulkParamOutput.push_back( cellB[n3+0]  ); //  4. Bx
+	    Hybrid::detBulkParamOutput.push_back( cellB[n3+1]  ); //  5. By
+	    Hybrid::detBulkParamOutput.push_back( cellB[n3+2]  ); //  6. Bz
+	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+0]  ); //  7. Jx
+	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+1]  ); //  8. Jy
+	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+2]  ); //  9. Jz
+	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+0] ); // 10. Jix
+	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+1] ); // 11. Jiy
+	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+2] ); // 12. Jiz
+	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+0]  ); // 13. Ex(node)
+	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+1]  ); // 14. Ey(node)
+	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+2]  ); // 15. Ez(node)
 	 }
       }
    }
@@ -159,7 +168,7 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	 bulkParamFile.precision(6);
 	 bulkParamFile << scientific;
 	 unsigned long fileLineCnt = 0;
-	 bulkParamFile << "% t cellid rhoqi Jix Jiy Jiz Bx By Bz" << endl;
+	 bulkParamFile << "% t cellid rhoqi Bx By Bz Jx Jy Jz Jix Jiy Jiz Ex(node) Ey(node) Ez(node)" << endl;
 	 for(unsigned int i=0;i<detBulkParamOutputGlobal.size();i+=DETECTOR_BULK_PARAMETER_FILE_VARIABLES) {
 	    bulkParamFile
 	      << detBulkParamOutputGlobal[i+0] << " "
@@ -170,7 +179,13 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	      << detBulkParamOutputGlobal[i+5] << " "
 	      << detBulkParamOutputGlobal[i+6] << " "
 	      << detBulkParamOutputGlobal[i+7] << " "
-	      << detBulkParamOutputGlobal[i+8] << endl;
+	      << detBulkParamOutputGlobal[i+8] << " "
+	      << detBulkParamOutputGlobal[i+9] << " "
+	      << detBulkParamOutputGlobal[i+10] << " "
+	      << detBulkParamOutputGlobal[i+11] << " "
+	      << detBulkParamOutputGlobal[i+12] << " "
+	      << detBulkParamOutputGlobal[i+13] << " "
+	      << detBulkParamOutputGlobal[i+14] << endl;
 	    fileLineCnt++;
 	 }
 	 bulkParamFile << flush;
