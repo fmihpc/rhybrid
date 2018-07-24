@@ -1704,7 +1704,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       nAve.push_back(reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellAverageDensityID[i])));
       vAve.push_back(reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellAverageVelocityID[i])));
    }
-   
+#endif
    // set parameters written in vlsv files
    Hybrid::outputCellParams = {
       {"faceB",false},
@@ -1796,7 +1796,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(RHYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
    }
 #endif
-   
+#ifdef WRITE_POPULATION_AVERAGES
    // initial values
    if(sim.restarted == false) {
       for(size_t i=0; i<vectorArraySize;   ++i) { cellAverageB[i] = 0.0; }
@@ -1806,10 +1806,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
       Hybrid::averageCounter = 0;
    }
-   else {
+#endif
+   if(sim.restarted == true) {
       Hybrid::filterParticlesAfterRestartDone = false;
    }
-#endif
    Hybrid::repartitionCheckIntervalTmp = sim.repartitionCheckInterval;
    return true;
 }
