@@ -397,7 +397,7 @@ bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Sp
          }
 
          Real g = constants::GRAVITY*constants::MASS_MARS/sqr(constants::DIST_MARS_RADIUS);
-         Real H = (constants::BOLTZMANN*150)/(species.m*g);
+         Real H = (constants::BOLTZMANN*T)/(species.m*g);
          Real h_prime = (r-R)/H-log(1.0/a);
          Real a0 = a*exp(1-h_prime-exp(-1*h_prime));
          Real a1 = simClasses->random.uniform();
