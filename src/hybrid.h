@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -21,27 +22,39 @@
 
 #include <cstdlib>
 #include <vector>
-
+#include <map>
+#include <sstream>
 #include <simulationclasses.h>
+#include <detectors.h>
 
 #define sqr(x) ((x)*(x))
 #define cube(x) (x)*(x)*(x)
 #define vecsqr(a) (sqr(a[0])+sqr(a[1])+sqr(a[2]))
 #define normvec(a) (sqrt(vecsqr(a)))
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
-#define SPECTRA_FILE_VARIABLES 15
-#define EBINS 10
-struct Dist {
-   Real f[EBINS];
- public:
-   void reset() {
-      for(unsigned int i=0;i<EBINS;i++){
-         f[i] = 0.0;
-      }
-   }
+inline std::string real2str(Real x,unsigned int prec) {
+    std::stringstream ss;
+    ss.precision(prec);
+    ss << x;
+    return ss.str();
+}
+
+inline std::string int2str(int x,unsigned int N) {
+    std::stringstream ss;
+    ss.width(N);
+    ss.fill('0');
+    ss << x;
+    return ss.str();
+}
+
+template<typename T>
+struct HybridVariable {
+   std::string name = "";
+   std::string type = "";
+   std::size_t vectorDim = 0;
+   pargrid::DataID id = pargrid::INVALID_DATAID;
+   T* ptr = NULL;
 };
-#endif
 
 inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[0] = a[1]*b[2] - a[2]*b[1];
@@ -49,7 +62,28 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[2] = a[0]*b[1] - a[1]*b[0];
 }
 
+struct particlePopulation {
+    Real w;
+    std::string name;
+};
+
+struct solarWindPopulation {
+   Real m,q,U,n,vth,T;
+   std::string name;
+};
+
+struct Box {
+   Real xmin=0.0,xmax=0.0,ymin=0.0,ymax=0.0,zmin=0.0,zmax=0.0;
+};
+
+struct OuterBoundaryZone {
+   int typeEta=0,typeMinRhoQi=0;
+   Real sizeEta=0.0,sizeMinRhoQi=0.0,minRhoQi=0.0,eta=0.0;
+};
+
 struct Hybrid {
+   static std::map< std::string, HybridVariable<Real> > varReal;
+   static std::map< std::string, HybridVariable<bool> > varBool;
 
    // face data
    static pargrid::DataID dataFaceBID;
@@ -61,9 +95,6 @@ struct Hybrid {
    static pargrid::DataID dataCellJID;
    static pargrid::DataID dataCellUeID;
    static pargrid::DataID dataCellJiID;
-   static pargrid::DataID dataCellMaxUeID;
-   static pargrid::DataID dataCellMaxViID;
-   static pargrid::DataID dataCellMinRhoQiID;
    static pargrid::DataID dataCellIonosphereID;
    static pargrid::DataID dataCellExosphereID;
    
@@ -75,6 +106,21 @@ struct Hybrid {
    static pargrid::DataID dataNodeUeID;
    static pargrid::DataID dataNodeJiID;
 
+#ifdef USE_RESISTIVITY
+   static pargrid::DataID dataNodeEtaID;
+#endif
+
+   // counters
+   static pargrid::DataID dataCounterCellMaxUeID;
+   static pargrid::DataID dataCounterCellMaxViID;
+   static pargrid::DataID dataCounterCellMinRhoQiID;
+#ifdef USE_ECUT
+   static pargrid::DataID dataCounterNodeEcutID;
+#endif
+#ifdef USE_MAXVW
+   static pargrid::DataID dataCounterNodeMaxVwID;
+#endif
+
    // stencils
    static pargrid::StencilID accumulationStencilID; /**< ParGrid Stencil used to exchange accumulation array(s).*/
    
@@ -82,20 +128,31 @@ struct Hybrid {
    static pargrid::DataID dataInnerFlagFieldID;
    static pargrid::DataID dataInnerFlagNodeID;
    static pargrid::DataID dataInnerFlagParticleID;
+   static pargrid::DataID dataOuterBoundaryFlagID;
 #ifdef USE_XMIN_BOUNDARY
    static pargrid::DataID dataXminFlagID;
 #endif
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   static pargrid::DataID dataSpectraFlagID;
-   //static pargrid::DataID dataSpectraID;
-   static Real tStartSpectra;
-   static Real tEndSpectra;
-   static Real maxRecordedSpectraParticles;
-   static Real writeIntervalTimesteps;
-   static Real spectraTimestepCnt;
-   static Real spectraFileLineCnt;
-   static bool recordSpectra;
-   static std::vector<Real> spectraParticleOutput;
+#ifdef USE_DETECTORS
+   // detector: particles
+   static pargrid::DataID dataDetectorParticleFlagID;
+   static Real detParticleStartTime;
+   static Real detParticleEndTime;
+   static Real N_detParticleMaxFileLines;
+   static Real detParticleWriteInterval;
+   static Real detParticleTimestepCnt;
+   static Real detParticleFileLineCnt;
+   static bool detParticleRecording;
+   static std::vector<Real> detParticleOutput;
+   // detector: bulk parameters
+   static pargrid::DataID dataDetectorBulkParamFlagID;
+   static Real detBulkParamStartTime;
+   static Real detBulkParamEndTime;
+   static Real N_detBulkParamMaxFileLines;
+   static Real detBulkParamWriteInterval;
+   static Real detBulkParamTimestepCnt;
+   static Real detBulkParamFileLineCnt;
+   static bool detBulkParamRecording;
+   static std::vector<Real> detBulkParamOutput;
 #endif
    
    // bit masks
@@ -107,7 +164,9 @@ struct Hybrid {
    static uint32_t Z_NEG_EXISTS;
 
    static int logInterval;
+   static bool includeInnerCellsInFieldLog;
    static Real dx;
+   static Box box;
    static Real dV;
    static Real R_object;
    static Real R2_fieldObstacle;
@@ -118,11 +177,27 @@ struct Hybrid {
    static Real M_object;
    static Real maxUe2;
    static Real maxVi2;
+   static Real maxVi;
    static Real minRhoQi;
-   static Real eta;
+   static OuterBoundaryZone outerBoundaryZone;
+#ifdef USE_ECUT
+   static Real Ecut2;
+#endif
+#ifdef USE_MAXVW
+   static Real maxVw;
+#endif
+#ifdef USE_RESISTIVITY
+   static Real resistivityEta;
+   static Real resistivityEtaC;
+   static Real resistivityR2;
+   static Real resistivityGridUnit;
+   static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
+#endif
    static bool useHallElectricField;
    static Real swMacroParticlesCellPerDt;
    static int Efilter;
+   static Real EfilterNodeGaussSigma;
+   static Real EfilterNodeGaussCoeffs[4];
    static Real IMFBx,IMFBy,IMFBz;
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    static Real laminarR2,laminarR3,coeffDip,coeffQuad,dipSurfB,dipSurfR,dipMinR2,dipMomCoeff,xDip,yDip,zDip,thetaDip,phiDip;
@@ -132,6 +207,8 @@ struct Hybrid {
    static unsigned int N_ionospherePopulations;
    static unsigned int N_exospherePopulations;
    static unsigned int N_outputPopVars;
+   static std::vector<particlePopulation> allPops;
+   static std::vector<solarWindPopulation> swPops;
    static std::vector<std::string> populationNames;
    static std::vector<std::string> outputPopVarStr;
    static std::vector<int> outputPopVarId;
@@ -146,6 +223,8 @@ struct Hybrid {
    static std::vector<Real> particleCounterInject;
    static std::vector<Real> particleCounterInjectMacroparticles;
    static Real particleCounterTimeStart;
+
+   static bool filterParticlesAfterRestartDone;
    
 #ifdef WRITE_POPULATION_AVERAGES
    static pargrid::DataID dataCellAverageBID;
@@ -153,6 +232,7 @@ struct Hybrid {
    static std::vector<pargrid::DataID> dataCellAverageVelocityID;
    static int averageCounter;
 #endif
+   static int repartitionCheckIntervalTmp;
 };
 
 #endif

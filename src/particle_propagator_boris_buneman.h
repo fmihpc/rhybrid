@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -70,6 +71,11 @@ template<class PARTICLE>
    if(simClasses->pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
       accelerate = false;
    }
+#ifdef USE_XMIN_BOUNDARY
+     // no particle velocity propagation at x < xmin
+     bool* xMinFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataXminFlagID));
+     if(xMinFlag[blockID] == true) { accelerate = false; }
+#endif
    /*if(accelerate == true) {
       Real dU[3] = { particle.state[particle::VX]-Ue[0], particle.state[particle::VY]-Ue[1], particle.state[particle::VZ]-Ue[2] };
       const Real half_alpha = 0.5*species.q*sim->dt/species.m;
@@ -89,8 +95,8 @@ template<class PARTICLE>
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
 	 particle.state[particle::VZ] *= norm;
-	 Real* cellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellMaxViID));
-	 cellMaxVi[blockID]++;
+	 Real* counterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
+	 counterCellMaxVi[blockID]++;
       }
    }*/
    
@@ -134,30 +140,30 @@ template<class PARTICLE>
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
 	 particle.state[particle::VZ] *= norm;
-	 Real* cellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellMaxViID));
-	 cellMaxVi[blockID]++;
+	 Real* counterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
+	 counterCellMaxVi[blockID]++;
       }
    }
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
-     if(spectraFlag[blockID] == true && Hybrid::recordSpectra == true) {
+#ifdef USE_DETECTORS
+   bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+     if(detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
       //if(particle.state[particle::INI_TIME] >= 0.0) {
-         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
-         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::WEIGHT] );                        // 3
-         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(globalID) );                             // 4
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VX] );                            // 5
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VY] );                            // 6
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::VZ] );                            // 7
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_TIME] );                      // 8
-         Hybrid::spectraParticleOutput.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) ); // 9
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_X] );                         // 10
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_Y] );                         // 11
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_Z] );                         // 12
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VX] );                        // 13
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VY] );                        // 14
-         Hybrid::spectraParticleOutput.push_back( particle.state[particle::INI_VZ] );                        // 15 = SPECTRA_FILE_VARIABLES
+         Hybrid::detParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
+         Hybrid::detParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::WEIGHT] );                        //
+         Hybrid::detParticleOutput.push_back( static_cast<Real>(globalID) );                             // 3
+         Hybrid::detParticleOutput.push_back( particle.state[particle::VX] );                            // 4
+         Hybrid::detParticleOutput.push_back( particle.state[particle::VY] );                            // 5
+         Hybrid::detParticleOutput.push_back( particle.state[particle::VZ] );                            // 6
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_TIME] );                      // 
+         //Hybrid::detParticleOutput.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) ); // 
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_X] );                         // 
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_Y] );                         // 
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_Z] );                         // 
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VX] );                        // 
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VY] );                        // 
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VZ] );                        // 
 	 //particle.state[particle::INI_TIME] = -100.0; // only detect each particle once
       //}
    }

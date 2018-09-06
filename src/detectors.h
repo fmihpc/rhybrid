@@ -17,29 +17,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PARTICLE_DEFINITION_H
-#define PARTICLE_DEFINITION_H
+#ifndef DETECTORS_H
+#define DETECTORS_H
+#ifdef USE_DETECTORS
 
-#include <mpi.h>
+#include <particle_list_base.h>
+#include <simulation.h>
+#include <simulationclasses.h>
 
-namespace particle {
-//#ifdef USE_DETECTORS
-//   enum STATE {X,Y,Z,VX,VY,VZ,WEIGHT,INI_CELLID,INI_TIME,INI_X,INI_Y,INI_Z,INI_VX,INI_VY,INI_VZ,SIZE};
-//#else
-   enum STATE {X,Y,Z,VX,VY,VZ,WEIGHT,SIZE};
-//#endif
-}
+bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses);
+bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses);
+bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses);
 
-template<typename REAL>
-struct Particle {
-   REAL state[particle::SIZE];
-   
-   static void getDatatype(MPI_Datatype& datatype);
-};
-
-template<typename REAL> inline
-void Particle<REAL>::getDatatype(MPI_Datatype& datatype) {
-   MPI_Type_contiguous(particle::SIZE,MPI_Type<REAL>(),&datatype);
-}
-
+#endif
 #endif

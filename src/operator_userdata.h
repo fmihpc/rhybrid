@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -51,8 +52,5 @@ class UserDataOP: public DataOperator {
 void calcParticleLog(Simulation& sim,SimulationClasses& simClasses,std::vector<ParticleLogData>& plogData,const std::vector<ParticleListBase*>& particleLists);
 void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& flogData);
 bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particles);
-#ifdef ION_SPECTRA_ALONG_ORBIT
-bool writeSpectraParticles(Simulation& sim,SimulationClasses& simClasses);
-#endif
 
 #endif

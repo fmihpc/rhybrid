@@ -3,8 +3,11 @@ USE_EDGE_J := true
 USE_B_INITIAL := true
 USE_B_CONSTANT := false
 USE_XMIN_BOUNDARY := false
+USE_RESISTIVITY := true
+USE_ECUT := true
+USE_MAXVW := true
 WRITE_POPULATION_AVERAGES := true
-ION_SPECTRA_ALONG_ORBIT := false
+USE_DETECTORS := false
 
 include ../../../Makefile.${ARCH}
 
@@ -13,7 +16,7 @@ include ../../../Makefile.${ARCH}
 
 OBJS = register_objects.o user.o hybrid_propagator.o hybrid.o\
 	particle_accumulator.o particle_injector.o\
-	operator_userdata.o particle_species.o
+	operator_userdata.o particle_species.o detectors.o
 
 ifeq ($(USE_NODE_UE),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_NODE_UE
@@ -35,15 +38,32 @@ ifeq ($(USE_XMIN_BOUNDARY),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_XMIN_BOUNDARY
 endif
 
+ifeq ($(USE_RESISTIVITY),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_RESISTIVITY
+endif
+
+ifeq ($(USE_ECUT),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_ECUT
+endif
+
+ifeq ($(USE_MAXVW),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_MAXVW
+endif
+
 ifeq ($(WRITE_POPULATION_AVERAGES),true)
 CXXFLAGS := $(CXXFLAGS) -DWRITE_POPULATION_AVERAGES
 endif
 
-ifeq ($(ION_SPECTRA_ALONG_ORBIT),true)
-CXXFLAGS := $(CXXFLAGS) -DION_SPECTRA_ALONG_ORBIT
+ifeq ($(USE_DETECTORS),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_DETECTORS
 endif
 
-override CXXFLAGS += -std=gnu++0x
+#override CXXFLAGS += -std=gnu++0x
+
+# Compile information (date___user___host___folder___cxxflags)
+COMPILEINFO := \"$(shell date --iso-8601=seconds)___$(shell whoami)___$(shell hostname)___$(shell pwd)___$(shell echo ${CXXFLAGS})\"
+# Remove spaces and add newlines
+COMPILEINFO := \"$(shell echo $(COMPILEINFO) | sed 's/ //g' | sed 's/___/\\n/g' | sed 's/-D/\\n/g')\"
 
 # Make targets
 
@@ -84,7 +104,7 @@ register_objects.o: ${DEPS_REG_OBJS}
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c register_objects.cpp ${INCS_REG}
 
 user.o: ${DEPS_USER}
-	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c user.cpp ${INCS}
+	${CMP} ${CXXFLAGS} -DCOMPILEINFO=${COMPILEINFO} ${MATHFLAGS} ${FLAGS} -c user.cpp ${INCS} ${INCS_REG}
 
 hybrid_propagator.o: ${DEPS_ADV_PROP}
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c hybrid_propagator.cpp ${INCS}
@@ -104,3 +124,5 @@ particle_injector.o: ${DEPS_INJECTOR}
 particle_species.o: ${DEPS_SPECIES}
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c particle_species.cpp ${INCS_REG}
 
+detectors.o: detectors.h detectors.cpp
+	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c detectors.cpp ${INCS}

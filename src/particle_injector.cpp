@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -113,13 +114,13 @@ bool InjectorUniform::inject(pargrid::DataID speciesDataID,unsigned int* N_parti
 
 bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
-#endif
+#endif*/
    vector<Real> xinj,yinj,zinj;
    for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
       const Real xCell = (i+0.5)*Hybrid::dx;
@@ -152,7 +153,7 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -161,7 +162,7 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
       Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
@@ -204,6 +205,10 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticle weight    = " << w << endl << write;
+   particlePopulation pp;
+   pp.w = w;
+   pp.name = species->name;
+   Hybrid::allPops.push_back(pp);
    return initialized;
 }
 
@@ -245,13 +250,13 @@ bool InjectorSolarWind::inject(pargrid::DataID speciesDataID,unsigned int* N_par
 
 bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
-#endif
+#endif*/
    Real blockSize[3];
    getBlockSize(*simClasses,*sim,blockID,blockSize);
    // probround
@@ -270,7 +275,7 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -279,7 +284,7 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
       Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
@@ -331,6 +336,19 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    if(swPopCnt == 1) {
       Hybrid::swMacroParticlesCellPerDt = N_macroParticlesPerCellPerDt*N_yz_cells/N_macroParticlesPerCell;
    }
+   particlePopulation pp;
+   pp.w = w;
+   pp.name = species->name;
+   Hybrid::allPops.push_back(pp);
+   solarWindPopulation swpop;
+   swpop.m = species->m;
+   swpop.q = species->q;
+   swpop.U = U;
+   swpop.n = n;
+   swpop.vth = vth;
+   swpop.T = T;
+   swpop.name = species->name;
+   Hybrid::swPops.push_back(swpop);
    return initialized;
 }
 // CHAPMAN IONOSPHERE EMISSION INJECTOR
@@ -670,7 +688,7 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
       particles[p].state[particle::VY] = vy;
       particles[p].state[particle::VZ] = vz;
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -679,7 +697,7 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
       Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
@@ -689,12 +707,13 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
 }
 
 bool InjectorIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
-   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".night","Night side emission factor [-] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
-   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".profile_name","Ionospheric emission profile name [-] (string)","");
+   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".night","Night side emission factor [-] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".temperature","Temperature [K] (float)",(Real)0.0);
+   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (Real)",(Real)-1.0);
    return true;
 }
 
@@ -702,17 +721,23 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 				    const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
+   string profileName = "";
    Real noonFactor = -1.0;
    Real nightFactor = -1.0;
    Real T = 0.0;
    Real totalRate = 0.0;
    cr.parse();
+   cr.get(configRegionName+".profile_name",profileName);
    cr.get(configRegionName+".emission_radius",R);
    cr.get(configRegionName+".noon",noonFactor);
    cr.get(configRegionName+".night",nightFactor);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".total_production_rate",totalRate);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+   if(noonFactor < 0.0 || nightFactor < 0.0) {
+      simClasses.logger
+        << "(" << species->name << ") WARNING: negative noon or night factor" << endl << write;
+   }
    if(Hybrid::swMacroParticlesCellPerDt > 0.0) {
       N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
    }
@@ -730,11 +755,12 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
    if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
    simClasses.logger
-     << "(" << species->name << ") emission radius = " << radiusToString(R) << endl
-     << "(" << species->name << ") noon emission   = " << noonFactor << endl
-     << "(" << species->name << ") night emission  = " << nightFactor << endl
-     << "(" << species->name << ") temperature     = " << T << " K" << endl
-     << "(" << species->name << ") thermal speed   = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") emission profile = " << profileName << endl
+     << "(" << species->name << ") emission radius  = " << radiusToString(R) << endl
+     << "(" << species->name << ") noon emission    = " << noonFactor << endl
+     << "(" << species->name << ") night emission   = " << nightFactor << endl
+     << "(" << species->name << ") temperature      = " << T << " K" << endl
+     << "(" << species->name << ") thermal speed    = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
@@ -781,19 +807,32 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 	       N_inside++;
 	    }
 	 }
-         // cos(sza) dependency
-         if(noonFactor >= 0.0 && nightFactor >= 0.0) {
+         // dayside: cos(sza) dependency and nightside: constant
+         if(profileName.compare("ionoCosSzaDayConstantNight") == 0) {
             const Real rr = sqrt(sqr(xCell) + sqr(yCell) + sqr(zCell));
             const Real sza = acos(xCell/rr);
             Real a = 0.0;
             if(sza < M_PI/2) {
-               a = noonFactor + (nightFactor - noonFactor) * ( 1-cos(sza) );
+               a = noonFactor + (nightFactor - noonFactor) * ( 1 - cos(sza) );
             } else {
                a = nightFactor;
             }
             N_inside *= a;
          }
-         else if(noonFactor < 0.0 && nightFactor < 0.0) { // polar cap source
+         // dayside: constant and nightside: constant
+         else if(profileName.compare("ionoConstantDayConstantNight") == 0) {
+            const Real rr = sqrt(sqr(xCell) + sqr(yCell) + sqr(zCell));
+            const Real sza = acos(xCell/rr);
+            Real a = 0.0;
+            if(sza < M_PI/2) {
+               a = noonFactor;
+            } else {
+               a = nightFactor;
+            }
+            N_inside *= a;
+         }
+         // polar cap source
+         else if(profileName.compare("ionoPolarCap") == 0) {
             // angle towards noon
             const Real t = fabs(noonFactor)*M_PI/180.0;
             // half angle of polar cap in degrees
@@ -841,6 +880,10 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 	 }
       }
    }
+   particlePopulation pp;
+   pp.w = w;
+   pp.name = species->name;
+   Hybrid::allPops.push_back(pp);
    return initialized;
 }
 
@@ -880,13 +923,13 @@ bool InjectorExosphere::inject(pargrid::DataID speciesDataID,unsigned int* N_par
 
 bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
-#endif
+#endif*/
    Real* cellExosphere = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellExosphereID);
    vector<Real> xinj,yinj,zinj;
    for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
@@ -922,7 +965,7 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -931,7 +974,7 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
       Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
@@ -1013,7 +1056,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
 	 a.k0 = k0;
 	 a.R_exobase = R_exobase;
 	 a.R_shadow = R_shadow;
-	 cellExosphere[nExo] = getNeutralDensity(simClasses,neutralProfileName,xCell,yCell,zCell,a);
+	 cellExosphere[nExo] = getNeutralDensity(simClasses,neutralProfileName,xCell,yCell,zCell,a)*Hybrid::dV;
 	 if(cellExosphere[nExo] < 0.0) {
 	    simClasses.logger << "(" << species->name << ") ERROR: Neutral profile init failed" << endl << write;
 	    initialized = false;
@@ -1063,6 +1106,10 @@ break_for:
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
      << "(" << species->name << ") macroparticle weight      = " << w << endl << write;
+   particlePopulation pp;
+   pp.w = w;
+   pp.name = species->name;
+   Hybrid::allPops.push_back(pp);
    return initialized;
 }
 

@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -94,7 +95,7 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
    q_per_m = q/m;
 
    simClasses.logger
-     << "(SPECIES): Created a particle species: " << name << endl
+     << "(SPECIES) Created a particle species " << name << endl
      << "popid = " << popid << endl
      << "q = " << q << " C = " << q/constants::CHARGE_ELEMENTARY << " e" << endl
      << "m = " << m << " kg = " << m/constants::MASS_PROTON << " mp" << endl 

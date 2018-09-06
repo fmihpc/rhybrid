@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -54,8 +55,8 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
    for(int i=0;i<accBlockSize*3;++i) { acc2[i] = 0.0; }
    const Real q = species.q;
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   /*bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
+#ifdef USE_DETECTORS
+   /*bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
    pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
    Dist* spectra = wrapperSpectra.data()[blockID];*/
 #endif
@@ -129,8 +130,8 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
 	 acc2[ind011*3+l] += w011*v[l];
 	 acc2[ind111*3+l] += w111*v[l];
       }
-#ifdef ION_SPECTRA_ALONG_ORBIT
-      /*if(spectraFlag[blockID] == true && Hybrid::recordSpectra == true) {
+#ifdef USE_DETECTORS
+      /*if(detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
          spectra[species.popid].f[0] += w;
       }*/
 #endif
@@ -262,7 +263,8 @@ bool Accumulator::addRemoteUpdates() {
    if (myOrderNumber != N_accumulators-1) { return success; }
    Real* cellJi    = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
-   Real* cellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellMinRhoQiID);
+   Real* counterCellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCounterCellMinRhoQiID);
+   bool* outerBoundaryFlag   = simClasses->pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
    unsigned int* offsetsCellRhoQi = NULL;
    Real* buffersCellRhoQi = NULL;
    unsigned int* offsetsCellJi = NULL;
@@ -318,9 +320,15 @@ bool Accumulator::addRemoteUpdates() {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
 	 cellRhoQi[n] /= Hybrid::dV;
-	 if(cellRhoQi[n] < Hybrid::minRhoQi) {
+         if(outerBoundaryFlag[n] == true) {
+            if(cellRhoQi[n] < Hybrid::outerBoundaryZone.minRhoQi) {
+               cellRhoQi[n] = Hybrid::outerBoundaryZone.minRhoQi;
+               counterCellMinRhoQi[n]++;
+            }
+         }
+	 else if(cellRhoQi[n] < Hybrid::minRhoQi) {
 	    cellRhoQi[n] = Hybrid::minRhoQi;
-	    cellMinRhoQi[n]++;
+	    counterCellMinRhoQi[n]++;
 	 }
 	 for(int l=0;l<3;++l) { cellJi[n3+l] /= Hybrid::dV; }
       }
@@ -366,7 +374,7 @@ bool Accumulator::initialize(Simulation& sim,SimulationClasses& simClasses,Confi
 			     const std::string& regionName,const ParticleListBase* plist) {
    bool success = true;
    if (ParticleAccumulatorBase::initialize(sim,simClasses,cr,regionName,plist) == false) {
-      simClasses.logger << "(HYBRID ACCUMULATOR) ERROR: ParticleAccumulatorBase initialization failed" << endl << write;
+      simClasses.logger << "(RHYBRID ACCUMULATOR) ERROR: ParticleAccumulatorBase initialization failed" << endl << write;
    }
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    return success;

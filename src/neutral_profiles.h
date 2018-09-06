@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -150,22 +151,22 @@ Real neutralDensityVenusOxygen(SimulationClasses& simClasses,Real x,Real y,Real 
 
 Real getNeutralDensity(SimulationClasses& simClasses,std::string name,Real x,Real y,Real z,NeutralProfileArgs a) {
    if(name.compare("ChamberlainH") == 0) {
-      return neutralDensityChamberlainH(simClasses,x,y,z,a.r0,a.n0,a.H0,a.R_exobase,a.R_shadow)*Hybrid::dV;
+      return neutralDensityChamberlainH(simClasses,x,y,z,a.r0,a.n0,a.H0,a.R_exobase,a.R_shadow);
    }
    else if(name.compare("ChamberlainT") == 0) {
-      return neutralDensityChamberlainT(simClasses,x,y,z,a.m,a.r0,a.n0,a.T0,a.R_exobase,a.R_shadow)*Hybrid::dV;
+      return neutralDensityChamberlainT(simClasses,x,y,z,a.m,a.r0,a.n0,a.T0,a.R_exobase,a.R_shadow);
    }
    else if(name.compare("Exponential") == 0) {
-      return neutralDensityExponential(simClasses,x,y,z,a.r0,a.n0,a.H0,a.R_exobase,a.R_shadow)*Hybrid::dV;
+      return neutralDensityExponential(simClasses,x,y,z,a.r0,a.n0,a.H0,a.R_exobase,a.R_shadow);
    }
    else if(name.compare("PowerLaw") == 0) {
-      return neutralDensityPowerLaw(simClasses,x,y,z,a.r0,a.n0,a.k0,a.R_exobase,a.R_shadow)*Hybrid::dV;
+      return neutralDensityPowerLaw(simClasses,x,y,z,a.r0,a.n0,a.k0,a.R_exobase,a.R_shadow);
    }
    else if(name.compare("VenusHydrogen") == 0) {
-      return neutralDensityVenusHydrogen(simClasses,x,y,z,a.R_exobase,a.R_shadow)*Hybrid::dV;
+      return neutralDensityVenusHydrogen(simClasses,x,y,z,a.R_exobase,a.R_shadow);
    }
    else if(name.compare("VenusOxygen") == 0) {
-      return neutralDensityVenusOxygen(simClasses,x,y,z,a.R_exobase,a.R_shadow)*Hybrid::dV;
+      return neutralDensityVenusOxygen(simClasses,x,y,z,a.R_exobase,a.R_shadow);
    }
    return -1.0;
 }

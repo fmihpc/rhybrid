@@ -1,5 +1,6 @@
 /** This file is part of the RHybrid simulation.
  *
+ *  Copyright 2018- Aalto University
  *  Copyright 2015- Finnish Meteorological Institute
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -51,6 +52,28 @@ bool UserDataOP::initialize(ConfigReader& cr,Simulation& sim,SimulationClasses& 
    return DataOperator::initialize(cr,sim,simClasses);
 }
 
+// log amounts of macroparticles
+void logMacroparticles(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
+    simClasses.logger << "(RHYBRID) Number of macroparticles per population in the simulation:" << endl;
+    for(size_t s=0;s<particleLists.size();++s) {
+	Real N_macroParticles = 0.0;
+	// For now skip particles with invalid data id:
+	pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
+	if(particleLists[s]->getParticles(speciesDataID) == true) {
+	    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses.pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
+	    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+		pargrid::ArraySizetype N_particles = wrapper.size(b);
+		N_macroParticles += N_particles;
+	    }
+	}
+	Real N_macroParticlesGlobal = 0.0;
+	MPI_Reduce(&N_macroParticles,&N_macroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+	const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
+	simClasses.logger << "N(" << species->name << ") = " << real2str(N_macroParticlesGlobal,15) << " = " << real2str(N_macroParticlesGlobal/1.0e9,15) << " x 10^9" << endl;
+    }
+    simClasses.logger << write;
+}
+
 bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<ParticleListBase*>& particleLists) {
    bool success = true;
    if(getInitialized() == false) { return false; }
@@ -63,21 +86,40 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    map<string,string> attribs;
    attribs["mesh"] = spatMeshName;
    attribs["type"] = "celldata";
-   writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,         "faceB",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,         "faceJ",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,     "cellRhoQi",       N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellBID,         "cellB",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellJID,         "cellJ",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellUeID,        "cellUe",          N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellJiID,        "cellJi",          N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellMaxUeID,     "cellMaxUeCnt",    N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellMaxViID,     "cellMaxViCnt",    N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellMinRhoQiID,  "cellMinRhoQiCnt", N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEID,         "nodeE",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeBID,         "nodeB",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJID,         "nodeJ",           N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeUeID,        "nodeUe",          N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJiID,        "nodeJi",          N_blocks,3);
+   // write selected ParGrid arrays
+   /*for(auto const& p : Hybrid::varReal) {
+      if(Hybrid::outputCellParams[p.first] == false) { continue; }
+      const uint64_t arraySize = N_blocks*block::SIZE;
+      map<string,string> attribs;
+      attribs["name"] = p.first;
+      attribs["mesh"] = spatMeshName;
+      attribs["type"] = "celldata";
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,p.second.vectorDim,p.second.ptr) == false) { success = false; }
+   }*/
+   writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,               "faceB",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,               "faceJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,           "cellRhoQi",           N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellBID,               "cellB",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellJID,               "cellJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellUeID,              "cellUe",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellJiID,              "cellJi",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEID,               "nodeE",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeBID,               "nodeB",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJID,               "nodeJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeUeID,              "nodeUe",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJiID,              "nodeJi",              N_blocks,3);
+#ifdef USE_RESISTIVITY
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEtaID,             "nodeEta",             N_blocks,1);
+#endif
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxUeID,    "counterCellMaxUe",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxViID,    "counterCellMaxVi",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMinRhoQiID, "counterCellMinRhoQi", N_blocks,1);
+#ifdef USE_ECUT
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeEcutID,     "counterNodeEcut",     N_blocks,1);
+#endif
+#ifdef USE_MAXVW
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeMaxVwID,    "counterNodeMaxVw",    N_blocks,1);
+#endif
    // write production rates of ionosphere populations
    if(Hybrid::outputCellParams["prod_rate_iono"] == true) {
       Real* const cellIonosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellIonosphereID));
@@ -137,27 +179,33 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    // particle populations
    if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true) {
       vector<Real> averageDensityTot;
+      vector<Real> averageDensityTotForVelNorm;
       vector<Real> averageVelocityTot;
       for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
          for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
             averageDensityTot.push_back(0.0);
+            averageDensityTotForVelNorm.push_back(0.0);
             for(int l=0;l<3;l++) { averageVelocityTot.push_back(0.0); }
          }
       }
       for(unsigned int m=0;m<Hybrid::N_outputPopVars;++m) {
-         Real* nAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageDensityID[m]));
-         Real* vAve  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageVelocityID[m]));
+         Real* nAveArray  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageDensityID[m]));
+         Real* vAveArray  = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellAverageVelocityID[m]));
+         // use first particle population in the output particle variable vector to get species
+         const Species* species = reinterpret_cast<const Species*>(particleLists[Hybrid::outputPopVarIdVector[m][0]]->getSpecies());
+         const Real q = species->q;
          vector<Real> averageDensity;
          vector<Real> averageVelocity;
          for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
             for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
                const int n = (b*block::SIZE+block::index(i,j,k));
                const int n3 = n*3;
-               averageDensity.push_back(nAve[n]/Hybrid::dV/constants::CHARGE_ELEMENTARY*invAveCnt);
-               if(nAve[n] > 0) {
-                  averageVelocity.push_back( vAve[n3+0]/nAve[n] );
-                  averageVelocity.push_back( vAve[n3+1]/nAve[n] );
-                  averageVelocity.push_back( vAve[n3+2]/nAve[n] );
+               Real nAve = nAveArray[n]/(q*Hybrid::dV)*invAveCnt;
+               averageDensity.push_back(nAve);
+               if(nAveArray[n] > 0) {
+                  averageVelocity.push_back( vAveArray[n3+0]/nAveArray[n] );
+                  averageVelocity.push_back( vAveArray[n3+1]/nAveArray[n] );
+                  averageVelocity.push_back( vAveArray[n3+2]/nAveArray[n] );
                }
                else {
                   averageVelocity.push_back(0.0);
@@ -165,15 +213,16 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
                   averageVelocity.push_back(0.0);
                }
                //total average plasma variables
-               averageDensityTot[n] += nAve[n];
-               averageVelocityTot[n3+0] += vAve[n3+0];
-               averageVelocityTot[n3+1] += vAve[n3+1];
-               averageVelocityTot[n3+2] += vAve[n3+2];
+               averageDensityTot[n] += nAve;
+               averageDensityTotForVelNorm[n] += nAveArray[n];
+               averageVelocityTot[n3+0] += vAveArray[n3+0];
+               averageVelocityTot[n3+1] += vAveArray[n3+1];
+               averageVelocityTot[n3+2] += vAveArray[n3+2];
                // zero average variables
-               nAve[n] = 0.0;
-               vAve[n3+0] = 0.0;
-               vAve[n3+1] = 0.0;
-               vAve[n3+2] = 0.0;
+               nAveArray[n] = 0.0;
+               vAveArray[n3+0] = 0.0;
+               vAveArray[n3+1] = 0.0;
+               vAveArray[n3+2] = 0.0;
             }
          }
          if(Hybrid::outputCellParams["n_ave"] == true) {
@@ -189,12 +238,11 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
          for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
             const int n = (b*block::SIZE+block::index(i,j,k));
             const int n3 = n*3;
-            if(averageDensityTot[n] > 0.0) {
-               averageVelocityTot[n3+0] /= averageDensityTot[n];
-               averageVelocityTot[n3+1] /= averageDensityTot[n];
-               averageVelocityTot[n3+2] /= averageDensityTot[n];
+            if(averageDensityTotForVelNorm[n] > 0.0) {
+               averageVelocityTot[n3+0] /= averageDensityTotForVelNorm[n];
+               averageVelocityTot[n3+1] /= averageDensityTotForVelNorm[n];
+               averageVelocityTot[n3+2] /= averageDensityTotForVelNorm[n];
             }
-            averageDensityTot[n] = averageDensityTot[n]/Hybrid::dV/constants::CHARGE_ELEMENTARY*invAveCnt;
          }
       }
       if(Hybrid::outputCellParams["n_ave"] == true) {
@@ -234,6 +282,8 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       }
    }
    if(Hybrid::outputCellParams["cellDivB"] == true) {
+      simClasses->pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
+      simClasses->pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
       Real* const faceB = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataFaceBID));
       calcCellDiv(faceB,divB);
       attribs["name"] = "cellDivB";
@@ -305,21 +355,16 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
          if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(Utot[0])) == false) { success = false; }
       }
    }
-#ifdef ION_SPECTRA_ALONG_ORBIT
-   // write spectra cell mask
-   bool* spectraFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataSpectraFlagID));
-   attribs["name"] = string("spectra_flag");
-   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,spectraFlag) == false) { success = false; }
-   
-   // energy spectra writer not implemented yet
-   /*pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
-   Real* globalIDs = static_cast<double>(simClasses->pargrid.getGlobalIDs());
-   for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-      if(spectraFlag[b] == true) {
-         Dist* spectra = wrapperSpectra.data()[b];
-      }
-   }*/
+#ifdef USE_DETECTORS
+   // write detector cell masks
+   bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+   attribs["name"] = string("detector_flag_particle");
+   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detPleFlag) == false) { success = false; }
+   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
+   attribs["name"] = string("detector_flag_bulk_param");
+   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detBlkFlag) == false) { success = false; }
 #endif
+   logMacroparticles(*sim,*simClasses,particleLists);
    profile::stop();
    return success;
 }
@@ -465,7 +510,19 @@ void calcParticleLog(Simulation& sim,SimulationClasses& simClasses,vector<Partic
       plogData[s].sumV = 0.0;
       plogData[s].sumWV2 = 0.0;
    }
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {   
+#ifdef USE_XMIN_BOUNDARY
+   bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
+#endif
+   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+#ifdef USE_XMIN_BOUNDARY
+      // do not include particles if this block has a cell with xMinFlag == true
+      bool skipBlock = false;
+      for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+	 const int n = (b*block::SIZE+block::index(i,j,k));
+         if(xMinFlag[n] == true) { skipBlock = true; }
+      }
+      if(skipBlock == true) { continue; }
+#endif
       for(size_t s=0;s<particleLists.size();++s) {
 	 pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
 	 if(particleLists[s]->getParticles(speciesDataID) == false) { continue; }
@@ -509,13 +566,25 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
    flogData.maxDivBPerB = 0.0;
    flogData.sumB2 = 0.0;
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
+   bool* innerFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
+#ifdef USE_XMIN_BOUNDARY
+   bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
+#endif
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       if(simClasses.pargrid.getNeighbourFlags(b) != pargrid::ALL_NEIGHBOURS_EXIST) { continue; }
       const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
       Real array[size*3];
       fetchData(faceB,array,simClasses,b,3);
       for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
-	 //const int n = (b*block::SIZE+block::index(i,j,k));
+	 const int n = (b*block::SIZE+block::index(i,j,k));
+	 // do not include cells inside the inner boundary
+	 if(Hybrid::includeInnerCellsInFieldLog == false) {
+	    if(innerFlag[n] == true) { continue; }
+	 }
+#ifdef USE_XMIN_BOUNDARY
+         // do not include cells at x < xmin
+         if(xMinFlag[n] == true) { continue; }
+#endif
 	 Real divB = ((array[(block::arrayIndex(i+1,j+1,k+1))*3+0] - array[(block::arrayIndex(i+0,j+1,k+1))*3+0])
 		    + (array[(block::arrayIndex(i+1,j+1,k+1))*3+1] - array[(block::arrayIndex(i+1,j+0,k+1))*3+1])
 		    + (array[(block::arrayIndex(i+1,j+1,k+1))*3+2] - array[(block::arrayIndex(i+1,j+1,k+0))*3+2]))/Hybrid::dx;
@@ -697,63 +766,4 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
    return success;
 }
 
-#ifdef ION_SPECTRA_ALONG_ORBIT
-// ascii output writer for gathered particles
-bool writeSpectraParticles(Simulation& sim,SimulationClasses& simClasses) {
-   // gather all recorded spectra particles on master and write in file
-   int N_plesLocal = Hybrid::spectraParticleOutput.size();
-   vector<int> N_plesGlobal(sim.mpiProcesses);
-   MPI_Allgather(&N_plesLocal,1,MPI_Type<int>(),&N_plesGlobal[0],1,MPI_Type<int>(),sim.comm);
-   int N_plesTotal = accumulate(N_plesGlobal.begin(),N_plesGlobal.end(),0);
-   vector<Real> spectraParticleOutputGlobal(N_plesTotal);
-   // create displacement vector for spectraParticleOutputGlobal
-   int displ[sim.mpiProcesses];
-   if(sim.mpiRank == sim.MASTER_RANK) {
-      int sum = 0.0;
-      for (int i = 0; i < sim.mpiProcesses; ++i) {
-	 displ[i] = sum;
-	 sum += N_plesGlobal[i];
-      }
-   }
-   // gather in master
-   MPI_Gatherv(&Hybrid::spectraParticleOutput[0],N_plesLocal,MPI_Type<Real>(),&spectraParticleOutputGlobal[0],&N_plesGlobal[0],&displ[0],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-   // master writes
-   if(sim.mpiRank == sim.MASTER_RANK) {
-      if(Hybrid::spectraFileLineCnt <= Hybrid::maxRecordedSpectraParticles) {
-	 if(spectraParticleOutputGlobal.size() % SPECTRA_FILE_VARIABLES != 0) {
-	    simClasses.logger << "(HYBRID) ERROR: CELL SPECTRA: error when writing particle file" << endl << write;
-	    return false;
-	 }
-	 ofstream spectraFile;
-	 spectraFile.open(string("spectra_particles_") + to_string(sim.timestep) + string(".dat"),ios_base::app);
-	 spectraFile.precision(3);
-	 spectraFile << scientific;
-	 for(unsigned int i=0;i<spectraParticleOutputGlobal.size();i+=SPECTRA_FILE_VARIABLES) {
-	    spectraFile
-	      << spectraParticleOutputGlobal[i+0] << " "                             // 01 det: t
-	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+1]) << " "  // 02 det: popid
-	      << spectraParticleOutputGlobal[i+2] << " "                             // 03 det: weight
-	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+3]) << " "  // 04 det: block id
-	      << spectraParticleOutputGlobal[i+4] << " "                             // 05 det: vx
-	      << spectraParticleOutputGlobal[i+5] << " "                             // 06 det: vy
-	      << spectraParticleOutputGlobal[i+6] << " "                             // 07 det: vz
-	      << spectraParticleOutputGlobal[i+7] << " "                             // 08 ini: t
-	      << static_cast<unsigned int>(spectraParticleOutputGlobal[i+8]) << " "  // 09 ini: block id
-	      << spectraParticleOutputGlobal[i+9] << " "                             // 10 ini: x
-	      << spectraParticleOutputGlobal[i+10] << " "                            // 11 ini: y
-	      << spectraParticleOutputGlobal[i+11] << " "                            // 12 ini: z
-	      << spectraParticleOutputGlobal[i+12] << " "                            // 13 ini: vx
-	      << spectraParticleOutputGlobal[i+13] << " "                            // 14 ini: vy
-	      << spectraParticleOutputGlobal[i+14] << endl;                          // 15 ini: vz
-	    Hybrid::spectraFileLineCnt++;
-	 }
-	 spectraFile << flush;
-	 spectraFile.close();
-      }
-   }
-   // empty spectra particle list
-   Hybrid::spectraParticleOutput.clear();
-   return true;
-}
-#endif
 
