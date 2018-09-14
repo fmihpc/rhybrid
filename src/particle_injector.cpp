@@ -866,7 +866,6 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
    Real N_insideGlobal = 0.0;
    MPI_Reduce(&N_insideSum,&N_insideGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Bcast(&N_insideGlobal,1,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-   simClasses.logger << "NInside global: "<<N_insideGlobal<<endl;
    // determine emission rate in a cell
    for(pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
       for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
