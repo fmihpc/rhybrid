@@ -351,6 +351,259 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    Hybrid::swPops.push_back(swpop);
    return initialized;
 }
+// CHAPMAN IONOSPHERE EMISSION INJECTOR
+
+InjectorChapmanIonosphere::InjectorChapmanIonosphere(): ParticleInjectorBase() { 
+   initialized = false;
+   N_ionoPop = -1;
+   N_macroParticlesPerCell = -1.0;
+   N_macroParticlesPerDt = -1.0;
+   vth = w = R = T = noonFactor = nightFactor= 0.0;
+}
+
+InjectorChapmanIonosphere::~InjectorChapmanIonosphere() {finalize();}
+
+bool InjectorChapmanIonosphere::finalize() {
+   if(initialized == false) { return true; }
+   initialized = false;
+   return true;
+}
+
+bool InjectorChapmanIonosphere::inject(pargrid::DataID speciesDataID,unsigned int* N_particles) {
+   if(initialized == false) { return initialized; }
+   bool success = true;
+   if(sim->timestep <= 0) { return success; }
+   pargrid::DataWrapper<Particle<Real> > wrapper = simClasses->pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
+   for(pargrid::CellID b=0;b<simClasses->pargrid.getNumberOfLocalCells();++b) {
+      if(injectParticles(b,*species,N_particles,wrapper) == false) { success = false; }
+   }
+   return success;
+}
+
+bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
+				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
+   
+   const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
+   const size_t b3 = 3*blockID;
+   const Real xBlock = crd[b3+0];
+   const Real yBlock = crd[b3+1];
+   const Real zBlock = crd[b3+2];
+   Real* cellIonosphere = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellIonosphereID);
+   vector<Real> xinj,yinj,zinj;
+   for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+      const int n = (blockID*block::SIZE+block::index(i,j,k));
+      const size_t nIono = n*Hybrid::N_ionospherePopulations + N_ionoPop;
+      const int N_injectCell = probround(*simClasses,cellIonosphere[nIono]);
+      if(N_injectCell <= 0) { return true; }
+      const Real xCell = crd[b3+0] +(i+0.5)*Hybrid::dx;
+      const Real yCell = crd[b3+1] +(j+0.5)*Hybrid::dx;
+      const Real zCell = crd[b3+2] +(k+0.5)*Hybrid::dx;
+       
+      for(int s = 0;s<N_injectCell;s++) {
+      	const Real eps = 1.0e-2;
+      	const Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+      	const Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+      	const Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+         
+         Real r = sqrt(sqr(x)+ sqr(y)+sqr(z));
+         Real sza = acos(x/r);
+         Real a =0;
+         if(sza < M_PI/2) {
+             a = noonFactor + (nightFactor - noonFactor) * ( 1-cos(sza) );
+         } else {
+             a = nightFactor;
+         }
+
+         Real g = constants::GRAVITY*constants::MASS_MARS/sqr(constants::DIST_MARS_RADIUS);
+         Real H = (constants::BOLTZMANN*T)/(species.m*g);
+         Real h_prime = (r-R)/H-log(1.0/a);
+         Real a0 = a*exp(1-h_prime-exp(-1*h_prime));
+         Real a1 = simClasses->random.uniform();
+
+         //simClasses->logger<<"Injecting:"<<N_injectCell<<"," << a0<<", "<<a<<","<<h_prime <<sza<<endl<<write; 
+         if (a1<a0){
+	    xinj.push_back(x);
+	    yinj.push_back(y);
+	    zinj.push_back(z);
+         }
+         else {
+             s--;
+         }
+      }
+   }  
+
+   // make room for new particles:
+   const int N_inject = static_cast<int>(xinj.size());
+   const pargrid::ArraySizetype oldSize = wrapper.size()[blockID];
+   N_particles[blockID] += N_inject;
+   wrapper.resize(blockID,oldSize+N_inject);
+   Particle<Real>* particles = wrapper.data()[blockID];
+   size_t s = 0;
+   for(size_t p=oldSize; p<oldSize+N_inject; ++p) {
+      particles[p].state[particle::X] = xinj[s]-xBlock;
+      particles[p].state[particle::Y] = yinj[s]-yBlock;
+      particles[p].state[particle::Z] = zinj[s]-zBlock;
+      const Real x = xinj[s];
+      const Real y = yinj[s];
+      const Real z = zinj[s];
+      Real vx = vth*gaussrnd(*simClasses);
+      Real vy = vth*gaussrnd(*simClasses);
+      Real vz = vth*gaussrnd(*simClasses);
+      // make sure that velocity is upwards
+      if (vx*x + vy*y + vz*z < 0) {
+         vx = -vx;
+         vy = -vy;
+         vz = -vz;
+      }
+      particles[p].state[particle::VX] = vx;
+      particles[p].state[particle::VY] = vy;
+      particles[p].state[particle::VZ] = vz;
+      particles[p].state[particle::WEIGHT] = w;
+#ifdef ION_SPECTRA_ALONG_ORBIT
+      particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
+      particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
+      particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
+      particles[p].state[particle::INI_Z] = zBlock + particles[p].state[particle::Z];
+      particles[p].state[particle::INI_VX] =  particles[p].state[particle::VX];
+      particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
+      particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
+      particles[p].state[particle::INI_TIME] = sim->t;
+#endif
+      // inject counter
+      Hybrid::particleCounterInject[species.popid-1] += w;
+      Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
+      ++s;
+   }
+   return true;
+}
+
+bool InjectorChapmanIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
+   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".night","Night side emission factor [-] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
+   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (Real).",(Real)-1.0);
+   return true;
+}
+
+bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
+				    const std::string& configRegionName,const ParticleListBase* plist) {
+   initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->species = reinterpret_cast<const Species*>(plist->getSpecies());
+   Real totalRate = 0.0;
+   cr.parse();
+   cr.get(configRegionName+".emission_radius",R);
+   cr.get(configRegionName+".noon",noonFactor);
+   cr.get(configRegionName+".night",nightFactor);
+   cr.get(configRegionName+".temperature",T);
+   cr.get(configRegionName+".total_production_rate",totalRate);
+   cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+   if(Hybrid::swMacroParticlesCellPerDt > 0.0) {
+      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
+   }
+   else {
+      simClasses.logger
+        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl << write;
+      N_macroParticlesPerDt = N_macroParticlesPerCell*100;
+   }
+   if(N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
+      w = totalRate*sim.dt/N_macroParticlesPerDt;
+   }
+   else {
+      N_macroParticlesPerDt = totalRate = w = 0.0;
+   }
+   if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
+   else { vth = 0.0; }
+   simClasses.logger
+     << "(" << species->name << ") emission radius = " << radiusToString(R) << endl
+     << "(" << species->name << ") noon emission   = " << noonFactor << endl
+     << "(" << species->name << ") night emission  = " << nightFactor << endl
+     << "(" << species->name << ") temperature     = " << T << " K" << endl
+     << "(" << species->name << ") thermal speed   = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
+     << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
+     << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
+     << "(" << species->name << ") macroparticle weight      = " << w << endl << write;
+
+   static unsigned int ionoPopCnt = 0;
+   N_ionoPop = ionoPopCnt;
+   ionoPopCnt++;
+   
+   const Real* crd = getBlockCoordinateArray(sim,simClasses);
+   Real N_insideSum = 0.0;
+   Real* cellIonosphere = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellIonosphereID);
+   // go thru local blocks
+   for(pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
+      const size_t b3 = 3*b;
+      // go thru cells in a block
+      for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+      	 const int n = (b*block::SIZE+block::index(i,j,k));
+      	 const size_t nIono = n*Hybrid::N_ionospherePopulations + N_ionoPop;
+      	 // physical (global) coordinates
+      	 const Real xCell = crd[b3+0] + (i+0.5)*Hybrid::dx;
+      	 const Real yCell = crd[b3+1] + (j+0.5)*Hybrid::dx;
+      	 const Real zCell = crd[b3+2] + (k+0.5)*Hybrid::dx;
+      	 const Real xCellMin = xCell - 0.5*Hybrid::dx;
+      	 const Real yCellMin = yCell - 0.5*Hybrid::dx;
+      	 const Real zCellMin = zCell - 0.5*Hybrid::dx;
+      	 const Real xCellMax = xCell + 0.5*Hybrid::dx;
+      	 const Real yCellMax = yCell + 0.5*Hybrid::dx;
+      	 const Real zCellMax = zCell + 0.5*Hybrid::dx;
+      	 // generate N random points inside each cell
+      	 Real N_inside = 0;
+      	 for(int s = 0;s<2000;s++) {
+      	   const Real eps = 1.0e-2;
+      	   Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+      	   Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+      	   Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+
+
+
+            Real a = 0;
+            Real r = sqrt(sqr(x)+ sqr(y)+sqr(z));
+            Real sza = acos(x/r);
+            if(sza < M_PI/2) {
+                a = noonFactor + (nightFactor - noonFactor) * ( 1-cos(sza) );
+            } else {
+                a = nightFactor;
+            }
+
+            Real g = constants::GRAVITY*constants::MASS_MARS/sqr(constants::DIST_MARS_RADIUS);
+            Real H = (constants::BOLTZMANN*150)/(species->m*g);
+            Real h_prime = (r-R)/H-log(1.0/a);
+            Real a0 = a*exp(1-h_prime-exp(-1*h_prime));
+            Real a1 = simClasses.random.uniform();
+            if (a1<a0){
+                N_inside++;
+            }
+            
+
+      	}
+         if (N_inside <10){ N_inside = 0;}
+         N_insideSum += N_inside;
+         cellIonosphere[nIono] = N_inside;     
+      }
+   }
+   Real N_insideGlobal = 0.0;
+   MPI_Reduce(&N_insideSum,&N_insideGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Bcast(&N_insideGlobal,1,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
+   // determine emission rate in a cell
+   for(pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
+      for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+	 const int n = (b*block::SIZE+block::index(i,j,k));
+	 const size_t nIono = n*Hybrid::N_ionospherePopulations + N_ionoPop;
+	 if(N_insideGlobal > 0.0 && N_insideSum > 0.0)  {
+	    cellIonosphere[nIono] = N_macroParticlesPerDt*cellIonosphere[nIono]/N_insideGlobal;
+	 }
+	 else {
+	    cellIonosphere[nIono] = 0.0;
+	 }
+      }
+   }
+
+   return initialized;
+}
 
 // IONOSPHERE EMISSION INJECTOR
 

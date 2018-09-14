@@ -52,6 +52,7 @@ bool registerObjectMakers(ObjectFactories& objectFactories) {
    if (objectFactories.particleInjectors.registerMaker("UniformInjector",UniformIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("SolarWindInjector",SolarWindIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("IonosphereInjector",IonosphereIonCreator) == false) { success = false; }
+   if (objectFactories.particleInjectors.registerMaker("ChapmanIonosphereInjector",ChapmanIonosphereIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("ExosphereInjector",ExosphereIonCreator) == false) { success = false; }
    if (objectFactories.particlePropagators.registerMaker("BorisBuneman",BBMaker<PARTICLE>) == false) {success = false;}
    
