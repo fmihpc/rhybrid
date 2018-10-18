@@ -1398,16 +1398,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       ne += Hybrid::swPops[s].q*Hybrid::swPops[s].n;
       rhom += Hybrid::swPops[s].m*Hybrid::swPops[s].n;
       Ubulk += Hybrid::swPops[s].m*Hybrid::swPops[s].n*Hybrid::swPops[s].U;
-      vstmp1 += 5.0/3.0*Hybrid::swPops[s].T;
-      vstmp2 += Hybrid::swPops[s].m;
+      vstmp1 += Hybrid::swPops[s].n*Hybrid::swPops[s].T;
+      vstmp2 += Hybrid::swPops[s].n*Hybrid::swPops[s].m;
    }
    const Real rhoq = ne;
    ne /= constants::CHARGE_ELEMENTARY;
-   // sound velocity approximated as vs = sqrt( kB*gamma*sum_i(Ti)/sum_i(mi) ),
+   // sound velocity approximated as vs = sqrt(gamma*p/rho_m) = sqrt( kB*gamma*sum_i(ni*Ti)/sum_i(ni*mi) ),
    // where gamma = 5/3 and sum is over all solar wind populations
    Real vs = 0.0;
    if(vstmp2 > 0) {
-      vs = sqrt(constants::BOLTZMANN*vstmp1/vstmp2);
+      vs = sqrt(5.0/3.0*constants::BOLTZMANN*vstmp1/vstmp2);
    }
    const Real Btot2 = sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz);
    const Real Btot = sqrt(Btot2);
@@ -1447,7 +1447,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "rhoqi = total ion charge density = -electron charge density = " << rhoq << " C/m^3 = " << rhoq*Hybrid::dV << " C/dV" << endl
      << "U = bulk speed = " << Ubulk/1e3 << " km/s" << endl
      << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
-     << "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(Ti) )/sum_i(mi) )  = " << vs/1e3 << " km/s" << endl
+     << "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << vs/1e3 << " km/s" << endl
      << "vms = magnetosonic velocity = " << sqrt(vA*vA + vs*vs)/1e3 << " km/s" << endl 
      << "MA = Alfven mach number = " << Ubulk/(vA + 1e-30) << endl
      << "Ms = sonic mach number = " << Ubulk/(vs + 1e-30) << endl
