@@ -166,7 +166,7 @@ inline bool setMagneticFieldProfile(std::string name) {
    if(name.compare("constantBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &constantBx;
    }
-   if(name.compare("laminarFlowAroundSphereBx") == 0) {
+   else if(name.compare("laminarFlowAroundSphereBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &laminarFlowAroundSphereBx;
    }
    else if(name.compare("hemisphericDipoleB") == 0) {
