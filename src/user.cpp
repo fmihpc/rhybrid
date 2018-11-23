@@ -1460,7 +1460,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "ExB drift speed = " << VExBMagnitude/1e3 << " km/s" << endl
      << "Pickup ion avg speed (4*VExB/pi) = " << 4.0*VExBMagnitude/M_PI/1e3 << " km/s" << endl
      << "Pickup ion max speed (2*VExB) = " << 2.0*VExBMagnitude/1e3 << " km/s" << endl
-     << "Fastest whistler speed = " << vw/1e3 << " km/s" << endl << endl
+     << "Fastest whistler speed = " << vw/1e3 << " km/s" << endl
+     << "td_min = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta/sim.dt << " dt" << endl
+     << "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl << endl
      << "(SOLAR WIND POPULATIONS)" << endl;
    // solar wind populations
    // electron plasma frequency
