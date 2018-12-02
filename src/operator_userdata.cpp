@@ -177,7 +177,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(averageB[0])) == false) { success = false; }
    }
    // particle populations
-   if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true) {
+   if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["n_tot_ave"] == true || Hybrid::outputCellParams["v_tot_ave"] == true) {
       vector<Real> averageDensityTot;
       vector<Real> averageDensityTotForVelNorm;
       vector<Real> averageVelocityTot;
@@ -245,11 +245,11 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
             }
          }
       }
-      if(Hybrid::outputCellParams["n_ave"] == true) {
+      if(Hybrid::outputCellParams["n_tot_ave"] == true) {
          attribs["name"] = string("n_tot_ave");
          if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(averageDensityTot[0])) == false) { success = false; }
       }
-      if(Hybrid::outputCellParams["v_ave"] == true) {
+      if(Hybrid::outputCellParams["v_tot_ave"] == true) {
          attribs["name"] = string("v_tot_ave");
          if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(averageVelocityTot[0])) == false) { success = false; }
       }
@@ -356,13 +356,15 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       }
    }
 #ifdef USE_DETECTORS
-   // write detector cell masks
-   bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
-   attribs["name"] = string("detector_flag_particle");
-   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detPleFlag) == false) { success = false; }
-   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
-   attribs["name"] = string("detector_flag_bulk_param");
-   if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detBlkFlag) == false) { success = false; }
+   // write detector cell masks at the start
+   if (sim->timestep <= 0) {
+      bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+      attribs["name"] = string("detector_flag_particle");
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detPleFlag) == false) { success = false; }
+      bool* detBlkFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
+      attribs["name"] = string("detector_flag_bulk_param");
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detBlkFlag) == false) { success = false; }
+   }
 #endif
    logMacroparticles(*sim,*simClasses,particleLists);
    profile::stop();

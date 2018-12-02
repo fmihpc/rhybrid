@@ -1737,7 +1737,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"prod_rate_exo",false},
       {"cellBAverage",false},
       {"n_ave",false},
+      {"n_tot_ave",false},
       {"v_ave",false},
+      {"v_tot_ave",false},
       {"cellDivB",false},
       {"cellNPles",false},
       {"cellB0",false},
@@ -1789,7 +1791,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    simClasses.logger << endl;
 #ifndef WRITE_POPULATION_AVERAGES
-   if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true) {
+   if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true || Hybrid::outputCellParams["n_tot_ave"] == true || Hybrid::outputCellParams["v_tot_ave"] == true) {
       simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_POPULATION_AVERAGES not defined in Makefile" << endl;
    }
 #endif
