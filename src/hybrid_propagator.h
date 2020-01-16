@@ -51,11 +51,12 @@ Real* counterNodeMaxVw,
 Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
+void calcCellEp(Real* nodeRhoQi,Real* cellRhoQi,bool* innerFlagCellEp,Real* cellEp,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void face2r(Real* r,Real* faceData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result);
 void node2r(Real* r,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result);
 void cell2r(Real* r,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result);
 void setupGetFields(Simulation& sim,SimulationClasses& simClasses);
-void getFields(Real* r,Real* B,Real* Ue,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
+void getFields(Real* r,Real* B,Real* Ue,Real* Ep,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void fetchData(Real* data,Real* array,SimulationClasses& simClasses,pargrid::CellID blockID,int vectorDim);
 
 #endif

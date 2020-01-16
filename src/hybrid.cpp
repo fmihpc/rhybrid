@@ -32,10 +32,12 @@ pargrid::DataID Hybrid::dataFaceJID;
 
 // cell data
 pargrid::DataID Hybrid::dataCellRhoQiID;
+pargrid::DataID Hybrid::dataCellRhoQiBgID;
 pargrid::DataID Hybrid::dataCellBID;
 pargrid::DataID Hybrid::dataCellJID;
 pargrid::DataID Hybrid::dataCellUeID;
 pargrid::DataID Hybrid::dataCellJiID;
+pargrid::DataID Hybrid::dataCellEpID;
 pargrid::DataID Hybrid::dataCellIonosphereID;
 pargrid::DataID Hybrid::dataCellExosphereID;
 
@@ -69,6 +71,7 @@ pargrid::StencilID Hybrid::accumulationStencilID;
 pargrid::DataID Hybrid::dataInnerFlagFieldID;
 pargrid::DataID Hybrid::dataInnerFlagNodeID;
 pargrid::DataID Hybrid::dataInnerFlagParticleID;
+pargrid::DataID Hybrid::dataInnerFlagCellEpID;
 pargrid::DataID Hybrid::dataOuterBoundaryFlagID;
 #ifdef USE_XMIN_BOUNDARY
 pargrid::DataID Hybrid::dataXminFlagID;
@@ -112,6 +115,7 @@ Real Hybrid::dV;
 Real Hybrid::R_object;
 Real Hybrid::R2_fieldObstacle;
 Real Hybrid::R2_particleObstacle;
+Real Hybrid::R2_cellEpObstacle;
 #ifdef USE_XMIN_BOUNDARY
 Real Hybrid::xMinBoundary;
 #endif
@@ -128,6 +132,9 @@ Real Hybrid::Ecut2;
 Real Hybrid::maxVw;
 #endif
 bool Hybrid::useHallElectricField;
+bool Hybrid::useElectronPressureElectricField;
+Real Hybrid::electronTemperature;
+Real Hybrid::electronPressureCoeff;
 Real Hybrid::swMacroParticlesCellPerDt;
 int Hybrid::Efilter;
 Real Hybrid::EfilterNodeGaussSigma;

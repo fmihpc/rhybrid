@@ -96,29 +96,42 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       attribs["type"] = "celldata";
       if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,p.second.vectorDim,p.second.ptr) == false) { success = false; }
    }*/
-   writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,               "faceB",               N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,               "faceJ",               N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,           "cellRhoQi",           N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellBID,               "cellB",               N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellJID,               "cellJ",               N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellUeID,              "cellUe",              N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCellJiID,              "cellJi",              N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEID,               "nodeE",               N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeBID,               "nodeB",               N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJID,               "nodeJ",               N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeUeID,              "nodeUe",              N_blocks,3);
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJiID,              "nodeJi",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,                "faceB",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,                "faceJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,            "cellRhoQi",           N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiBgID,          "cellRhoQiBg",         N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellBID,                "cellB",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellJID,                "cellJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellUeID,               "cellUe",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCellJiID,               "cellJi",              N_blocks,3);
+   if(Hybrid::useElectronPressureElectricField == true) {
+      writeCellDataVariable(spatMeshName,Hybrid::dataCellEpID,            "cellEp",              N_blocks,3);
+   }
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeRhoQiID,            "nodeRhoQi",           N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEID,                "nodeE",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeBID,                "nodeB",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJID,                "nodeJ",               N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeUeID,               "nodeUe",              N_blocks,3);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeJiID,               "nodeJi",              N_blocks,3);
 #ifdef USE_RESISTIVITY
-   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEtaID,             "nodeEta",             N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataNodeEtaID,              "nodeEta",             N_blocks,1);
 #endif
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxUeID,    "counterCellMaxUe",    N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxViID,    "counterCellMaxVi",    N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMinRhoQiID, "counterCellMinRhoQi", N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxUeID,     "counterCellMaxUe",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxViID,     "counterCellMaxVi",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMinRhoQiID,  "counterCellMinRhoQi", N_blocks,1);
 #ifdef USE_ECUT
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeEcutID,     "counterNodeEcut",     N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeEcutID,      "counterNodeEcut",     N_blocks,1);
 #endif
 #ifdef USE_MAXVW
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeMaxVwID,    "counterNodeMaxVw",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeMaxVwID,     "counterNodeMaxVw",    N_blocks,1);
+#endif
+   writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagFieldID,   "innerFlagField",      N_blocks,1);
+   writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagNodeID,    "innerFlagNode",       N_blocks,1);
+   writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagParticleID,"innerFlagParticle",   N_blocks,1);
+   writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagCellEpID,  "innerFlagCellEp",     N_blocks,1);
+   writeCellDataVariableBool(spatMeshName,Hybrid::dataOuterBoundaryFlagID,"outerBoundaryFlag",   N_blocks,1);
+#ifdef USE_XMIN_BOUNDARY
+   writeCellDataVariableBool(spatMeshName,Hybrid::dataXminFlagID,         "xMinFlag",            N_blocks,1);
 #endif
    // write production rates of ionosphere populations
    if(Hybrid::outputCellParams["prod_rate_iono"] == true) {
@@ -374,6 +387,20 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
 bool UserDataOP::writeCellDataVariable(const std::string& spatMeshName,pargrid::DataID& dataVarID,const std::string& dataName,const pargrid::CellID& N_blocks,const uint64_t& vectorDim) {
    if(Hybrid::outputCellParams[dataName] == false) { return true; }
    Real* const d = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(dataVarID));
+   if(d != NULL) {
+      const uint64_t arraySize = N_blocks*block::SIZE;
+      map<string,string> attribs;
+      attribs["name"] = dataName;
+      attribs["mesh"] = spatMeshName;
+      attribs["type"] = "celldata";
+      if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,vectorDim,d) == false) { return false; }
+   }
+   return true;
+}
+
+bool UserDataOP::writeCellDataVariableBool(const std::string& spatMeshName,pargrid::DataID& dataVarID,const std::string& dataName,const pargrid::CellID& N_blocks,const uint64_t& vectorDim) {
+   if(Hybrid::outputCellParams[dataName] == false) { return true; }
+   bool* const d = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(dataVarID));
    if(d != NULL) {
       const uint64_t arraySize = N_blocks*block::SIZE;
       map<string,string> attribs;

@@ -44,6 +44,7 @@ class UserDataOP: public DataOperator {
  private:
    int profileID;
    bool writeCellDataVariable(const std::string& spatMeshName,pargrid::DataID& dataVarID,const std::string& dataName,const pargrid::CellID& N_blocks,const uint64_t& vectorDim);
+   bool writeCellDataVariableBool(const std::string& spatMeshName,pargrid::DataID& dataVarID,const std::string& dataName,const pargrid::CellID& N_blocks,const uint64_t& vectorDim);
    void calcCellDiv(Real* faceData,std::vector<Real>& cellDiv);
    void calcCellNPles(std::vector<Real>& cellNPles,const std::vector<ParticleListBase*>& particleLists);
    void calcCellParticleBulkParameters(std::vector<Real>& cellDensity,std::vector<Real>& cellTemperature,std::vector<Real>& cellVelocity,const std::vector<ParticleListBase*>& particleLists,std::vector<unsigned int> s);

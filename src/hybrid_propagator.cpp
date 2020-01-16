@@ -52,6 +52,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    Real* cellJ               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJID);
    Real* cellUe              = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellUeID);
    Real* cellJi              = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
+   Real* cellEp              = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellEpID);
    Real* nodeRhoQi           = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeRhoQiID);
    Real* nodeE               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    Real* nodeB               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeBID);
@@ -72,6 +73,8 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #endif
    bool* innerFlag           = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
    bool* innerFlagNode       = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagNodeID);
+   bool* innerFlagParticle   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagParticleID);
+   bool* innerFlagCellEp     = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagCellEpID);
    bool* outerBoundaryFlag   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
    
    if(faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; exit(1);}
@@ -81,6 +84,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(cellJ               == NULL) {cerr << "ERROR: obtained NULL cellJ array!"        << endl; exit(1);}
    if(cellUe              == NULL) {cerr << "ERROR: obtained NULL cellUe array!"       << endl; exit(1);}
    if(cellJi              == NULL) {cerr << "ERROR: obtained NULL cellJi array!"       << endl; exit(1);}
+   if(cellEp              == NULL) {cerr << "ERROR: obtained NULL cellEp array!"       << endl; exit(1);}
    if(nodeRhoQi           == NULL) {cerr << "ERROR: obtained NULL nodeRhoQi array!"    << endl; exit(1);}
    if(nodeE               == NULL) {cerr << "ERROR: obtained NULL nodeE array!"        << endl; exit(1);}
    if(nodeB               == NULL) {cerr << "ERROR: obtained NULL nodeB array!"        << endl; exit(1);}
@@ -100,6 +104,8 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(counterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL counterNodeMaxVw array!"    << endl; exit(1);}
 #endif
    if(innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
+   if(innerFlagParticle   == NULL) {cerr << "ERROR: obtained NULL innerFlagParticle array!" << endl; exit(1);}
+   if(innerFlagCellEp     == NULL) {cerr << "ERROR: obtained NULL innerFlagCellEp array!" << endl; exit(1);}
    if(innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
    if(outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; exit(1);}
    
@@ -401,6 +407,20 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::start("field propag",profPropagFieldID);
    for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { faceCurl(nodeE,faceB,true,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
+
+   // calculated cellEp
+   if(Hybrid::useElectronPressureElectricField == true) {
+      simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeRhoQiID);
+      profile::start("intpol",profIntpolID);
+      for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { calcCellEp(nodeRhoQi,cellRhoQi,innerFlagCellEp,cellEp,sim,simClasses,innerBlocks[b]); }
+      profile::stop();
+      profile::start("MPI waits",mpiWaitID);
+      simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeRhoQiID);
+      profile::stop();
+      profile::start("intpol",profIntpolID);
+      for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { calcCellEp(nodeRhoQi,cellRhoQi,innerFlagCellEp,cellEp,sim,simClasses,boundaryBlocks[b]); }
+      profile::stop();
+   }
    
    if(sim.atDataSaveStep == true) {
       saveStepHappened = true;
@@ -1533,6 +1553,64 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
    }
 }
 
+// calculate the electron pressure gradient term of the electric field
+void calcCellEp(Real* nodeRhoQi,Real* cellRhoQi,bool* innerFlagCellEp,Real* cellEp,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+{
+   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+   const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
+   Real array[size*3];
+   fetchData(nodeRhoQi,array,simClasses,blockID,1);
+   for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      const int n = (blockID*block::SIZE+block::index(i,j,k));
+      const int n3 = n*3;
+      cellEp[n3+0] = 0.0;
+      cellEp[n3+1] = 0.0;
+      cellEp[n3+2] = 0.0;
+      if(innerFlagCellEp[n] == true) { continue; }
+      // node2face interpolation: nodeRhoQi -> faceRhoQi
+      const Real xPosFaceRhoQi =
+        0.25*(array[(block::arrayIndex(i+1,j+1,k+1))] +
+              array[(block::arrayIndex(i+1,j+1,k+0))] +
+              array[(block::arrayIndex(i+1,j+0,k+0))] +
+              array[(block::arrayIndex(i+1,j+0,k+1))]);
+      const Real xNegFaceRhoQi =
+        0.25*(array[(block::arrayIndex(i+0,j+1,k+1))] +
+              array[(block::arrayIndex(i+0,j+1,k+0))] +
+              array[(block::arrayIndex(i+0,j+0,k+0))] +
+              array[(block::arrayIndex(i+0,j+0,k+1))]);
+      const Real yPosFaceRhoQi =
+        0.25*(array[(block::arrayIndex(i+1,j+1,k+1))] +
+              array[(block::arrayIndex(i+1,j+1,k+0))] +
+              array[(block::arrayIndex(i+0,j+1,k+0))] +
+              array[(block::arrayIndex(i+0,j+1,k+1))]);
+      const Real yNegFaceRhoQi =
+        0.25*(array[(block::arrayIndex(i+1,j+0,k+1))] +
+              array[(block::arrayIndex(i+1,j+0,k+0))] +
+              array[(block::arrayIndex(i+0,j+0,k+0))] +
+              array[(block::arrayIndex(i+0,j+0,k+1))]);
+      const Real zPosFaceRhoQi =
+        0.25*(array[(block::arrayIndex(i+1,j+1,k+1))] +
+              array[(block::arrayIndex(i+1,j+0,k+1))] +
+              array[(block::arrayIndex(i+0,j+0,k+1))] +
+              array[(block::arrayIndex(i+0,j+1,k+1))]);
+      const Real zNegFaceRhoQi =
+        0.25*(array[(block::arrayIndex(i+1,j+1,k+0))] +
+              array[(block::arrayIndex(i+1,j+0,k+0))] +
+              array[(block::arrayIndex(i+0,j+0,k+0))] +
+              array[(block::arrayIndex(i+0,j+1,k+0))]);
+      // calculate linear gradient of faceRhoQi as a cell volume average
+      const Real xCellGradRhoQi = (xPosFaceRhoQi - xNegFaceRhoQi)/Hybrid::dx;
+      const Real yCellGradRhoQi = (yPosFaceRhoQi - yNegFaceRhoQi)/Hybrid::dx;
+      const Real zCellGradRhoQi = (zPosFaceRhoQi - zNegFaceRhoQi)/Hybrid::dx;
+      // calculate electron pressure term of the electric field
+      if(fabs(cellRhoQi[n]) > 0) {
+         cellEp[n3+0] = -Hybrid::electronPressureCoeff*xCellGradRhoQi/cellRhoQi[n];
+         cellEp[n3+1] = -Hybrid::electronPressureCoeff*yCellGradRhoQi/cellRhoQi[n];
+         cellEp[n3+2] = -Hybrid::electronPressureCoeff*zCellGradRhoQi/cellRhoQi[n];
+      }
+   }
+}
+
 // interpolation from faces to arbitrary point r (in block's local coordinates)
 void face2r(Real* r,Real* faceData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result)
 {
@@ -1668,13 +1746,17 @@ void setupGetFields(Simulation& sim,SimulationClasses& simClasses) {
 }
 
 // get E, B and Ue fields at arbitrary point r
-void getFields(Real* r,Real* B,Real* Ue,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID) {
+void getFields(Real* r,Real* B,Real* Ue,Real* Ep,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID) {
    Real* faceB  = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
    //Real* nodeE  = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEID));
    Real* cellUe = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellUeID));
+   Real* cellEp = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellEpID));
    face2r(r,faceB,sim,simClasses,blockID,B);
    //node2r(r,nodeE,sim,simClasses,blockID,E);
    cell2r(r,cellUe,sim,simClasses,blockID,Ue);
+   if(Hybrid::useElectronPressureElectricField == true) {
+      cell2r(r,cellEp,sim,simClasses,blockID,Ep);
+   }
 }
 
 // fetch ALL neighours

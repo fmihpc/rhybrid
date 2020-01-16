@@ -201,7 +201,7 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
    simClasses.logger
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
      << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
-     << "(" << species->name << ") temperature   = " << T << " K" << endl
+     << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticle weight    = " << w << endl << write;
@@ -325,7 +325,7 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    simClasses.logger
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
      << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
-     << "(" << species->name << ") temperature   = " << T << " K" << endl
+     << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt           = " << N_macroParticlesPerCellPerDt*N_yz_cells << endl
@@ -519,8 +519,9 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
      << "(" << species->name << ") emission radius = " << radiusToString(R) << endl
      << "(" << species->name << ") noon emission   = " << noonFactor << endl
      << "(" << species->name << ") night emission  = " << nightFactor << endl
-     << "(" << species->name << ") temperature     = " << T << " K" << endl
+     << "(" << species->name << ") temperature     = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed   = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") density         = " << ( totalRate/( 4*M_PI*sqr(R)*sqrt( constants::BOLTZMANN*T/(2*M_PI*species->m) ) ) )/1e6<< " cm^-3" << endl
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
@@ -759,8 +760,9 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
      << "(" << species->name << ") emission radius  = " << radiusToString(R) << endl
      << "(" << species->name << ") noon emission    = " << noonFactor << endl
      << "(" << species->name << ") night emission   = " << nightFactor << endl
-     << "(" << species->name << ") temperature      = " << T << " K" << endl
+     << "(" << species->name << ") temperature      = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed    = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") density          = " << ( totalRate/( 4*M_PI*sqr(R)*sqrt( constants::BOLTZMANN*T/(2*M_PI*species->m) ) ) )/1e6<< " cm^-3" << endl
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
@@ -1089,13 +1091,14 @@ break_for:
      << "km" << endl
      << "(" << species->name << ") neutral profile: T0 = ";
    for(size_t i=0;i<T0.size();i++) { simClasses.logger << T0[i] << " "; }
-   simClasses.logger
-     << "K" << endl
+   simClasses.logger << "K = ";
+   for(size_t i=0;i<T0.size();i++) { simClasses.logger << T0[i]/constants::EV_TO_KELVIN << " "; }   
+   simClasses.logger << "eV" << endl
      << "(" << species->name << ") neutral profile: k0 = ";
    for(size_t i=0;i<k0.size();i++) { simClasses.logger << k0[i] << " "; }
    simClasses.logger
      << endl
-     << "(" << species->name << ") temperature    = " << T << " K" << endl
+     << "(" << species->name << ") temperature    = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed  = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") exobase radius = " << radiusToString(R_exobase) << endl
      << "(" << species->name << ") shadow radius  = " << radiusToString(R_shadow)  << endl

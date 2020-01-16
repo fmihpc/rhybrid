@@ -19,6 +19,7 @@
 
 #include <climits>
 #include "particle_species.h"
+#include "hybrid.h"
 
 using namespace std;
 
@@ -99,7 +100,7 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
      << "popid = " << popid << endl
      << "q = " << q << " C = " << q/constants::CHARGE_ELEMENTARY << " e" << endl
      << "m = " << m << " kg = " << m/constants::MASS_PROTON << " mp" << endl 
-     << "obstacle   = " << ((R2_obstacle > 0.0) ? sqrt(R2_obstacle)/1e3 : R2_obstacle) << " km" << endl
+     << "obstacle   = " << ((R2_obstacle > 0.0) ? sqrt(R2_obstacle)/1e3 : R2_obstacle) << " km = " << ((R2_obstacle > 0.0) ? sqrt(R2_obstacle)/Hybrid::dx : R2_obstacle) << " dx" << endl
      << "accumulate = " << accumulate << endl 
      << "accelerate = " << accelerate << endl
      << "output str = " << outStr << endl

@@ -263,6 +263,7 @@ bool Accumulator::addRemoteUpdates() {
    if (myOrderNumber != N_accumulators-1) { return success; }
    Real* cellJi    = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
+   Real* cellRhoQiBg = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiBgID);
    Real* counterCellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCounterCellMinRhoQiID);
    bool* outerBoundaryFlag   = simClasses->pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
    unsigned int* offsetsCellRhoQi = NULL;
@@ -320,6 +321,7 @@ bool Accumulator::addRemoteUpdates() {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
 	 cellRhoQi[n] /= Hybrid::dV;
+         cellRhoQi[n] += cellRhoQiBg[n];
          if(outerBoundaryFlag[n] == true) {
             if(cellRhoQi[n] < Hybrid::outerBoundaryZone.minRhoQi) {
                cellRhoQi[n] = Hybrid::outerBoundaryZone.minRhoQi;

@@ -91,10 +91,12 @@ struct Hybrid {
 
    // cell data
    static pargrid::DataID dataCellRhoQiID;
+   static pargrid::DataID dataCellRhoQiBgID;
    static pargrid::DataID dataCellBID;
    static pargrid::DataID dataCellJID;
    static pargrid::DataID dataCellUeID;
    static pargrid::DataID dataCellJiID;
+   static pargrid::DataID dataCellEpID;
    static pargrid::DataID dataCellIonosphereID;
    static pargrid::DataID dataCellExosphereID;
    
@@ -128,6 +130,7 @@ struct Hybrid {
    static pargrid::DataID dataInnerFlagFieldID;
    static pargrid::DataID dataInnerFlagNodeID;
    static pargrid::DataID dataInnerFlagParticleID;
+   static pargrid::DataID dataInnerFlagCellEpID;
    static pargrid::DataID dataOuterBoundaryFlagID;
 #ifdef USE_XMIN_BOUNDARY
    static pargrid::DataID dataXminFlagID;
@@ -171,6 +174,7 @@ struct Hybrid {
    static Real R_object;
    static Real R2_fieldObstacle;
    static Real R2_particleObstacle;
+   static Real R2_cellEpObstacle;
 #ifdef USE_XMIN_BOUNDARY
    static Real xMinBoundary;
 #endif
@@ -194,6 +198,9 @@ struct Hybrid {
    static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
 #endif
    static bool useHallElectricField;
+   static bool useElectronPressureElectricField;
+   static Real electronTemperature;
+   static Real electronPressureCoeff;
    static Real swMacroParticlesCellPerDt;
    static int Efilter;
    static Real EfilterNodeGaussSigma;
