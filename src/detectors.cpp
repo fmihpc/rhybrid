@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <cmath>
+#include <numeric>
 
 #include "hybrid.h"
 #include "detectors.h"
