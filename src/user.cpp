@@ -292,8 +292,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxVw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
 #endif
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
-   cr.add("Hybrid.electron_pressure","Use electron pressure term in the electric field [-] (bool)",true);
-   cr.add("Hybrid.Te","Temperature of isothermal electrons [K] (float)",defaultValue);
+   cr.add("Hybrid.electron_pressure","Use electron pressure term in the electric field [0: none (pressureless electron fluid), 1: isothermal electron fluid, 2: adiabatic electron fluid] (int)",0);
+   cr.add("Hybrid.Te","Temperature of isothermal electrons or upstream temperature of adiabatic electrons [K] (float)",defaultValue);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
    cr.add("OuterBoundaryZone.typeEta","Type of the outer boundary zone for resistivity: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-], 3 = -x wall and all edges except +x edges (int)",0);
@@ -351,14 +351,34 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxVw",Hybrid::maxVw);   
 #endif
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
-   cr.get("Hybrid.electron_pressure",Hybrid::useElectronPressureElectricField);
+   int useElectronPressureInput = 0;
+   cr.get("Hybrid.electron_pressure",useElectronPressureInput);
    cr.get("Hybrid.Te",Hybrid::electronTemperature);
+   if(useElectronPressureInput == 0) {
+      Hybrid::useElectronPressureElectricField = false;
+      Hybrid::useAdiabaticElectronPressure = false;
+   }
+   else if(useElectronPressureInput == 1) {
+      Hybrid::useElectronPressureElectricField = true;
+      Hybrid::useAdiabaticElectronPressure = false;
+   }
+   else if(useElectronPressureInput == 2) {
+      Hybrid::useElectronPressureElectricField = true;
+      Hybrid::useAdiabaticElectronPressure = true;
+   }
+   else {
+      simClasses.logger << "(RHYBRID) ERROR: Bad Hybrid.electron_pressure input value (" << useElectronPressureInput << ")" << endl << write;
+      exit(1);
+   }
    if(Hybrid::useElectronPressureElectricField == false) {
       Hybrid::electronTemperature = -1;
       Hybrid::electronPressureCoeff = 0.0;
    }
    else {
-      Hybrid::electronPressureCoeff = constants::BOLTZMANN*Hybrid::electronTemperature/constants::CHARGE_ELEMENTARY;
+      if(Hybrid::useAdiabaticElectronPressure == false) {
+         // isothermal electrons
+         Hybrid::electronPressureCoeff = constants::BOLTZMANN*Hybrid::electronTemperature/constants::CHARGE_ELEMENTARY;
+      }
    }
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
@@ -489,7 +509,19 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger
      << "M_object  = " << Hybrid::M_object     << " kg" << endl
      << "Hall term = " << Hybrid::useHallElectricField << endl
-     << "Electron pressure term = " << Hybrid::useElectronPressureElectricField << endl
+     << "Electron pressure term = ";
+   if(Hybrid::useElectronPressureElectricField == false) {
+      simClasses.logger << "none" << endl;
+   }
+   else {
+      if(Hybrid::useAdiabaticElectronPressure = true) {
+         simClasses.logger << "adiabatic (gamma = 2)" << endl;
+      }
+      else {
+         simClasses.logger << "isothermal" << endl;
+      }
+   }
+   simClasses.logger
      << "Te = " << Hybrid::electronTemperature << " K = " << Hybrid::electronTemperature/constants::EV_TO_KELVIN << " eV" << endl << endl
      << "(UPSTREAM IMF)" << endl
      << "Bx  = " << Hybrid::IMFBx/1e-9 << " nT" << endl
@@ -1522,6 +1554,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
    }
    
+   // set adiabatic electron pressure coefficient with gamma = 2
+   if(Hybrid::useAdiabaticElectronPressure = true) {
+      if(ne > 0) {
+         Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( ne * sqr(constants::CHARGE_ELEMENTARY) );
+      }
+      else {
+         Hybrid::electronPressureCoeff = 0.0;
+      }
+   }
+
    simClasses.logger
      << "(CFL CONDITION)" << endl
      << "dt = " << sim.dt << " s = " << sim.dt/1e-3 << " ms" << endl

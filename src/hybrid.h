@@ -199,6 +199,7 @@ struct Hybrid {
 #endif
    static bool useHallElectricField;
    static bool useElectronPressureElectricField;
+   static bool useAdiabaticElectronPressure;
    static Real electronTemperature;
    static Real electronPressureCoeff;
    static Real swMacroParticlesCellPerDt;

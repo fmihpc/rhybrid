@@ -133,6 +133,7 @@ Real Hybrid::maxVw;
 #endif
 bool Hybrid::useHallElectricField;
 bool Hybrid::useElectronPressureElectricField;
+bool Hybrid::useAdiabaticElectronPressure;
 Real Hybrid::electronTemperature;
 Real Hybrid::electronPressureCoeff;
 Real Hybrid::swMacroParticlesCellPerDt;

@@ -1603,10 +1603,19 @@ void calcCellEp(Real* nodeRhoQi,Real* cellRhoQi,bool* innerFlagCellEp,Real* cell
       const Real yCellGradRhoQi = (yPosFaceRhoQi - yNegFaceRhoQi)/Hybrid::dx;
       const Real zCellGradRhoQi = (zPosFaceRhoQi - zNegFaceRhoQi)/Hybrid::dx;
       // calculate electron pressure term of the electric field
-      if(fabs(cellRhoQi[n]) > 0) {
-         cellEp[n3+0] = -Hybrid::electronPressureCoeff*xCellGradRhoQi/cellRhoQi[n];
-         cellEp[n3+1] = -Hybrid::electronPressureCoeff*yCellGradRhoQi/cellRhoQi[n];
-         cellEp[n3+2] = -Hybrid::electronPressureCoeff*zCellGradRhoQi/cellRhoQi[n];
+      // adiabatic electrons
+      if(Hybrid::useAdiabaticElectronPressure == true) {
+         cellEp[n3+0] = -Hybrid::electronPressureCoeff*xCellGradRhoQi;
+         cellEp[n3+1] = -Hybrid::electronPressureCoeff*yCellGradRhoQi;
+         cellEp[n3+2] = -Hybrid::electronPressureCoeff*zCellGradRhoQi;
+      }
+      else {
+         // isothermal electrons
+         if(fabs(cellRhoQi[n]) > 0) {
+            cellEp[n3+0] = -Hybrid::electronPressureCoeff*xCellGradRhoQi/cellRhoQi[n];
+            cellEp[n3+1] = -Hybrid::electronPressureCoeff*yCellGradRhoQi/cellRhoQi[n];
+            cellEp[n3+2] = -Hybrid::electronPressureCoeff*zCellGradRhoQi/cellRhoQi[n];
+         }
       }
    }
 }
