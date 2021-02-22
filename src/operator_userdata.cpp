@@ -765,6 +765,11 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
 	 (*Hybrid::plog[i]) << endl;
       }
       Hybrid::flog << endl;
+      if(maxBGlobal > Hybrid::terminateLimitMaxB) {
+         success = false;
+         simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << "), exiting.." << endl;
+         simClasses.logger << write;
+      }
    }
 
    // zero particle counters

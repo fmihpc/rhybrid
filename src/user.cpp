@@ -284,6 +284,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
+   cr.add("Hybrid.terminateLimitMaxB","Maximum magnitude of magnetic field above which a simulation run is terminated [T] (float)",defaultValue);
    cr.add("Hybrid.minRhoQi","Global minimum value of ion charge density [C/m^3] (float)",defaultValue);
 #ifdef USE_ECUT
    cr.add("Hybrid.Ecut","Maximum value of node electric field [V/m] (float)",defaultValue);
@@ -342,6 +343,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.M_object",Hybrid::M_object);
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
+   cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
 #ifdef USE_ECUT
    cr.get("Hybrid.Ecut",Hybrid::Ecut2);
@@ -1688,6 +1690,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_ECUT
      << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m = " << sqrt(Hybrid::Ecut2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
 #endif
+     << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
      << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl << endl;
 
    simClasses.logger

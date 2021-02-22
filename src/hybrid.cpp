@@ -123,6 +123,7 @@ Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::maxVi;
+Real Hybrid::terminateLimitMaxB;
 Real Hybrid::minRhoQi;
 OuterBoundaryZone Hybrid::outerBoundaryZone;
 #ifdef USE_ECUT
