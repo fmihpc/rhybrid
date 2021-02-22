@@ -54,7 +54,16 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    }
    if(Hybrid::logInterval > 0) {
       if( (sim.timestep)%(Hybrid::logInterval) == 0.0) {
-         if(writeLogs(sim,simClasses,particleLists) == false) { rvalue = false; }
+         int masterFailed = 0; // check for failure of the master PE for run termination
+         if(writeLogs(sim,simClasses,particleLists) == false) {
+            rvalue = false;
+            if(sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
+         }
+         // broadcast failed flag from master to all PEs (note: this should be handled on a higher level like corsair / int main)
+         MPI_Bcast(&masterFailed,1,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
+         if(masterFailed > 0) {
+            rvalue = false;
+         }
       }
    }
 #ifdef USE_DETECTORS

@@ -743,7 +743,7 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
    MPI_Reduce(&maxDivBThisProcess,&maxDivBGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&maxDivPerBThisProcess,&maxDivPerBGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumB2ThisProcess,&sumB2Global,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-   
+
    if(sim.mpiRank==sim.MASTER_RANK) {
       // field
       if(N_cellsGlobal > 0) {
@@ -767,7 +767,7 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       Hybrid::flog << endl;
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
          success = false;
-         simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << "), exiting.." << endl;
+         simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT), exiting." << endl;
          simClasses.logger << write;
       }
    }
