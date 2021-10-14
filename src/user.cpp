@@ -305,8 +305,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.xMinBoundary","Back X boundary [m] (float)",defaultValue);
 #endif
 #ifdef USE_CONIC_INNER_BOUNDARY
-   cr.add("Hybrid.e_conicInnerBoundary","Eccentricity of conical inner boundary [-] (float)",defaultValue);
    cr.add("Hybrid.l_conicInnerBoundary","Semi-latus rectum of conical inner boundary [m] (float)",defaultValue);
+   cr.add("Hybrid.e_conicInnerBoundary","Eccentricity of conical inner boundary [-] (float)",defaultValue);
+   cr.add("Hybrid.etaC_conicInnerBoundary","Dimensionless resistivity inside conical inner boundary [-] (float)",defaultValue);
 #endif
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
@@ -368,8 +369,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.xMinBoundary",Hybrid::xMinBoundary);
 #endif
 #ifdef USE_CONIC_INNER_BOUNDARY
-   cr.get("Hybrid.e_conicInnerBoundary",Hybrid::e_conicInnerBoundary);
    cr.get("Hybrid.l_conicInnerBoundary",Hybrid::l_conicInnerBoundary);
+   cr.get("Hybrid.e_conicInnerBoundary",Hybrid::e_conicInnerBoundary);
+   cr.get("Hybrid.etaC_conicInnerBoundary",Hybrid::eta_conicInnerBoundary);
 #endif
    cr.get("Hybrid.M_object",Hybrid::M_object);
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
@@ -431,6 +433,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
    Hybrid::resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
    Hybrid::resistivityEta = Hybrid::resistivityEtaC*Hybrid::resistivityGridUnit;
+#ifdef USE_CONIC_INNER_BOUNDARY
+   Hybrid::eta_conicInnerBoundary *= Hybrid::resistivityGridUnit;
+#endif
    Hybrid::outerBoundaryZone.eta *= Hybrid::resistivityGridUnit;
    if(setResistivityProfile(resistivityProfileName) == false) {
       simClasses.logger << "(RHYBRID) ERROR: Given profile profile not found (" << resistivityProfileName << ")" << endl << write;
@@ -515,8 +520,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "R_object  = " << Hybrid::R_object/1e3 << " km = " << Hybrid::R_object/Hybrid::dx << " dx" << endl
 #ifdef USE_CONIC_INNER_BOUNDARY
      << "Using conic inner boundary" << endl
+     << "Inner boundary semi-latus rectum = " << Hybrid::l_conicInnerBoundary/1e3 << " km = " << Hybrid::l_conicInnerBoundary/Hybrid::R_object << " R_object" << endl
      << "Inner boundary eccentricity = " << Hybrid::e_conicInnerBoundary << endl
-     << "Inner boundary semi-latus rectum = " << Hybrid::l_conicInnerBoundary/1e3 << " km = " << Hybrid::l_conicInnerBoundary/Hybrid::R_object << " R_object" << endl;
+     << "Inner boundary eta = " << Hybrid::eta_conicInnerBoundary << " Ohm m = " << Hybrid::eta_conicInnerBoundary/(Hybrid::resistivityGridUnit + 1e-30) << " mu_0*dx^2/dt" << endl;
 #else
      << "Using spherical inner boundary" << endl
      << "R_fieldObstacle = ";
@@ -1242,13 +1248,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             if( innerBoundaryConic(xNode,yNode,zNode) == true ) {
                innerFlagNode[n] = true;
 #ifdef USE_RESISTIVITY
-               nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
+               nodeEta[n] = Hybrid::eta_conicInnerBoundary;
 #endif
             }
             else {
                innerFlagNode[n] = false;
 #ifdef USE_RESISTIVITY
-               nodeEta[n] = 0.0;
+               nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
 #endif
             }
 #else

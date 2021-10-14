@@ -181,6 +181,7 @@ struct Hybrid {
 #ifdef USE_CONIC_INNER_BOUNDARY
    static Real l_conicInnerBoundary;
    static Real e_conicInnerBoundary;
+   static Real eta_conicInnerBoundary;
 #endif
    static Real M_object;
    static Real maxUe2;
