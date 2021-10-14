@@ -3,6 +3,7 @@ USE_EDGE_J := true
 USE_B_INITIAL := true
 USE_B_CONSTANT := false
 USE_XMIN_BOUNDARY := false
+USE_CONIC_INNER_BOUNDARY := false
 USE_RESISTIVITY := true
 USE_ECUT := true
 USE_MAXVW := true
@@ -36,6 +37,10 @@ endif
 
 ifeq ($(USE_XMIN_BOUNDARY),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_XMIN_BOUNDARY
+endif
+
+ifeq ($(USE_CONIC_INNER_BOUNDARY),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_CONIC_INNER_BOUNDARY
 endif
 
 ifeq ($(USE_RESISTIVITY),true)

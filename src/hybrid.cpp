@@ -119,6 +119,10 @@ Real Hybrid::R2_cellEpObstacle;
 #ifdef USE_XMIN_BOUNDARY
 Real Hybrid::xMinBoundary;
 #endif
+#ifdef USE_CONIC_INNER_BOUNDARY
+Real Hybrid::l_conicInnerBoundary;
+Real Hybrid::e_conicInnerBoundary;
+#endif
 Real Hybrid::M_object;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;

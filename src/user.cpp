@@ -248,6 +248,20 @@ bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_
    return true;
 }
 
+#ifdef USE_CONIC_INNER_BOUNDARY
+// Conic section inner boundary
+bool innerBoundaryConic(const Real x, const Real y, const Real z) {
+   // Perpendicular distance of a conic section to the x axis
+   const Real yz2_conic = sqr(Hybrid::l_conicInnerBoundary - Hybrid::e_conicInnerBoundary*x) - sqr(x);
+   const Real yz2 = sqr(y) + sqr(z);
+   // Check perpendicular distance and x distance
+   if( yz2_conic > yz2 & x < (Hybrid::l_conicInnerBoundary/(1+Hybrid::e_conicInnerBoundary)) ) {
+      return true;
+   }
+   else { return false; }
+}
+#endif
+
 bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const ObjectFactories& objectFactories,
 			    vector<ParticleListBase*>& particleLists) {
    simClasses.logger << "(RHYBRID) INITIALIZATION" << endl << endl << write;
@@ -289,6 +303,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.R_cellEpObstacle","Radius of inner boundary for zero electron pressure electric field [m] (float)",defaultValue);
 #ifdef USE_XMIN_BOUNDARY
    cr.add("Hybrid.xMinBoundary","Back X boundary [m] (float)",defaultValue);
+#endif
+#ifdef USE_CONIC_INNER_BOUNDARY
+   cr.add("Hybrid.e_conicInnerBoundary","Eccentricity of conical inner boundary [-] (float)",defaultValue);
+   cr.add("Hybrid.l_conicInnerBoundary","Semi-latus rectum of conical inner boundary [m] (float)",defaultValue);
 #endif
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
@@ -348,6 +366,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.R_cellEpObstacle",Hybrid::R2_cellEpObstacle);
 #ifdef USE_XMIN_BOUNDARY
    cr.get("Hybrid.xMinBoundary",Hybrid::xMinBoundary);
+#endif
+#ifdef USE_CONIC_INNER_BOUNDARY
+   cr.get("Hybrid.e_conicInnerBoundary",Hybrid::e_conicInnerBoundary);
+   cr.get("Hybrid.l_conicInnerBoundary",Hybrid::l_conicInnerBoundary);
 #endif
    cr.get("Hybrid.M_object",Hybrid::M_object);
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
@@ -491,6 +513,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "dV = " << Hybrid::dV << " m^3" << endl << endl
      << "(BASIC PARAMETERS)" << endl
      << "R_object  = " << Hybrid::R_object/1e3 << " km = " << Hybrid::R_object/Hybrid::dx << " dx" << endl
+#ifdef USE_CONIC_INNER_BOUNDARY
+     << "Using conic inner boundary" << endl
+     << "Inner boundary eccentricity = " << Hybrid::e_conicInnerBoundary << endl
+     << "Inner boundary semi-latus rectum = " << Hybrid::l_conicInnerBoundary/1e3 << " km = " << Hybrid::l_conicInnerBoundary/Hybrid::R_object << " R_object" << endl;
+#else
+     << "Using spherical inner boundary" << endl
      << "R_fieldObstacle = ";
    if(Hybrid::R2_fieldObstacle > 0) {
       simClasses.logger
@@ -516,7 +544,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
         << sqrt(Hybrid::R2_cellEpObstacle)/Hybrid::dx << " dx = " 
 	<< (sqrt(Hybrid::R2_cellEpObstacle) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
    }
-   else { simClasses.logger << Hybrid::R2_particleObstacle << "" << endl; }   
+   else { simClasses.logger << Hybrid::R2_particleObstacle << "" << endl; }
+#endif
    simClasses.logger
      << "M_object  = " << Hybrid::M_object     << " kg" << endl
      << "Hall term = " << Hybrid::useHallElectricField << endl
@@ -1200,18 +1229,29 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    const Real xCellCenter = crd[b3+0] + (i+0.5)*Hybrid::dx;
 	    const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
 	    const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
+            const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
+	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
+	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
+#ifdef USE_CONIC_INNER_BOUNDARY
+            if( innerBoundaryConic(xCellCenter,yCellCenter,zCellCenter) == true ) {
+               innerFlagField[n] = true;
+               innerFlagParticle[b] = true;
+               innerFlagCellEp[b] = true;
+            }
+            else { innerFlagField[n] = false; }
+            if( innerBoundaryConic(xNode,yNode,zNode) == true ) { innerFlagNode[n] = true; }
+            else { innerFlagNode[n] = false; }
+#else
 	    const Real r2 = sqr(xCellCenter) + sqr(yCellCenter) + sqr(zCellCenter);
 	    if(r2 < Hybrid::R2_fieldObstacle) { innerFlagField[n] = true; }
 	    else                              { innerFlagField[n] = false; }
 	    const Real rp2 = sqr(sqrt(r2) - 0.5*sqrt(3)*Hybrid::dx);
 	    if(rp2 < Hybrid::R2_particleObstacle) { innerFlagParticle[b] = true; }
             if(rp2 < Hybrid::R2_cellEpObstacle) { innerFlagCellEp[b] = true; }
-	    const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
-	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
-	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
 	    const Real rNode2 = sqr(xNode) + sqr(yNode) + sqr(zNode);
 	    if(rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0;*/ }
 	    else                                  { innerFlagNode[n] = false; }
+#endif
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
 #endif
