@@ -1239,8 +1239,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                innerFlagCellEp[b] = true;
             }
             else { innerFlagField[n] = false; }
-            if( innerBoundaryConic(xNode,yNode,zNode) == true ) { innerFlagNode[n] = true; }
-            else { innerFlagNode[n] = false; }
+            if( innerBoundaryConic(xNode,yNode,zNode) == true ) {
+               innerFlagNode[n] = true;
+#ifdef USE_RESISTIVITY
+               nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
+#endif
+            }
+            else {
+               innerFlagNode[n] = false;
+#ifdef USE_RESISTIVITY
+               nodeEta[n] = 0.0;
+#endif
+            }
 #else
 	    const Real r2 = sqr(xCellCenter) + sqr(yCellCenter) + sqr(zCellCenter);
 	    if(r2 < Hybrid::R2_fieldObstacle) { innerFlagField[n] = true; }
@@ -1251,9 +1261,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    const Real rNode2 = sqr(xNode) + sqr(yNode) + sqr(zNode);
 	    if(rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0;*/ }
 	    else                                  { innerFlagNode[n] = false; }
-#endif
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
+#endif
 #endif
             cellRhoQiBg[n] = getBackgroundChargeDensity(simClasses,bgChargeDensityProfileName,xCellCenter,yCellCenter,zCellCenter,bgChargeDensityArgs);
             //nodeRhoQi[n] = exp(-sqrt(rNode2)/Hybrid::R_object);
