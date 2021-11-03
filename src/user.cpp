@@ -380,7 +380,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
 #ifdef USE_ECUT
    cr.get("Hybrid.Ecut",Hybrid::Ecut2);
-   Hybrid::Ecut2 = sqr(Hybrid::Ecut2);
+   if(Hybrid::Ecut2 > 0) { Hybrid::Ecut2 = sqr(Hybrid::Ecut2); }
+   else { Hybrid::Ecut2 = 0; }
 #endif
 #ifdef USE_MAXVW
    cr.get("Hybrid.maxVw",Hybrid::maxVw);   
