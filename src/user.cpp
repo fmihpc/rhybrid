@@ -45,6 +45,16 @@
 
 using namespace std;
 
+bool str2bool(SimulationClasses& simClasses,const string & v) {
+   if(v.compare("0") != 0 && v.compare("1") != 0) {
+      simClasses.logger << "(RHYBRID) ERROR: boolean should be 0 or 1 (" << v  << ")" << endl << write;
+      exit(1);
+   }
+   bool res;
+   istringstream(v) >> res;
+   return res;
+}
+
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool rvalue = true;
    // Apply boundary conditions: remove illegal macroparticles after a restart
@@ -339,6 +349,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
+   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
+   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    cr.add("IntrinsicB.profile_name","Magnetic field profile name [-] (string)","");
    cr.add("IntrinsicB.laminarR","Laminar flow around sphere R [m] (float)",defaultValue);
@@ -446,6 +458,40 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
+   string inputStr;
+   cr.get("IMF.BoundaryCellB",inputStr);
+   if(inputStr.size() != 11 ||
+      inputStr.substr(1,1).compare(" ") != 0 ||
+      inputStr.substr(3,1).compare(" ") != 0 ||
+      inputStr.substr(5,1).compare(" ") != 0 ||
+      inputStr.substr(7,1).compare(" ") != 0 ||
+      inputStr.substr(9,1).compare(" ") != 0) {
+      simClasses.logger << "(RHYBRID) ERROR: IMF.BoundaryCellB should contain six boolean values separated by a whitespace each (" << inputStr << ")" << endl << write;
+      exit(1);
+   }
+   Hybrid::IMFBoundaryCellB[0] = str2bool(simClasses,inputStr.substr(0,1));
+   Hybrid::IMFBoundaryCellB[1] = str2bool(simClasses,inputStr.substr(2,1));
+   Hybrid::IMFBoundaryCellB[2] = str2bool(simClasses,inputStr.substr(4,1));
+   Hybrid::IMFBoundaryCellB[3] = str2bool(simClasses,inputStr.substr(6,1));
+   Hybrid::IMFBoundaryCellB[4] = str2bool(simClasses,inputStr.substr(8,1));
+   Hybrid::IMFBoundaryCellB[5] = str2bool(simClasses,inputStr.substr(10,1));
+   inputStr = "";
+   cr.get("IMF.BoundaryFaceB",inputStr);
+   if(inputStr.size() != 11 ||
+      inputStr.substr(1,1).compare(" ") != 0 ||
+      inputStr.substr(3,1).compare(" ") != 0 ||
+      inputStr.substr(5,1).compare(" ") != 0 ||
+      inputStr.substr(7,1).compare(" ") != 0 ||
+      inputStr.substr(9,1).compare(" ") != 0) {
+      simClasses.logger << "(RHYBRID) ERROR: IMF.BoundaryFaceB should contain six boolean values separated by a whitespace each (" << inputStr << ")" << endl << write;
+      exit(1);
+   }
+   Hybrid::IMFBoundaryFaceB[0] = str2bool(simClasses,inputStr.substr(0,1));
+   Hybrid::IMFBoundaryFaceB[1] = str2bool(simClasses,inputStr.substr(2,1));
+   Hybrid::IMFBoundaryFaceB[2] = str2bool(simClasses,inputStr.substr(4,1));
+   Hybrid::IMFBoundaryFaceB[3] = str2bool(simClasses,inputStr.substr(6,1));
+   Hybrid::IMFBoundaryFaceB[4] = str2bool(simClasses,inputStr.substr(8,1));
+   Hybrid::IMFBoundaryFaceB[5] = str2bool(simClasses,inputStr.substr(10,1));
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    cr.get("IntrinsicB.profile_name",magneticFieldProfileName);
    cr.get("IntrinsicB.laminarR",Hybrid::laminarR2);
@@ -579,6 +625,19 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "cone angle  = atan2(Bperp,Bx) = " << atan2(sqrt( sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz) ),Hybrid::IMFBx)*180.0/M_PI << " deg" << endl
      << "clock angle = atan2(By,Bz)    = " << atan2(Hybrid::IMFBy,Hybrid::IMFBz)*180.0/M_PI << " deg" << endl
      << endl;
+   simClasses.logger
+     << "(IMF BOUNDARY CONDITIONS)" << endl
+     << "cellB (+x,-x,+y,-y,+z,-z) = ";
+   for(size_t i = 0;i<6;++i) {
+      simClasses.logger << Hybrid::IMFBoundaryCellB[i] << " ";
+   }
+   simClasses.logger
+     << endl
+     << "faceB (+x,-x,+y,-y,+z,-z) = ";
+   for(size_t i = 0;i<6;++i) {
+      simClasses.logger << Hybrid::IMFBoundaryFaceB[i] << " ";
+   }
+   simClasses.logger << endl << endl;
    
    if(Hybrid::Efilter < 0) { Hybrid::Efilter = 0; }
    if(Hybrid::EfilterNodeGaussSigma <= 0) { Hybrid::EfilterNodeGaussSigma = 0; }

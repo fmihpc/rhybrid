@@ -158,7 +158,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    neumannCell(cellB,    sim,simClasses,exteriorBlocks,3);
    neumannCell(cellJi,   sim,simClasses,exteriorBlocks,3);
    neumannCell(cellRhoQi,sim,simClasses,exteriorBlocks,1);
-   setIMF(cellB,sim,simClasses,exteriorBlocks);
+   setIMFCell(cellB,sim,simClasses,exteriorBlocks);
    profile::stop();
    
 #ifdef WRITE_POPULATION_AVERAGES
@@ -898,20 +898,70 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
    delete [] tempArrayFaceData; tempArrayFaceData = NULL;
 }
 
-void setIMF(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const vector<pargrid::CellID>& exteriorBlocks)
+void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const vector<pargrid::CellID>& exteriorBlocks)
 {
    const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
    for(pargrid::CellID eb=0; eb<exteriorBlocks.size(); ++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
       const uint32_t& nf = neighbourFlags[b];
-      // front (+x) wall
-      if((nf & Hybrid::X_POS_EXISTS) == 0) {
+      // +x (front) wall
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[0] == true) {
 	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
-	    cellB[n+0] = Hybrid::IMFBx; // IMF Bx
-	    cellB[n+1] = Hybrid::IMFBy; // IMF By
-	    cellB[n+2] = Hybrid::IMFBz; // IMF Bz
+	    cellB[n+0] = Hybrid::IMFBx;
+	    cellB[n+1] = Hybrid::IMFBy;
+	    cellB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // -x (back) wall
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[1] == true) {
+	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+	    const int i = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    cellB[n+0] = Hybrid::IMFBx;
+	    cellB[n+1] = Hybrid::IMFBy;
+	    cellB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // +y side wall
+      if((nf & Hybrid::Y_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[2] == true) {
+	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+	    const int j = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    cellB[n+0] = Hybrid::IMFBx;
+	    cellB[n+1] = Hybrid::IMFBy;
+	    cellB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // -y side wall
+      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[3] == true) {
+	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+	    const int j = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    cellB[n+0] = Hybrid::IMFBx;
+	    cellB[n+1] = Hybrid::IMFBy;
+	    cellB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // +z side wall
+      if((nf & Hybrid::Z_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[4] == true) {
+	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+	    const int k = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    cellB[n+0] = Hybrid::IMFBx;
+	    cellB[n+1] = Hybrid::IMFBy;
+	    cellB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // -z side wall
+      if((nf & Hybrid::Z_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[5] == true) {
+	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+	    const int k = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    cellB[n+0] = Hybrid::IMFBx;
+	    cellB[n+1] = Hybrid::IMFBy;
+	    cellB[n+2] = Hybrid::IMFBz;
 	 }
       }
    }
@@ -923,13 +973,58 @@ void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const 
    for(pargrid::CellID eb=0; eb<exteriorBlocks.size(); ++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
       const uint32_t& nf = neighbourFlags[b];
-      // front (+x) wall
-      if((nf & Hybrid::X_POS_EXISTS) == 0) {
+      // +x (front) wall
+      if((nf & Hybrid::X_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[0] == true) {
 	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
-	    faceB[n+1] = Hybrid::IMFBy; // IMF By
-	    faceB[n+2] = Hybrid::IMFBz; // IMF Bz
+	    faceB[n+1] = Hybrid::IMFBy;
+	    faceB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // -x (back) wall
+      if((nf & Hybrid::X_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[1] == true) {
+	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+	    const int i = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    faceB[n+1] = Hybrid::IMFBy;
+	    faceB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // +y side wall
+      if((nf & Hybrid::Y_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[2] == true) {
+	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+	    const int j = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    faceB[n+0] = Hybrid::IMFBx;
+	    faceB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // -y side wall
+      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[3] == true) {
+	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+	    const int j = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    faceB[n+0] = Hybrid::IMFBx;
+	    faceB[n+2] = Hybrid::IMFBz;
+	 }
+      }
+      // +z side wall
+      if((nf & Hybrid::Z_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[4] == true) {
+	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+	    const int k = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    faceB[n+0] = Hybrid::IMFBx;
+	    faceB[n+1] = Hybrid::IMFBy;
+	 }
+      }
+      // -z side wall
+      if((nf & Hybrid::Z_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[5] == true) {
+	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+	    const int k = 0;
+	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
+	    faceB[n+0] = Hybrid::IMFBx;
+	    faceB[n+1] = Hybrid::IMFBy;
 	 }
       }
    }

@@ -27,7 +27,7 @@
 bool propagateB(Simulation& sim,SimulationClasses& simClasses,std::vector<ParticleListBase*>& particleLists);
 void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks,const int vectorDim);
 void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks);
-void setIMF(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks);
+void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks);
 void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks);
 void face2Cell(Real* faceData,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void cell2Node(Real* celldata,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim = 3);
