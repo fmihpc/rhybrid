@@ -125,6 +125,8 @@ Real Hybrid::e_conicInnerBoundary;
 Real Hybrid::eta_conicInnerBoundary;
 #endif
 Real Hybrid::M_object;
+bool Hybrid::initialFlowThrough;
+Real Hybrid::initialFlowThroughPeriod;
 Real Hybrid::maxUe2;
 Real Hybrid::maxVi2;
 Real Hybrid::maxVi;

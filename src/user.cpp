@@ -57,6 +57,14 @@ bool str2bool(SimulationClasses& simClasses,const string & v) {
 
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool rvalue = true;
+   if(Hybrid::initialFlowThroughPeriod < sim.t) {
+      static bool switchOffDone = false;
+      if(switchOffDone == false) {
+         simClasses.logger << "(RHYBRID) initialFlowThroughPeriod reached, switching initial flow through off..." << endl << write;
+         Hybrid::initialFlowThrough = false;
+         switchOffDone = true;
+      }
+   }
    // Apply boundary conditions: remove illegal macroparticles after a restart
    if(sim.restarted == true && Hybrid::filterParticlesAfterRestartDone == false) {
        for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
@@ -320,6 +328,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.etaC_conicInnerBoundary","Dimensionless resistivity inside conical inner boundary [-] (float)",defaultValue);
 #endif
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
+   cr.add("Hybrid.initialFlowThroughPeriodFactor","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.terminateLimitMaxB","Maximum magnitude of magnetic field above which a simulation run is terminated [T] (float)",defaultValue);
@@ -386,6 +395,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.etaC_conicInnerBoundary",Hybrid::eta_conicInnerBoundary);
 #endif
    cr.get("Hybrid.M_object",Hybrid::M_object);
+   cr.get("Hybrid.initialFlowThroughPeriodFactor",Hybrid::initialFlowThroughPeriod);
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
@@ -1680,6 +1690,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if(ne > 0.0 && Hybrid::dx > 0.0) {
       vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
    }
+  
+   if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
+      Hybrid::initialFlowThroughPeriod *= (Hybrid::box.xmax - Hybrid::box.xmin)/Ubulk;
+      Hybrid::initialFlowThrough = true;
+   }
+   else {
+      Hybrid::initialFlowThroughPeriod = -100;
+      Hybrid::initialFlowThrough = false;
+   }
    
    // set adiabatic electron pressure coefficient with gamma = 2
    if(Hybrid::useAdiabaticElectronPressure = true) {
@@ -1807,6 +1826,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    
    simClasses.logger
      << "(CONSTRAINTS)" << endl
+     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(Hybrid::box.xmax - Hybrid::box.xmin + 1e-30) << " (xmax-xmin)/Ubulk" << endl
      << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
      << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
 #ifdef USE_MAXVW

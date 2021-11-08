@@ -184,6 +184,8 @@ struct Hybrid {
    static Real eta_conicInnerBoundary;
 #endif
    static Real M_object;
+   static bool initialFlowThrough;
+   static Real initialFlowThroughPeriod;
    static Real maxUe2;
    static Real maxVi2;
    static Real maxVi;
