@@ -1672,6 +1672,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    else {
       Ubulk = 0.0;
    }
+   Hybrid::upstreamBulkU = Ubulk;
    Real Esw[3] = {0.0,0.0,0.0};
    Real Bsw[3] = {Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz};
    Real Usw[3] = {-Ubulk,0.0,0.0};

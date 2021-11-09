@@ -183,6 +183,7 @@ struct Hybrid {
    static Real e_conicInnerBoundary;
    static Real eta_conicInnerBoundary;
 #endif
+   static Real upstreamBulkU;
    static Real M_object;
    static bool initialFlowThrough;
    static Real initialFlowThroughPeriod;

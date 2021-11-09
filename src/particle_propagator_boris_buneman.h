@@ -77,6 +77,16 @@ template<class PARTICLE>
      bool* xMinFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataXminFlagID));
      if(xMinFlag[blockID] == true) { accelerate = false; }
 #endif
+     // experimental back wall outflow
+     /*bool* outerBoundaryFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
+     if(outerBoundaryFlag[blockID] == true) {
+        if( (particle.state[particle::X]+xBlock) < (Hybrid::box.xmin + Hybrid::outerBoundaryZone.sizeEta + Hybrid::dx)) {
+           accelerate = false;
+           particle.state[particle::VX] = -Hybrid::upstreamBulkU;
+           particle.state[particle::VY] = 0.0;
+           particle.state[particle::VZ] = 0.0;
+        }
+     }*/
    /*if(accelerate == true) {
       Real dU[3] = { particle.state[particle::VX]-Ue[0], particle.state[particle::VY]-Ue[1], particle.state[particle::VZ]-Ue[2] };
       const Real half_alpha = 0.5*species.q*sim->dt/species.m;

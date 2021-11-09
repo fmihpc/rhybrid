@@ -124,6 +124,7 @@ Real Hybrid::l_conicInnerBoundary;
 Real Hybrid::e_conicInnerBoundary;
 Real Hybrid::eta_conicInnerBoundary;
 #endif
+Real Hybrid::upstreamBulkU;
 Real Hybrid::M_object;
 bool Hybrid::initialFlowThrough;
 Real Hybrid::initialFlowThroughPeriod;
