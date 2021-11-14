@@ -134,6 +134,13 @@ Real getResistivity(Simulation& sim,SimulationClasses& simClasses,const Real x,c
          res += Hybrid::outerBoundaryZone.eta;
       }
    }
+   else if(Hybrid::outerBoundaryZone.typeEta == 4) { // all walls except -x
+      if(                                  x > (Hybrid::box.xmax - bZone) ||
+         y < (Hybrid::box.ymin + bZone) || y > (Hybrid::box.ymax - bZone) ||
+         z < (Hybrid::box.zmin + bZone) || z > (Hybrid::box.zmax - bZone)) {
+         res += Hybrid::outerBoundaryZone.eta;
+      }
+   }
    return res;
 }
 
