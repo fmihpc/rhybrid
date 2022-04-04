@@ -321,7 +321,13 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    }
    if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
-   int N_yz_cells = (sim.y_blocks-2)*(sim.z_blocks-2)*block::WIDTH_Y*block::WIDTH_Z; // blocks != 1 do not work in hybrid
+   int N_y_cells = 0;
+   int N_z_cells = 0;
+   if(N_y_cells > 2) { N_y_cells = sim.y_blocks - 2; } // without ghost cells
+   else { N_y_cells = sim.y_blocks; }
+   if(N_z_cells > 2) { N_z_cells = sim.z_blocks - 2; } // without ghost cells
+   else { N_z_cells = sim.z_blocks; }
+   int N_yz_cells = N_y_cells*N_z_cells*block::WIDTH_Y*block::WIDTH_Z; // blocks != 1 do not work in hybrid
    simClasses.logger
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
      << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
