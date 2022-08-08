@@ -371,6 +371,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IntrinsicB.x","X coordinate of the origin [m] (float)",defaultValue);
    cr.add("IntrinsicB.y","Y coordinate of the origin [m] (float)",defaultValue);
    cr.add("IntrinsicB.z","Z coordinate of the origin [m] (float)",defaultValue);
+   cr.add("IntrinsicB.xMirror","X coordinate of the mirror dipole origin [m] (float)",defaultValue);
+   cr.add("IntrinsicB.yMirror","Y coordinate of the mirror dipole origin [m] (float)",defaultValue);
+   cr.add("IntrinsicB.zMirror","Z coordinate of the mirror dipole origin [m] (float)",defaultValue);
    cr.add("IntrinsicB.theta","theta angle of the field [deg] (float)",defaultValue);
    cr.add("IntrinsicB.phi","phi angle of the field [deg] (float)",defaultValue);
 #endif
@@ -513,6 +516,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IntrinsicB.x",Hybrid::xDip);
    cr.get("IntrinsicB.y",Hybrid::yDip);
    cr.get("IntrinsicB.z",Hybrid::zDip);
+   cr.get("IntrinsicB.xMirror",Hybrid::xDipMirror);
+   cr.get("IntrinsicB.yMirror",Hybrid::yDipMirror);
+   cr.get("IntrinsicB.zMirror",Hybrid::zDipMirror);
    cr.get("IntrinsicB.theta",Hybrid::thetaDip);
    cr.get("IntrinsicB.phi",Hybrid::phiDip);
    Hybrid::laminarR3 = cube(Hybrid::laminarR2);
@@ -707,6 +713,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "x = " << Hybrid::xDip/1e3 << " km = " << Hybrid::xDip/Hybrid::dx << " dx" << endl
      << "y = " << Hybrid::yDip/1e3 << " km = " << Hybrid::yDip/Hybrid::dx << " dx" << endl
      << "z = " << Hybrid::zDip/1e3 << " km = " << Hybrid::zDip/Hybrid::dx << " dx" << endl
+     << "xMirror = " << Hybrid::xDipMirror/1e3 << " km = " << Hybrid::xDipMirror/Hybrid::dx << " dx" << endl
+     << "yMirror = " << Hybrid::yDipMirror/1e3 << " km = " << Hybrid::yDipMirror/Hybrid::dx << " dx" << endl
+     << "zMirror = " << Hybrid::zDipMirror/1e3 << " km = " << Hybrid::zDipMirror/Hybrid::dx << " dx" << endl
      << "theta = " << Hybrid::thetaDip << " deg" << endl
      << "phi   = " << Hybrid::phiDip << " deg" << endl
      << endl;   
