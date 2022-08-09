@@ -97,11 +97,11 @@ inline void translateDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[2] += coeff*(sqr(z1) - r2/3.0);
 }
 
-inline void translateMirrorDipoleB(Real x,Real y,Real z,Real B[3]) {
+inline void translateMirrorDipoleB(Real x,Real y,Real z,Real B[3],Real x0,Real y0,Real z0) {
    // translation
-   const Real x1 = x - Hybrid::xDipMirror;
-   const Real y1 = y - Hybrid::yDipMirror;
-   const Real z1 = z - Hybrid::zDipMirror;
+   const Real x1 = x - x0;
+   const Real y1 = y - y0;
+   const Real z1 = z - z0;
    const Real r2 = sqr(x1) + sqr(y1) + sqr(z1);
    if(r2 < Hybrid::dipMinR2) { return; }
    const Real rr = sqrt(r2);
@@ -173,7 +173,9 @@ inline void translateDipoleBAndLaminarFlowAroundSphereBx(Real x,Real y,Real z,Re
 
 inline void translateDipoleBWithMirrorAndLaminarFlowAroundSphereBx(Real x,Real y,Real z,Real B[3]) {
    translateDipoleB(x,y,z,B);
-   translateMirrorDipoleB(x,y,z,B);
+   for(size_t i=0;i<Hybrid::xDipMirror.size();i++) {
+      translateMirrorDipoleB(x,y,z,B,Hybrid::xDipMirror[i],Hybrid::yDipMirror[i],Hybrid::zDipMirror[i]);
+   }
    laminarFlowAroundSphereBx(x,y,z,B);
 }
 

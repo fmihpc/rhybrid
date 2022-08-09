@@ -219,7 +219,8 @@ struct Hybrid {
    static bool IMFBoundaryCellB[6];
    static bool IMFBoundaryFaceB[6];
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
-   static Real laminarR2,laminarR3,coeffDip,coeffQuad,dipSurfB,dipSurfR,dipMinR2,dipMomCoeff,xDip,yDip,zDip,xDipMirror,yDipMirror,zDipMirror,thetaDip,phiDip;
+   static Real laminarR2,laminarR3,coeffDip,coeffQuad,dipSurfB,dipSurfR,dipMinR2,dipMomCoeff,xDip,yDip,zDip,thetaDip,phiDip;
+   static std::vector<Real> xDipMirror,yDipMirror,zDipMirror;
    static void (*magneticFieldProfilePtr)(const Real x,const Real y,const Real z,Real B[3]);
 #endif
    static unsigned int N_populations;

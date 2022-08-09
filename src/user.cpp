@@ -371,9 +371,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IntrinsicB.x","X coordinate of the origin [m] (float)",defaultValue);
    cr.add("IntrinsicB.y","Y coordinate of the origin [m] (float)",defaultValue);
    cr.add("IntrinsicB.z","Z coordinate of the origin [m] (float)",defaultValue);
-   cr.add("IntrinsicB.xMirror","X coordinate of the mirror dipole origin [m] (float)",defaultValue);
-   cr.add("IntrinsicB.yMirror","Y coordinate of the mirror dipole origin [m] (float)",defaultValue);
-   cr.add("IntrinsicB.zMirror","Z coordinate of the mirror dipole origin [m] (float)",defaultValue);
+   cr.addComposed("IntrinsicB.x_mirror","X coordinates of the mirror dipole origins [m] (float vector)");
+   cr.addComposed("IntrinsicB.y_mirror","Y coordinates of the mirror dipole origins [m] (float vector)");
+   cr.addComposed("IntrinsicB.z_mirror","Z coordinates of the mirror dipole origins [m] (float vector)");
    cr.add("IntrinsicB.theta","theta angle of the field [deg] (float)",defaultValue);
    cr.add("IntrinsicB.phi","phi angle of the field [deg] (float)",defaultValue);
 #endif
@@ -516,9 +516,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IntrinsicB.x",Hybrid::xDip);
    cr.get("IntrinsicB.y",Hybrid::yDip);
    cr.get("IntrinsicB.z",Hybrid::zDip);
-   cr.get("IntrinsicB.xMirror",Hybrid::xDipMirror);
-   cr.get("IntrinsicB.yMirror",Hybrid::yDipMirror);
-   cr.get("IntrinsicB.zMirror",Hybrid::zDipMirror);
+   cr.get("IntrinsicB.x_mirror",Hybrid::xDipMirror);
+   cr.get("IntrinsicB.y_mirror",Hybrid::yDipMirror);
+   cr.get("IntrinsicB.z_mirror",Hybrid::zDipMirror);
    cr.get("IntrinsicB.theta",Hybrid::thetaDip);
    cr.get("IntrinsicB.phi",Hybrid::phiDip);
    Hybrid::laminarR3 = cube(Hybrid::laminarR2);
@@ -713,12 +713,21 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "x = " << Hybrid::xDip/1e3 << " km = " << Hybrid::xDip/Hybrid::dx << " dx" << endl
      << "y = " << Hybrid::yDip/1e3 << " km = " << Hybrid::yDip/Hybrid::dx << " dx" << endl
      << "z = " << Hybrid::zDip/1e3 << " km = " << Hybrid::zDip/Hybrid::dx << " dx" << endl
-     << "xMirror = " << Hybrid::xDipMirror/1e3 << " km = " << Hybrid::xDipMirror/Hybrid::dx << " dx" << endl
-     << "yMirror = " << Hybrid::yDipMirror/1e3 << " km = " << Hybrid::yDipMirror/Hybrid::dx << " dx" << endl
-     << "zMirror = " << Hybrid::zDipMirror/1e3 << " km = " << Hybrid::zDipMirror/Hybrid::dx << " dx" << endl
      << "theta = " << Hybrid::thetaDip << " deg" << endl
-     << "phi   = " << Hybrid::phiDip << " deg" << endl
-     << endl;   
+     << "phi   = " << Hybrid::phiDip << " deg" << endl;
+   // check that equal number of mirror dipole coordinates is given
+   if(Hybrid::xDipMirror.size() != Hybrid::yDipMirror.size() || Hybrid::xDipMirror.size() != Hybrid::zDipMirror.size() || Hybrid::yDipMirror.size() != Hybrid::zDipMirror.size()) {
+      simClasses.logger << "(RHYBRID) ERROR: mirror dipole coordinate arrays should be the same size (" << Hybrid::xDipMirror.size() << ", " << Hybrid::yDipMirror.size() << "," << Hybrid::zDipMirror.size() << ")" << endl << write;
+      exit(1);
+   }
+   simClasses.logger << "Mirror dipole coordinates: " << endl;
+   for(size_t i=0;i<Hybrid::xDipMirror.size();i++) {
+      simClasses.logger
+	<< "x_mirror_" << i << " = " << Hybrid::xDipMirror[i]/1e3 << " km = " << Hybrid::xDipMirror[i]/Hybrid::dx << " dx" << endl
+	<< "y_mirror_" << i << " = " << Hybrid::yDipMirror[i]/1e3 << " km = " << Hybrid::yDipMirror[i]/Hybrid::dx << " dx" << endl
+	<< "z_mirror_" << i << " = " << Hybrid::zDipMirror[i]/1e3 << " km = " << Hybrid::zDipMirror[i]/Hybrid::dx << " dx" << endl;
+   }
+   simClasses.logger << endl;
 #endif
    simClasses.logger
      << "(BACKGROUND CHARGE DENSITY)" << endl
