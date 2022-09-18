@@ -143,6 +143,9 @@ Real Hybrid::maxVw;
 bool Hybrid::useHallElectricField;
 bool Hybrid::useElectronPressureElectricField;
 bool Hybrid::useAdiabaticElectronPressure;
+#ifdef USE_B_CONSTANT
+bool Hybrid::includeConstantB0InFaradaysLaw = false;
+#endif
 Real Hybrid::electronTemperature;
 Real Hybrid::electronPressureCoeff;
 Real Hybrid::swMacroParticlesCellPerDt;

@@ -207,6 +207,9 @@ struct Hybrid {
    static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
 #endif
    static bool useHallElectricField;
+#ifdef USE_B_CONSTANT
+   static bool includeConstantB0InFaradaysLaw;
+#endif
    static bool useElectronPressureElectricField;
    static bool useAdiabaticElectronPressure;
    static Real electronTemperature;

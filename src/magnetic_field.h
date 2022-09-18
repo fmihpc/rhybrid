@@ -184,6 +184,16 @@ inline void generalDipoleBAndConstantBx(Real x,Real y,Real z,Real B[3]) {
    constantBx(x,y,z,B);
 }
 
+inline void marsCrustalB(Real x,Real y,Real z,Real B[3]) {
+   Real Bx_crustal = 0.0;
+   Real By_crustal = 0.0;
+   Real Bz_crustal = 0.0;
+   
+   B[0] += Bx_crustal;
+   B[1] += By_crustal;
+   B[2] += Bz_crustal;
+}
+
 inline bool setMagneticFieldProfile(std::string name) {
    Hybrid::magneticFieldProfilePtr = NULL;
    if(name.compare("constantBx") == 0) {
@@ -212,6 +222,9 @@ inline bool setMagneticFieldProfile(std::string name) {
    }
    else if(name.compare("generalDipoleBAndConstantBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &generalDipoleBAndConstantBx;
+   }
+   else if(name.compare("marsCrustalB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &marsCrustalB;
    }
    else {
       return false;

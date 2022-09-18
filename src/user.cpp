@@ -340,6 +340,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxVw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
 #endif
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
+#ifdef USE_B_CONSTANT
+   cr.add("Hybrid.include_B0_faraday","Include the constant B0 term in Faraday's law [-] (bool)",false);
+#endif
    cr.add("Hybrid.electron_pressure","Use electron pressure term in the electric field [0: none (pressureless electron fluid), 1: isothermal electron fluid, 2: adiabatic electron fluid] (int)",0);
    cr.add("Hybrid.Te","Temperature of isothermal electrons or upstream temperature of adiabatic electrons [K] (float)",defaultValue);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
@@ -412,6 +415,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxVw",Hybrid::maxVw);   
 #endif
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
+#ifdef USE_B_CONSTANT
+   cr.get("Hybrid.include_B0_faraday",Hybrid::includeConstantB0InFaradaysLaw);
+#endif
    int useElectronPressureInput = 0;
    cr.get("Hybrid.electron_pressure",useElectronPressureInput);
    cr.get("Hybrid.Te",Hybrid::electronTemperature);
@@ -617,7 +623,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    simClasses.logger
      << "M_object  = " << Hybrid::M_object     << " kg" << endl
-     << "Hall term = " << Hybrid::useHallElectricField << endl
+     << "Hall term = " << Hybrid::useHallElectricField << endl;
+#ifdef USE_B_CONSTANT
+   simClasses.logger << "Include constant B0 term in Faraday's law = " << Hybrid::includeConstantB0InFaradaysLaw << endl;
+#endif
+     simClasses.logger
      << "Electron pressure term = ";
    if(Hybrid::useElectronPressureElectricField == false) {
       simClasses.logger << "none" << endl;
@@ -698,10 +708,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger
      << "(INTRINSIC MAGNETIC FIELD)" << endl
 #ifdef USE_B_INITIAL
-     << "Using initial field" << endl
+     << "Using initial field (evaluated on cell faces at t = 0)" << endl
 #endif
 #ifdef USE_B_CONSTANT
-     << "Using constant field" << endl
+     << "Using constant field (splitting B -> B1 + B0)" << endl
 #endif
      << "Magnetic field profile = " << magneticFieldProfileName << endl
      << "Laminar flow around sphere R = " << sqrt(Hybrid::laminarR2)/1e3 << " km = " << sqrt(Hybrid::laminarR2)/Hybrid::dx << " dx" << endl

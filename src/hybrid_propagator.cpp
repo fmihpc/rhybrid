@@ -1403,7 +1403,7 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
       const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
       const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
       const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
-      addConstantB(xNode,yNode,zNode,Btot);
+      if(Hybrid::includeConstantB0InFaradaysLaw == true) { addConstantB(xNode,yNode,zNode,Btot); }
 #endif
       nodeE[n3+0] = -(nodeUe[n3+1]*Btot[2] - nodeUe[n3+2]*Btot[1]);
       nodeE[n3+1] = -(nodeUe[n3+2]*Btot[0] - nodeUe[n3+0]*Btot[2]);
