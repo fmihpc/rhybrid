@@ -1336,6 +1336,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
 	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
+	    // initial shocktube setup
+	    //if(xCellCenter >= 0.5e5) {
+	    //   faceB[n*3+1] = 1e-9;
+	    //}
+	    //else {
+	    //   faceB[n*3+1] = -1e-9;
+	    //}
+	    //faceB[n*3+0] = 1.5e-9
 #ifdef USE_CONIC_INNER_BOUNDARY
             if( innerBoundaryConic(xCellCenter,yCellCenter,zCellCenter) == true ) {
                innerFlagField[n] = true;

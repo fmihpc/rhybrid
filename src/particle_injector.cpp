@@ -89,7 +89,7 @@ string radiusToString(Real R) {
 
 InjectorUniform::InjectorUniform(): ParticleInjectorBase() {
    initialized = false;
-   U = vth = n = w = 0.0;
+   U = vth = n = w = xmin = xmax = 0.0;
    N_macroParticlesPerCell = -1.0;
 }
 
@@ -121,11 +121,16 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
 #endif*/
+   const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
+   const size_t b3 = 3*blockID;
+   const Real xBlock = crd[b3+0];
    vector<Real> xinj,yinj,zinj;
    for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
       const Real xCell = (i+0.5)*Hybrid::dx;
       const Real yCell = (j+0.5)*Hybrid::dx;
       const Real zCell = (k+0.5)*Hybrid::dx;
+      const Real xCellGlobal = xBlock + xCell;
+      if(xCellGlobal < xmin || xCellGlobal > xmax) { continue; }
       const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell);
       if(N_injectCell <= 0) { continue; }
       for(int s = 0;s<N_injectCell;s++) {
@@ -176,6 +181,8 @@ bool InjectorUniform::addConfigFileItems(ConfigReader& cr,const std::string& con
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
    cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".xmin","Minimum x coordinate [m] (float).",(Real)-1.0e22);
+   cr.add(configRegionName+".xmax","Maximum x coordinate [m] (float).",(Real)+1.0e22);
    return true;
 }
 
@@ -189,6 +196,8 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
    cr.get(configRegionName+".density",n);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+   cr.get(configRegionName+".xmin",xmin);
+   cr.get(configRegionName+".xmax",xmax);
    if(U <= 0) { U = 0.0; }
    if(N_macroParticlesPerCell > 0 && n > 0 && Hybrid::dx > 0) {
       w = n*Hybrid::dV/N_macroParticlesPerCell;
@@ -198,13 +207,20 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
    }
    if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
+   if(xmin >= xmax) {
+      simClasses.logger
+        << "(" << species->name << ") ERROR: xmin >= xmax" << endl << write;
+      initialized = false;
+   }
    simClasses.logger
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
      << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
      << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
-     << "(" << species->name << ") macroparticle weight    = " << w << endl << write;
+     << "(" << species->name << ") macroparticle weight    = " << w << endl
+     << "(" << species->name << ") xmin = " << xmin/1e3 << " km" << endl
+     << "(" << species->name << ") xmax = " << xmax/1e3 << " km" << endl << write;
    particlePopulation pp;
    pp.w = w;
    pp.name = species->name;
