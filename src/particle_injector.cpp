@@ -248,22 +248,30 @@ bool InjectorAmbient::finalize() {
 bool InjectorAmbient::inject(pargrid::DataID speciesDataID,unsigned int* N_particles) {
    if(initialized == false) { return initialized; }
    bool success = true;
-   if(sim->timestep != 1) { return success; }
+   if(sim->timestep <= 0) { return success; }
    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses->pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
    for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-      if( (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) == 0 &&
-	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) != 0 &&
+      // x walls
+      if( (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) != 0 &&
 	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) != 0 &&
 	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) != 0 &&
 	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) != 0) {
-	 if(injectParticles(b,*species,N_particles,wrapper) == false) { success = false; }
+	 // +x
+	 if ( (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) == 0 ) {
+	    if(injectParticles(b,*species,N_particles,wrapper,0) == false) { success = false; }
+	 }
+	 // -x
+	 //if ( (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_NEG_EXISTS) == 0 ) {
+	 //   if(injectParticles(b,*species,N_particles,wrapper,1) == false) { success = false; }
+	 //}
       }
    }
    return success;
 }
 
+// wall: +x = 0 ,-x = 1, +y = 2, -y = 3, +z = 4,-z = 5
 bool InjectorAmbient::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
-				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
+				       pargrid::DataWrapper<Particle<Real> >& wrapper,unsigned int wall) {
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
@@ -296,9 +304,19 @@ bool InjectorAmbient::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::X] = xinj[s];
       particles[p].state[particle::Y] = yinj[s];
       particles[p].state[particle::Z] = zinj[s];
-      particles[p].state[particle::VX] = vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
+      Real vx = vth*gaussrnd(*simClasses);
+      Real vy = vth*gaussrnd(*simClasses);
+      Real vz = vth*gaussrnd(*simClasses);
+      // make sure directional flux is toward the simulation domain
+      if      (wall == 0) { if (vx > 0.0) { vx = -vx; } }
+      else if (wall == 1) { if (vx < 0.0) { vx = -vx; } }
+      else if (wall == 2) { if (vy > 0.0) { vy = -vy; } }
+      else if (wall == 3) { if (vy < 0.0) { vy = -vy; } }
+      else if (wall == 4) { if (vz > 0.0) { vz = -vz; } }
+      else if (wall == 5) { if (vz < 0.0) { vz = -vz; } }
+      particles[p].state[particle::VX] = vx;
+      particles[p].state[particle::VY] = vy;
+      particles[p].state[particle::VZ] = vz;
       particles[p].state[particle::WEIGHT] = w;
       // inject counter
       Hybrid::particleCounterInject[species.popid-1] += w;
@@ -326,7 +344,7 @@ bool InjectorAmbient::initialize(Simulation& sim,SimulationClasses& simClasses,C
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
    if(N_macroParticlesPerCell > 0 && n > 0 && Hybrid::dx > 0) {
-      // Bittencourt (2004, p. 180) or Jarvinen et al. (2009)
+      // Directinal random particle flux: Bittencourt (2004, p. 180) or Jarvinen et al. (2009)
       const Real N_realParticlesPerCellPerDt = sqr(Hybrid::dx)*n*sqrt( constants::BOLTZMANN*T/(2*M_PI*species->m) )*sim.dt;
       w = n*Hybrid::dV/N_macroParticlesPerCell;
       N_macroParticlesPerCellPerDt = N_realParticlesPerCellPerDt/w;

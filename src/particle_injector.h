@@ -68,7 +68,7 @@ class InjectorAmbient: public ParticleInjectorBase {
    const Species* species;
    Real vth,w;
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
-			pargrid::DataWrapper<Particle<Real> >& wrapper);
+			pargrid::DataWrapper<Particle<Real> >& wrapper,unsigned int wall);
 };
 
 class InjectorSolarWind: public ParticleInjectorBase {
