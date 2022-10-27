@@ -768,6 +768,23 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 }
       }
    } while (erased == true);
+   // read particle populations: ambient
+   vector<string> ambientPopulations;
+   cr.addComposed("Hybrid.particle.population.ambient","Names of ambient particle populations (string)");
+   cr.parse();
+   cr.get("Hybrid.particle.population.ambient",ambientPopulations);
+   // erase empty entries
+   erased = false;
+   do {
+      erased = false;
+      for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
+	 if ((*it).size() == 0) {
+	    ambientPopulations.erase(it);
+	    erased = true;
+	    break;
+	 }
+      }
+   } while (erased == true);
    // read particle populations: solar wind
    vector<string> solarwindPopulations;
    cr.addComposed("Hybrid.particle.population.solarwind","Names of solar wind particle populations (string)");
@@ -820,7 +837,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
    } while (erased == true);
 
-   Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + solarwindPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
+   Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + ambientPopulations.size() + solarwindPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
    Hybrid::N_ionospherePopulations = static_cast<unsigned int>( ionospherePopulations.size() );
    Hybrid::N_exospherePopulations = static_cast<unsigned int>( exospherePopulations.size() );
 
@@ -1337,13 +1354,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
 	    // initial shocktube setup
-	    //if(xCellCenter >= 0.5e5) {
-	    //   faceB[n*3+1] = 1e-9;
-	    //}
-	    //else {
-	    //   faceB[n*3+1] = -1e-9;
-	    //}
-	    //faceB[n*3+0] = 1.5e-9
+	    /*if(xCellCenter >= 0.5e5) {
+	       faceB[n*3+1] = 1e-9;
+	    }
+	    else {
+	       faceB[n*3+1] = -1e-9;
+	    }
+	    faceB[n*3+0] = 1.5e-9;*/
 #ifdef USE_CONIC_INNER_BOUNDARY
             if( innerBoundaryConic(xCellCenter,yCellCenter,zCellCenter) == true ) {
                innerFlagField[n] = true;
@@ -1607,6 +1624,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: uniform
    for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
       simClasses.logger << "(RHYBRID) Initializing an uniform particle population: " << *it << endl << write;
+      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
+      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
+      Hybrid::populationNames.push_back(*it);
+   }
+   // initialize particle lists: ambient
+   for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
+      simClasses.logger << "(RHYBRID) Initializing an ambient particle population: " << *it << endl << write;
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);

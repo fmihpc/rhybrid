@@ -50,6 +50,7 @@ bool registerObjectMakers(ObjectFactories& objectFactories) {
    if (objectFactories.particleAccumulators.registerMaker("HybridAccumulator",AccumulatorMaker) == false) { success = false; }
    if (objectFactories.particleBoundaryConditions.registerMaker("HybridBoundaryCond",HybridBoundaryCondMaker<SPECIES,PARTICLE>) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("UniformInjector",UniformIonCreator) == false) { success = false; }
+   if (objectFactories.particleInjectors.registerMaker("AmbientInjector",AmbientIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("SolarWindInjector",SolarWindIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("IonosphereInjector",IonosphereIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("ChapmanIonosphereInjector",ChapmanIonosphereIonCreator) == false) { success = false; }

@@ -228,6 +228,137 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
    return initialized;
 }
 
+// AMBIENT INJECTOR
+
+InjectorAmbient::InjectorAmbient(): ParticleInjectorBase() {
+   initialized = false;
+   vth = w = 0.0;
+   N_macroParticlesPerCellPerDt = -1.0;
+   N_macroParticlesPerCell = -1.0;
+}
+
+InjectorAmbient::~InjectorAmbient() {finalize();}
+
+bool InjectorAmbient::finalize() {
+   if(initialized == false) { return true; }
+   initialized = false;
+   return true;
+}
+
+bool InjectorAmbient::inject(pargrid::DataID speciesDataID,unsigned int* N_particles) {
+   if(initialized == false) { return initialized; }
+   bool success = true;
+   if(sim->timestep != 1) { return success; }
+   pargrid::DataWrapper<Particle<Real> > wrapper = simClasses->pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
+   for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+      if( (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) == 0 &&
+	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) != 0 &&
+	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) != 0 &&
+	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) != 0 &&
+	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) != 0) {
+	 if(injectParticles(b,*species,N_particles,wrapper) == false) { success = false; }
+      }
+   }
+   return success;
+}
+
+bool InjectorAmbient::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
+				       pargrid::DataWrapper<Particle<Real> >& wrapper) {
+   const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
+   const size_t b3 = 3*blockID;
+   const Real xBlock = crd[b3+0];
+   vector<Real> xinj,yinj,zinj;
+   for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+      const Real xCell = (i+0.5)*Hybrid::dx;
+      const Real yCell = (j+0.5)*Hybrid::dx;
+      const Real zCell = (k+0.5)*Hybrid::dx;
+      const Real xCellGlobal = xBlock + xCell;
+      const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell);
+      if(N_injectCell <= 0) { continue; }
+      for(int s = 0;s<N_injectCell;s++) {
+	 const Real eps = 1.0e-2;
+	 const Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 xinj.push_back(x);
+	 yinj.push_back(y);
+	 zinj.push_back(z);
+      }
+   }
+   // Make room for new particles:
+   const int N_inject = static_cast<int>(xinj.size());
+   const pargrid::ArraySizetype oldSize = wrapper.size()[blockID];
+   N_particles[blockID] += N_inject;
+   wrapper.resize(blockID,oldSize+N_inject);
+   Particle<Real>* particles = wrapper.data()[blockID];
+   size_t s = 0;
+   for(size_t p=oldSize; p<oldSize+N_inject; ++p) {
+      particles[p].state[particle::X] = xinj[s];
+      particles[p].state[particle::Y] = yinj[s];
+      particles[p].state[particle::Z] = zinj[s];
+      particles[p].state[particle::VX] = vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
+      particles[p].state[particle::WEIGHT] = w;
+      // inject counter
+      Hybrid::particleCounterInject[species.popid-1] += w;
+      Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
+      ++s;
+   }
+   return true;
+}
+
+bool InjectorAmbient::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
+   cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
+   cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell [#] (Real).",(Real)-1.0);
+   return true;
+}
+
+bool InjectorAmbient::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
+				   const std::string& configRegionName,const ParticleListBase* plist) {
+   initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->species = reinterpret_cast<const Species*>(plist->getSpecies());
+   Real T=0,n=0;
+   N_macroParticlesPerCell = -100.0;
+   cr.parse();
+   cr.get(configRegionName+".density",n);
+   cr.get(configRegionName+".temperature",T);
+   cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+   if(N_macroParticlesPerCell > 0 && n > 0 && Hybrid::dx > 0) {
+      // Bittencourt (2004, p. 180) or Jarvinen et al. (2009)
+      const Real N_realParticlesPerCellPerDt = sqr(Hybrid::dx)*n*sqrt( constants::BOLTZMANN*T/(2*M_PI*species->m) )*sim.dt;
+      w = n*Hybrid::dV/N_macroParticlesPerCell;
+      N_macroParticlesPerCellPerDt = N_realParticlesPerCellPerDt/w;
+   }
+   else {
+      N_macroParticlesPerCellPerDt = N_macroParticlesPerCell = n = w = 0.0;
+   }
+
+   if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
+   else { vth = 0.0; }
+   int N_y_cells = 0;
+   int N_z_cells = 0;
+   if(N_y_cells > 2) { N_y_cells = sim.y_blocks - 2; } // without ghost cells
+   else { N_y_cells = sim.y_blocks; }
+   if(N_z_cells > 2) { N_z_cells = sim.z_blocks - 2; } // without ghost cells
+   else { N_z_cells = sim.z_blocks; }
+   int N_yz_cells = N_y_cells*N_z_cells*block::WIDTH_Y*block::WIDTH_Z; // blocks != 1 do not work in hybrid
+   simClasses.logger
+     << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
+     << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
+     << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
+     << "(" << species->name << ") macroparticles per dt           = " << N_macroParticlesPerCellPerDt*N_yz_cells << endl
+     << "(" << species->name << ") macroparticles per cell per dt  = " << N_macroParticlesPerCellPerDt << endl
+     << "(" << species->name << ") macroparticle weight    = " << w << endl << write;
+   particlePopulation pp;
+   pp.w = w;
+   pp.name = species->name;
+   Hybrid::allPops.push_back(pp);
+   return initialized;
+}
+
 // SOLAR WIND INJECTOR
 
 InjectorSolarWind::InjectorSolarWind(): ParticleInjectorBase() { 
@@ -373,6 +504,7 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    Hybrid::swPops.push_back(swpop);
    return initialized;
 }
+
 // CHAPMAN IONOSPHERE EMISSION INJECTOR
 
 InjectorChapmanIonosphere::InjectorChapmanIonosphere(): ParticleInjectorBase() { 
