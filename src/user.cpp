@@ -1958,7 +1958,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "% " << species->name << endl
 	   << "% m [kg] = " << species->m << endl
 	   << "% q [C] = " << species->q << endl
-	   << "% columns = 11" << endl
+	   << "% columns = 12" << endl
 	   << "% 01. Time [s]" << endl
 	   << "% 02. Particles [#]" << endl
 	   << "% 03. Macroparticles [#]" << endl
