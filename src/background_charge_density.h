@@ -20,6 +20,8 @@
 #ifndef BACKGROUND_CHARGE_DENSITY_H
 #define BACKGROUND_CHARGE_DENSITY_H
 
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
+
 #include <string>
 #include <vector>
 #include <simulation.h>
@@ -47,7 +49,13 @@ Real getBackgroundChargeDensity(SimulationClasses& simClasses,std::string name,R
    else if(name.compare("none") == 0) {
       return 0.0;
    }
+   else {
+      simClasses.logger << "(getBackgroundChargeDensity) ERROR: unknown name of a background charge density profile (" << name << ")" << std::endl << write;
+      MPI_Finalize();
+   }
    return 0.0;
 }
+
+#endif
 
 #endif

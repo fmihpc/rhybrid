@@ -41,7 +41,9 @@
 #include "magnetic_field.h"
 #endif
 #include "detectors.h"
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
 #include "background_charge_density.h"
+#endif
 
 using namespace std;
 
@@ -143,6 +145,12 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
 #endif
    return rvalue;
 }
+
+#ifdef USE_OUTER_BOUNDARY_ZONE
+#ifndef USE_RESISTIVITY
+#error (RHYBRID) COMPILE ERROR: If USE_OUTER_BOUNDARY_ZONE is defined, also USE_RESISTIVITY need to be defined
+#endif
+#endif
 
 bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,vector<ParticleListBase*>& particleLists) {
    Hybrid hybrid;
@@ -347,12 +355,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.Te","Temperature of isothermal electrons or upstream temperature of adiabatic electrons [K] (float)",defaultValue);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
+#ifdef USE_OUTER_BOUNDARY_ZONE
    cr.add("OuterBoundaryZone.typeEta","Type of the outer boundary zone for resistivity: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-], 3 = -x wall and all edges except +x edges (int)",0);
    cr.add("OuterBoundaryZone.typeMinRhoQi","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
    cr.add("OuterBoundaryZone.sizeEta","Size of the outer boundary zone for resitivity [dx] (float)",defaultValue);
    cr.add("OuterBoundaryZone.sizeMinRhoQi","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
    cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
    cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
+#endif
 #ifdef USE_RESISTIVITY
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
    cr.add("Resistivity.etaC","Dimensionless resistivity constant [-] (float)",defaultValue);
@@ -380,10 +390,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IntrinsicB.theta","theta angle of the field [deg] (float)",defaultValue);
    cr.add("IntrinsicB.phi","phi angle of the field [deg] (float)",defaultValue);
 #endif
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    cr.add("BackgroundChargeDensity.profile_name","Background charge density profile name [-] (string)","");
    cr.add("BackgroundChargeDensity.R","Radius of the background charge density [m] (float)",defaultValue);
    cr.add("BackgroundChargeDensity.r0","r0 of the background charge density [m] (float)",defaultValue);
    cr.add("BackgroundChargeDensity.n0","n0 of the background charge density [m^-3] (float)",defaultValue);
+#endif
    cr.parse();
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
@@ -449,7 +461,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
-   
+#ifdef USE_OUTER_BOUNDARY_ZONE
    cr.get("OuterBoundaryZone.typeEta",Hybrid::outerBoundaryZone.typeEta);
    cr.get("OuterBoundaryZone.typeMinRhoQi",Hybrid::outerBoundaryZone.typeMinRhoQi);
    cr.get("OuterBoundaryZone.sizeEta",Hybrid::outerBoundaryZone.sizeEta);
@@ -458,6 +470,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("OuterBoundaryZone.etaC",Hybrid::outerBoundaryZone.eta);
    Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
    Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
+#endif
 #ifdef USE_RESISTIVITY
    cr.get("Resistivity.profile_name",resistivityProfileName);
    cr.get("Resistivity.etaC",Hybrid::resistivityEtaC);
@@ -468,9 +481,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_CONIC_INNER_BOUNDARY
    Hybrid::eta_conicInnerBoundary *= Hybrid::resistivityGridUnit;
 #endif
+#ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::outerBoundaryZone.eta *= Hybrid::resistivityGridUnit;
+#endif
    if(setResistivityProfile(resistivityProfileName) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: Given profile profile not found (" << resistivityProfileName << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: unknown name of a resistivity profile (" << resistivityProfileName << ")" << endl << write;
       exit(1);
    }
 #endif
@@ -532,16 +547,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dipMomCoeff = 3.0*Hybrid::dipSurfB*cube(Hybrid::dipSurfR);
    Hybrid::dipMinR2 = sqr(Hybrid::dipMinR2);
    if(setMagneticFieldProfile(magneticFieldProfileName) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: Given magnetic field profile not found (" << magneticFieldProfileName << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: unknown name of a magnetic field profile (" << magneticFieldProfileName << ")" << endl << write;
       exit(1);
    }
 #endif
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    BackgroundChargeDensityArgs bgChargeDensityArgs;
    string bgChargeDensityProfileName = "";
    cr.get("BackgroundChargeDensity.profile_name",bgChargeDensityProfileName);
    cr.get("BackgroundChargeDensity.R",bgChargeDensityArgs.R);
    cr.get("BackgroundChargeDensity.r0",bgChargeDensityArgs.r0);
    cr.get("BackgroundChargeDensity.n0",bgChargeDensityArgs.n0);
+#endif
    if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }   
    if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if(Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
@@ -633,7 +650,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "none" << endl;
    }
    else {
-      if(Hybrid::useAdiabaticElectronPressure = true) {
+      if(Hybrid::useAdiabaticElectronPressure == true) {
          simClasses.logger << "adiabatic (gamma = 2)" << endl;
       }
       else {
@@ -739,13 +756,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    simClasses.logger << endl;
 #endif
+
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    simClasses.logger
      << "(BACKGROUND CHARGE DENSITY)" << endl
      << "Density profile = " << bgChargeDensityProfileName << endl
      << "R = " << bgChargeDensityArgs.R/1e3 << " km = " << bgChargeDensityArgs.R/Hybrid::R_object << " R_object = " << bgChargeDensityArgs.R/Hybrid::dx << " dx = " << (bgChargeDensityArgs.R - Hybrid::R_object)/1e3 << " km + R_object" << endl
      << "r0 = " << bgChargeDensityArgs.r0/1e3 << " km = " << bgChargeDensityArgs.r0/Hybrid::dx << " dx" << endl
      << "n0 = " << bgChargeDensityArgs.n0/1e6 << " cm^-3" << endl << endl;
-   
+#endif
+
    simClasses.logger
      << "(LOGGING)" << endl
      << "Particle and field log file interval = " << Hybrid::logInterval*sim.dt << " s = " << Hybrid::logInterval << " dt" << endl
@@ -844,7 +864,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataFaceBID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataFaceJID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellRhoQiID           = simClasses.pargrid.invalidDataID();
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    Hybrid::dataCellRhoQiBgID         = simClasses.pargrid.invalidDataID();
+#endif
    Hybrid::dataCellBID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellJID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellUeID              = simClasses.pargrid.invalidDataID();
@@ -874,7 +896,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataInnerFlagNodeID       = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagParticleID   = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagCellEpID     = simClasses.pargrid.invalidDataID();
+#ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::dataOuterBoundaryFlagID   = simClasses.pargrid.invalidDataID();
+#endif
 #ifdef USE_XMIN_BOUNDARY
    Hybrid::dataXminFlagID            = simClasses.pargrid.invalidDataID();
 #endif
@@ -891,7 +915,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    //addVarReal(sim,simClasses,"faceJ_",3,sID);
 #endif
    //addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    //addVarReal(sim,simClasses,"cellRhoQiBg_",1,sID);
+#endif
    //addVarReal(sim,simClasses,"cellB_",3,sID);
    //addVarReal(sim,simClasses,"cellJ_",3,sID);
    //addVarReal(sim,simClasses,"cellUe_",3,sID);
@@ -903,7 +929,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    //addVarReal(sim,simClasses,"nodeJ_",3,sID);   
    //addVarReal(sim,simClasses,"nodeUe_",3,sID);
    //addVarReal(sim,simClasses,"nodeJi_",3,sID);
-#ifdef USE_RESITIVITY
+#ifdef USE_RESISTIVITY
    //addVarReal(sim,simClasses,"nodeEta_",1,sIDEmpty);
 #endif
    //addVarReal(sim,simClasses,"counterCellMaxUe_",1,sIDEmpty);
@@ -919,7 +945,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    //addVarBool(sim,simClasses,"innerFlagNode_",1,sIDEmpty);
    //addVarBool(sim,simClasses,"innerFlagParticle_",1,sIDEmpty);
    //addVarBool(sim,simClasses,"innerFlagCellEp_",1,sIDEmpty);
+#ifdef USE_OUTER_BOUNDARY_ZONE
    //addVarBool(sim,simClasses,"outerBoundaryFlag_",1,sIDEmpty);
+#endif
 #ifdef USE_XMIN_BOUNDARY
    //addVarBool(sim,simClasses,"xMinFlag_",1,sIDEmpty);
 #endif
@@ -945,11 +973,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQi array to ParGrid!" << endl << write;
       return false;
    }
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    Hybrid::dataCellRhoQiBgID = simClasses.pargrid.addUserData<Real>("cellRhoQiBg",block::SIZE*1);
    if(Hybrid::dataCellRhoQiBgID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQiBg array to ParGrid!" << endl << write;
       return false;
    }
+#endif
    Hybrid::dataCellBID = simClasses.pargrid.addUserData<Real>("cellB",block::SIZE*3);
    if(Hybrid::dataCellBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellB array to ParGrid!" << endl << write;
@@ -1078,11 +1108,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add innerFlagCellEp array to ParGrid!" << endl << write;
       return false;
    }
+#ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::dataOuterBoundaryFlagID = simClasses.pargrid.addUserData<bool>("outerBoundaryFlag",1);
    if(Hybrid::dataOuterBoundaryFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlag array to ParGrid!" << endl << write;
       return false;
    }
+#endif
 #ifdef USE_XMIN_BOUNDARY
    Hybrid::dataXminFlagID = simClasses.pargrid.addUserData<bool>("xMinFlag",block::SIZE*1);
    if(Hybrid::dataXminFlagID == simClasses.pargrid.invalidCellID()) {
@@ -1117,9 +1149,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiID,Hybrid::accumulationStencilID) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQi data transfer 2!" << endl << write; return false;
    }
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiBgID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQiBg data transfer!" << endl << write; return false;
    }
+#endif
    if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellB data transfer!" << endl << write; return false;
    }
@@ -1170,7 +1204,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real* faceB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
    Real* faceJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceJID));
    Real* cellRhoQi           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiID));
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    Real* cellRhoQiBg         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiBgID));
+#endif
    Real* cellB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellBID));
    Real* cellJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellJID));
    Real* cellUe              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellUeID));
@@ -1200,7 +1236,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* innerFlagNode       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagNodeID));
    bool* innerFlagParticle   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagParticleID));
    bool* innerFlagCellEp     = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagCellEpID));
+#ifdef USE_OUTER_BOUNDARY_ZONE
    bool* outerBoundaryFlag   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
+#endif
 #ifdef USE_XMIN_BOUNDARY
    bool* xMinFlag            = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataXminFlagID));
 #endif
@@ -1314,7 +1352,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
       for(size_t i=0; i<scalarArraySize; ++i) { nodeRhoQi[i] = 0.0; }
       for(size_t i=0; i<scalarArraySize; ++i) { cellRhoQi[i] = 0.0; }
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
       for(size_t i=0; i<scalarArraySize; ++i) { cellRhoQiBg[i] = 0.0; }
+#endif
       for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
       for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
       // counters
@@ -1394,8 +1434,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
 #endif
 #endif
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
             cellRhoQiBg[n] = getBackgroundChargeDensity(simClasses,bgChargeDensityProfileName,xCellCenter,yCellCenter,zCellCenter,bgChargeDensityArgs);
+#endif
             //nodeRhoQi[n] = exp(-sqrt(rNode2)/Hybrid::R_object);
+#ifdef USE_OUTER_BOUNDARY_ZONE
             const Real bZone = Hybrid::outerBoundaryZone.sizeMinRhoQi; // boundary zone
             if(Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
                outerBoundaryFlag[n] = false;
@@ -1446,10 +1489,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                else { outerBoundaryFlag[n] = false; }
             }
             else {
-               simClasses.logger << "(RHYBRID) ERROR: unknown outer boundary zone type" << endl << write;
+	       simClasses.logger << "(RHYBRID) ERROR: unknown type of an outer boundary zone for minRhoQi (" << Hybrid::outerBoundaryZone.typeMinRhoQi << ")" << endl << write;
                return false;
             }
-
+#endif
 #ifdef USE_XMIN_BOUNDARY
             if(xCellCenter < Hybrid::xMinBoundary) { xMinFlag[n] = true; }
             else                                   { xMinFlag[n] = false; }
@@ -1762,7 +1805,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    
    // set adiabatic electron pressure coefficient with gamma = 2
-   if(Hybrid::useAdiabaticElectronPressure = true) {
+   if(Hybrid::useAdiabaticElectronPressure == true) {
       if(ne > 0) {
          Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( ne * sqr(constants::CHARGE_ELEMENTARY) );
       }
@@ -1795,8 +1838,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Pickup ion avg speed (4*VExB/pi) = " << 4.0*VExBMagnitude/M_PI/1e3 << " km/s" << endl
      << "Pickup ion max speed (2*VExB) = " << 2.0*VExBMagnitude/1e3 << " km/s" << endl
      << "Fastest whistler speed = " << vw/1e3 << " km/s" << endl
+#ifdef USE_RESISTIVITY
      << "td_min = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta/sim.dt << " dt" << endl
-     << "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl << endl
+     << "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl
+#endif
+     << endl
      << "(SOLAR WIND POPULATIONS)" << endl;
    // solar wind populations
    // electron plasma frequency
@@ -1899,6 +1945,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
      << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl << endl;
 
+#ifdef USE_OUTER_BOUNDARY_ZONE
    simClasses.logger
      << "(OUTER BOUNDARY ZONE)" << endl
      << "type (eta)       = " << Hybrid::outerBoundaryZone.typeEta << endl
@@ -1906,11 +1953,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "size (eta)       = " << Hybrid::outerBoundaryZone.sizeEta/(Hybrid::dx + 1e-30) << " dx" << endl
      << "size (minRhoQi)  = " << Hybrid::outerBoundaryZone.sizeMinRhoQi/(Hybrid::dx + 1e-30) << " dx" << endl
      << "minRhoQi(obzone) = " << Hybrid::outerBoundaryZone.minRhoQi << " C/m^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
-#ifdef USE_RESISTIVITY
-     << "eta(obzone)      = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityGridUnit + 1e-30) << " mu_0*dx^2/dt = "
-     << Hybrid::outerBoundaryZone.eta << " Ohm m = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityEta + 1e-30) << " eta(global)" << endl
-#endif
+     << "eta(obzone)      = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityGridUnit + 1e-30) << " mu_0*dx^2/dt = " << Hybrid::outerBoundaryZone.eta << " Ohm m = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityEta + 1e-30) << " eta(global)" << endl
      << endl;
+#endif
    
    // write log entry of output configs
    simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
@@ -2048,7 +2093,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"faceB",false},
       {"faceJ",false},
       {"cellRhoQi",false},
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
       {"cellRhoQiBg",false},
+#endif
       {"cellB",false},
       {"cellJ",false},
       {"cellUe",false},
@@ -2076,7 +2123,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"innerFlagNode",false},
       {"innerFlagParticle",false},
       {"innerFlagCellEp",false},
+#ifdef USE_OUTER_BOUNDARY_ZONE
       {"outerBoundaryFlag",false},
+#endif
 #ifdef USE_XMIN_BOUNDARY
       {"xMinFlag",false},
 #endif
@@ -2176,7 +2225,9 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiBgID)         == false) { success = false; }
+#endif
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellBID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellJID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellUeID)              == false) { success = false; }
@@ -2209,7 +2260,9 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)      == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID)   == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagCellEpID)     == false) { success = false; }
+#ifdef USE_OUTER_BOUNDARY_ZONE
    if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagID)   == false) { success = false; }
+#endif
 #ifdef USE_XMIN_BOUNDARY
    if(simClasses.pargrid.removeUserData(Hybrid::dataXminFlagID)            == false) { success = false; }
 #endif

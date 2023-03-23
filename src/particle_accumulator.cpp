@@ -263,9 +263,13 @@ bool Accumulator::addRemoteUpdates() {
    if (myOrderNumber != N_accumulators-1) { return success; }
    Real* cellJi    = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    Real* cellRhoQiBg = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiBgID);
+#endif
    Real* counterCellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCounterCellMinRhoQiID);
+#ifdef USE_OUTER_BOUNDARY_ZONE
    bool* outerBoundaryFlag   = simClasses->pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
+#endif
    unsigned int* offsetsCellRhoQi = NULL;
    Real* buffersCellRhoQi = NULL;
    unsigned int* offsetsCellJi = NULL;
@@ -321,7 +325,10 @@ bool Accumulator::addRemoteUpdates() {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
 	 cellRhoQi[n] /= Hybrid::dV;
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
          cellRhoQi[n] += cellRhoQiBg[n];
+#endif
+#ifdef USE_OUTER_BOUNDARY_ZONE
          if(outerBoundaryFlag[n] == true) {
             if(cellRhoQi[n] < Hybrid::outerBoundaryZone.minRhoQi) {
                cellRhoQi[n] = Hybrid::outerBoundaryZone.minRhoQi;
@@ -329,6 +336,9 @@ bool Accumulator::addRemoteUpdates() {
             }
          }
 	 else if(cellRhoQi[n] < Hybrid::minRhoQi) {
+#else
+	 if(cellRhoQi[n] < Hybrid::minRhoQi) {
+#endif
 	    cellRhoQi[n] = Hybrid::minRhoQi;
 	    counterCellMinRhoQi[n]++;
 	 }

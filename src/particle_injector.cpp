@@ -1027,6 +1027,10 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
             }
             N_inside *= a;
          }
+	 // constant everywhere
+         else if(profileName.compare("ionoConstant") == 0) {
+            N_inside *= 1.0;
+         }
          // polar cap source
          else if(profileName.compare("ionoPolarCap") == 0) {
             // angle towards noon
@@ -1055,6 +1059,11 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
             }
             N_inside *= a;
          }
+	 else {
+	    simClasses.logger << "(" << species->name << ") ERROR: unknown name of an ionospheric outflow profile (" << profileName << ")" << endl << write;
+	    initialized = false;
+	    return initialized;
+	 }
          N_insideSum += N_inside;
 	 cellIonosphere[nIono] = N_inside;
       }

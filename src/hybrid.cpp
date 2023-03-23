@@ -32,7 +32,9 @@ pargrid::DataID Hybrid::dataFaceJID;
 
 // cell data
 pargrid::DataID Hybrid::dataCellRhoQiID;
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
 pargrid::DataID Hybrid::dataCellRhoQiBgID;
+#endif
 pargrid::DataID Hybrid::dataCellBID;
 pargrid::DataID Hybrid::dataCellJID;
 pargrid::DataID Hybrid::dataCellUeID;
@@ -133,7 +135,9 @@ Real Hybrid::maxVi2;
 Real Hybrid::maxVi;
 Real Hybrid::terminateLimitMaxB;
 Real Hybrid::minRhoQi;
+#ifdef USE_OUTER_BOUNDARY_ZONE
 OuterBoundaryZone Hybrid::outerBoundaryZone;
+#endif
 #ifdef USE_ECUT
 Real Hybrid::Ecut2;
 #endif

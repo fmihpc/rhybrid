@@ -76,10 +76,12 @@ struct Box {
    Real xmin=0.0,xmax=0.0,ymin=0.0,ymax=0.0,zmin=0.0,zmax=0.0;
 };
 
+#ifdef USE_OUTER_BOUNDARY_ZONE
 struct OuterBoundaryZone {
    int typeEta=0,typeMinRhoQi=0;
    Real sizeEta=0.0,sizeMinRhoQi=0.0,minRhoQi=0.0,eta=0.0;
 };
+#endif
 
 struct Hybrid {
    static std::map< std::string, HybridVariable<Real> > varReal;
@@ -91,7 +93,9 @@ struct Hybrid {
 
    // cell data
    static pargrid::DataID dataCellRhoQiID;
+#ifdef USE_BACKGROUND_CHARGE_DENSITY
    static pargrid::DataID dataCellRhoQiBgID;
+#endif
    static pargrid::DataID dataCellBID;
    static pargrid::DataID dataCellJID;
    static pargrid::DataID dataCellUeID;
@@ -192,7 +196,9 @@ struct Hybrid {
    static Real maxVi;
    static Real terminateLimitMaxB;
    static Real minRhoQi;
+#ifdef USE_OUTER_BOUNDARY_ZONE
    static OuterBoundaryZone outerBoundaryZone;
+#endif
 #ifdef USE_ECUT
    static Real Ecut2;
 #endif

@@ -168,6 +168,10 @@ Real getNeutralDensity(SimulationClasses& simClasses,std::string name,Real x,Rea
    else if(name.compare("VenusOxygen") == 0) {
       return neutralDensityVenusOxygen(simClasses,x,y,z,a.R_exobase,a.R_shadow);
    }
+   else {
+      simClasses.logger << "(getNeutralDensity) ERROR: unknown name of an exospheric neutral density profile (" << name << ")" << std::endl << write;
+      return -1.0;
+   }
    return -1.0;
 }
 
