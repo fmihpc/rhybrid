@@ -1,0 +1,13 @@
+Peer-reviewed scientific publications with RHybrid:
+
+Wang L., Huang C., Du A., Ge Y., Chen G., Yang Z., Li S., Zhang K. (2023), Kelvin-Helmholtz Instability at Mars: In Situ Observations and Kinetic Simulations, ApJ 947, 51, doi:10.3847/1538-4357/acc655
+Stergiopoulou K., Jarvinen R., Andrews D.J., Edberg N.J.T., Dimmock A.P., Kallio E., Persson M., Khotyaintsev Y.V. (2023), Solar Orbiter Data-Model Comparison in Venus' Induced Magnetotail, J. Geophys. Res. 128, 2, doi:10.1029/2022JA031023
+Kallio E., Jarvinen R., Massetti S., Alberti T., Milillo A., Orsini S., De Angelis E., Laky G., Slavin J., Raines J.M., Pulkkinen T.I. (2022), Ultra-low frequency waves in the Hermean magnetosphere: On the role of the morphology of the magnetic field and the foreshock, Geophys. Res. Lett. 49, 24, doi:10.1029/2022GL101850
+Jarvinen R., Kallio E., Pulkkinen T.I. (2022), Ultra-low Frequency Foreshock Waves and Ion Dynamics at Mars, J. Geophys. Res. 127, 5, doi:10.1029/2021JA030078
+France K, Duvvuri G., Egan H., Koskinen T., Wilson D.J., Youngblood A., Froning C.S., Brown A., Alvarado-Gómez J.D., Berta-Thompson Z.K., Drake J.J., Garraffo C., Kaltenegger L., Kowalski A.F., Linsky J.L., Loyd R.O.P., Mauas P.J.D., Miguel Y., Pineda J.S., Rugheimer S., Schneider P.C., Tian F., Vieytes M. (2020), The High-energy Radiation Environment around a 10 Gyr M Dwarf: Habitable at Last?, AJ 160, 5, doi:10.3847/1538-3881/abb465
+Jarvinen R., Alho M., Kallio E., Pulkkinen T.I. (2020), Oxygen Ion Escape From Venus Is Modulated by Ultra-Low Frequency Waves, Geophys. Res. Lett., 47, 11, doi:10.1029/2020GL087462
+Jarvinen R., Alho M., Kallio E., Pulkkinen T.I. (2020), Ultra-low frequency waves in the ion foreshock of Mercury: A global hybrid modeling study, Mon. Notices Royal Astron. Soc., 491, 3, 4147-4161, doi:10.1093/mnras/stz3257
+Egan H., Jarvinen R., Ma Y., Brain D.A. (2019), Planetary magnetic field control of ion escape from weakly magnetized planets, Mon. Notices Royal Astron. Soc., 488, 2, 2108-2120, doi:10.1093/mnras/stz1819
+Egan H., Jarvinen R., Brain D.A. (2019), Stellar influence on heavy ion escape from unmagnetized exoplanets, Mon. Notices Royal Astron. Soc., 486, 1, 1283-1291, doi:10.1093/mnras/stz788
+Egan H., Ma Y., Dong C., Modolo R., Jarvinen R., Bougher S., Halekas J., Brain D.A., McFadden J., Connerney J., Mitchell D., Jakosky B. (2018), Comparison of Global Martian Plasma Models in the Context of MAVEN Observations, J. Geophys. Res., 123, 5, 3714-3726, doi:10.1029/2017JA025068
+Jarvinen R., Brain D.A., Modolo R., Fedorov A., Holmström M. (2018), Oxygen ion energization at Mars: Comparison of MAVEN and Mars express observations to global hybrid simulation, J. Geophys. Res., 123, 1678-1689, doi:10.1002/2017JA024884
