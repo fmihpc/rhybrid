@@ -1,10 +1,10 @@
 RHYBRID
 
-RHybrid is a parallel C++/MPI quasi-neutral hybrid (QNH) plasma
-simulation code for the solar wind and plasma interactions of
-celestial bodies. The RHybrid code is developed at the Finnish
-Meteorological Institute. The RHybrid code is distributed under the
-GPL v3 open source license by the Finnish Meteorological Institute.
+RHybrid is a parallel C++/MPI kinetic plasma simulation model platform
+for the solar wind and plasma interactions of celestial bodies. The
+RHybrid code is developed at the Finnish Meteorological Institute. The
+RHybrid code is distributed under the GPL v3 open source license by
+the Finnish Meteorological Institute.
 
 The latest version of RHybrid can be downloaded at:
 
@@ -30,24 +30,34 @@ https://github.com/fmihpc/pargrid
 VLSV - Parallel File Format
 https://github.com/fmihpc/vlsv
 
+Zoltan library (https://sandialabs.github.io/Zoltan/) is used for
+partitioning and balacing computational load between MPI processing
+elements.
+
 COMPILATION
 
--Download the above libraries and their dependencies
--Compile VLSV
--Copy the contents of rhybrid/src/ in corsair/src/user/rhybrid/
--Compile Corsair with make "SIM=rhybrid"
+See INSTALL for an example how to compile.
 
-ACKNOWLEDGEMENTS
+ACKNOWLEDGEMENTS, CO-AUTHORSHIP AND CITING
 
-We request acknowledging and citing the original code when publishing
-or presenting results from RHybrid. The RHybrid developers are open
-for scientific collaborations and further development of the code.
+The RHybrid developers strongly encourage offering us co-authorship as
+well as acknowledging and citing the original model when publishing or
+presenting results where RHybrid code was used. We are open for
+scientific collaborations and further development of the model and are
+committed to open science.
 
 Example acknowledgement text:
 
 "Simulations were performed using the RHybrid code distributed under
 the open source GPL v3 license by the Finnish Meteorological Institute
 (github.com/fmihpc/rhybrid)."
+
+Main reference for RHybrid:
+
+Jarvinen R., Brain D.A., Modolo R., Fedorov A., Holmström M. (2018),
+Oxygen Ion Energization at Mars: Comparison of MAVEN and Mars Express
+Observations to Global Hybrid Simulation, J. Geophys. Res., 123,
+1678-1689, doi:10.1002/2017JA024884
 
 CONTACTS
 
