@@ -75,11 +75,6 @@ endif
 
 #override CXXFLAGS += -std=gnu++0x
 
-# Compile information (date___user___host___folder___cxxflags)
-COMPILEINFO := \"$(shell date --iso-8601=seconds)___$(shell whoami)___$(shell hostname)___$(shell pwd)___$(shell echo ${CXXFLAGS})\"
-# Remove spaces and add newlines
-COMPILEINFO := \"$(shell echo $(COMPILEINFO) | sed 's/ //g' | sed 's/___/\\n/g' | sed 's/-D/\\n/g')\"
-
 # Make targets
 
 default:
@@ -110,6 +105,9 @@ DEPS_OP_USER=operator_userdata.h operator_userdata.cpp
 DEPS_INJECTOR=particle_definition.h particle_species.h particle_injector.h particle_injector.cpp
 DEPS_USER=${DEPS_ACCUM} ${DEPS_SPECIES} ${DEPS_EX_ADV} ${DEPS_INJECTOR} particle_propagator_boris_buneman.h ../../include/user.h user.cpp particle_list_hybrid.h
 
+# Compile information passed to user.cpp
+COMPILEINFO := \""DATE: $(shell date --iso-8601=seconds)\nUSER: $(shell whoami)\nHOST: $(shell hostname)\nDIR: $(shell pwd)\nCMP: $(shell echo ${CMP})\nCXXFLAGS: $(shell echo ${CXXFLAGS})\nMATHFLAGS: $(shell echo ${MATHFLAGS})\nINCS: $(shell echo ${INCS})\nINCS_REG: $(shell echo ${INCS_REG})\""
+
 # Compilation rules
 
 .cpp.o:
@@ -119,7 +117,7 @@ register_objects.o: ${DEPS_REG_OBJS}
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c register_objects.cpp ${INCS_REG}
 
 user.o: ${DEPS_USER}
-	${CMP} ${CXXFLAGS} -DCOMPILEINFO=${COMPILEINFO} ${MATHFLAGS} ${FLAGS} -c user.cpp ${INCS} ${INCS_REG}
+	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -DCOMPILEINFO=${COMPILEINFO} -c user.cpp ${INCS} ${INCS_REG}
 
 hybrid_propagator.o: ${DEPS_ADV_PROP}
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c hybrid_propagator.cpp ${INCS}
