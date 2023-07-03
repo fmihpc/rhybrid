@@ -288,6 +288,22 @@ bool innerBoundaryConic(const Real x, const Real y, const Real z) {
 }
 #endif
 
+// sanity check of the injector type of a particle population
+bool checkInjectorName(SimulationClasses& simClasses,ConfigReader& cr,string speciesName,string injectorNameA) {
+   string injectorNameB = "";
+   string injectorNameRegion = speciesName + ".injector.name";
+   cr.add(injectorNameRegion,"",string(""));
+   cr.parse();
+   cr.get(injectorNameRegion,injectorNameB);
+   if(injectorNameB.compare(injectorNameA) == 0) { return true; }
+   else {
+      simClasses.logger
+	<< "ERROR: " << speciesName << " population should have injector.name = "
+	<< injectorNameA << " (given: " << injectorNameB << ")" << endl << write;
+      return false;
+   }
+}
+
 bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const ObjectFactories& objectFactories,
 			    vector<ParticleListBase*>& particleLists) {
    simClasses.logger << "(RHYBRID) INITIALIZATION" << endl << endl << write;
@@ -1667,6 +1683,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: uniform
    for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
       simClasses.logger << "(RHYBRID) Initializing an uniform particle population: " << *it << endl << write;
+      if(checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1674,6 +1691,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: ambient
    for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
       simClasses.logger << "(RHYBRID) Initializing an ambient particle population: " << *it << endl << write;
+      if(checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1681,6 +1699,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: solar wind
    for (vector<string>::iterator it=solarwindPopulations.begin(); it!=solarwindPopulations.end(); ++it) {
       simClasses.logger << "(RHYBRID) Initializing a solar wind particle population: " << *it << endl << write;
+      if(checkInjectorName(simClasses,cr,*it,"SolarWindInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1688,6 +1707,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: ionosphere
    for (vector<string>::iterator it=ionospherePopulations.begin(); it!=ionospherePopulations.end(); ++it) {
       simClasses.logger << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl << write;
+      if(checkInjectorName(simClasses,cr,*it,"IonosphereInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1695,6 +1715,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: exosphere
    for (vector<string>::iterator it=exospherePopulations.begin(); it!=exospherePopulations.end(); ++it) {
       simClasses.logger << "(RHYBRID) Initializing an exospheric particle population: " << *it << endl << write;
+      if(checkInjectorName(simClasses,cr,*it,"ExosphereInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
