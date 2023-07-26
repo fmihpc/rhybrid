@@ -683,6 +683,12 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       Real sumInjectGlobal = 0.0;
       Real sumInjectMacroThisProcess = Hybrid::particleCounterInjectMacroparticles[s];
       Real sumInjectMacroGlobal = 0.0;
+      Real sumEscapeKineticEnergyThisProcess = Hybrid::particleCounterEscapeKineticEnergy[s];
+      Real sumEscapeKineticEnergyGlobal = 0.0;
+      Real sumImpactKineticEnergyThisProcess = Hybrid::particleCounterImpactKineticEnergy[s];
+      Real sumImpactKineticEnergyGlobal = 0.0;
+      Real sumInjectKineticEnergyThisProcess = Hybrid::particleCounterInjectKineticEnergy[s];
+      Real sumInjectKineticEnergyGlobal = 0.0;
       MPI_Reduce(&N_macroParticlesThisProcess,&N_macroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&N_realParticlesThisProcess,&N_realParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumVxThisProcess,&sumVxGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
@@ -694,6 +700,9 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       MPI_Reduce(&sumImpactThisProcess,&sumImpactGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumInjectThisProcess,&sumInjectGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumInjectMacroThisProcess,&sumInjectMacroGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+      MPI_Reduce(&sumEscapeKineticEnergyThisProcess,&sumEscapeKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+      MPI_Reduce(&sumImpactKineticEnergyThisProcess,&sumImpactKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+      MPI_Reduce(&sumInjectKineticEnergyThisProcess,&sumInjectKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       if(sim.mpiRank==sim.MASTER_RANK) {
 	 (*Hybrid::plog[s]) << N_realParticlesGlobal << " " << N_macroParticlesGlobal << " ";
 	 if(N_realParticlesGlobal > 0.0) {
@@ -709,10 +718,17 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
 	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
 	 (*Hybrid::plog[s]) << 0.5*species->m*sumWV2Global << " ";
 	 if(Dt > 0) {
-	    (*Hybrid::plog[s]) << sumEscapeGlobal/Dt << " " << sumImpactGlobal/Dt << " " << sumInjectGlobal/Dt << " " << sumInjectMacroGlobal/Dt*sim.dt << " ";
+	    (*Hybrid::plog[s])
+	      << sumEscapeGlobal/Dt << " "
+	      << sumImpactGlobal/Dt << " "
+	      << sumInjectGlobal/Dt << " "
+	      << sumInjectMacroGlobal/Dt*sim.dt << " "
+	      << 0.5*species->m*sumEscapeKineticEnergyGlobal/Dt << " "
+	      << 0.5*species->m*sumImpactKineticEnergyGlobal/Dt << " "
+	      << 0.5*species->m*sumInjectKineticEnergyGlobal/Dt << " ";
 	 }
 	 else {
-	    (*Hybrid::plog[s]) << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
+	    (*Hybrid::plog[s]) << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
 	 }
       }
    }
@@ -796,6 +812,9 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       Hybrid::particleCounterImpact[s] = 0.0;
       Hybrid::particleCounterInject[s] = 0.0;
       Hybrid::particleCounterInjectMacroparticles[s] = 0.0;
+      Hybrid::particleCounterEscapeKineticEnergy[s] = 0.0;
+      Hybrid::particleCounterImpactKineticEnergy[s] = 0.0;
+      Hybrid::particleCounterInjectKineticEnergy[s] = 0.0;
    }
    
    /*

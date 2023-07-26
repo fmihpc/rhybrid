@@ -252,6 +252,9 @@ struct Hybrid {
    static std::vector<Real> particleCounterImpact;
    static std::vector<Real> particleCounterInject;
    static std::vector<Real> particleCounterInjectMacroparticles;
+   static std::vector<Real> particleCounterEscapeKineticEnergy;
+   static std::vector<Real> particleCounterImpactKineticEnergy;
+   static std::vector<Real> particleCounterInjectKineticEnergy;
    static Real particleCounterTimeStart;
 
    static bool filterParticlesAfterRestartDone;

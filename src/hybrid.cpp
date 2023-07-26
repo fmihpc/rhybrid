@@ -220,6 +220,9 @@ vector<Real> Hybrid::particleCounterEscape;
 vector<Real> Hybrid::particleCounterImpact;
 vector<Real> Hybrid::particleCounterInject;
 vector<Real> Hybrid::particleCounterInjectMacroparticles;
+vector<Real> Hybrid::particleCounterEscapeKineticEnergy;
+vector<Real> Hybrid::particleCounterImpactKineticEnergy;
+vector<Real> Hybrid::particleCounterInjectKineticEnergy;
 Real Hybrid::particleCounterTimeStart;
 
 bool Hybrid::filterParticlesAfterRestartDone = true;

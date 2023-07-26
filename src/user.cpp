@@ -2025,7 +2025,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "% " << species->name << endl
 	   << "% m [kg] = " << species->m << endl
 	   << "% q [C] = " << species->q << endl
-	   << "% columns = 12" << endl
+	   << "% columns = 15" << endl
 	   << "% 01. Time [s]" << endl
 	   << "% 02. Particles [#]" << endl
 	   << "% 03. Macroparticles [#]" << endl
@@ -2037,7 +2037,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "% 09. Escape rate [#/s]" << endl
 	   << "% 10. Impact rate [#/s]" << endl
 	   << "% 11. Inject rate [#/s]" << endl
-	   << "% 12. Macroparticle inject rate [#/dt]" << endl;
+	   << "% 12. Macroparticle inject rate [#/dt]" << endl
+	   << "% 13. Kinetic energy escape rate [J/s]" << endl
+	   << "% 14. Kinetic energy impact rate [J/s]" << endl
+	   << "% 15. Kinetic energy inject rate [J/s]" << endl;
       }
       Hybrid::flog.open("field.log",ios_base::out);
       Hybrid::flog.precision(10);
@@ -2063,6 +2066,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::particleCounterImpact.push_back(0.0);
       Hybrid::particleCounterInject.push_back(0.0);
       Hybrid::particleCounterInjectMacroparticles.push_back(0.0);
+      Hybrid::particleCounterEscapeKineticEnergy.push_back(0.0);
+      Hybrid::particleCounterImpactKineticEnergy.push_back(0.0);
+      Hybrid::particleCounterInjectKineticEnergy.push_back(0.0);
       Hybrid::particleCounterTimeStart = sim.t;
    }
    
