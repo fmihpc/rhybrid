@@ -172,6 +172,7 @@ struct Hybrid {
 
    static int logInterval;
    static bool includeInnerCellsInFieldLog;
+   static bool writeMainLogEntriesAfterSaveStep;
    static Real dx;
    static Box box;
    static Real dV;

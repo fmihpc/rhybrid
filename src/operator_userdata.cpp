@@ -769,6 +769,18 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
 	 (*Hybrid::plog[i]) << endl;
       }
       Hybrid::flog << endl;
+
+      // minimum Larmor (gyro) period (of protons) in the simulation domain
+      Real tL_min = 0.0;
+      if(maxBGlobal > 0) { tL_min = 2.0*M_PI*constants::MASS_PROTON/(constants::CHARGE_ELEMENTARY*maxBGlobal); }
+      // write if on a save step or save step already happened after previous entry
+      if(Hybrid::writeMainLogEntriesAfterSaveStep == true) {
+	 simClasses.logger << "(RHYBRID) Minimum Larmor period: tL_min = " << tL_min << " s = " << tL_min/sim.dt << " dt" << endl;
+	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
+      }
+      // write warning always if tL_min close to dt
+      if(tL_min/sim.dt < 10) { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min < 10*dt (" << tL_min/sim.dt  << ")" << endl; }
+      
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
          success = false;
          simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT), exiting." << endl;

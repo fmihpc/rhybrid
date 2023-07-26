@@ -111,6 +111,7 @@ uint32_t Hybrid::Z_NEG_EXISTS;
 
 int Hybrid::logInterval;
 bool Hybrid::includeInnerCellsInFieldLog;
+bool Hybrid::writeMainLogEntriesAfterSaveStep;
 Real Hybrid::dx;
 Box Hybrid::box;
 Real Hybrid::dV;

@@ -59,6 +59,7 @@ bool str2bool(SimulationClasses& simClasses,const string & v) {
 
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool rvalue = true;
+   if(sim.atDataSaveStep == true) { Hybrid::writeMainLogEntriesAfterSaveStep = true; }
    if(Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::initialFlowThrough == true) {
       static bool switchOffDone = false;
       if(switchOffDone == false) {
