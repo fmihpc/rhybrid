@@ -161,6 +161,9 @@ Real Hybrid::EfilterNodeGaussCoeffs[4];
 Real Hybrid::resistivityEta;
 Real Hybrid::resistivityEtaC;
 Real Hybrid::resistivityR2;
+vector<Real> Hybrid::resistivitySphericalEta;
+vector<Real> Hybrid::resistivitySphericalEtaC;
+vector<Real> Hybrid::resistivitySphericalR2;
 Real Hybrid::resistivityGridUnit;
 Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
 #endif

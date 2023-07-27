@@ -384,6 +384,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
    cr.add("Resistivity.etaC","Dimensionless resistivity constant [-] (float)",defaultValue);
    cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
+   cr.addComposed("Resistivity.etaC_spherical","Dimensionless resistivity constants of spherical resistivity shells [-] (float vector)");
+   cr.addComposed("Resistivity.R_spherical","Radii of spherical resistivity shells [m] (float vector)");
 #endif
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
@@ -492,6 +494,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Resistivity.profile_name",resistivityProfileName);
    cr.get("Resistivity.etaC",Hybrid::resistivityEtaC);
    cr.get("Resistivity.R",Hybrid::resistivityR2);
+   cr.get("Resistivity.etaC_spherical",Hybrid::resistivitySphericalEtaC);
+   cr.get("Resistivity.R_spherical",Hybrid::resistivitySphericalR2);
    Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
    Hybrid::resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
    Hybrid::resistivityEta = Hybrid::resistivityEtaC*Hybrid::resistivityGridUnit;
@@ -501,9 +505,36 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::outerBoundaryZone.eta *= Hybrid::resistivityGridUnit;
 #endif
-   if(setResistivityProfile(resistivityProfileName) == false) {
+   if(setResistivityProfile(resistivityProfileName,simClasses) == false) {
       simClasses.logger << "(RHYBRID) ERROR: unknown name of a resistivity profile (" << resistivityProfileName << ")" << endl << write;
       exit(1);
+   }
+   if(Hybrid::resistivitySphericalEtaC.size() != Hybrid::resistivitySphericalR2.size()) {
+      simClasses.logger << "(RHYBRID) ERROR: parameter arrays of the spherical shell resistivity model should be the same size (" << Hybrid::resistivitySphericalEtaC.size() << ", " << Hybrid::resistivitySphericalR2.size() << ")" << endl << write;
+      exit(1);
+   }
+   for(size_t i=0;i<Hybrid::resistivitySphericalEtaC.size();i++) {
+      if(Hybrid::resistivitySphericalEtaC[i] >= 0) {
+	 Hybrid::resistivitySphericalEta.push_back(Hybrid::resistivitySphericalEtaC[i]*Hybrid::resistivityGridUnit);
+      }
+      else {
+	 simClasses.logger << "(RHYBRID) ERROR: resistivity etaC_spherical < 0 (" << Hybrid::resistivitySphericalEtaC[i] << ")" << endl << write;
+	 exit(1);
+      }
+      if(Hybrid::resistivitySphericalR2[i] >= 0) {
+	 Hybrid::resistivitySphericalR2[i] = sqr(Hybrid::resistivitySphericalR2[i]);
+      }
+      else {
+	 simClasses.logger << "(RHYBRID) ERROR: resistivity R_spherical < 0 (" << Hybrid::resistivitySphericalR2[i] << ")" << endl << write;
+	 exit(1);
+      }
+      // check that the radii are given in monotonically growing order
+      if(i > 0) {
+	 if(Hybrid::resistivitySphericalR2[i-1] >= Hybrid::resistivitySphericalR2[i]) {
+	    simClasses.logger << "(RHYBRID) ERROR: radii parameters of the spherical shell resistivity model should be given in a monotonically growing order" << endl << write;
+	    exit(1);
+	 }
+      }
    }
 #endif
    cr.get("IMF.Bx",Hybrid::IMFBx);
@@ -736,7 +767,24 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "R = " << sqrt(Hybrid::resistivityR2)/1e3 << " km = "
      << sqrt(Hybrid::resistivityR2)/Hybrid::R_object << " R_object = "
      << sqrt(Hybrid::resistivityR2)/Hybrid::dx << " dx = "
-     << (sqrt(Hybrid::resistivityR2) - Hybrid::R_object)/1e3 << " km + R_object" << endl << endl;
+     << (sqrt(Hybrid::resistivityR2) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
+   simClasses.logger << "Parameters of spherical resistivity shells: " << endl;
+   if(Hybrid::resistivitySphericalEtaC.size() > 0) {
+      for(size_t i=0;i<Hybrid::resistivitySphericalEtaC.size();i++) {
+	 simClasses.logger
+	   << "resistive shell " << i << ": R = "
+	   << sqrt(Hybrid::resistivitySphericalR2[i])/1e3 << " km = "
+	   << sqrt(Hybrid::resistivitySphericalR2[i])/Hybrid::R_object << " R_object = "
+	   << sqrt(Hybrid::resistivitySphericalR2[i])/Hybrid::R_object << " dx, "
+	   << "eta = " << Hybrid::resistivitySphericalEtaC[i] << " mu_0*dx^2/dt = "
+	   << Hybrid::resistivitySphericalEta[i] << " Ohm m" << endl;
+      }
+      simClasses.logger << endl;
+   }
+   else {
+      simClasses.logger << "none" << endl;
+   }
+   simClasses.logger << endl;
 #endif
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    simClasses.logger
@@ -1861,9 +1909,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Pickup ion max speed (2*VExB) = " << 2.0*VExBMagnitude/1e3 << " km/s" << endl
      << "Fastest whistler speed = " << vw/1e3 << " km/s" << endl
 #ifdef USE_RESISTIVITY
-     << "td_min = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta/sim.dt << " dt" << endl
-     << "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl
+     << "td_min(global) = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta/sim.dt << " dt" << endl;
+   for(size_t i=0;i<Hybrid::resistivitySphericalEta.size();i++) {
+      simClasses.logger << "td_min(resistive shell " << i << ") = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i] << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i]/sim.dt << " dt" << endl;
+   }
+   simClasses.logger << "Rm_min(global) = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl;
+   for(size_t i=0;i<Hybrid::resistivitySphericalEta.size();i++) {
+      simClasses.logger << "Rm_min(resistive shell " << i << ") = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivitySphericalEta[i] << endl;
+   }
 #endif
+   simClasses.logger
      << endl
      << "(SOLAR WIND POPULATIONS)" << endl;
    // solar wind populations

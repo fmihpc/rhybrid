@@ -38,15 +38,64 @@ Real resistivitySuperConductingSphere(Simulation& sim,SimulationClasses& simClas
    return Hybrid::resistivityEta;
 }
 
-inline bool setResistivityProfile(std::string name) {
+Real resistivitySphericalShells(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z) {
+   const Real r2 = sqr(x) + sqr(y) + sqr(z);
+   const size_t Nsize = Hybrid::resistivitySphericalR2.size();
+   if(Nsize <= 0) {
+      simClasses.logger << "(resistivitySphericalShells) ERROR: no function parameters given" << std::endl << write;
+      MPI_Finalize();
+      return 0.0;
+   }
+   // check if the point is inside or at the first radii: return resistivity of the first shell
+   if(r2 <= Hybrid::resistivitySphericalR2[0]) { return Hybrid::resistivitySphericalEta[0]; }
+   // loop thru from second to last shell
+   for(size_t i=1;i<Hybrid::resistivitySphericalR2.size();i++) {
+      // check if the point is between i-1 and i radii
+      if(r2 > Hybrid::resistivitySphericalR2[i-1] && r2 <= Hybrid::resistivitySphericalR2[i]) {
+	 return Hybrid::resistivitySphericalEta[i];
+      }
+   }
+   // check if the point is above or at the last radii: return resistivity of the last shell
+   //if(r2 >= Hybrid::resistivitySphericalR2[Nsize-1]) { return Hybrid::resistivitySphericalEta[Nsize-1]; }
+   //simClasses.logger << "(resistivitySphericalShells) ERROR: reached function end, which should never happen" << std::endl << write;
+   //MPI_Finalize();
+   return 0.0;
+}
+
+inline bool setResistivityProfile(std::string name,SimulationClasses& simClasses) {
    Hybrid::resistivityProfilePtr = NULL;
    if(name.compare("resistivityConstant") == 0) {
       Hybrid::resistivityProfilePtr = &resistivityConstant;
+      if(Hybrid::resistivitySphericalR2.size() > 0) {
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, parameters of resistivitySphericalShells are ignored" << std::endl << write;
+      }
+      if(Hybrid::resistivityR2 > 0) {
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, R parameter is ignored" << std::endl << write;
+      }
+      if(Hybrid::resistivityEta <= 0) {
+	 simClasses.logger << "(setResistivityProfile) WARNING: eta <= 0 in resistivityConstant" << std::endl << write;
+      }
    }
    else if(name.compare("resistivitySuperConductingSphere") == 0){
       Hybrid::resistivityProfilePtr = &resistivitySuperConductingSphere;
+      if(Hybrid::resistivitySphericalR2.size() > 0) {
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySuperConductingSphere profile is used, parameters of resistivitySphericalShells are ignored" << std::endl << write;
+      }
+      if(Hybrid::resistivityR2 <= 0) {
+	 simClasses.logger << "(setResistivityProfile) WARNING: R <= 0 in resistivitySuperConductingSphere" << std::endl << write;
+      }
+      if(Hybrid::resistivityEta <= 0) {
+	 simClasses.logger << "(setResistivityProfile) WARNING: eta <= 0 in resistivitySuperConductingSphere" << std::endl << write;
+      }
+   }
+   else if(name.compare("resistivitySphericalShells") == 0){
+      Hybrid::resistivityProfilePtr = &resistivitySphericalShells;
+      if(Hybrid::resistivityR2 > 0 || Hybrid::resistivityEta > 0) {
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySphericalShells profile is used, eta and R parameters are ignored" << std::endl << write;
+      }
    }
    else {
+      simClasses.logger << "(setResistivityProfile) ERROR: unknown name of a resistivity profile (" << name << ")" << std::endl << write;
       return false;
    }
    return true;

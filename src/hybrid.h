@@ -210,6 +210,9 @@ struct Hybrid {
    static Real resistivityEta;
    static Real resistivityEtaC;
    static Real resistivityR2;
+   static std::vector<Real> resistivitySphericalEta;
+   static std::vector<Real> resistivitySphericalEtaC;
+   static std::vector<Real> resistivitySphericalR2;
    static Real resistivityGridUnit;
    static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
 #endif
