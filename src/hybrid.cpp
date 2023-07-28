@@ -129,6 +129,7 @@ Real Hybrid::eta_conicInnerBoundary;
 #endif
 Real Hybrid::upstreamBulkU;
 Real Hybrid::M_object;
+Real Hybrid::GMdt;
 bool Hybrid::initialFlowThrough;
 Real Hybrid::initialFlowThroughPeriod;
 Real Hybrid::maxUe2;
@@ -154,6 +155,7 @@ bool Hybrid::includeConstantB0InFaradaysLaw = false;
 Real Hybrid::electronTemperature;
 Real Hybrid::electronPressureCoeff;
 Real Hybrid::swMacroParticlesCellPerDt;
+bool Hybrid::useGravity;
 int Hybrid::Efilter;
 Real Hybrid::EfilterNodeGaussSigma;
 Real Hybrid::EfilterNodeGaussCoeffs[4];

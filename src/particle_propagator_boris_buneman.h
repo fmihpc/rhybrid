@@ -117,9 +117,10 @@ template<class PARTICLE>
    if(accelerate == true) {
       Real E[3],B[3],Ue[3],Ep[3];
       Real r[3] = {particle.state[particle::X],particle.state[particle::Y],particle.state[particle::Z]};
+      const Real rGlobal[3] = {r[0]+xBlock,r[1]+yBlock,r[2]+zBlock};
       getFields(r,B,Ue,Ep,*sim,*simClasses,blockID);
 #ifdef USE_B_CONSTANT
-      addConstantB(r[0]+xBlock,r[1]+yBlock,r[2]+zBlock,B);
+      addConstantB(rGlobal[0],rGlobal[1],rGlobal[2],B);
 #endif
       // E = -Ue x B
       crossProduct(B,Ue,E);
@@ -152,6 +153,16 @@ template<class PARTICLE>
       particle.state[particle::VX]=vpx+dvx;
       particle.state[particle::VY]=vpy+dvy;
       particle.state[particle::VZ]=vpz+dvz;
+      // gravitational acceleration
+      if(Hybrid::useGravity == true) {
+	 Real r3 = cube( sqrt( sqr(rGlobal[0]) + sqr(rGlobal[1]) + sqr(rGlobal[2]) ) );
+	 if(r3 > 0) {
+	    const Real s = -Hybrid::GMdt/r3;
+	    particle.state[particle::VX] += s*rGlobal[0];
+	    particle.state[particle::VY] += s*rGlobal[1];
+	    particle.state[particle::VZ] += s*rGlobal[2];
+	 }
+      }
       const Real v2 = sqr(particle.state[particle::VX]) + sqr(particle.state[particle::VY]) + sqr(particle.state[particle::VZ]);
       if(v2 > Hybrid::maxVi2) {
 	 const Real norm = sqrt(Hybrid::maxVi2/v2);

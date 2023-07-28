@@ -190,6 +190,7 @@ struct Hybrid {
 #endif
    static Real upstreamBulkU;
    static Real M_object;
+   static Real GMdt;
    static bool initialFlowThrough;
    static Real initialFlowThroughPeriod;
    static Real maxUe2;
@@ -225,6 +226,7 @@ struct Hybrid {
    static Real electronTemperature;
    static Real electronPressureCoeff;
    static Real swMacroParticlesCellPerDt;
+   static bool useGravity;
    static int Efilter;
    static Real EfilterNodeGaussSigma;
    static Real EfilterNodeGaussCoeffs[4];

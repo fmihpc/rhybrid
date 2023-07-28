@@ -352,6 +352,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.e_conicInnerBoundary","Eccentricity of conical inner boundary [-] (float)",defaultValue);
    cr.add("Hybrid.etaC_conicInnerBoundary","Dimensionless resistivity inside conical inner boundary [-] (float)",defaultValue);
 #endif
+   cr.add("Hybrid.gravity","Use gravitational acceleration [-] (bool)",false);
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.initialFlowThroughPeriodFactor","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
@@ -431,7 +432,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.e_conicInnerBoundary",Hybrid::e_conicInnerBoundary);
    cr.get("Hybrid.etaC_conicInnerBoundary",Hybrid::eta_conicInnerBoundary);
 #endif
+   cr.get("Hybrid.gravity",Hybrid::useGravity);
    cr.get("Hybrid.M_object",Hybrid::M_object);
+   Hybrid::GMdt = constants::GRAVITY*Hybrid::M_object*sim.dt; // constant for gravitational acceleration
    cr.get("Hybrid.initialFlowThroughPeriodFactor",Hybrid::initialFlowThroughPeriod);
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
@@ -687,6 +690,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    else { simClasses.logger << Hybrid::R2_particleObstacle << "" << endl; }
 #endif
    simClasses.logger
+     << "Gravitational acceleration = " << Hybrid::useGravity << endl
      << "M_object  = " << Hybrid::M_object     << " kg" << endl
      << "Hall term = " << Hybrid::useHallElectricField << endl;
 #ifdef USE_B_CONSTANT
