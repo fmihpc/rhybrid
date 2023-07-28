@@ -1332,14 +1332,38 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
 void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+#ifdef USE_AIRLESS_OBJECT_CONFIGURATION
+   const Real* crd = getBlockCoordinateArray(sim,simClasses);
+   const size_t b3 = blockID*3;
+#endif
    for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
       // inner boundary condition for Ue
+#ifndef USE_AIRLESS_OBJECT_CONFIGURATION
       if(innerFlag[n] == true) {
 	 cellUe[n3+0] = cellUe[n3+1] = cellUe[n3+2] = 0.0;
 	 continue;
       }
+#else
+      // inner boundary and low density wake conditions for Ue
+      // warning: hardcoded parameter values
+      if(innerFlag[n] == true) {
+	 cellUe[n3+0] = -Hybrid::upstreamBulkU;
+	 cellUe[n3+1] = cellUe[n3+2] = 0.0;
+	 continue;
+      }
+      const Real absJi = sqrt(sqr(cellJi[n3+0]) + sqr(cellJi[n3+1]) + sqr(cellJi[n3+2]));
+      const Real xCellCenter = crd[b3+0] + (i+0.5)*Hybrid::dx;
+      const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
+      const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
+      const Real yzCellCenter = sqrt(sqr(yCellCenter) +sqr(zCellCenter));
+      if(absJi < (Hybrid::swJi*0.05) && xCellCenter <= 0.0 && xCellCenter > (Hybrid::box.xmin + 10*Hybrid::dx) && yzCellCenter < (1.5*Hybrid::R_object)) {
+	 cellUe[n3+0] = -Hybrid::upstreamBulkU;
+	 cellUe[n3+1] = cellUe[n3+2] = 0.0;
+	 continue;
+      }
+#endif
       // calc Ue = (J - Ji)/rhoqi
       for(int l=0;l<3;++l) {
 	 if(fabs(cellRhoQi[n]) > 0) {
@@ -1518,14 +1542,38 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
       if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
       if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
+#ifdef USE_AIRLESS_OBJECT_CONFIGURATION
+   const Real* crd = getBlockCoordinateArray(sim,simClasses);
+   const size_t b3 = blockID*3;
+#endif
    for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
+#ifndef USE_AIRLESS_OBJECT_CONFIGURATION
       // inner boundary condition for Ue
       if(innerFlag[n] == true) {
 	 nodeUe[n3+0] = nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
 	 continue;
       }
+#else
+      // inner boundary and low density wake conditions for Ue
+      // warning: hardcoded parameter values
+      if(innerFlag[n] == true) {
+	 nodeUe[n3+0] = -Hybrid::upstreamBulkU;
+	 nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
+	 continue;
+      }
+      const Real absJi = sqrt(sqr(nodeJi[n3+0]) + sqr(nodeJi[n3+1]) + sqr(nodeJi[n3+2]));
+      const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
+      const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
+      const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
+      const Real yzNode = sqrt(sqr(yNode) +sqr(zNode));
+      if(absJi < (Hybrid::swJi*0.05) && xNode <= 0.0 && xNode > (Hybrid::box.xmin + 10*Hybrid::dx) && yzNode < (1.5*Hybrid::R_object)) {
+	 nodeUe[n3+0] = -Hybrid::upstreamBulkU;
+	 nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
+	 continue;
+      }
+#endif
       // check min nodeRhoQi
       if(nodeRhoQi[n] < Hybrid::minRhoQi) { nodeRhoQi[n] = Hybrid::minRhoQi; }
       // calc Ue = (J - Ji)/rhoqi

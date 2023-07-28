@@ -229,6 +229,7 @@ struct Hybrid {
    static Real EfilterNodeGaussSigma;
    static Real EfilterNodeGaussCoeffs[4];
    static Real IMFBx,IMFBy,IMFBz;
+   static Real swJi;
    static bool IMFBoundaryCellB[6];
    static bool IMFBoundaryFaceB[6];
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)

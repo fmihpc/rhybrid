@@ -1845,6 +1845,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    else {
       Ubulk = 0.0;
    }
+   Hybrid::swJi = rhoq*Ubulk;
    Hybrid::upstreamBulkU = Ubulk;
    Real Esw[3] = {0.0,0.0,0.0};
    Real Bsw[3] = {Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz};
@@ -1892,6 +1893,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "ni = ion number density = " << ni/1e6 << " cm^-3 = " << ni*Hybrid::dV << " dV^-1" << endl
      << "ne = electron number density = " << ne/1e6 << " cm^-3 = " << ne*Hybrid::dV << " dV^-1" << endl
      << "rhoqi = total ion charge density = -electron charge density = " << rhoq << " C/m^3 = " << rhoq*Hybrid::dV << " C/dV" << endl
+     << "|Ji| = total ion current density = " << Hybrid::swJi << " C/(m^2*s)" << endl
      << "U = bulk speed = " << Ubulk/1e3 << " km/s" << endl
      << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
      << "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << vs/1e3 << " km/s" << endl
