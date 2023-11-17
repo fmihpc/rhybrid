@@ -405,9 +405,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
+#ifdef USE_TEST_PARTICLE_MODE
    cr.add("IMF.Uex","Upstream Uex [m/s] (float)",-1.0);
    cr.add("IMF.Uey","Upstream Uey [m/s] (float)",-1.0);
    cr.add("IMF.Uez","Upstream Uez [m/s] (float)",-1.0);
+#endif
    cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
    cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
