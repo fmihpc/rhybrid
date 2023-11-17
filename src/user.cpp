@@ -409,6 +409,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.Uex","Upstream Uex [m/s] (float)",-1.0);
    cr.add("IMF.Uey","Upstream Uey [m/s] (float)",-1.0);
    cr.add("IMF.Uez","Upstream Uez [m/s] (float)",-1.0);
+   cr.add("IMF.macroparticles_per_cell_scaling","Scaling of macro particle number per cell per dt for test particle propagation (typically this is taken from the first solar wind population but in test particle propationg sw populations may not be there at all.)",-1.0);
 #endif
    cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
    cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
@@ -567,6 +568,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IMF.Uex",Ue[0]);
    cr.get("IMF.Uey",Ue[1]);
    cr.get("IMF.Uez",Ue[2]);
+   cr.get("IMF.macroparticles_per_cell_scaling",Hybrid::swMacroParticlesCellPerDt);
    if(Ue[0] == -1 && Ue[2] == -1 && Ue[2] == -1) {
       simClasses.logger << "(RHYBRID) ERROR: test particle mode enabled in Makefile but IMF.Ue not given in config file" << endl;
       return false;
