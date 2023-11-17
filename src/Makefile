@@ -11,6 +11,7 @@ USE_ECUT := true
 USE_MAXVW := true
 WRITE_POPULATION_AVERAGES := true
 USE_DETECTORS := false
+USE_TEST_PARTICLE_MODE := false
 
 include ../../../Makefile.${ARCH}
 
@@ -71,6 +72,10 @@ endif
 
 ifeq ($(USE_DETECTORS),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_DETECTORS
+endif
+
+ifeq ($(USE_TEST_PARTICLE_MODE),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_TEST_PARTICLE_MODE
 endif
 
 #override CXXFLAGS += -std=gnu++0x

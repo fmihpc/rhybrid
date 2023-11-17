@@ -172,6 +172,11 @@ Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const R
 Real Hybrid::IMFBx;
 Real Hybrid::IMFBy;
 Real Hybrid::IMFBz;
+#ifdef USE_TEST_PARTICLE_MODE
+Real Hybrid::Ex;
+Real Hybrid::Ey;
+Real Hybrid::Ez;
+#endif
 bool Hybrid::IMFBoundaryCellB[6];
 bool Hybrid::IMFBoundaryFaceB[6];
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)

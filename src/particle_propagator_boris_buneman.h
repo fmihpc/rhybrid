@@ -118,6 +118,16 @@ template<class PARTICLE>
       Real E[3],B[3],Ue[3],Ep[3];
       Real r[3] = {particle.state[particle::X],particle.state[particle::Y],particle.state[particle::Z]};
       const Real rGlobal[3] = {r[0]+xBlock,r[1]+yBlock,r[2]+zBlock};
+#ifdef USE_TEST_PARTICLE_MODE
+      // if in test particle mode, use homogeneous B and E
+      B[0] = Hybrid::IMFBx;
+      B[1] = Hybrid::IMFBy;
+      B[2] = Hybrid::IMFBz;
+      E[0] = Hybrid::Ex;
+      E[1] = Hybrid::Ey;
+      E[2] = Hybrid::Ez;
+#else
+      // if not in test particle mode, use normal hybrid model approach
       getFields(r,B,Ue,Ep,*sim,*simClasses,blockID);
 #ifdef USE_B_CONSTANT
       addConstantB(rGlobal[0],rGlobal[1],rGlobal[2],B);
@@ -128,6 +138,7 @@ template<class PARTICLE>
       if(Hybrid::useElectronPressureElectricField == true) {
          for (unsigned int i=0;i<3;++i) { E[i] += Ep[i]; }
       }
+#endif
       Real tx,ty,tz,sx,sy,sz,dvx,dvy,dvz,vmx,vmy,vmz,v0x,v0y,v0z,vpx,vpy,vpz,qmideltT2,t2,b2;
       qmideltT2= 0.5*species.q*sim->dt/species.m;
       dvx=qmideltT2*E[0];

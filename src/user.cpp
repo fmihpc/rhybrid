@@ -112,7 +112,9 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       sim.repartitionCheckInterval = Hybrid::repartitionCheckIntervalTmp;
    }
 #endif
+#ifndef USE_TEST_PARTICLE_MODE
    setupGetFields(sim,simClasses);
+#endif
    // Propagate all particles:
    for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->propagateBoundaryCellParticles() == false) { rvalue = false; }  }
    for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->propagateInnerCellParticles() == false) { rvalue = false; } }
@@ -128,7 +130,9 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       if(particleLists[p]->injectParticles() == false) { rvalue = false; } 
    }
    // propagate magnetic field
+#ifndef USE_TEST_PARTICLE_MODE
    if(propagateB(sim,simClasses,particleLists) == false) { rvalue = false; }
+#endif
 #ifdef USE_DETECTORS
    if(Hybrid::detParticleRecording == true) {
       if(Hybrid::detParticleTimestepCnt >= Hybrid::detParticleWriteInterval) {
@@ -144,6 +148,16 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       }
    }
 #endif
+
+#ifdef WRITE_POPULATION_AVERAGES
+#ifdef USE_TEST_PARTICLE_MODE
+   // in case test particle mode is enabled, this
+   // counter is ignored in hybrid_propagator.cpp/propagateB
+   // and is increased here
+   Hybrid::averageCounter++;
+#endif
+#endif
+
    return rvalue;
 }
 
@@ -391,6 +405,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
+   cr.add("IMF.Uex","Upstream Uex [m/s] (float)",-1.0);
+   cr.add("IMF.Uey","Upstream Uey [m/s] (float)",-1.0);
+   cr.add("IMF.Uez","Upstream Uez [m/s] (float)",-1.0);
    cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
    cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
@@ -543,6 +560,36 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
+#ifdef USE_TEST_PARTICLE_MODE
+   Real B[3],Ue[3],E[3];
+   cr.get("IMF.Uex",Ue[0]);
+   cr.get("IMF.Uey",Ue[1]);
+   cr.get("IMF.Uez",Ue[2]);
+   if(Ue[0] == -1 && Ue[2] == -1 && Ue[2] == -1) {
+      simClasses.logger << "(RHYBRID) ERROR: test particle mode enabled in Makefile but IMF.Ue not given in config file" << endl;
+      return false;
+   }
+   B[0] = Hybrid::IMFBx;
+   B[1] = Hybrid::IMFBy;
+   B[2] = Hybrid::IMFBz;
+   crossProduct(B,Ue,E);
+   Hybrid::Ex = E[0];
+   Hybrid::Ey = E[1];
+   Hybrid::Ez = E[2];
+   simClasses.logger
+     << endl
+     << "SELF-CONSISTENT HYBRID ALGORITHM DISABLED" << endl
+     << "USING TEST PARTICLE PROPAGATION MODE IN HOMOGENEOUS FIELDS:" << endl
+     << "Bx = " << Hybrid::IMFBx/1e-9 << " nT" << endl
+     << "By = " << Hybrid::IMFBy/1e-9 << " nT" << endl
+     << "Bz = " << Hybrid::IMFBz/1e-9 << " nT" << endl
+     << "Uex = " << Ue[0]/1e3 << " km/s" << endl
+     << "Uey = " << Ue[1]/1e3 << " km/s" << endl
+     << "Uez = " << Ue[2]/1e3 << " km/s" << endl
+     << "Ex = " << E[0]/1e-3 << " mV/m" << endl
+     << "Ey = " << E[1]/1e-3 << " mV/m" << endl
+     << "Ez = " << E[2]/1e-3 << " mV/m" << endl;
+#endif
    string inputStr;
    cr.get("IMF.BoundaryCellB",inputStr);
    if(inputStr.size() != 11 ||
