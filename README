@@ -1,10 +1,11 @@
 RHYBRID
 
-RHybrid is a parallel C++/MPI kinetic plasma simulation model platform
-for the solar wind and plasma interactions of celestial bodies. The
-RHybrid code is originally developed at the Finnish Meteorological
-Institute. The RHybrid code is distributed under the GPL v3 open
-source license by the Finnish Meteorological Institute.
+RHybrid (paRallel Hybrid) is a parallel C++/MPI kinetic plasma
+simulation model platform for the solar wind and plasma interactions
+of celestial bodies. The RHybrid code is originally developed at the
+Finnish Meteorological Institute. The RHybrid code is distributed
+under the GPL v3 open source license by the Finnish Meteorological
+Institute.
 
 The latest version of RHybrid can be downloaded at:
 
