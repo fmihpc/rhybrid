@@ -80,6 +80,7 @@ struct Box {
 struct OuterBoundaryZone {
    int typeEta=0,typeMinRhoQi=0;
    Real sizeEta=0.0,sizeMinRhoQi=0.0,minRhoQi=0.0,eta=0.0;
+   bool constUe = false;
 };
 #endif
 
@@ -135,7 +136,10 @@ struct Hybrid {
    static pargrid::DataID dataInnerFlagNodeID;
    static pargrid::DataID dataInnerFlagParticleID;
    static pargrid::DataID dataInnerFlagCellEpID;
+#ifdef USE_OUTER_BOUNDARY_ZONE
    static pargrid::DataID dataOuterBoundaryFlagID;
+   static pargrid::DataID dataOuterBoundaryFlagNodeID;
+#endif
 #ifdef USE_XMIN_BOUNDARY
    static pargrid::DataID dataXminFlagID;
 #endif

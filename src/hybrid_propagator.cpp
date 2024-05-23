@@ -77,6 +77,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    bool* innerFlagCellEp     = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagCellEpID);
 #ifdef USE_OUTER_BOUNDARY_ZONE
    bool* outerBoundaryFlag   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
+   bool* outerBoundaryFlagNode   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagNodeID);
 #endif
    
    if(faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; exit(1);}
@@ -111,6 +112,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
 #ifdef USE_OUTER_BOUNDARY_ZONE
    if(outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; exit(1);}
+   if(outerBoundaryFlagNode == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlagNode array!"<< endl; exit(1);}
 #endif   
    // get block vectors
    const vector<pargrid::CellID>& innerBlocks = simClasses.pargrid.getInnerCells(pargrid::DEFAULT_STENCIL);
@@ -281,7 +283,13 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 
    // calculate cellUe
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { calcCellUe(cellJ,cellJi,cellRhoQi,cellUe,innerFlag,counterCellMaxUe,sim,simClasses,b); }
+   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      calcCellUe(cellJ,cellJi,cellRhoQi,cellUe,innerFlag,
+#ifdef USE_OUTER_BOUNDARY_ZONE
+		 outerBoundaryFlag,
+#endif
+		 counterCellMaxUe,sim,simClasses,b);
+   }
    profile::stop();
    
    // loop thru ghost cells
@@ -311,7 +319,12 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();*/
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { calcNodeUe(nodeRhoQi,nodeJi,nodeJ,nodeUe,innerFlagNode,counterCellMaxUe,sim,simClasses,b); }
+   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      calcNodeUe(nodeRhoQi,nodeJi,nodeJ,nodeUe,innerFlagNode,
+# ifdef USE_OUTER_BOUNDARY_ZONE
+		 outerBoundaryFlagNode,
+# endif
+		 counterCellMaxUe,sim,simClasses,b); }
    profile::stop();
 #else
    // cell->node Ue
@@ -1329,7 +1342,11 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
 }
 
 // calculate cellUe
-void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,
+#ifdef USE_OUTER_BOUNDARY_ZONE
+		bool* outerBoundaryFlag,
+#endif
+		Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
    for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
@@ -1340,6 +1357,13 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 	 cellUe[n3+0] = cellUe[n3+1] = cellUe[n3+2] = 0.0;
 	 continue;
       }
+#ifdef USE_OUTER_BOUNDARY_ZONE
+      if(outerBoundaryFlag[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
+	 cellUe[n3+0] = -Hybrid::upstreamBulkU;
+	 cellUe[n3+1] = cellUe[n3+2] = 0.0;
+	 continue;
+      }
+#endif
       // calc Ue = (J - Ji)/rhoqi
       for(int l=0;l<3;++l) {
 	 if(fabs(cellRhoQi[n]) > 0) {
@@ -1505,7 +1529,11 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
    }
 }
 
-void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,
+#ifdef USE_OUTER_BOUNDARY_ZONE
+		bool* outerBoundaryFlagNode,
+#endif
+		Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    int di=0;
    int dj=0;
@@ -1526,6 +1554,13 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
 	 nodeUe[n3+0] = nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
 	 continue;
       }
+#ifdef USE_OUTER_BOUNDARY_ZONE
+      if(outerBoundaryFlagNode[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
+	 nodeUe[n3+0] = -Hybrid::upstreamBulkU;
+	 nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
+	 continue;
+      }
+#endif
       // check min nodeRhoQi
       if(nodeRhoQi[n] < Hybrid::minRhoQi) { nodeRhoQi[n] = Hybrid::minRhoQi; }
       // calc Ue = (J - Ji)/rhoqi

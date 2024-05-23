@@ -133,6 +133,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagCellEpID,  "innerFlagCellEp",     N_blocks,1);
 #ifdef USE_OUTER_BOUNDARY_ZONE
    writeCellDataVariableBool(spatMeshName,Hybrid::dataOuterBoundaryFlagID,"outerBoundaryFlag",   N_blocks,1);
+   writeCellDataVariableBool(spatMeshName,Hybrid::dataOuterBoundaryFlagNodeID,"outerBoundaryFlagNode",   N_blocks,1);
 #endif
 #ifdef USE_XMIN_BOUNDARY
    writeCellDataVariableBool(spatMeshName,Hybrid::dataXminFlagID,         "xMinFlag",            N_blocks,1);

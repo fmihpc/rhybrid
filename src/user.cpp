@@ -394,6 +394,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("OuterBoundaryZone.sizeMinRhoQi","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
    cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
    cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.constUe","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
 #endif
 #ifdef USE_RESISTIVITY
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
@@ -510,6 +511,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("OuterBoundaryZone.sizeMinRhoQi",Hybrid::outerBoundaryZone.sizeMinRhoQi);
    cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
    cr.get("OuterBoundaryZone.etaC",Hybrid::outerBoundaryZone.eta);
+   cr.get("OuterBoundaryZone.constUe",Hybrid::outerBoundaryZone.constUe);
    Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
    Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
 #endif
@@ -1018,6 +1020,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataInnerFlagCellEpID     = simClasses.pargrid.invalidDataID();
 #ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::dataOuterBoundaryFlagID   = simClasses.pargrid.invalidDataID();
+   Hybrid::dataOuterBoundaryFlagNodeID = simClasses.pargrid.invalidDataID();
 #endif
 #ifdef USE_XMIN_BOUNDARY
    Hybrid::dataXminFlagID            = simClasses.pargrid.invalidDataID();
@@ -1234,6 +1237,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlag array to ParGrid!" << endl << write;
       return false;
    }
+   Hybrid::dataOuterBoundaryFlagNodeID = simClasses.pargrid.addUserData<bool>("outerBoundaryFlagNode",1);
+   if(Hybrid::dataOuterBoundaryFlagNodeID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlagNode array to ParGrid!" << endl << write;
+      return false;
+   }
 #endif
 #ifdef USE_XMIN_BOUNDARY
    Hybrid::dataXminFlagID = simClasses.pargrid.addUserData<bool>("xMinFlag",block::SIZE*1);
@@ -1358,6 +1366,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* innerFlagCellEp     = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagCellEpID));
 #ifdef USE_OUTER_BOUNDARY_ZONE
    bool* outerBoundaryFlag   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
+   bool* outerBoundaryFlagNode = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagNodeID));
 #endif
 #ifdef USE_XMIN_BOUNDARY
    bool* xMinFlag            = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataXminFlagID));
@@ -1562,6 +1571,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real bZone = Hybrid::outerBoundaryZone.sizeMinRhoQi; // boundary zone
             if(Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
                outerBoundaryFlag[n] = false;
+	       outerBoundaryFlagNode[n] = false;
             }
             else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 1) {
                // all walls
@@ -1571,6 +1581,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
+	       if(xNode < (Hybrid::box.xmin + bZone) || xNode > (Hybrid::box.xmax - bZone) ||
+                  yNode < (Hybrid::box.ymin + bZone) || yNode > (Hybrid::box.ymax - bZone) ||
+                  zNode < (Hybrid::box.zmin + bZone) || zNode > (Hybrid::box.zmax - bZone)) {
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else { outerBoundaryFlagNode[n] = false; }
             }
             else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 2) {
                // all edges except +x
@@ -1607,6 +1623,41 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
+	       // node
+               // all edges except +x
+               if( (xNode < (Hybrid::box.xmin + bZone)) && (yNode < (Hybrid::box.ymin + bZone)) ) {
+                  // (-x,-y) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (xNode < (Hybrid::box.xmin + bZone)) && (yNode > (Hybrid::box.ymax - bZone)) ) {
+                  // (-x,+y) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (xNode < (Hybrid::box.xmin + bZone)) && (zNode < (Hybrid::box.zmin + bZone)) ) {
+                  // (-x,-z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (xNode < (Hybrid::box.xmin + bZone)) && (zNode > (Hybrid::box.zmax - bZone)) ) {
+                  // (-x,+z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (yNode < (Hybrid::box.ymin + bZone)) && (zNode < (Hybrid::box.zmin + bZone)) ) {
+                  // (-y,-z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (yNode < (Hybrid::box.ymin + bZone)) && (zNode > (Hybrid::box.zmax - bZone)) ) {
+                  // (-y,+z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (yNode > (Hybrid::box.ymax - bZone)) && (zNode < (Hybrid::box.zmin + bZone)) ) {
+                  // (+y,-z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (yNode > (Hybrid::box.ymax - bZone)) && (zNode > (Hybrid::box.zmax - bZone)) ) {
+                  // (+y,+z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else { outerBoundaryFlagNode[n] = false; }
             }
             else {
 	       simClasses.logger << "(RHYBRID) ERROR: unknown type of an outer boundary zone for minRhoQi (" << Hybrid::outerBoundaryZone.typeMinRhoQi << ")" << endl << write;
@@ -2263,6 +2314,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"innerFlagCellEp",false},
 #ifdef USE_OUTER_BOUNDARY_ZONE
       {"outerBoundaryFlag",false},
+      {"outerBoundaryFlagNode",false},
 #endif
 #ifdef USE_XMIN_BOUNDARY
       {"xMinFlag",false},
@@ -2400,6 +2452,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagCellEpID)     == false) { success = false; }
 #ifdef USE_OUTER_BOUNDARY_ZONE
    if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagID)   == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagNodeID) == false) { success = false; }
 #endif
 #ifdef USE_XMIN_BOUNDARY
    if(simClasses.pargrid.removeUserData(Hybrid::dataXminFlagID)            == false) { success = false; }

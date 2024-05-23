@@ -74,7 +74,10 @@ pargrid::DataID Hybrid::dataInnerFlagFieldID;
 pargrid::DataID Hybrid::dataInnerFlagNodeID;
 pargrid::DataID Hybrid::dataInnerFlagParticleID;
 pargrid::DataID Hybrid::dataInnerFlagCellEpID;
+#ifdef USE_OUTER_BOUNDARY_ZONE
 pargrid::DataID Hybrid::dataOuterBoundaryFlagID;
+pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
+#endif
 #ifdef USE_XMIN_BOUNDARY
 pargrid::DataID Hybrid::dataXminFlagID;
 #endif
