@@ -590,6 +590,7 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    //profile::stop();
    flogData.N_cells = 0.0;
+   // face magnetic field
    flogData.sumBx = 0.0;
    flogData.sumBy = 0.0;
    flogData.sumBz = 0.0;
@@ -599,7 +600,28 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
    flogData.maxDivB = 0.0;
    flogData.maxDivBPerB = 0.0;
    flogData.sumB2 = 0.0;
+   // cell ion current density
+   flogData.sumCellJix = 0.0;
+   flogData.sumCellJiy = 0.0;
+   flogData.sumCellJiz = 0.0;
+   flogData.sumCellJi = 0.0;
+   flogData.maxCellJi = 0.0;
+   // cell electron pressure electric field
+   flogData.sumCellEpx = 0.0;
+   flogData.sumCellEpy = 0.0;
+   flogData.sumCellEpz = 0.0;
+   flogData.sumCellEp = 0.0;
+   flogData.maxCellEp = 0.0;
+   // node electric field
+   flogData.sumNodeEx = 0.0;
+   flogData.sumNodeEy = 0.0;
+   flogData.sumNodeEz = 0.0;
+   flogData.sumNodeE = 0.0;
+   flogData.maxNodeE = 0.0;
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
+   Real* cellJi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
+   Real* cellEp = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellEpID);
+   Real* nodeE  = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    bool* innerFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
 #ifdef USE_XMIN_BOUNDARY
    bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
@@ -607,10 +629,11 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       if(simClasses.pargrid.getNeighbourFlags(b) != pargrid::ALL_NEIGHBOURS_EXIST) { continue; }
       const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-      Real array[size*3];
-      fetchData(faceB,array,simClasses,b,3);
+      Real allFaceB[size*3];
+      fetchData(faceB,allFaceB,simClasses,b,3);
       for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
+	 const int n3 = n*3;
 	 // do not include cells inside the inner boundary
 	 if(Hybrid::includeInnerCellsInFieldLog == false) {
 	    if(innerFlag[n] == true) { continue; }
@@ -619,15 +642,16 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
          // do not include cells at x < xmin
          if(xMinFlag[n] == true) { continue; }
 #endif
-	 Real divB = ((array[(block::arrayIndex(i+1,j+1,k+1))*3+0] - array[(block::arrayIndex(i+0,j+1,k+1))*3+0])
-		    + (array[(block::arrayIndex(i+1,j+1,k+1))*3+1] - array[(block::arrayIndex(i+1,j+0,k+1))*3+1])
-		    + (array[(block::arrayIndex(i+1,j+1,k+1))*3+2] - array[(block::arrayIndex(i+1,j+1,k+0))*3+2]))/Hybrid::dx;
+	 // face magnetic field
+	 Real divB = ((allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+0] - allFaceB[(block::arrayIndex(i+0,j+1,k+1))*3+0])
+		    + (allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+1] - allFaceB[(block::arrayIndex(i+1,j+0,k+1))*3+1])
+		    + (allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+2] - allFaceB[(block::arrayIndex(i+1,j+1,k+0))*3+2]))/Hybrid::dx;
 	 divB = fabs(divB);
-	 Real Bx = 0.5*(array[(block::arrayIndex(i+1,j+1,k+1))*3+0] + array[(block::arrayIndex(i+0,j+1,k+1))*3+0]);
-	 Real By = 0.5*(array[(block::arrayIndex(i+1,j+1,k+1))*3+1] + array[(block::arrayIndex(i+1,j+0,k+1))*3+1]);
-	 Real Bz = 0.5*(array[(block::arrayIndex(i+1,j+1,k+1))*3+2] + array[(block::arrayIndex(i+1,j+1,k+0))*3+2]);
-	 Real B2 = sqr(Bx) + sqr(By) + sqr(Bz);
-	 Real Btot = sqrt(B2);
+	 Real Bx = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+0] + allFaceB[(block::arrayIndex(i+0,j+1,k+1))*3+0]);
+	 Real By = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+1] + allFaceB[(block::arrayIndex(i+1,j+0,k+1))*3+1]);
+	 Real Bz = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+2] + allFaceB[(block::arrayIndex(i+1,j+1,k+0))*3+2]);
+	 const Real B2 = sqr(Bx) + sqr(By) + sqr(Bz);
+	 const Real Btot = sqrt(B2);
 	 Real divBPerB = 0.0;
 	 if(Btot > 0.0) { divBPerB = divB/Btot; }
 	 flogData.sumBx += Bx;
@@ -639,6 +663,32 @@ void calcFieldLog(Simulation& sim,SimulationClasses& simClasses,FieldLogData& fl
 	 if(Btot > flogData.maxB) { flogData.maxB = Btot; }
 	 if(fabs(divB) > fabs(flogData.maxDivB)) { flogData.maxDivB = divB; }
 	 if(fabs(divBPerB) > fabs(flogData.maxDivBPerB)) { flogData.maxDivBPerB = divBPerB; }
+
+	 // cell ion current density
+	 const Real cellJitot = sqrt( sqr(cellJi[n3+0]) + sqr(cellJi[n3+1]) + sqr(cellJi[n3+2]) );
+	 flogData.sumCellJix += cellJi[n3+0];
+	 flogData.sumCellJiy += cellJi[n3+1];
+	 flogData.sumCellJiz += cellJi[n3+2];
+	 flogData.sumCellJi += cellJitot;
+	 if(cellJitot > flogData.maxCellJi) { flogData.maxCellJi = cellJitot; }
+
+	 // cell electron pressure electric field
+	 const Real cellEptot = sqrt( sqr(cellEp[n3+0]) + sqr(cellEp[n3+1]) + sqr(cellEp[n3+2]) );
+	 flogData.sumCellEpx += cellEp[n3+0];
+	 flogData.sumCellEpy += cellEp[n3+1];
+	 flogData.sumCellEpz += cellEp[n3+2];
+	 flogData.sumCellEp += cellEptot;
+	 if(cellEptot > flogData.maxCellEp) { flogData.maxCellEp = cellEptot; }
+
+	 // node electric field
+	 const Real nodeEtot = sqrt( sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]) );
+	 flogData.sumNodeEx += nodeE[n3+0];
+	 flogData.sumNodeEy += nodeE[n3+1];
+	 flogData.sumNodeEz += nodeE[n3+2];
+	 flogData.sumNodeE += nodeEtot;
+	 if(nodeEtot > flogData.maxNodeE) { flogData.maxNodeE = nodeEtot; }
+
+	 // update field log cell counter
 	 flogData.N_cells++;
       }
    }
@@ -736,6 +786,8 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
    // field log
    Real N_cellsThisProcess = flogData.N_cells;
    Real N_cellsGlobal = 0.0;
+   MPI_Reduce(&N_cellsThisProcess,&N_cellsGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   // face magnetic field
    Real sumBxThisProcess = flogData.sumBx;
    Real sumBxGlobal = 0.0;
    Real sumByThisProcess = flogData.sumBy;
@@ -754,7 +806,6 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
    Real maxDivPerBGlobal = 0.0;
    Real sumB2ThisProcess = flogData.sumB2;
    Real sumB2Global = 0.0;
-   MPI_Reduce(&N_cellsThisProcess,&N_cellsGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumBxThisProcess,&sumBxGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumByThisProcess,&sumByGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumBzThisProcess,&sumBzGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
@@ -765,8 +816,60 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
    MPI_Reduce(&maxDivPerBThisProcess,&maxDivPerBGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumB2ThisProcess,&sumB2Global,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
 
+   // cell ion current density
+   Real sumCellJixThisProcess = flogData.sumCellJix;
+   Real sumCellJixGlobal = 0.0;
+   Real sumCellJiyThisProcess = flogData.sumCellJiy;
+   Real sumCellJiyGlobal = 0.0;
+   Real sumCellJizThisProcess = flogData.sumCellJiz;
+   Real sumCellJizGlobal = 0.0;
+   Real sumCellJiThisProcess = flogData.sumCellJi;
+   Real sumCellJiGlobal = 0.0;
+   Real maxCellJiThisProcess = flogData.maxCellJi;
+   Real maxCellJiGlobal = 0.0;
+   MPI_Reduce(&sumCellJixThisProcess,&sumCellJixGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumCellJiyThisProcess,&sumCellJiyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumCellJizThisProcess,&sumCellJizGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumCellJiThisProcess,&sumCellJiGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&maxCellJiThisProcess,&maxCellJiGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
+
+   // cell electron pressure electric field
+   Real sumCellEpxThisProcess = flogData.sumCellEpx;
+   Real sumCellEpxGlobal = 0.0;
+   Real sumCellEpyThisProcess = flogData.sumCellEpy;
+   Real sumCellEpyGlobal = 0.0;
+   Real sumCellEpzThisProcess = flogData.sumCellEpz;
+   Real sumCellEpzGlobal = 0.0;
+   Real sumCellEpThisProcess = flogData.sumCellEp;
+   Real sumCellEpGlobal = 0.0;
+   Real maxCellEpThisProcess = flogData.maxCellEp;
+   Real maxCellEpGlobal = 0.0;
+   MPI_Reduce(&sumCellEpxThisProcess,&sumCellEpxGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumCellEpyThisProcess,&sumCellEpyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumCellEpzThisProcess,&sumCellEpzGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumCellEpThisProcess,&sumCellEpGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&maxCellEpThisProcess,&maxCellEpGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
+
+   // node electric field
+   Real sumNodeExThisProcess = flogData.sumNodeEx;
+   Real sumNodeExGlobal = 0.0;
+   Real sumNodeEyThisProcess = flogData.sumNodeEy;
+   Real sumNodeEyGlobal = 0.0;
+   Real sumNodeEzThisProcess = flogData.sumNodeEz;
+   Real sumNodeEzGlobal = 0.0;
+   Real sumNodeEThisProcess = flogData.sumNodeE;
+   Real sumNodeEGlobal = 0.0;
+   Real maxNodeEThisProcess = flogData.maxNodeE;
+   Real maxNodeEGlobal = 0.0;
+   MPI_Reduce(&sumNodeExThisProcess,&sumNodeExGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumNodeEyThisProcess,&sumNodeEyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumNodeEzThisProcess,&sumNodeEzGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumNodeEThisProcess,&sumNodeEGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&maxNodeEThisProcess,&maxNodeEGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
+
+   // write field log
    if(sim.mpiRank==sim.MASTER_RANK) {
-      // field
+      // face magnetic field
       if(N_cellsGlobal > 0) {
 	 Hybrid::flog
 	   << sumBxGlobal/N_cellsGlobal << " "
@@ -781,10 +884,51 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       if(N_cellsGlobal > 0) { Hybrid::flog << sumDivBGlobal/N_cellsGlobal << " "; }
       else { Hybrid::flog << 0.0 << " "; }
       Hybrid::flog << maxDivBGlobal << " " << Hybrid::dx*maxDivPerBGlobal << " " << sumB2Global*Hybrid::dV/(2.0*constants::PERMEABILITY) << " ";
-      // endlines
+
+      // cell ion current density
+      if(N_cellsGlobal > 0) {
+	 Hybrid::flog
+	   << sumCellJixGlobal/N_cellsGlobal << " "
+	   << sumCellJiyGlobal/N_cellsGlobal << " "
+	   << sumCellJizGlobal/N_cellsGlobal << " "
+	   << sumCellJiGlobal/N_cellsGlobal << " ";
+      }
+      else {
+	 Hybrid::flog << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
+      }
+      Hybrid::flog << maxCellJiGlobal << " ";
+
+      // cell electron pressure electric field
+      if(N_cellsGlobal > 0) {
+	 Hybrid::flog
+	   << sumCellEpxGlobal/N_cellsGlobal << " "
+	   << sumCellEpyGlobal/N_cellsGlobal << " "
+	   << sumCellEpzGlobal/N_cellsGlobal << " "
+	   << sumCellEpGlobal/N_cellsGlobal << " ";
+      }
+      else {
+	 Hybrid::flog << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
+      }
+      Hybrid::flog << maxCellEpGlobal << " ";
+
+      // node electric field
+      if(N_cellsGlobal > 0) {
+	 Hybrid::flog
+	   << sumNodeExGlobal/N_cellsGlobal << " "
+	   << sumNodeEyGlobal/N_cellsGlobal << " "
+	   << sumNodeEzGlobal/N_cellsGlobal << " "
+	   << sumNodeEGlobal/N_cellsGlobal << " ";
+      }
+      else {
+	 Hybrid::flog << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
+      }
+      Hybrid::flog << maxNodeEGlobal << " ";
+
+      // line endings particle logs
       for(size_t i=0;i<Hybrid::plog.size();++i) {
 	 (*Hybrid::plog[i]) << endl;
       }
+      // line ending field log
       Hybrid::flog << endl;
 
       // minimum Larmor (gyro) period (of protons) in the simulation domain
@@ -792,11 +936,15 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       if(maxBGlobal > 0) {
 	 tL_min = 2.0*M_PI*constants::MASS_PROTON/(constants::CHARGE_ELEMENTARY*maxBGlobal);
 	 // write warning always if tL_min close to dt
-	 if(tL_min/sim.dt < 10) { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min < 10*dt (" << tL_min/sim.dt  << ")" << endl; }	      
+	 if(tL_min/sim.dt < 10) { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min < 10*dt (" << tL_min/sim.dt  << ")" << endl; }
       }
       // write if on a save step or save step already happened after previous entry
       if(Hybrid::writeMainLogEntriesAfterSaveStep == true) {
-	 simClasses.logger << "(RHYBRID) Minimum Larmor period: tL_min = " << tL_min << " s = " << tL_min/sim.dt << " dt" << endl;
+	 simClasses.logger << "(RHYBRID) Maximum |faceB|       : Bmax   = " << maxBGlobal/1e-9 << " nT" << endl;
+	 simClasses.logger << "(RHYBRID) Minimum Larmor period : tL_min = " << tL_min << " s = " << tL_min/sim.dt << " dt" << endl;
+	 simClasses.logger << "(RHYBRID) Maximum |cellJi|      : Jimax  = " << maxCellJiGlobal << " A/m^2" << endl;
+	 simClasses.logger << "(RHYBRID) Maximum |cellEp|      : Epmax  = " << maxCellEpGlobal/1e-3 << " mV/m" << endl;
+	 simClasses.logger << "(RHYBRID) Maximum |nodeE|       : Emax   = " << maxNodeEGlobal/1e-3 << " mV/m" << endl;
 	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
       }
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {

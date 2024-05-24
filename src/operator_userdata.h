@@ -30,7 +30,11 @@ struct ParticleLogData
 
 struct FieldLogData
 {
-   Real N_cells,sumBx,sumBy,sumBz,sumB,maxB,sumDivB,maxDivB,maxDivBPerB,sumB2;
+   Real N_cells;
+   Real sumBx,sumBy,sumBz,sumB,maxB,sumDivB,maxDivB,maxDivBPerB,sumB2;
+   Real sumCellJix,sumCellJiy,sumCellJiz,sumCellJi,maxCellJi;
+   Real sumCellEpx,sumCellEpy,sumCellEpz,sumCellEp,maxCellEp;
+   Real sumNodeEx,sumNodeEy,sumNodeEz,sumNodeE,maxNodeE;
 };
 
 class UserDataOP: public DataOperator {

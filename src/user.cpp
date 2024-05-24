@@ -2208,17 +2208,32 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::flog << scientific << showpos;
       Hybrid::flog
 	<< "% field" << endl
-	<< "% columns = 10" << endl
+	<< "% columns = 25" << endl
 	<< "% 01. Time [s]" << endl
-	<< "% 02. avg(Bx) [T]" << endl
-	<< "% 03. avg(By) [T]" << endl
-	<< "% 04. avg(Bz) [T]" << endl
-	<< "% 05. avg(|B|) [T]" << endl
-	<< "% 06. max(|B|) [T]" << endl
-	<< "% 07. avg(div(B)) [T/m]" << endl
-	<< "% 08. max(div(B)) [T/m]" << endl
-	<< "% 09. max(dx*div(B)/B) [-]" << endl
-	<< "% 10. energy(sum(dV*B^2/2*mu0)) [J]" << endl;
+	<< "% 02. avg(faceBx) [T]" << endl
+	<< "% 03. avg(faceBy) [T]" << endl
+	<< "% 04. avg(faceBz) [T]" << endl
+	<< "% 05. avg(|faceB|) [T]" << endl
+	<< "% 06. max(|faceB|) [T]" << endl
+	<< "% 07. avg(div(faceB)) [T/m]" << endl
+	<< "% 08. max(div(faceB)) [T/m]" << endl
+	<< "% 09. max(dx*div(faceB)/faceB) [-]" << endl
+	<< "% 10. energy(sum(dV*faceB^2/2*mu0)) [J]" << endl
+	<< "% 11. avg(cellJix) [A/m^2]" << endl
+	<< "% 12. avg(cellJiy) [A/m^2]" << endl
+	<< "% 13. avg(cellJiz) [A/m^2]" << endl
+	<< "% 14. avg(|cellJi|) [A/m^2]" << endl
+	<< "% 15. max(|cellJi|) [A/m^2]" << endl
+	<< "% 16. avg(cellEpx) [V/m]" << endl
+	<< "% 17. avg(cellEpy) [V/m]" << endl
+	<< "% 18. avg(cellEpz) [V/m]" << endl
+	<< "% 19. avg(|cellEp|) [V/m]" << endl
+	<< "% 20. max(|cellEp|) [V/m]" << endl
+	<< "% 21. avg(nodeEx) [V/m]" << endl
+	<< "% 22. avg(nodeEy) [V/m]" << endl
+	<< "% 23. avg(nodeEz) [V/m]" << endl
+	<< "% 24. avg(|nodeE|) [V/m]" << endl
+	<< "% 25. max(|nodeE|) [V/m]" << endl;
    }
 
    // counters
