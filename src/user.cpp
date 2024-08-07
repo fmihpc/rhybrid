@@ -1522,14 +1522,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
 	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
+#ifdef USE_SHOCKTUBE_TEST_CONFIGURATION
 	    // initial shocktube setup
-	    /*if(xCellCenter >= 0.5e5) {
+	    if(xCellCenter >= 0.5e5) {
 	       faceB[n*3+1] = 1e-9;
 	    }
 	    else {
 	       faceB[n*3+1] = -1e-9;
 	    }
-	    faceB[n*3+0] = 1.5e-9;*/
+	    faceB[n*3+0] = 1.5e-9;
+#endif
 #ifdef USE_CONIC_INNER_BOUNDARY
             if( innerBoundaryConic(xCellCenter,yCellCenter,zCellCenter) == true ) {
                innerFlagField[n] = true;
@@ -1796,6 +1798,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
 #endif
 #ifdef USE_B_INITIAL
+#ifndef USE_SHOCKTUBE_TEST_CONFIGURATION
       // set initial B
       for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
          const size_t b3 = 3*b;
@@ -1832,6 +1835,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             cellB[n*3+2] = B_initial[2];
          }
       }
+#endif
 #endif
    }
 
