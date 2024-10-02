@@ -709,8 +709,8 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       }
       Hybrid::flog << sim.t << " ";
    }
-   // go thru populations
-   const Real Dt = sim.t - Hybrid::particleCounterTimeStart;
+   const Real Dt = sim.t - Hybrid::counterTimeStart;
+   // go thru populations and sum particle counters
    for(size_t s=0;s<particleLists.size();++s) {
       Real N_macroParticlesThisProcess = plogData[s].N_macroParticles;
       Real N_macroParticlesGlobal = 0.0;
@@ -740,6 +740,8 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       Real sumImpactKineticEnergyGlobal = 0.0;
       Real sumInjectKineticEnergyThisProcess = Hybrid::particleCounterInjectKineticEnergy[s];
       Real sumInjectKineticEnergyGlobal = 0.0;
+      Real sumMaxViThisProcess = Hybrid::particleCounterMaxVi[s];
+      Real sumMaxViGlobal = 0.0;
       MPI_Reduce(&N_macroParticlesThisProcess,&N_macroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&N_realParticlesThisProcess,&N_realParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumVxThisProcess,&sumVxGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
@@ -754,6 +756,7 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       MPI_Reduce(&sumEscapeKineticEnergyThisProcess,&sumEscapeKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumImpactKineticEnergyThisProcess,&sumImpactKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumInjectKineticEnergyThisProcess,&sumInjectKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+      MPI_Reduce(&sumMaxViThisProcess,&sumMaxViGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       if(sim.mpiRank==sim.MASTER_RANK) {
 	 (*Hybrid::plog[s]) << N_realParticlesGlobal << " " << N_macroParticlesGlobal << " ";
 	 if(N_realParticlesGlobal > 0.0) {
@@ -776,14 +779,36 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
 	      << sumInjectMacroGlobal/Dt*sim.dt << " "
 	      << 0.5*species->m*sumEscapeKineticEnergyGlobal/Dt << " "
 	      << 0.5*species->m*sumImpactKineticEnergyGlobal/Dt << " "
-	      << 0.5*species->m*sumInjectKineticEnergyGlobal/Dt << " ";
+	      << 0.5*species->m*sumInjectKineticEnergyGlobal/Dt << " "
+	      << sumMaxViGlobal/Dt*sim.dt << " ";
 	 }
 	 else {
-	    (*Hybrid::plog[s]) << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
+	    (*Hybrid::plog[s]) << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
 	 }
       }
    }
-   // field log
+
+   // sum global field counters
+   Real sumMaxCellUeThisProcess = Hybrid::fieldCounterMaxCellUe;
+   Real sumMaxCellUeGlobal = 0.0;
+   Real sumMaxNodeUeThisProcess = Hybrid::fieldCounterMaxNodeUe;
+   Real sumMaxNodeUeGlobal = 0.0;
+   Real sumMaxVwThisProcess = Hybrid::fieldCounterMaxNodeUe;
+   Real sumMaxVwGlobal = 0.0;
+   Real sumEcutThisProcess = Hybrid::fieldCounterEcut;
+   Real sumEcutGlobal = 0.0;
+   Real sumMinCellRhoQiThisProcess = Hybrid::fieldCounterMinCellRhoQi;
+   Real sumMinCellRhoQiGlobal = 0.0;
+   Real sumMinNodeRhoQiThisProcess = Hybrid::fieldCounterMinNodeRhoQi;
+   Real sumMinNodeRhoQiGlobal = 0.0;
+   MPI_Reduce(&sumMaxCellUeThisProcess,&sumMaxCellUeGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumMaxNodeUeThisProcess,&sumMaxNodeUeGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumMaxVwThisProcess,&sumMaxVwGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumEcutThisProcess,&sumEcutGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumMinCellRhoQiThisProcess,&sumMinCellRhoQiGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumMinNodeRhoQiThisProcess,&sumMinNodeRhoQiGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   
+   // field log values from calcFieldLog
    Real N_cellsThisProcess = flogData.N_cells;
    Real N_cellsGlobal = 0.0;
    MPI_Reduce(&N_cellsThisProcess,&N_cellsGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
@@ -924,6 +949,20 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       }
       Hybrid::flog << maxNodeEGlobal << " ";
 
+      // global field counters
+      if(Dt > 0) {
+	 Hybrid::flog
+	   << sumMaxCellUeGlobal/Dt*sim.dt << " "
+	   << sumMaxNodeUeGlobal/Dt*sim.dt << " "
+	   << sumMaxVwGlobal/Dt*sim.dt << " "
+	   << sumEcutGlobal/Dt*sim.dt << " "
+	   << sumMinCellRhoQiGlobal/Dt*sim.dt << " "
+	   << sumMinNodeRhoQiGlobal/Dt*sim.dt << " ";
+      }
+      else {
+	 Hybrid::flog << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
+      }
+
       // line endings particle logs
       for(size_t i=0;i<Hybrid::plog.size();++i) {
 	 (*Hybrid::plog[i]) << endl;
@@ -955,7 +994,6 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
    }
 
    // zero particle counters
-   Hybrid::particleCounterTimeStart = sim.t;
    for(size_t s=0;s<particleLists.size();++s) {
       Hybrid::particleCounterEscape[s] = 0.0;
       Hybrid::particleCounterImpact[s] = 0.0;
@@ -964,7 +1002,19 @@ bool writeLogs(Simulation& sim,SimulationClasses& simClasses,const std::vector<P
       Hybrid::particleCounterEscapeKineticEnergy[s] = 0.0;
       Hybrid::particleCounterImpactKineticEnergy[s] = 0.0;
       Hybrid::particleCounterInjectKineticEnergy[s] = 0.0;
+      Hybrid::particleCounterMaxVi[s] = 0.0;
    }
+   
+   // zero field counters
+   Hybrid::fieldCounterMaxCellUe = 0.0;
+   Hybrid::fieldCounterMaxNodeUe = 0.0;
+   Hybrid::fieldCounterMaxVw = 0.0;
+   Hybrid::fieldCounterEcut = 0.0;
+   Hybrid::fieldCounterMinCellRhoQi = 0.0;
+   Hybrid::fieldCounterMinNodeRhoQi = 0.0;
+
+   // reset counter start time
+   Hybrid::counterTimeStart = sim.t;
    
    /*
    // silo time series (curves.silo)

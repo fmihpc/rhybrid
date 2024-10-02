@@ -236,7 +236,14 @@ vector<Real> Hybrid::particleCounterInjectMacroparticles;
 vector<Real> Hybrid::particleCounterEscapeKineticEnergy;
 vector<Real> Hybrid::particleCounterImpactKineticEnergy;
 vector<Real> Hybrid::particleCounterInjectKineticEnergy;
-Real Hybrid::particleCounterTimeStart;
+vector<Real> Hybrid::particleCounterMaxVi;
+Real Hybrid::fieldCounterMaxCellUe;
+Real Hybrid::fieldCounterMaxNodeUe;
+Real Hybrid::fieldCounterMaxVw;
+Real Hybrid::fieldCounterEcut;
+Real Hybrid::fieldCounterMinCellRhoQi;
+Real Hybrid::fieldCounterMinNodeRhoQi;
+Real Hybrid::counterTimeStart;
 
 bool Hybrid::filterParticlesAfterRestartDone = true;
 

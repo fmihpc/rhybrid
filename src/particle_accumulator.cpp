@@ -333,6 +333,7 @@ bool Accumulator::addRemoteUpdates() {
             if(cellRhoQi[n] < Hybrid::outerBoundaryZone.minRhoQi) {
                cellRhoQi[n] = Hybrid::outerBoundaryZone.minRhoQi;
                counterCellMinRhoQi[n]++;
+	       Hybrid::fieldCounterMinCellRhoQi++;
             }
          }
 	 else if(cellRhoQi[n] < Hybrid::minRhoQi) {
@@ -341,6 +342,7 @@ bool Accumulator::addRemoteUpdates() {
 #endif
 	    cellRhoQi[n] = Hybrid::minRhoQi;
 	    counterCellMinRhoQi[n]++;
+	    Hybrid::fieldCounterMinCellRhoQi++;
 	 }
 	 for(int l=0;l<3;++l) { cellJi[n3+l] /= Hybrid::dV; }
       }

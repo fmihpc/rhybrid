@@ -267,7 +267,14 @@ struct Hybrid {
    static std::vector<Real> particleCounterEscapeKineticEnergy;
    static std::vector<Real> particleCounterImpactKineticEnergy;
    static std::vector<Real> particleCounterInjectKineticEnergy;
-   static Real particleCounterTimeStart;
+   static std::vector<Real> particleCounterMaxVi;
+   static Real fieldCounterMaxCellUe;
+   static Real fieldCounterMaxNodeUe;
+   static Real fieldCounterMaxVw;
+   static Real fieldCounterEcut;
+   static Real fieldCounterMinCellRhoQi;
+   static Real fieldCounterMinNodeRhoQi;
+   static Real counterTimeStart;
 
    static bool filterParticlesAfterRestartDone;
    
