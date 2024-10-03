@@ -85,8 +85,9 @@ struct OuterBoundaryZone {
 #endif
 
 struct Hybrid {
-   static std::map< std::string, HybridVariable<Real> > varReal;
-   static std::map< std::string, HybridVariable<bool> > varBool;
+   // new variable handling TBD
+   //static std::map< std::string, HybridVariable<Real> > varReal;
+   //static std::map< std::string, HybridVariable<bool> > varBool;
 
    // face data
    static pargrid::DataID dataFaceBID;
@@ -258,23 +259,24 @@ struct Hybrid {
    static std::vector<unsigned int> outputPlasmaPopId;
    static std::map<std::string,bool> outputCellParams;
 
-   static std::vector<std::ofstream*> plog;
-   static std::ofstream flog;
-   static std::vector<Real> particleCounterEscape;
-   static std::vector<Real> particleCounterImpact;
-   static std::vector<Real> particleCounterInject;
-   static std::vector<Real> particleCounterInjectMacroparticles;
-   static std::vector<Real> particleCounterEscapeKineticEnergy;
-   static std::vector<Real> particleCounterImpactKineticEnergy;
-   static std::vector<Real> particleCounterInjectKineticEnergy;
-   static std::vector<Real> particleCounterMaxVi;
-   static Real fieldCounterMaxCellUe;
-   static Real fieldCounterMaxNodeUe;
-   static Real fieldCounterMaxVw;
-   static Real fieldCounterEcut;
-   static Real fieldCounterMinCellRhoQi;
-   static Real fieldCounterMinNodeRhoQi;
-   static Real counterTimeStart;
+   // particle population and field logs and their counters
+   static std::vector<std::ofstream*> logParticle;
+   static std::ofstream logField;
+   static std::vector<Real> logCounterParticleEscape;
+   static std::vector<Real> logCounterParticleImpact;
+   static std::vector<Real> logCounterParticleInject;
+   static std::vector<Real> logCounterParticleInjectMacroparticles;
+   static std::vector<Real> logCounterParticleEscapeKineticEnergy;
+   static std::vector<Real> logCounterParticleImpactKineticEnergy;
+   static std::vector<Real> logCounterParticleInjectKineticEnergy;
+   static std::vector<Real> logCounterParticleMaxVi;
+   static Real logCounterFieldMaxCellUe;
+   static Real logCounterFieldMaxNodeUe;
+   static Real logCounterFieldMaxVw;
+   static Real logCounterFieldEcut;
+   static Real logCounterFieldMinCellRhoQi;
+   static Real logCounterFieldMinNodeRhoQi;
+   static Real logCounterTimeStart;
 
    static bool filterParticlesAfterRestartDone;
    

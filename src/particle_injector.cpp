@@ -169,9 +169,9 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif*/
       // inject counter
-      Hybrid::particleCounterInject[species.popid-1] += w;
-      Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
-      Hybrid::particleCounterInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
+      Hybrid::logCounterParticleInject[species.popid-1] += w;
+      Hybrid::logCounterParticleInjectMacroparticles[species.popid-1] += 1;
+      Hybrid::logCounterParticleInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
       ++s;
    }
    return true;
@@ -356,9 +356,9 @@ bool InjectorAmbient::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::VZ] = vz;
       particles[p].state[particle::WEIGHT] = w;
       // inject counter
-      Hybrid::particleCounterInject[species.popid-1] += w;
-      Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
-      Hybrid::particleCounterInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
+      Hybrid::logCounterParticleInject[species.popid-1] += w;
+      Hybrid::logCounterParticleInjectMacroparticles[species.popid-1] += 1;
+      Hybrid::logCounterParticleInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
       ++s;
    }
    return true;
@@ -481,9 +481,9 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif*/
       // inject counter
-      Hybrid::particleCounterInject[species.popid-1] += w;
-      Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
-      Hybrid::particleCounterInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
+      Hybrid::logCounterParticleInject[species.popid-1] += w;
+      Hybrid::logCounterParticleInjectMacroparticles[species.popid-1] += 1;
+      Hybrid::logCounterParticleInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
    }
    return true;
 }
@@ -673,9 +673,9 @@ bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Sp
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif
       // inject counter
-      Hybrid::particleCounterInject[species.popid-1] += w;
-      Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
-      Hybrid::particleCounterInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
+      Hybrid::logCounterParticleInject[species.popid-1] += w;
+      Hybrid::logCounterParticleInjectMacroparticles[species.popid-1] += 1;
+      Hybrid::logCounterParticleInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
       ++s;
    }
    return true;
@@ -898,9 +898,9 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif*/
       // inject counter
-      Hybrid::particleCounterInject[species.popid-1] += w;
-      Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
-      Hybrid::particleCounterInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
+      Hybrid::logCounterParticleInject[species.popid-1] += w;
+      Hybrid::logCounterParticleInjectMacroparticles[species.popid-1] += 1;
+      Hybrid::logCounterParticleInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
       ++s;
    }
    return true;
@@ -1185,9 +1185,9 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::INI_TIME] = sim->t;
 #endif*/
       // inject counter
-      Hybrid::particleCounterInject[species.popid-1] += w;
-      Hybrid::particleCounterInjectMacroparticles[species.popid-1] += 1;
-      Hybrid::particleCounterInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
+      Hybrid::logCounterParticleInject[species.popid-1] += w;
+      Hybrid::logCounterParticleInjectMacroparticles[species.popid-1] += 1;
+      Hybrid::logCounterParticleInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
       ++s;
    }
    return true;

@@ -1387,7 +1387,7 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 	 cellUe[n3+1] *= norm;
 	 cellUe[n3+2] *= norm;
          counterCellMaxUe[n]++;
-	 Hybrid::fieldCounterMaxCellUe++;
+	 Hybrid::logCounterFieldMaxCellUe++;
       }
    }
 }
@@ -1450,7 +1450,7 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
             nodeE[n3+1] *= scaling;
             nodeE[n3+2] *= scaling;
             counterNodeEcut[n]++;
-	    Hybrid::fieldCounterEcut++;
+	    Hybrid::logCounterFieldEcut++;
          }
       }
 #endif
@@ -1522,7 +1522,7 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
       if (vw > Hybrid::maxVw && Hybrid::maxVw > 0.0) {
 	d = vw/Hybrid::maxVw;
 	counterNodeMaxVw[n]++;
-	Hybrid::fieldCounterMaxVw++;
+	Hybrid::logCounterFieldMaxVw++;
       }
 #endif
       const Real a = 0.5/(Hybrid::dx*constants::PERMEABILITY*d);
@@ -1567,7 +1567,7 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
       // check min nodeRhoQi
       if(nodeRhoQi[n] < Hybrid::minRhoQi) {
 	 nodeRhoQi[n] = Hybrid::minRhoQi;
-	 Hybrid::fieldCounterMinNodeRhoQi++;
+	 Hybrid::logCounterFieldMinNodeRhoQi++;
       }
       // calc Ue = (J - Ji)/rhoqi
       for(int l=0;l<3;++l) {
@@ -1592,7 +1592,7 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
 	 nodeUe[n3+1] *= norm;
 	 nodeUe[n3+2] *= norm;
          counterCellMaxUe[n]++; // using cell array here to avoid introducing a new node array
-	 Hybrid::fieldCounterMaxNodeUe++;
+	 Hybrid::logCounterFieldMaxNodeUe++;
       }
    }
 }

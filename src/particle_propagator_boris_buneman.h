@@ -110,7 +110,7 @@ template<class PARTICLE>
 	 particle.state[particle::VZ] *= norm;
 	 Real* counterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
 	 counterCellMaxVi[blockID]++;
-         Hybrid::particleCounterMaxVi[species.popid-1]++;
+         Hybrid::logCounterParticleMaxVi[species.popid-1]++;
       }
    }*/
    
@@ -183,7 +183,7 @@ template<class PARTICLE>
 	 particle.state[particle::VZ] *= norm;
 	 Real* counterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
 	 counterCellMaxVi[blockID]++;
-	 Hybrid::particleCounterMaxVi[species.popid-1]++;
+	 Hybrid::logCounterParticleMaxVi[species.popid-1]++;
       }
    }
 

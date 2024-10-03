@@ -23,8 +23,9 @@ using namespace std;
 
 // Init static variables:
 
-map< string , HybridVariable<Real> > Hybrid::varReal;
-map< string , HybridVariable<bool> > Hybrid::varBool;
+// new variable handling TBD
+//map< string , HybridVariable<Real> > Hybrid::varReal;
+//map< string , HybridVariable<bool> > Hybrid::varBool;
 
 // face data
 pargrid::DataID Hybrid::dataFaceBID;
@@ -226,24 +227,24 @@ vector<unsigned int> Hybrid::outputPlasmaPopId;
 // output cell variables
 map<string,bool> Hybrid::outputCellParams;
 
-vector<ofstream*> Hybrid::plog;
-ofstream Hybrid::flog;
-
-vector<Real> Hybrid::particleCounterEscape;
-vector<Real> Hybrid::particleCounterImpact;
-vector<Real> Hybrid::particleCounterInject;
-vector<Real> Hybrid::particleCounterInjectMacroparticles;
-vector<Real> Hybrid::particleCounterEscapeKineticEnergy;
-vector<Real> Hybrid::particleCounterImpactKineticEnergy;
-vector<Real> Hybrid::particleCounterInjectKineticEnergy;
-vector<Real> Hybrid::particleCounterMaxVi;
-Real Hybrid::fieldCounterMaxCellUe;
-Real Hybrid::fieldCounterMaxNodeUe;
-Real Hybrid::fieldCounterMaxVw;
-Real Hybrid::fieldCounterEcut;
-Real Hybrid::fieldCounterMinCellRhoQi;
-Real Hybrid::fieldCounterMinNodeRhoQi;
-Real Hybrid::counterTimeStart;
+// particle population and field logs and their counters
+vector<ofstream*> Hybrid::logParticle;
+ofstream Hybrid::logField;
+vector<Real> Hybrid::logCounterParticleEscape;
+vector<Real> Hybrid::logCounterParticleImpact;
+vector<Real> Hybrid::logCounterParticleInject;
+vector<Real> Hybrid::logCounterParticleInjectMacroparticles;
+vector<Real> Hybrid::logCounterParticleEscapeKineticEnergy;
+vector<Real> Hybrid::logCounterParticleImpactKineticEnergy;
+vector<Real> Hybrid::logCounterParticleInjectKineticEnergy;
+vector<Real> Hybrid::logCounterParticleMaxVi;
+Real Hybrid::logCounterFieldMaxCellUe;
+Real Hybrid::logCounterFieldMaxNodeUe;
+Real Hybrid::logCounterFieldMaxVw;
+Real Hybrid::logCounterFieldEcut;
+Real Hybrid::logCounterFieldMinCellRhoQi;
+Real Hybrid::logCounterFieldMinNodeRhoQi;
+Real Hybrid::logCounterTimeStart;
 
 bool Hybrid::filterParticlesAfterRestartDone = true;
 

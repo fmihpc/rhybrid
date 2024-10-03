@@ -76,7 +76,7 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    if(Hybrid::logInterval > 0) {
       if( (sim.timestep)%(Hybrid::logInterval) == 0.0) {
          int masterFailed = 0; // check for failure of the master PE for run termination
-         if(writeLogs(sim,simClasses,particleLists) == false) {
+         if(logWriteParticleField(sim,simClasses,particleLists) == false) {
             rvalue = false;
             if(sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
          }
@@ -255,7 +255,8 @@ Real getGaussianDistr(Real x,Real sigma) {
    }
 }
 
-bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
+// new variable handling TBD
+/*bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
    if(vectorDim <= 0) { return true; }
    // create pargrid array struct
    HybridVariable <Real>d;
@@ -287,7 +288,7 @@ bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_
    Hybrid::varReal[name] = d;
    simClasses.logger << "(USER): created ParGrid used data array: " << name << " (Real[" << vectorDim << "])" << endl << write;
    return true;
-}
+}*/
 
 #ifdef USE_CONIC_INNER_BOUNDARY
 // Conic section inner boundary
@@ -2171,22 +2172,22 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    simClasses.logger << endl << write;
 
-   // open log files
+   // open particle population and field log files
    if(sim.mpiRank==sim.MASTER_RANK) {
       for(size_t s=0;s<particleLists.size();++s) {
 	 string zeroStr = "";
 	 if(s < 10) { zeroStr = "00"; }
 	 else if(s < 100) { zeroStr = "0"; }
 	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-	 Hybrid::plog.push_back(new ofstream());
+	 Hybrid::logParticle.push_back(new ofstream());
 	 //string fileName = "pop" + zeroStr + "_" + species->name + ".log";
 	 stringstream ss;
 	 ss << "pop" << zeroStr << s+1 << "_" << species->name << ".log";
-	 Hybrid::plog[s]->open(ss.str().c_str(),ios_base::out);
-	 //Hybrid::plog[s]->open("pop" + zeroStr + to_string(s+1) + "_" + species->name + ".log",ios_base::out);
-	 Hybrid::plog[s]->precision(10);
-	 (*Hybrid::plog[s]) << scientific << showpos;
-	 (*Hybrid::plog[s])
+	 Hybrid::logParticle[s]->open(ss.str().c_str(),ios_base::out);
+	 //Hybrid::logParticle[s]->open("pop" + zeroStr + to_string(s+1) + "_" + species->name + ".log",ios_base::out);
+	 Hybrid::logParticle[s]->precision(10);
+	 (*Hybrid::logParticle[s]) << scientific << showpos;
+	 (*Hybrid::logParticle[s])
 	   << "% " << species->name << endl
 	   << "% m [kg] = " << species->m << endl
 	   << "% q [C] = " << species->q << endl
@@ -2208,10 +2209,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "% 15. Kinetic energy inject rate [J/s]" << endl
 	   << "% 16. Constraint maxVi rate [#/dt]" << endl;
       }
-      Hybrid::flog.open("field.log",ios_base::out);
-      Hybrid::flog.precision(10);
-      Hybrid::flog << scientific << showpos;
-      Hybrid::flog
+      Hybrid::logField.open("field.log",ios_base::out);
+      Hybrid::logField.precision(10);
+      Hybrid::logField << scientific << showpos;
+      Hybrid::logField
 	<< "% field" << endl
 	<< "% columns = 31" << endl
 	<< "% 01. Time [s]" << endl
@@ -2249,26 +2250,26 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // initialize particle counters
    for(size_t s=0;s<particleLists.size();++s) {
-      Hybrid::particleCounterEscape.push_back(0.0);
-      Hybrid::particleCounterImpact.push_back(0.0);
-      Hybrid::particleCounterInject.push_back(0.0);
-      Hybrid::particleCounterInjectMacroparticles.push_back(0.0);
-      Hybrid::particleCounterEscapeKineticEnergy.push_back(0.0);
-      Hybrid::particleCounterImpactKineticEnergy.push_back(0.0);
-      Hybrid::particleCounterInjectKineticEnergy.push_back(0.0);
-      Hybrid::particleCounterMaxVi.push_back(0.0);
+      Hybrid::logCounterParticleEscape.push_back(0.0);
+      Hybrid::logCounterParticleImpact.push_back(0.0);
+      Hybrid::logCounterParticleInject.push_back(0.0);
+      Hybrid::logCounterParticleInjectMacroparticles.push_back(0.0);
+      Hybrid::logCounterParticleEscapeKineticEnergy.push_back(0.0);
+      Hybrid::logCounterParticleImpactKineticEnergy.push_back(0.0);
+      Hybrid::logCounterParticleInjectKineticEnergy.push_back(0.0);
+      Hybrid::logCounterParticleMaxVi.push_back(0.0);
    }
 
    // initialize field counters
-   Hybrid::fieldCounterMaxCellUe = 0.0;
-   Hybrid::fieldCounterMaxNodeUe = 0.0;
-   Hybrid::fieldCounterMaxVw = 0.0;
-   Hybrid::fieldCounterEcut = 0.0;
-   Hybrid::fieldCounterMinCellRhoQi = 0.0;
-   Hybrid::fieldCounterMinNodeRhoQi = 0.0;
+   Hybrid::logCounterFieldMaxCellUe = 0.0;
+   Hybrid::logCounterFieldMaxNodeUe = 0.0;
+   Hybrid::logCounterFieldMaxVw = 0.0;
+   Hybrid::logCounterFieldEcut = 0.0;
+   Hybrid::logCounterFieldMinCellRhoQi = 0.0;
+   Hybrid::logCounterFieldMinNodeRhoQi = 0.0;
 
    // initialize counter start time
-   Hybrid::counterTimeStart = sim.t;
+   Hybrid::logCounterTimeStart = sim.t;
    
 #ifdef WRITE_POPULATION_AVERAGES
    // magnetic field
@@ -2446,9 +2447,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
  * @return If true, finalization completed successfully.*/
 bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool success = true;
-   for(const auto &p : Hybrid::varReal) {
+   // new variable handling TBD
+   /*for(const auto &p : Hybrid::varReal) {
       simClasses.logger << "(USER) removed ParGrid array: " << p.first << endl << write;
-   }
+   }*/
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
@@ -2505,16 +2507,16 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
       if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageVelocityID[i]) == false) { success = false; }
    }
 #endif
-   // close log files
+   // close particle population and field log files
    if(sim.mpiRank==sim.MASTER_RANK) {
-      for(size_t i=0;i<Hybrid::plog.size();++i) {
-	 Hybrid::plog[i]->flush();
-	 Hybrid::plog[i]->close();
-	 delete Hybrid::plog[i];
+      for(size_t i=0;i<Hybrid::logParticle.size();++i) {
+	 Hybrid::logParticle[i]->flush();
+	 Hybrid::logParticle[i]->close();
+	 delete Hybrid::logParticle[i];
       }
-      Hybrid::plog.clear();
-      Hybrid::flog.flush();
-      Hybrid::flog.close();
+      Hybrid::logParticle.clear();
+      Hybrid::logField.flush();
+      Hybrid::logField.close();
    }
    return success;
 }
