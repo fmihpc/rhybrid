@@ -8,6 +8,7 @@ runFiles = []
 for f in sorted(os.listdir(runFolder)):
  if (f.startswith("state") and f.endswith(".vlsv")):
   runFiles.append(f)
+maxError = -1
 for f in runFiles:
  # read file
  vr = pt.vlsvfile.VlsvReader(runFolder + f)
@@ -23,5 +24,11 @@ for f in runFiles:
  nH = vr.read_variable_info("n_H+")  # proton density
  # sum number of protons in every grid cell
  sum_nH = sum(nH.data*dV)
- print(f + ': ' + str(sum_nH) + ' : ' + str(sum_nH/refvalue - 1))
+ relError = sum_nH/refvalue - 1
+ if abs(relError) > maxError:
+  maxError = relError
+ print(f + ': ' + str(sum_nH) + ' : ' + str(relError))
+
+print('max. relative error in accumulation: ' + str(maxError))
+
 
