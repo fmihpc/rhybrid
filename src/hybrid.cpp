@@ -56,15 +56,13 @@ pargrid::DataID Hybrid::dataNodeJiID;
 pargrid::DataID Hybrid::dataNodeEtaID;
 #endif
 
-// grid counters
-pargrid::DataID Hybrid::dataCounterCellMaxUeID;
-pargrid::DataID Hybrid::dataCounterCellMaxViID;
-pargrid::DataID Hybrid::dataCounterCellMinRhoQiID;
-#ifdef USE_ECUT
-pargrid::DataID Hybrid::dataCounterNodeEcutID;
-#endif
-#ifdef USE_MAXVW
-pargrid::DataID Hybrid::dataCounterNodeMaxVwID;
+// grid constraint counters
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+pargrid::DataID Hybrid::dataGridCounterCellMaxUeID;
+pargrid::DataID Hybrid::dataGridCounterCellMaxViID;
+pargrid::DataID Hybrid::dataGridCounterCellMinRhoQiID;
+pargrid::DataID Hybrid::dataGridCounterNodeEcutID;
+pargrid::DataID Hybrid::dataGridCounterNodeMaxVwID;
 #endif
 
 // stencils
@@ -144,12 +142,8 @@ Real Hybrid::minRhoQi;
 #ifdef USE_OUTER_BOUNDARY_ZONE
 OuterBoundaryZone Hybrid::outerBoundaryZone;
 #endif
-#ifdef USE_ECUT
 Real Hybrid::Ecut2;
-#endif
-#ifdef USE_MAXVW
 Real Hybrid::maxVw;
-#endif
 bool Hybrid::useHallElectricField;
 bool Hybrid::useElectronPressureElectricField;
 bool Hybrid::useAdiabaticElectronPressure;

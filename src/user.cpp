@@ -374,12 +374,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.terminateLimitMaxB","Maximum magnitude of magnetic field above which a simulation run is terminated [T] (float)",defaultValue);
    cr.add("Hybrid.minRhoQi","Global minimum value of ion charge density [C/m^3] (float)",defaultValue);
-#ifdef USE_ECUT
    cr.add("Hybrid.Ecut","Maximum value of node electric field [V/m] (float)",defaultValue);
-#endif
-#ifdef USE_MAXVW
    cr.add("Hybrid.maxVw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
-#endif
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
 #ifdef USE_B_CONSTANT
    cr.add("Hybrid.include_B0_faraday","Include the constant B0 term in Faraday's law [-] (bool)",false);
@@ -462,14 +458,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
-#ifdef USE_ECUT
    cr.get("Hybrid.Ecut",Hybrid::Ecut2);
    if(Hybrid::Ecut2 > 0) { Hybrid::Ecut2 = sqr(Hybrid::Ecut2); }
    else { Hybrid::Ecut2 = 0; }
-#endif
-#ifdef USE_MAXVW
    cr.get("Hybrid.maxVw",Hybrid::maxVw);   
-#endif
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
 #ifdef USE_B_CONSTANT
    cr.get("Hybrid.include_B0_faraday",Hybrid::includeConstantB0InFaradaysLaw);
@@ -1006,14 +998,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
    Hybrid::dataNodeEtaID             = simClasses.pargrid.invalidDataID();
 #endif
-   Hybrid::dataCounterCellMaxUeID    = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCounterCellMaxViID    = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCounterCellMinRhoQiID = simClasses.pargrid.invalidDataID();
-#ifdef USE_ECUT
-   Hybrid::dataCounterNodeEcutID     = simClasses.pargrid.invalidDataID();
-#endif
-#ifdef USE_MAXVW
-   Hybrid::dataCounterNodeMaxVwID    = simClasses.pargrid.invalidDataID();
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   Hybrid::dataGridCounterCellMaxUeID    = simClasses.pargrid.invalidDataID();
+   Hybrid::dataGridCounterCellMaxViID    = simClasses.pargrid.invalidDataID();
+   Hybrid::dataGridCounterCellMinRhoQiID = simClasses.pargrid.invalidDataID();
+   Hybrid::dataGridCounterNodeEcutID     = simClasses.pargrid.invalidDataID();
+   Hybrid::dataGridCounterNodeMaxVwID    = simClasses.pargrid.invalidDataID();
 #endif   
    Hybrid::dataInnerFlagFieldID      = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagNodeID       = simClasses.pargrid.invalidDataID();
@@ -1056,14 +1046,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
    //addVarReal(sim,simClasses,"nodeEta_",1,sIDEmpty);
 #endif
-   //addVarReal(sim,simClasses,"counterCellMaxUe_",1,sIDEmpty);
-   //addVarReal(sim,simClasses,"counterCellMaxVi_",1,sIDEmpty);
-   //addVarReal(sim,simClasses,"counterCellMinRhoQi_",1,sIDEmpty);
-#ifdef USE_ECUT
-   //addVarReal(sim,simClasses,"counterNodeEcut_",1,sIDEmpty);
-#endif
-#ifdef USE_MAXVW
-   //addVarReal(sim,simClasses,"counterNodeMaxVw_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"gridCounterCellMaxUe_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"gridCounterCellMaxVi_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"gridCounterCellMinRhoQi_",1,sIDEmpty);
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   //addVarReal(sim,simClasses,"gridCounterNodeEcut_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"gridCounterNodeMaxVw_",1,sIDEmpty);
 #endif
    //addVarBool(sim,simClasses,"innerFlagField_",1,sIDEmpty);
    //addVarBool(sim,simClasses,"innerFlagNode_",1,sIDEmpty);
@@ -1180,33 +1168,30 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
 #endif
-   // counters
-   Hybrid::dataCounterCellMaxUeID = simClasses.pargrid.addUserData<Real>("counterCellMaxUe",block::SIZE*1);
-   if(Hybrid::dataCounterCellMaxUeID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterCellMaxUe array to ParGrid!" << endl << write;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   Hybrid::dataGridCounterCellMaxUeID = simClasses.pargrid.addUserData<Real>("gridCounterCellMaxUe",block::SIZE*1);
+   if(Hybrid::dataGridCounterCellMaxUeID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMaxUe array to ParGrid!" << endl << write;
       return false;
    }
-   Hybrid::dataCounterCellMaxViID = simClasses.pargrid.addUserData<Real>("counterCellMaxVi",block::SIZE*1);
-   if(Hybrid::dataCounterCellMaxViID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterCellMaxVi array to ParGrid!" << endl << write;
+   Hybrid::dataGridCounterCellMaxViID = simClasses.pargrid.addUserData<Real>("gridCounterCellMaxVi",block::SIZE*1);
+   if(Hybrid::dataGridCounterCellMaxViID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMaxVi array to ParGrid!" << endl << write;
       return false;
    }
-   Hybrid::dataCounterCellMinRhoQiID = simClasses.pargrid.addUserData<Real>("counterCellMinRhoQi",block::SIZE*1);
-   if(Hybrid::dataCounterCellMinRhoQiID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterCellMinRhoQi array to ParGrid!" << endl << write;
+   Hybrid::dataGridCounterCellMinRhoQiID = simClasses.pargrid.addUserData<Real>("gridCounterCellMinRhoQi",block::SIZE*1);
+   if(Hybrid::dataGridCounterCellMinRhoQiID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMinRhoQi array to ParGrid!" << endl << write;
       return false;
    }
-#ifdef USE_ECUT
-   Hybrid::dataCounterNodeEcutID = simClasses.pargrid.addUserData<Real>("counterNodeEcut",block::SIZE*1);
-   if(Hybrid::dataCounterNodeEcutID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterNodeEcut array to ParGrid!" << endl << write;
+   Hybrid::dataGridCounterNodeEcutID = simClasses.pargrid.addUserData<Real>("gridCounterNodeEcut",block::SIZE*1);
+   if(Hybrid::dataGridCounterNodeEcutID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterNodeEcut array to ParGrid!" << endl << write;
       return false;
    }
-#endif
-#ifdef USE_MAXVW
-   Hybrid::dataCounterNodeMaxVwID = simClasses.pargrid.addUserData<Real>("counterNodeMaxVw",block::SIZE*1);
-   if(Hybrid::dataCounterNodeMaxVwID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterNodeMaxVw array to ParGrid!" << endl << write;
+   Hybrid::dataGridCounterNodeMaxVwID = simClasses.pargrid.addUserData<Real>("gridCounterNodeMaxVw",block::SIZE*1);
+   if(Hybrid::dataGridCounterNodeMaxVwID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterNodeMaxVw array to ParGrid!" << endl << write;
       return false;
    }
 #endif
@@ -1352,14 +1337,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
    Real* nodeEta             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEtaID));
 #endif
-   Real* counterCellMaxUe    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMaxUeID));
-   Real* counterCellMaxVi    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
-   Real* counterCellMinRhoQi = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMinRhoQiID));
-#ifdef USE_ECUT
-   Real* counterNodeEcut     = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterNodeEcutID));
-#endif
-#ifdef USE_MAXVW
-   Real* counterNodeMaxVw    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterNodeMaxVwID));
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   Real* gridCounterCellMaxUe    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterCellMaxUeID));
+   Real* gridCounterCellMaxVi    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterCellMaxViID));
+   Real* gridCounterCellMinRhoQi = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterCellMinRhoQiID));
+   Real* gridCounterNodeEcut     = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterNodeEcutID));
+   Real* gridCounterNodeMaxVw    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterNodeMaxVwID));
 #endif
    bool* innerFlagField      = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagFieldID));   
    bool* innerFlagNode       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagNodeID));
@@ -1487,15 +1470,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
       for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
       for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
-      // counters
-      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMaxUe[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMaxVi[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMinRhoQi[i] = 0.0; }
-#ifdef USE_ECUT
-      for(size_t i=0; i<scalarArraySize; ++i) { counterNodeEcut[i] = 0.0; }
-#endif
-#ifdef USE_MAXVW
-      for(size_t i=0; i<scalarArraySize; ++i) { counterNodeMaxVw[i] = 0.0; }
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxUe[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxVi[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMinRhoQi[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterNodeEcut[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterNodeMaxVw[i] = 0.0; }
 #endif
 
 #ifdef USE_DETECTORS
@@ -2124,12 +2104,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(Hybrid::box.xmax - Hybrid::box.xmin + 1e-30) << " (xmax-xmin)/Ubulk" << endl
      << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
      << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
-#ifdef USE_MAXVW
      << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " U(undisturbed solar wind) (nodeJ limiter)" << endl
-#endif
-#ifdef USE_ECUT
      << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m = " << sqrt(Hybrid::Ecut2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
-#endif
      << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
      << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl << endl;
 
@@ -2337,14 +2313,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
       {"nodeEta",false},
 #endif
-      {"counterCellMaxUe",false},
-      {"counterCellMaxVi",false},
-      {"counterCellMinRhoQi",false},
-#ifdef USE_ECUT
-      {"counterNodeEcut",false},
-#endif
-#ifdef USE_MAXVW
-      {"counterNodeMaxVw",false},
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+      {"gridCounterCellMaxUe",false},
+      {"gridCounterCellMaxVi",false},
+      {"gridCounterCellMinRhoQi",false},
+      {"gridCounterNodeEcut",false},
+      {"gridCounterNodeMaxVw",false},
 #endif
       {"innerFlagField",false},
       {"innerFlagNode",false},
@@ -2477,14 +2451,12 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
 #ifdef USE_RESISTIVITY
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEtaID)             == false) { success = false; }
 #endif
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMaxUeID)    == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMaxViID)    == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMinRhoQiID) == false) { success = false; }
-#ifdef USE_ECUT
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterNodeEcutID)     == false) { success = false; }
-#endif
-#ifdef USE_MAXVW
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterNodeMaxVwID)    == false) { success = false; }
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxUeID)    == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxViID)    == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMinRhoQiID) == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterNodeEcutID)     == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterNodeMaxVwID)    == false) { success = false; }
 #endif
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)      == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID)   == false) { success = false; }

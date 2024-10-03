@@ -118,15 +118,13 @@ struct Hybrid {
    static pargrid::DataID dataNodeEtaID;
 #endif
 
-   // counters
-   static pargrid::DataID dataCounterCellMaxUeID;
-   static pargrid::DataID dataCounterCellMaxViID;
-   static pargrid::DataID dataCounterCellMinRhoQiID;
-#ifdef USE_ECUT
-   static pargrid::DataID dataCounterNodeEcutID;
-#endif
-#ifdef USE_MAXVW
-   static pargrid::DataID dataCounterNodeMaxVwID;
+   // grid constraint counters
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   static pargrid::DataID dataGridCounterCellMaxUeID;
+   static pargrid::DataID dataGridCounterCellMaxViID;
+   static pargrid::DataID dataGridCounterCellMinRhoQiID;
+   static pargrid::DataID dataGridCounterNodeEcutID;
+   static pargrid::DataID dataGridCounterNodeMaxVwID;
 #endif
 
    // stencils
@@ -206,12 +204,8 @@ struct Hybrid {
 #ifdef USE_OUTER_BOUNDARY_ZONE
    static OuterBoundaryZone outerBoundaryZone;
 #endif
-#ifdef USE_ECUT
    static Real Ecut2;
-#endif
-#ifdef USE_MAXVW
    static Real maxVw;
-#endif
 #ifdef USE_RESISTIVITY
    static Real resistivityEta;
    static Real resistivityEtaC;

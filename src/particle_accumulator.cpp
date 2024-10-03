@@ -266,7 +266,9 @@ bool Accumulator::addRemoteUpdates() {
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    Real* cellRhoQiBg = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiBgID);
 #endif
-   Real* counterCellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCounterCellMinRhoQiID);
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   Real* gridCounterCellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMinRhoQiID);
+#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
    bool* outerBoundaryFlag   = simClasses->pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
 #endif
@@ -332,7 +334,9 @@ bool Accumulator::addRemoteUpdates() {
          if(outerBoundaryFlag[n] == true) {
             if(cellRhoQi[n] < Hybrid::outerBoundaryZone.minRhoQi) {
                cellRhoQi[n] = Hybrid::outerBoundaryZone.minRhoQi;
-               counterCellMinRhoQi[n]++;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+               gridCounterCellMinRhoQi[n]++;
+#endif
 	       Hybrid::logCounterFieldMinCellRhoQi++;
             }
          }
@@ -341,7 +345,9 @@ bool Accumulator::addRemoteUpdates() {
 	 if(cellRhoQi[n] < Hybrid::minRhoQi) {
 #endif
 	    cellRhoQi[n] = Hybrid::minRhoQi;
-	    counterCellMinRhoQi[n]++;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+	    gridCounterCellMinRhoQi[n]++;
+#endif
 	    Hybrid::logCounterFieldMinCellRhoQi++;
 	 }
 	 for(int l=0;l<3;++l) { cellJi[n3+l] /= Hybrid::dV; }

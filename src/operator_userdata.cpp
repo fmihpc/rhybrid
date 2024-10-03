@@ -118,14 +118,12 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
 #ifdef USE_RESISTIVITY
    writeCellDataVariable(spatMeshName,Hybrid::dataNodeEtaID,              "nodeEta",             N_blocks,1);
 #endif
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxUeID,     "counterCellMaxUe",    N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMaxViID,     "counterCellMaxVi",    N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterCellMinRhoQiID,  "counterCellMinRhoQi", N_blocks,1);
-#ifdef USE_ECUT
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeEcutID,      "counterNodeEcut",     N_blocks,1);
-#endif
-#ifdef USE_MAXVW
-   writeCellDataVariable(spatMeshName,Hybrid::dataCounterNodeMaxVwID,     "counterNodeMaxVw",    N_blocks,1);
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterCellMaxUeID,     "gridCounterCellMaxUe",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterCellMaxViID,     "gridCounterCellMaxVi",    N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterCellMinRhoQiID,  "gridCounterCellMinRhoQi", N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterNodeEcutID,      "gridCounterNodeEcut",     N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterNodeMaxVwID,     "gridCounterNodeMaxVw",    N_blocks,1);
 #endif
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagFieldID,   "innerFlagField",      N_blocks,1);
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagNodeID,    "innerFlagNode",       N_blocks,1);
