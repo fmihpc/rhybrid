@@ -56,7 +56,7 @@ pargrid::DataID Hybrid::dataNodeJiID;
 pargrid::DataID Hybrid::dataNodeEtaID;
 #endif
 
-// counters
+// grid counters
 pargrid::DataID Hybrid::dataCounterCellMaxUeID;
 pargrid::DataID Hybrid::dataCounterCellMaxViID;
 pargrid::DataID Hybrid::dataCounterCellMinRhoQiID;
@@ -248,11 +248,11 @@ Real Hybrid::logCounterTimeStart;
 
 bool Hybrid::filterParticlesAfterRestartDone = true;
 
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
 pargrid::DataID Hybrid::dataCellAverageBID;
 vector<pargrid::DataID> Hybrid::dataCellAverageDensityID;
 vector<pargrid::DataID> Hybrid::dataCellAverageVelocityID;
-int Hybrid::averageCounter;
+int Hybrid::gridTemporalAverageCounter;
 #endif
 
 int Hybrid::repartitionCheckIntervalTmp = -1;

@@ -149,12 +149,12 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    }
 #endif
 
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
 #ifdef USE_TEST_PARTICLE_MODE
    // in case test particle mode is enabled, this
    // counter is ignored in hybrid_propagator.cpp/propagateB
    // and is increased here
-   Hybrid::averageCounter++;
+   Hybrid::gridTemporalAverageCounter++;
 #endif
 #endif
 
@@ -1078,7 +1078,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_DETECTORS
    //addVarBool(sim,simClasses,"detPleFlag_",1,sIDEmpty);
 #endif
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    //addVarReal(sim,simClasses,"cellAverageB",3,sIDEmpty);
 #endif
       
@@ -2271,7 +2271,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize counter start time
    Hybrid::logCounterTimeStart = sim.t;
    
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // magnetic field
    Hybrid::dataCellAverageBID  = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellAverageBID = simClasses.pargrid.addUserData<Real>("cellAverageB",block::SIZE*3);
@@ -2414,9 +2414,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       if(p.second == false) { simClasses.logger << p.first << endl; }
    }
    simClasses.logger << endl;
-#ifndef WRITE_POPULATION_AVERAGES
+#ifndef WRITE_GRID_TEMPORAL_AVERAGES
    if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true || Hybrid::outputCellParams["n_tot_ave"] == true || Hybrid::outputCellParams["v_tot_ave"] == true) {
-      simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_POPULATION_AVERAGES not defined in Makefile" << endl;
+      simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_GRID_TEMPORAL_AVERAGES not defined in Makefile" << endl;
    }
 #endif
 #ifndef USE_B_CONSTANT
@@ -2424,7 +2424,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(RHYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
    }
 #endif
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // initial values
    if(sim.restarted == false) {
       for(size_t i=0; i<vectorArraySize;   ++i) { cellAverageB[i] = 0.0; }
@@ -2432,7 +2432,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          for(size_t j=0; j<scalarArraySize;++j) { nAve[i][j] = 0.0; }
          for(size_t j=0; j<vectorArraySize;++j) { vAve[i][j] = 0.0; }
       }
-      Hybrid::averageCounter = 0;
+      Hybrid::gridTemporalAverageCounter = 0;
    }
 #endif
    if(sim.restarted == true) {
@@ -2500,7 +2500,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataDetectorParticleFlagID)  == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataDetectorBulkParamFlagID) == false) { success = false; }
 #endif
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)        == false) { success = false; }
    for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
       if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageDensityID[i])  == false) { success = false; }

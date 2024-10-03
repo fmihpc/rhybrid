@@ -170,10 +170,10 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
          if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(exo[0])) == false) { success = false; }
       }
    }
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    Real invAveCnt = 0.0;
-   if(Hybrid::averageCounter > 0) {
-      invAveCnt = 1.0/static_cast<Real>(Hybrid::averageCounter);
+   if(Hybrid::gridTemporalAverageCounter > 0) {
+      invAveCnt = 1.0/static_cast<Real>(Hybrid::gridTemporalAverageCounter);
    }
    // magnetic field
    if(Hybrid::outputCellParams["cellBAverage"] == true) {
@@ -272,7 +272,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
          if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(averageVelocityTot[0])) == false) { success = false; }
       }
    }
-   Hybrid::averageCounter = 0;
+   Hybrid::gridTemporalAverageCounter = 0;
 #endif
 
    vector<Real> divB;

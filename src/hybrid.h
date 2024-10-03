@@ -280,11 +280,11 @@ struct Hybrid {
 
    static bool filterParticlesAfterRestartDone;
    
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    static pargrid::DataID dataCellAverageBID;
    static std::vector<pargrid::DataID> dataCellAverageDensityID;
    static std::vector<pargrid::DataID> dataCellAverageVelocityID;
-   static int averageCounter;
+   static int gridTemporalAverageCounter;
 #endif
    static int repartitionCheckIntervalTmp;
 };

@@ -166,7 +166,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    setIMFCell(cellB,sim,simClasses,exteriorBlocks);
    profile::stop();
    
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // add cellB to cellAverageB and increase average counter
    Real* cellAverageB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageBID);
    if(cellAverageB == NULL) { cerr << "ERROR: obtained NULL cellAverageB array!" << endl; exit(1); }
@@ -175,7 +175,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
       const int n3 = n*3;
       for(int l=0;l<3;++l) { cellAverageB[n3+l] += cellB[n3+l]; }
    }
-   Hybrid::averageCounter++;
+   Hybrid::gridTemporalAverageCounter++;
 #endif
    
    // cell->node B
