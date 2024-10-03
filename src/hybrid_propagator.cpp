@@ -66,7 +66,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    Real* gridCounterCellMaxUe    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMaxUeID);
    Real* gridCounterCellMaxVi    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMaxViID);
    Real* gridCounterCellMinRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMinRhoQiID);
-   Real* gridCounterNodeEcut     = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterNodeEcutID);
+   Real* gridCounterNodeMaxE     = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterNodeMaxEID);
    Real* gridCounterNodeMaxVw    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterNodeMaxVwID);
 #endif
    bool* innerFlag           = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
@@ -99,7 +99,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(gridCounterCellMaxUe    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxUe array!"    << endl; exit(1);}
    if(gridCounterCellMaxVi    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxVi array!"    << endl; exit(1);}
    if(gridCounterCellMinRhoQi == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMinRhoQi array!" << endl; exit(1);}
-   if(gridCounterNodeEcut     == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeEcut array!"     << endl; exit(1);}
+   if(gridCounterNodeMaxE     == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxE array!"     << endl; exit(1);}
    if(gridCounterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxVw array!"    << endl; exit(1);}
 #endif
    if(innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
@@ -123,7 +123,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 	 gridCounterCellMaxUe[n]=0.0;
 	 gridCounterCellMaxVi[n]=0.0;
 	 gridCounterCellMinRhoQi[n]=0.0;
-         gridCounterNodeEcut[n]=0.0;
+         gridCounterNodeMaxE[n]=0.0;
          gridCounterNodeMaxVw[n]=0.0;
 #endif
       }
@@ -354,7 +354,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #endif
       nodeJ,nodeE,
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-      gridCounterNodeEcut,
+      gridCounterNodeMaxE,
 #endif
       innerFlagNode,sim,simClasses,b);
    }
@@ -1405,7 +1405,7 @@ Real* nodeEta,
 #endif
 Real* nodeJ,Real* nodeE,
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-Real* gridCounterNodeEcut,
+Real* gridCounterNodeMaxE,
 #endif
 bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
@@ -1446,17 +1446,17 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
       nodeE[n3+1] += nodeEta[n]*nodeJ[n3+1];
       nodeE[n3+2] += nodeEta[n]*nodeJ[n3+2];
 #endif
-      if(Hybrid::Ecut2 > 0) {
+      if(Hybrid::maxE2 > 0) {
          const Real E2 = sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]);
-         if (E2 > Hybrid::Ecut2) {
-            Real scaling = sqrt(Hybrid::Ecut2/E2);
+         if (E2 > Hybrid::maxE2) {
+            Real scaling = sqrt(Hybrid::maxE2/E2);
             nodeE[n3+0] *= scaling;
             nodeE[n3+1] *= scaling;
             nodeE[n3+2] *= scaling;
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-            gridCounterNodeEcut[n]++;
+            gridCounterNodeMaxE[n]++;
 #endif
-	    Hybrid::logCounterFieldEcut++;
+	    Hybrid::logCounterFieldMaxE++;
          }
       }
    }

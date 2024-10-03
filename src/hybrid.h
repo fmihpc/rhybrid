@@ -123,7 +123,7 @@ struct Hybrid {
    static pargrid::DataID dataGridCounterCellMaxUeID;
    static pargrid::DataID dataGridCounterCellMaxViID;
    static pargrid::DataID dataGridCounterCellMinRhoQiID;
-   static pargrid::DataID dataGridCounterNodeEcutID;
+   static pargrid::DataID dataGridCounterNodeMaxEID;
    static pargrid::DataID dataGridCounterNodeMaxVwID;
 #endif
 
@@ -204,7 +204,7 @@ struct Hybrid {
 #ifdef USE_OUTER_BOUNDARY_ZONE
    static OuterBoundaryZone outerBoundaryZone;
 #endif
-   static Real Ecut2;
+   static Real maxE2;
    static Real maxVw;
 #ifdef USE_RESISTIVITY
    static Real resistivityEta;
@@ -267,7 +267,7 @@ struct Hybrid {
    static Real logCounterFieldMaxCellUe;
    static Real logCounterFieldMaxNodeUe;
    static Real logCounterFieldMaxVw;
-   static Real logCounterFieldEcut;
+   static Real logCounterFieldMaxE;
    static Real logCounterFieldMinCellRhoQi;
    static Real logCounterFieldMinNodeRhoQi;
    static Real logCounterTimeStart;

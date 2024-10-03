@@ -61,7 +61,7 @@ pargrid::DataID Hybrid::dataNodeEtaID;
 pargrid::DataID Hybrid::dataGridCounterCellMaxUeID;
 pargrid::DataID Hybrid::dataGridCounterCellMaxViID;
 pargrid::DataID Hybrid::dataGridCounterCellMinRhoQiID;
-pargrid::DataID Hybrid::dataGridCounterNodeEcutID;
+pargrid::DataID Hybrid::dataGridCounterNodeMaxEID;
 pargrid::DataID Hybrid::dataGridCounterNodeMaxVwID;
 #endif
 
@@ -142,7 +142,7 @@ Real Hybrid::minRhoQi;
 #ifdef USE_OUTER_BOUNDARY_ZONE
 OuterBoundaryZone Hybrid::outerBoundaryZone;
 #endif
-Real Hybrid::Ecut2;
+Real Hybrid::maxE2;
 Real Hybrid::maxVw;
 bool Hybrid::useHallElectricField;
 bool Hybrid::useElectronPressureElectricField;
@@ -235,7 +235,7 @@ vector<Real> Hybrid::logCounterParticleMaxVi;
 Real Hybrid::logCounterFieldMaxCellUe;
 Real Hybrid::logCounterFieldMaxNodeUe;
 Real Hybrid::logCounterFieldMaxVw;
-Real Hybrid::logCounterFieldEcut;
+Real Hybrid::logCounterFieldMaxE;
 Real Hybrid::logCounterFieldMinCellRhoQi;
 Real Hybrid::logCounterFieldMinNodeRhoQi;
 Real Hybrid::logCounterTimeStart;

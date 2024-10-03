@@ -122,7 +122,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterCellMaxUeID,     "gridCounterCellMaxUe",    N_blocks,1);
    writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterCellMaxViID,     "gridCounterCellMaxVi",    N_blocks,1);
    writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterCellMinRhoQiID,  "gridCounterCellMinRhoQi", N_blocks,1);
-   writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterNodeEcutID,      "gridCounterNodeEcut",     N_blocks,1);
+   writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterNodeMaxEID,      "gridCounterNodeMaxE",     N_blocks,1);
    writeCellDataVariable(spatMeshName,Hybrid::dataGridCounterNodeMaxVwID,     "gridCounterNodeMaxVw",    N_blocks,1);
 #endif
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagFieldID,   "innerFlagField",      N_blocks,1);
@@ -794,8 +794,8 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    Real sumMaxNodeUeGlobal = 0.0;
    Real sumMaxVwThisProcess = Hybrid::logCounterFieldMaxNodeUe;
    Real sumMaxVwGlobal = 0.0;
-   Real sumEcutThisProcess = Hybrid::logCounterFieldEcut;
-   Real sumEcutGlobal = 0.0;
+   Real sumMaxEThisProcess = Hybrid::logCounterFieldMaxE;
+   Real sumMaxEGlobal = 0.0;
    Real sumMinCellRhoQiThisProcess = Hybrid::logCounterFieldMinCellRhoQi;
    Real sumMinCellRhoQiGlobal = 0.0;
    Real sumMinNodeRhoQiThisProcess = Hybrid::logCounterFieldMinNodeRhoQi;
@@ -803,7 +803,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    MPI_Reduce(&sumMaxCellUeThisProcess,&sumMaxCellUeGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumMaxNodeUeThisProcess,&sumMaxNodeUeGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumMaxVwThisProcess,&sumMaxVwGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-   MPI_Reduce(&sumEcutThisProcess,&sumEcutGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumMaxEThisProcess,&sumMaxEGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumMinCellRhoQiThisProcess,&sumMinCellRhoQiGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumMinNodeRhoQiThisProcess,&sumMinNodeRhoQiGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    
@@ -954,7 +954,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	   << sumMaxCellUeGlobal/Dt*sim.dt << " "
 	   << sumMaxNodeUeGlobal/Dt*sim.dt << " "
 	   << sumMaxVwGlobal/Dt*sim.dt << " "
-	   << sumEcutGlobal/Dt*sim.dt << " "
+	   << sumMaxEGlobal/Dt*sim.dt << " "
 	   << sumMinCellRhoQiGlobal/Dt*sim.dt << " "
 	   << sumMinNodeRhoQiGlobal/Dt*sim.dt << " ";
       }
@@ -1008,7 +1008,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    Hybrid::logCounterFieldMaxCellUe = 0.0;
    Hybrid::logCounterFieldMaxNodeUe = 0.0;
    Hybrid::logCounterFieldMaxVw = 0.0;
-   Hybrid::logCounterFieldEcut = 0.0;
+   Hybrid::logCounterFieldMaxE = 0.0;
    Hybrid::logCounterFieldMinCellRhoQi = 0.0;
    Hybrid::logCounterFieldMinNodeRhoQi = 0.0;
 

@@ -48,7 +48,7 @@ Real* nodeEta,
 #endif
 Real* nodeJ,Real* nodeE,
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-Real* gridCounterNodeEcut,
+Real* gridCounterNodeMaxE,
 #endif
 bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcNodeJ(Real* faceB,Real* nodeB,Real* nodeRhoQi,Real* nodeJ,
