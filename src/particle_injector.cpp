@@ -222,10 +222,10 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
      << "(" << species->name << ") macroparticle weight    = " << w << endl
      << "(" << species->name << ") xmin = " << xmin/1e3 << " km" << endl
      << "(" << species->name << ") xmax = " << xmax/1e3 << " km" << endl << write;
-   particlePopulation pp;
-   pp.w = w;
-   pp.name = species->name;
-   Hybrid::allPops.push_back(pp);
+   particlePopulationInfo popInfo;
+   popInfo.w = w;
+   popInfo.name = species->name;
+   Hybrid::allPopsInfo.push_back(popInfo);
    return initialized;
 }
 
@@ -400,10 +400,10 @@ bool InjectorAmbient::initialize(Simulation& sim,SimulationClasses& simClasses,C
      << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per cell per dt  = " << N_macroParticlesPerCellPerDt << endl
      << "(" << species->name << ") macroparticle weight    = " << w << endl << write;
-   particlePopulation pp;
-   pp.w = w;
-   pp.name = species->name;
-   Hybrid::allPops.push_back(pp);
+   particlePopulationInfo popInfo;
+   popInfo.w = w;
+   popInfo.name = species->name;
+   Hybrid::allPopsInfo.push_back(popInfo);
    return initialized;
 }
 
@@ -500,7 +500,6 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
 				   const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
-   
    Real T=0;
    cr.parse();
    cr.get(configRegionName+".speed",U);
@@ -538,19 +537,19 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    if(swPopCnt == 1) {
       Hybrid::swMacroParticlesCellPerDt = N_macroParticlesPerCellPerDt*N_yz_cells/N_macroParticlesPerCell;
    }
-   particlePopulation pp;
-   pp.w = w;
-   pp.name = species->name;
-   Hybrid::allPops.push_back(pp);
-   solarWindPopulation swpop;
-   swpop.m = species->m;
-   swpop.q = species->q;
-   swpop.U = U;
-   swpop.n = n;
-   swpop.vth = vth;
-   swpop.T = T;
-   swpop.name = species->name;
-   Hybrid::swPops.push_back(swpop);
+   particlePopulationInfo popInfo;
+   popInfo.w = w;
+   popInfo.name = species->name;
+   Hybrid::allPopsInfo.push_back(popInfo);
+   solarWindPopulationInfo swPopInfo;
+   swPopInfo.m = species->m;
+   swPopInfo.q = species->q;
+   swPopInfo.U = U;
+   swPopInfo.n = n;
+   swPopInfo.vth = vth;
+   swPopInfo.T = T;
+   swPopInfo.name = species->name;
+   Hybrid::swPopsInfo.push_back(swPopInfo);
    return initialized;
 }
 
@@ -1089,10 +1088,10 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 	 }
       }
    }
-   particlePopulation pp;
-   pp.w = w;
-   pp.name = species->name;
-   Hybrid::allPops.push_back(pp);
+   particlePopulationInfo popInfo;
+   popInfo.w = w;
+   popInfo.name = species->name;
+   Hybrid::allPopsInfo.push_back(popInfo);
    return initialized;
 }
 
@@ -1317,10 +1316,10 @@ break_for:
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
      << "(" << species->name << ") macroparticle weight      = " << w << endl << write;
-   particlePopulation pp;
-   pp.w = w;
-   pp.name = species->name;
-   Hybrid::allPops.push_back(pp);
+   particlePopulationInfo popInfo;
+   popInfo.w = w;
+   popInfo.name = species->name;
+   Hybrid::allPopsInfo.push_back(popInfo);
    return initialized;
 }
 

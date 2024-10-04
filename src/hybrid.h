@@ -62,12 +62,12 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[2] = a[0]*b[1] - a[1]*b[0];
 }
 
-struct particlePopulation {
+struct particlePopulationInfo {
     Real w;
     std::string name;
 };
 
-struct solarWindPopulation {
+struct solarWindPopulationInfo {
    Real m,q,U,n,vth,T;
    std::string name;
 };
@@ -244,8 +244,8 @@ struct Hybrid {
    static unsigned int N_ionospherePopulations;
    static unsigned int N_exospherePopulations;
    static unsigned int N_outputPopVars;
-   static std::vector<particlePopulation> allPops;
-   static std::vector<solarWindPopulation> swPops;
+   static std::vector<particlePopulationInfo> allPopsInfo;
+   static std::vector<solarWindPopulationInfo> swPopsInfo;
    static std::vector<std::string> populationNames;
    static std::vector<std::string> outputPopVarStr;
    static std::vector<int> outputPopVarId;

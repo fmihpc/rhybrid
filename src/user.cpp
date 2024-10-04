@@ -1911,13 +1911,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real vA = 0.0; // alfven velocity
    Real vstmp1 = 0.0;
    Real vstmp2 = 0.0;
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
-      ni += Hybrid::swPops[s].n;
-      ne += Hybrid::swPops[s].q*Hybrid::swPops[s].n;
-      rhom += Hybrid::swPops[s].m*Hybrid::swPops[s].n;
-      Ubulk += Hybrid::swPops[s].m*Hybrid::swPops[s].n*Hybrid::swPops[s].U;
-      vstmp1 += Hybrid::swPops[s].n*Hybrid::swPops[s].T;
-      vstmp2 += Hybrid::swPops[s].n*Hybrid::swPops[s].m;
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
+      ni += Hybrid::swPopsInfo[s].n;
+      ne += Hybrid::swPopsInfo[s].q*Hybrid::swPopsInfo[s].n;
+      rhom += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n;
+      Ubulk += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].U;
+      vstmp1 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].T;
+      vstmp2 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].m;
    }
    const Real rhoq = ne;
    ne /= constants::CHARGE_ELEMENTARY;
@@ -2023,39 +2023,39 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       tPe = 2.0*M_PI/omega_pe;
       le = constants::SPEED_LIGHT/omega_pe;
    }
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
       // ion plasma frequency
-      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPops[s].q)/( Hybrid::swPops[s].m*constants::PERMITTIVITY  ) );
+      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
       // ion plasma period
       Real tPi = 0.0;
       if(omega_pi > 0.0) {
          tPi = 2.0*M_PI/omega_pi;
       }
       simClasses.logger
-        << "plasma period(" << Hybrid::swPops[s].name << ") = " << tPi << " s = " << tPi/sim.dt << " dt" << endl;
+        << "plasma period(" << Hybrid::swPopsInfo[s].name << ") = " << tPi << " s = " << tPi/sim.dt << " dt" << endl;
    }
    simClasses.logger
      << "plasma period(e-) = " << tPe << " s = " << tPe/sim.dt << " dt" << endl;
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
       // ion plasma frequency
-      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPops[s].q)/( Hybrid::swPops[s].m*constants::PERMITTIVITY  ) );
+      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
       // ion inertial length
       Real li = 0.0;
       if(omega_pi > 0.0) {
          li = constants::SPEED_LIGHT/omega_pi;
       }
       simClasses.logger
-        << "inertial length(" << Hybrid::swPops[s].name << ") = " << li/1e3 << " km = " << li/Hybrid::dx << " dx" << endl;
+        << "inertial length(" << Hybrid::swPopsInfo[s].name << ") = " << li/1e3 << " km = " << li/Hybrid::dx << " dx" << endl;
    }
    simClasses.logger
      << "inertial length(e-) = " << le/1e3 << " km = " << le/Hybrid::dx << " dx" << endl;
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
       Real rLth = 0.0; // thermal larmor radius
       if(Btot > 0.0) {
-         rLth = Hybrid::swPops[s].m*Hybrid::swPops[s].vth/(Hybrid::swPops[s].q*Btot);
+         rLth = Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].vth/(Hybrid::swPopsInfo[s].q*Btot);
       }
       simClasses.logger
-        << "thermal Larmor radius(" << Hybrid::swPops[s].name << ") = " << rLth/1e3 << " km = " << rLth/Hybrid::dx << " dx" << endl;
+        << "thermal Larmor radius(" << Hybrid::swPopsInfo[s].name << ") = " << rLth/1e3 << " km = " << rLth/Hybrid::dx << " dx" << endl;
    }
    simClasses.logger
      << endl << "(ALL POPULATIONS AS PICKUP IONS)" << endl;
