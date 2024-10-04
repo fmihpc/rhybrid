@@ -190,6 +190,7 @@ bool InjectorUniform::addConfigFileItems(ConfigReader& cr,const std::string& con
 bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
 				   const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->type = "uniform";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    Real T=0;
    cr.parse();
@@ -374,6 +375,7 @@ bool InjectorAmbient::addConfigFileItems(ConfigReader& cr,const std::string& con
 bool InjectorAmbient::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
 				   const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->type = "ambient";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    Real T=0,n=0;
    N_macroParticlesPerCell = -100.0;
@@ -499,6 +501,7 @@ bool InjectorSolarWind::addConfigFileItems(ConfigReader& cr,const std::string& c
 bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
 				   const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->type = "solarwind";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    Real T=0;
    cr.parse();
@@ -693,6 +696,7 @@ bool InjectorChapmanIonosphere::addConfigFileItems(ConfigReader& cr,const std::s
 bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
 				    const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->type = "ionosphere_chapman";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    Real totalRate = 0.0;
    cr.parse();
@@ -919,6 +923,7 @@ bool InjectorIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& 
 bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
 				    const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->type = "ionosphere";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    string profileName = "";
    Real noonFactor = -1.0;
@@ -1210,6 +1215,7 @@ bool InjectorExosphere::addConfigFileItems(ConfigReader& cr,const std::string& c
 bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
 				    const std::string& configRegionName,const ParticleListBase* plist) {
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->type = "exosphere";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    Real T = 0.0;
    Real totalRate = 0.0;
