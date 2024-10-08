@@ -210,8 +210,7 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
    if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
    if(xmin >= xmax) {
-      simClasses.logger
-        << "(" << species->name << ") ERROR: xmin >= xmax" << endl << write;
+      simClasses.logger << "(" << species->name << ") ERROR: xmin >= xmax" << endl << write;
       initialized = false;
    }
    simClasses.logger
@@ -414,6 +413,8 @@ bool InjectorAmbient::initialize(Simulation& sim,SimulationClasses& simClasses,C
 InjectorSolarWind::InjectorSolarWind(): ParticleInjectorBase() { 
    initialized = false;
    U = vth = n = w = 0.0;
+   checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellDefault;
+   initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelDefault;
    N_macroParticlesPerCellPerDt = -1.0;
    N_macroParticlesPerCell = -1.0;
 }
@@ -426,6 +427,139 @@ bool InjectorSolarWind::finalize() {
    return true;
 }
 
+// default function gives an error and exits if called
+bool InjectorSolarWind::checkIfInjectionCellDefault(const pargrid::CellID b) {
+   simClasses->logger << "(InjectorSolarWind): ERROR checkIfInjectionCellDefault called " << endl << write;
+   exit(1);
+   return false;
+}
+
+// return true if b is a non-edge cell at positive x outer boundary
+bool InjectorSolarWind::checkIfInjectionCellXPos(const pargrid::CellID b) {
+   return
+    (((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) == 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) != 0));
+}
+
+// return true if b is a non-edge cell at negative x outer boundary
+bool InjectorSolarWind::checkIfInjectionCellXNeg(const pargrid::CellID b) {
+   return
+    (((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_NEG_EXISTS) == 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) != 0));
+}
+
+// return true if b is a non-edge cell at positive y outer boundary
+bool InjectorSolarWind::checkIfInjectionCellYPos(const pargrid::CellID b) {
+   return
+    (((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) == 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_NEG_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) != 0));
+}
+
+// return true if b is a non-edge cell at negative y outer boundary
+bool InjectorSolarWind::checkIfInjectionCellYNeg(const pargrid::CellID b) {
+   return
+    (((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) == 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_NEG_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) != 0));
+}
+
+// return true if b is a non-edge cell at positive z outer boundary
+bool InjectorSolarWind::checkIfInjectionCellZPos(const pargrid::CellID b) {
+   return
+    (((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) == 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_NEG_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) != 0));
+}
+
+// return true if b is a non-edge cell at negative z outer boundary
+bool InjectorSolarWind::checkIfInjectionCellZNeg(const pargrid::CellID b) {
+   return
+    (((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) == 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_NEG_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) != 0) &&
+     ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) != 0));
+}
+
+// default function gives an error and exits if called
+void InjectorSolarWind::initParticleCrdVelDefault(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz) {
+   simClasses->logger << "(InjectorSolarWind): ERROR initParticleCrdVelDefault called " << endl << write;
+   exit(1);
+}
+
+// initialize position and velocity of a new solar wind particle at positive x outer boundary
+void InjectorSolarWind::initParticleCrdVelXPos(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz) {
+   x = 0;
+   y = simClasses->random.uniform()*blockSize[1];
+   z = simClasses->random.uniform()*blockSize[2];
+   vx = -vth*derivgaussrnd(U/vth,*simClasses);
+   vy = vth*gaussrnd(*simClasses);
+   vz = vth*gaussrnd(*simClasses);
+}
+
+// initialize position and velocity of a new solar wind particle at negative x outer boundary
+void InjectorSolarWind::initParticleCrdVelXNeg(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz) {
+   x = blockSize[0];
+   y = simClasses->random.uniform()*blockSize[1];
+   z = simClasses->random.uniform()*blockSize[2];
+   vx = +vth*derivgaussrnd(U/vth,*simClasses);
+   vy = vth*gaussrnd(*simClasses);
+   vz = vth*gaussrnd(*simClasses);
+}
+
+// initialize position and velocity of a new solar wind particle at positive y outer boundary
+void InjectorSolarWind::initParticleCrdVelYPos(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz) {
+   x = simClasses->random.uniform()*blockSize[0];
+   y = 0;
+   z = simClasses->random.uniform()*blockSize[2];
+   vx = vth*gaussrnd(*simClasses);
+   vy = -vth*derivgaussrnd(U/vth,*simClasses);
+   vz = vth*gaussrnd(*simClasses);
+}
+
+// initialize position and velocity of a new solar wind particle at negative y outer boundary
+void InjectorSolarWind::initParticleCrdVelYNeg(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz) {
+   x = simClasses->random.uniform()*blockSize[0];
+   y = blockSize[1];
+   z = simClasses->random.uniform()*blockSize[2];
+   vx = vth*gaussrnd(*simClasses);
+   vy = +vth*derivgaussrnd(U/vth,*simClasses);
+   vz = vth*gaussrnd(*simClasses);
+}
+
+// initialize position and velocity of a new solar wind particle at positive z outer boundary
+void InjectorSolarWind::initParticleCrdVelZPos(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz) {
+   x = simClasses->random.uniform()*blockSize[0];
+   y = simClasses->random.uniform()*blockSize[1];
+   z = 0;
+   vx = vth*gaussrnd(*simClasses);
+   vy = vth*gaussrnd(*simClasses);
+   vz = -vth*derivgaussrnd(U/vth,*simClasses);
+}
+
+// initialize position and velocity of a new solar wind particle at negative z outer boundary
+void InjectorSolarWind::initParticleCrdVelZNeg(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz) {
+   x = simClasses->random.uniform()*blockSize[0];
+   y = simClasses->random.uniform()*blockSize[1];
+   z = blockSize[2];
+   vx = vth*gaussrnd(*simClasses);
+   vy = vth*gaussrnd(*simClasses);
+   vz = +vth*derivgaussrnd(U/vth,*simClasses);
+}
+
 bool InjectorSolarWind::inject(pargrid::DataID speciesDataID,unsigned int* N_particles) {
    if(initialized == false) { return initialized; }
    bool success = true;
@@ -434,11 +568,7 @@ bool InjectorSolarWind::inject(pargrid::DataID speciesDataID,unsigned int* N_par
    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses->pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
    
    for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-      if( (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) == 0 &&
-	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) != 0 &&
-	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) != 0 &&
-	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) != 0 &&
-	  (simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) != 0) {
+      if((this->*checkIfInjectionCellFuncPtr)(b) == true)  {
 	 if(injectParticles(b,*species,N_particles,wrapper) == false) { success = false; }
       }
    }
@@ -464,13 +594,16 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
    N_particles[blockID] += N_inject;
    wrapper.resize(blockID,oldSize+N_inject);
    Particle<Real>* particles = wrapper.data()[blockID];
+   Real xInj,yInj,zInj,vxInj,vyInj,vzInj;
    for(size_t p=oldSize; p<oldSize+N_inject; ++p) {
-      particles[p].state[particle::X] = 0;
-      particles[p].state[particle::Y] = simClasses->random.uniform()*blockSize[1];
-      particles[p].state[particle::Z] = simClasses->random.uniform()*blockSize[2];
-      particles[p].state[particle::VX] = -vth*derivgaussrnd(U/vth,*simClasses);
-      particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
+      // set coordinates and velocity components of a new particle
+      (this->*initParticleCrdVelFuncPtr)(blockSize,xInj,yInj,zInj,vxInj,vyInj,vzInj);
+      particles[p].state[particle::X] = xInj;
+      particles[p].state[particle::Y] = yInj;
+      particles[p].state[particle::Z] = zInj;
+      particles[p].state[particle::VX] = vxInj;
+      particles[p].state[particle::VY] = vyInj;
+      particles[p].state[particle::VZ] = vzInj;
       particles[p].state[particle::WEIGHT] = w;
 /*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
@@ -491,6 +624,7 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
 }
 
 bool InjectorSolarWind::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
+   cr.add(configRegionName+".injection_boundary","Outer boundary from where the population is injected [xpos/xneg/ypos/yneg/zpos/zneg] (string).",string("xpos"));
    cr.add(configRegionName+".speed","Bulk speed [m/s] (float).",(Real)0.0);
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
@@ -503,12 +637,62 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
    this->type = "solarwind";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
+   string injectionBoundary = "xpos";
    Real T=0;
    cr.parse();
+   cr.get(configRegionName+".injection_boundary",injectionBoundary);
    cr.get(configRegionName+".speed",U);
    cr.get(configRegionName+".density",n);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+
+   // determine the number of non-ghost cells in the plane perpendicular to undisturbed solar wind flow
+   int N_perp_cells = 0;
+   int N_x_cells = sim.y_blocks;
+   int N_y_cells = sim.y_blocks;
+   int N_z_cells = sim.z_blocks;
+   if(N_x_cells > 2 && sim.x_periodic == false) { N_x_cells -= 2; } // remove ghost cells
+   if(N_y_cells > 2 && sim.y_periodic == false) { N_y_cells -= 2; } // remove ghost cells
+   if(N_z_cells > 2 && sim.z_periodic == false) { N_z_cells -= 2; } // remove ghost cells
+   const int N_yz_cells = N_y_cells*N_z_cells*block::WIDTH_Y*block::WIDTH_Z; // NOTE: blocks != 1 do not work in RHybrid
+   const int N_xz_cells = N_x_cells*N_z_cells*block::WIDTH_X*block::WIDTH_Z; // NOTE: blocks != 1 do not work in RHybrid
+   const int N_xy_cells = N_x_cells*N_y_cells*block::WIDTH_X*block::WIDTH_Y; // NOTE: blocks != 1 do not work in RHybrid
+   
+   // set function pointers to check injection cells and initializing properties of new particles
+   if(injectionBoundary.compare("xpos") == 0) {
+      checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellXPos;
+      initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelXPos;
+      N_perp_cells = N_yz_cells;
+   }
+   else if (injectionBoundary.compare("xneg") == 0) {
+      checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellXNeg;
+      initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelXNeg;
+      N_perp_cells = N_yz_cells;
+   }
+   else if(injectionBoundary.compare("ypos") == 0) {
+      checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellYPos;
+      initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelYPos;
+      N_perp_cells = N_xz_cells;
+   }
+   else if (injectionBoundary.compare("yneg") == 0) {
+      checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellYNeg;
+      initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelYNeg;
+      N_perp_cells = N_xz_cells;
+   }
+   else if(injectionBoundary.compare("zpos") == 0) {
+      checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellZPos;
+      initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelZPos;
+      N_perp_cells = N_xy_cells;
+   }
+   else if (injectionBoundary.compare("zneg") == 0) {
+      checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellZNeg;
+      initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelZNeg;
+      N_perp_cells = N_xy_cells;
+   }
+   else {
+      simClasses.logger << "(" << species->name << ") ERROR: unknown injection boundary (" << injectionBoundary  << ")" << endl << write;
+      initialized = false;
+   }
    if(U <= 0) { U = 0.0; }
    if(N_macroParticlesPerCell > 0 && n > 0 && Hybrid::dx > 0) {
       N_macroParticlesPerCellPerDt = N_macroParticlesPerCell*fabs(U)*sim.dt/Hybrid::dx;
@@ -519,26 +703,20 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    }
    if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
-   int N_y_cells = 0;
-   int N_z_cells = 0;
-   if(N_y_cells > 2) { N_y_cells = sim.y_blocks - 2; } // without ghost cells
-   else { N_y_cells = sim.y_blocks; }
-   if(N_z_cells > 2) { N_z_cells = sim.z_blocks - 2; } // without ghost cells
-   else { N_z_cells = sim.z_blocks; }
-   int N_yz_cells = N_y_cells*N_z_cells*block::WIDTH_Y*block::WIDTH_Z; // blocks != 1 do not work in hybrid
    simClasses.logger
-     << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
-     << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
-     << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
-     << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") injection boundary = " << injectionBoundary << endl
+     << "(" << species->name << ") speed              = " << U/1e3 << " km/s" << endl
+     << "(" << species->name << ") density            = " << n/1e6 << " cm^{-3}" << endl
+     << "(" << species->name << ") temperature        = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
+     << "(" << species->name << ") thermal speed      = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
-     << "(" << species->name << ") macroparticles per dt           = " << N_macroParticlesPerCellPerDt*N_yz_cells << endl
+     << "(" << species->name << ") macroparticles per dt           = " << N_macroParticlesPerCellPerDt*N_perp_cells << endl
      << "(" << species->name << ") macroparticles per cell per dt  = " << N_macroParticlesPerCellPerDt << endl
      << "(" << species->name << ") macroparticle weight            = " << w << endl << write;
    static unsigned int swPopCnt = 0;
    swPopCnt++;
    if(swPopCnt == 1) {
-      Hybrid::swMacroParticlesCellPerDt = N_macroParticlesPerCellPerDt*N_yz_cells/N_macroParticlesPerCell;
+      Hybrid::swMacroParticlesCellPerDt = N_macroParticlesPerCellPerDt*N_perp_cells/N_macroParticlesPerCell;
    }
    particlePopulationInfo popInfo;
    popInfo.w = w;

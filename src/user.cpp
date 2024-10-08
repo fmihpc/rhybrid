@@ -674,26 +674,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "blocks (x y z) = " << sim.x_blocks << " " << sim.y_blocks << " " << sim.z_blocks << endl
      << "cells per block (x y z) = " << block::WIDTH_X << " " << block::WIDTH_Y << " " << block::WIDTH_Z << endl
      << "cells (x y z) = " << nx << " " << ny << " " << nz << endl
-     << "total cells = " << Ncells << " = " << Ncells/1e6 << " x 10^6" << endl << endl;
+     << "total cells = " << Ncells << " = " << Ncells/1e6 << " x 10^6" << endl
+     << "periodic (x y z) = " << sim.x_periodic << " " << sim.z_periodic << " " << sim.y_periodic << " " << endl << endl;
    
-   // a hack as there is no access to the grid builder easily from here
-   cr.get("LogicallyCartesian.x_min",Hybrid::box.xmin);
-   cr.get("LogicallyCartesian.x_max",Hybrid::box.xmax);
-   cr.get("LogicallyCartesian.y_min",Hybrid::box.ymin);
-   cr.get("LogicallyCartesian.y_max",Hybrid::box.ymax);
-   cr.get("LogicallyCartesian.z_min",Hybrid::box.zmin);
-   cr.get("LogicallyCartesian.z_max",Hybrid::box.zmax);
    simClasses.logger
      << "(SIMULATION DOMAIN)" << endl
-     << "x [km] = " << Hybrid::box.xmin/1e3 << " ... " << Hybrid::box.xmax/1e3 << endl
-     << "y [km] = " << Hybrid::box.ymin/1e3 << " ... " << Hybrid::box.ymax/1e3 << endl
-     << "z [km] = " << Hybrid::box.zmin/1e3 << " ... " << Hybrid::box.zmax/1e3 << endl
-     << "x [R_object] = " << Hybrid::box.xmin/Hybrid::R_object << " ... " << Hybrid::box.xmax/Hybrid::R_object << endl
-     << "y [R_object] = " << Hybrid::box.ymin/Hybrid::R_object << " ... " << Hybrid::box.ymax/Hybrid::R_object << endl
-     << "z [R_object] = " << Hybrid::box.zmin/Hybrid::R_object << " ... " << Hybrid::box.zmax/Hybrid::R_object << endl
-     << "x [dx] = " << Hybrid::box.xmin/Hybrid::dx << " ... " << Hybrid::box.xmax/Hybrid::dx << endl
-     << "y [dx] = " << Hybrid::box.ymin/Hybrid::dx << " ... " << Hybrid::box.ymax/Hybrid::dx << endl
-     << "z [dx] = " << Hybrid::box.zmin/Hybrid::dx << " ... " << Hybrid::box.zmax/Hybrid::dx << endl
+     << "x [km] = " << sim.x_min/1e3 << " ... " << sim.x_max/1e3 << endl
+     << "y [km] = " << sim.y_min/1e3 << " ... " << sim.y_max/1e3 << endl
+     << "z [km] = " << sim.z_min/1e3 << " ... " << sim.z_max/1e3 << endl
+     << "x [R_object] = " << sim.x_min/Hybrid::R_object << " ... " << sim.x_max/Hybrid::R_object << endl
+     << "y [R_object] = " << sim.y_min/Hybrid::R_object << " ... " << sim.y_max/Hybrid::R_object << endl
+     << "z [R_object] = " << sim.z_min/Hybrid::R_object << " ... " << sim.z_max/Hybrid::R_object << endl
+     << "x [dx] = " << sim.x_min/Hybrid::dx << " ... " << sim.x_max/Hybrid::dx << endl
+     << "y [dx] = " << sim.y_min/Hybrid::dx << " ... " << sim.y_max/Hybrid::dx << endl
+     << "z [dx] = " << sim.z_min/Hybrid::dx << " ... " << sim.z_max/Hybrid::dx << endl
 #ifdef USE_XMIN_BOUNDARY
      << "xmin boundary = " << Hybrid::xMinBoundary/1e3 << " km = " << Hybrid::xMinBoundary/Hybrid::R_object << " R_object = " << Hybrid::xMinBoundary/Hybrid::dx << " dx" << endl
 #endif
@@ -1558,85 +1552,85 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             }
             else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 1) {
                // all walls
-               if(xCellCenter < (Hybrid::box.xmin + bZone) || xCellCenter > (Hybrid::box.xmax - bZone) ||
-                  yCellCenter < (Hybrid::box.ymin + bZone) || yCellCenter > (Hybrid::box.ymax - bZone) ||
-                  zCellCenter < (Hybrid::box.zmin + bZone) || zCellCenter > (Hybrid::box.zmax - bZone)) {
+               if(xCellCenter < (sim.x_min + bZone) || xCellCenter > (sim.x_max - bZone) ||
+                  yCellCenter < (sim.y_min + bZone) || yCellCenter > (sim.y_max - bZone) ||
+                  zCellCenter < (sim.z_min + bZone) || zCellCenter > (sim.z_max - bZone)) {
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
-	       if(xNode < (Hybrid::box.xmin + bZone) || xNode > (Hybrid::box.xmax - bZone) ||
-                  yNode < (Hybrid::box.ymin + bZone) || yNode > (Hybrid::box.ymax - bZone) ||
-                  zNode < (Hybrid::box.zmin + bZone) || zNode > (Hybrid::box.zmax - bZone)) {
+	       if(xNode < (sim.x_min + bZone) || xNode > (sim.x_max - bZone) ||
+                  yNode < (sim.y_min + bZone) || yNode > (sim.y_max - bZone) ||
+                  zNode < (sim.z_min + bZone) || zNode > (sim.z_max - bZone)) {
                   outerBoundaryFlagNode[n] = true;
                }
                else { outerBoundaryFlagNode[n] = false; }
             }
             else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 2) {
                // all edges except +x
-               if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (yCellCenter < (Hybrid::box.ymin + bZone)) ) {
+               if( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter < (sim.y_min + bZone)) ) {
                   // (-x,-y) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (yCellCenter > (Hybrid::box.ymax - bZone)) ) {
+               else if( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter > (sim.y_max - bZone)) ) {
                   // (-x,+y) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
+               else if( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (-x,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
+               else if( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (-x,+z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter < (Hybrid::box.ymin + bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
+               else if( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (-y,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter < (Hybrid::box.ymin + bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
+               else if( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (-y,+z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter > (Hybrid::box.ymax - bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
+               else if( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (+y,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter > (Hybrid::box.ymax - bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
+               else if( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (+y,+z) edge
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
 	       // node
                // all edges except +x
-               if( (xNode < (Hybrid::box.xmin + bZone)) && (yNode < (Hybrid::box.ymin + bZone)) ) {
+               if( (xNode < (sim.x_min + bZone)) && (yNode < (sim.y_min + bZone)) ) {
                   // (-x,-y) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (xNode < (Hybrid::box.xmin + bZone)) && (yNode > (Hybrid::box.ymax - bZone)) ) {
+               else if( (xNode < (sim.x_min + bZone)) && (yNode > (sim.y_max - bZone)) ) {
                   // (-x,+y) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (xNode < (Hybrid::box.xmin + bZone)) && (zNode < (Hybrid::box.zmin + bZone)) ) {
+               else if( (xNode < (sim.x_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
                   // (-x,-z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (xNode < (Hybrid::box.xmin + bZone)) && (zNode > (Hybrid::box.zmax - bZone)) ) {
+               else if( (xNode < (sim.x_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
                   // (-x,+z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (yNode < (Hybrid::box.ymin + bZone)) && (zNode < (Hybrid::box.zmin + bZone)) ) {
+               else if( (yNode < (sim.y_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
                   // (-y,-z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (yNode < (Hybrid::box.ymin + bZone)) && (zNode > (Hybrid::box.zmax - bZone)) ) {
+               else if( (yNode < (sim.y_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
                   // (-y,+z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (yNode > (Hybrid::box.ymax - bZone)) && (zNode < (Hybrid::box.zmin + bZone)) ) {
+               else if( (yNode > (sim.y_max - bZone)) && (zNode < (sim.z_min + bZone)) ) {
                   // (+y,-z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (yNode > (Hybrid::box.ymax - bZone)) && (zNode > (Hybrid::box.zmax - bZone)) ) {
+               else if( (yNode > (sim.y_max - bZone)) && (zNode > (sim.z_max - bZone)) ) {
                   // (+y,+z) edge
                   outerBoundaryFlagNode[n] = true;
                }
@@ -1957,7 +1951,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
   
    if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
-      Hybrid::initialFlowThroughPeriod *= (Hybrid::box.xmax - Hybrid::box.xmin)/Ubulk;
+      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
       Hybrid::initialFlowThrough = true;
    }
    else {
@@ -2101,7 +2095,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    
    simClasses.logger
      << "(CONSTRAINTS)" << endl
-     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(Hybrid::box.xmax - Hybrid::box.xmin + 1e-30) << " (xmax-xmin)/Ubulk" << endl
+     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/Ubulk" << endl
      << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
      << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
      << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " U(undisturbed solar wind) (nodeJ limiter)" << endl

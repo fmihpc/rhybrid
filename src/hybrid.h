@@ -72,10 +72,6 @@ struct solarWindPopulationInfo {
    std::string name;
 };
 
-struct Box {
-   Real xmin=0.0,xmax=0.0,ymin=0.0,ymax=0.0,zmin=0.0,zmax=0.0;
-};
-
 #ifdef USE_OUTER_BOUNDARY_ZONE
 struct OuterBoundaryZone {
    int typeEta=0,typeMinRhoQi=0;
@@ -177,7 +173,6 @@ struct Hybrid {
    static bool includeInnerCellsInFieldLog;
    static bool writeMainLogEntriesAfterSaveStep;
    static Real dx;
-   static Box box;
    static Real dV;
    static Real R_object;
    static Real R2_fieldObstacle;

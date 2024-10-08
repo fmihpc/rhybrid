@@ -81,7 +81,7 @@ template<class PARTICLE>
      // experimental back wall outflow
      /*bool* outerBoundaryFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
      if(outerBoundaryFlag[blockID] == true) {
-        if( (particle.state[particle::X]+xBlock) < (Hybrid::box.xmin + Hybrid::outerBoundaryZone.sizeEta + Hybrid::dx)) {
+        if( (particle.state[particle::X]+xBlock) < (sim->.x_min + Hybrid::outerBoundaryZone.sizeEta + Hybrid::dx)) {
            accelerate = false;
            particle.state[particle::VX] = -Hybrid::upstreamBulkU;
            particle.state[particle::VY] = 0.0;

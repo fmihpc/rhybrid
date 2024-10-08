@@ -115,7 +115,6 @@ int Hybrid::logInterval;
 bool Hybrid::includeInnerCellsInFieldLog;
 bool Hybrid::writeMainLogEntriesAfterSaveStep;
 Real Hybrid::dx;
-Box Hybrid::box;
 Real Hybrid::dV;
 Real Hybrid::R_object;
 Real Hybrid::R2_fieldObstacle;
