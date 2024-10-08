@@ -610,14 +610,18 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    logDataField.sumCellEpz = 0.0;
    logDataField.sumCellEp = 0.0;
    logDataField.maxCellEp = 0.0;
-   // node electric field
+   logDataField.sumCellEp2 = 0.0;
+   // electric field
    logDataField.sumNodeEx = 0.0;
    logDataField.sumNodeEy = 0.0;
    logDataField.sumNodeEz = 0.0;
    logDataField.sumNodeE = 0.0;
    logDataField.maxNodeE = 0.0;
+   logDataField.sumNodeE2 = 0.0;
+   logDataField.sumCellE2 = 0.0;
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
    Real* cellJi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
+   Real* cellUe = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellUeID);
    Real* cellEp = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellEpID);
    Real* nodeE  = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    bool* innerFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
@@ -640,14 +644,15 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
          // do not include cells at x < xmin
          if(xMinFlag[n] == true) { continue; }
 #endif
-	 // face magnetic field
+	 // divergence of B in a cell from face magnetic field
 	 Real divB = ((allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+0] - allFaceB[(block::arrayIndex(i+0,j+1,k+1))*3+0])
 		    + (allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+1] - allFaceB[(block::arrayIndex(i+1,j+0,k+1))*3+1])
 		    + (allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+2] - allFaceB[(block::arrayIndex(i+1,j+1,k+0))*3+2]))/Hybrid::dx;
 	 divB = fabs(divB);
-	 Real Bx = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+0] + allFaceB[(block::arrayIndex(i+0,j+1,k+1))*3+0]);
-	 Real By = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+1] + allFaceB[(block::arrayIndex(i+1,j+0,k+1))*3+1]);
-	 Real Bz = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+2] + allFaceB[(block::arrayIndex(i+1,j+1,k+0))*3+2]);
+	 // B in a cell as an average face magnetic field
+	 const Real Bx = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+0] + allFaceB[(block::arrayIndex(i+0,j+1,k+1))*3+0]);
+	 const Real By = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+1] + allFaceB[(block::arrayIndex(i+1,j+0,k+1))*3+1]);
+	 const Real Bz = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+2] + allFaceB[(block::arrayIndex(i+1,j+1,k+0))*3+2]);
 	 const Real B2 = sqr(Bx) + sqr(By) + sqr(Bz);
 	 const Real Btot = sqrt(B2);
 	 Real divBPerB = 0.0;
@@ -671,20 +676,34 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	 if(cellJitot > logDataField.maxCellJi) { logDataField.maxCellJi = cellJitot; }
 
 	 // cell electron pressure electric field
-	 const Real cellEptot = sqrt( sqr(cellEp[n3+0]) + sqr(cellEp[n3+1]) + sqr(cellEp[n3+2]) );
+	 const Real cellEp2 = sqr(cellEp[n3+0]) + sqr(cellEp[n3+1]) + sqr(cellEp[n3+2]);
+	 const Real cellEptot = sqrt(cellEp2);
 	 logDataField.sumCellEpx += cellEp[n3+0];
 	 logDataField.sumCellEpy += cellEp[n3+1];
 	 logDataField.sumCellEpz += cellEp[n3+2];
 	 logDataField.sumCellEp += cellEptot;
+	 logDataField.sumCellEp2 += cellEp2;
 	 if(cellEptot > logDataField.maxCellEp) { logDataField.maxCellEp = cellEptot; }
 
-	 // node electric field
-	 const Real nodeEtot = sqrt( sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]) );
+	 // node electric field -Ue x B + eta*J
+	 const Real nodeE2 = sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]);
+	 const Real nodeEtot = sqrt(nodeE2);
 	 logDataField.sumNodeEx += nodeE[n3+0];
 	 logDataField.sumNodeEy += nodeE[n3+1];
 	 logDataField.sumNodeEz += nodeE[n3+2];
 	 logDataField.sumNodeE += nodeEtot;
+	 logDataField.sumNodeE2 += nodeE2;
 	 if(nodeEtot > logDataField.maxNodeE) { logDataField.maxNodeE = nodeEtot; }
+
+	 // cell electric field -Ue x B
+	 const Real cellUex = cellUe[n3+0];
+	 const Real cellUey = cellUe[n3+1];
+	 const Real cellUez = cellUe[n3+2];
+	 const Real cellEx = -(cellUey*Bz - cellUez*By);
+	 const Real cellEy = -(cellUez*Bx - cellUex*Bz);
+	 const Real cellEz = -(cellUex*By - cellUey*Bx);
+	 const Real cellE2 = sqr(cellEx) + sqr(cellEy) + sqr(cellEz);
+	 logDataField.sumCellE2 += cellE2;
 
 	 // update field log cell counter
 	 logDataField.N_cells++;
@@ -868,11 +887,14 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    Real sumCellEpGlobal = 0.0;
    Real maxCellEpThisProcess = logDataField.maxCellEp;
    Real maxCellEpGlobal = 0.0;
+   Real sumCellEp2ThisProcess = logDataField.sumCellEp2;
+   Real sumCellEp2Global = 0.0;
    MPI_Reduce(&sumCellEpxThisProcess,&sumCellEpxGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumCellEpyThisProcess,&sumCellEpyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumCellEpzThisProcess,&sumCellEpzGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumCellEpThisProcess,&sumCellEpGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&maxCellEpThisProcess,&maxCellEpGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumCellEp2ThisProcess,&sumCellEp2Global,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
 
    // node electric field
    Real sumNodeExThisProcess = logDataField.sumNodeEx;
@@ -885,11 +907,17 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    Real sumNodeEGlobal = 0.0;
    Real maxNodeEThisProcess = logDataField.maxNodeE;
    Real maxNodeEGlobal = 0.0;
+   Real sumNodeE2ThisProcess = logDataField.sumNodeE2;
+   Real sumNodeE2Global = 0.0;
+   Real sumCellE2ThisProcess = logDataField.sumCellE2;
+   Real sumCellE2Global = 0.0;
    MPI_Reduce(&sumNodeExThisProcess,&sumNodeExGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumNodeEyThisProcess,&sumNodeEyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumNodeEzThisProcess,&sumNodeEzGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumNodeEThisProcess,&sumNodeEGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&maxNodeEThisProcess,&maxNodeEGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumNodeE2ThisProcess,&sumNodeE2Global,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&sumCellE2ThisProcess,&sumCellE2Global,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
 
    // write field log
    if(sim.mpiRank==sim.MASTER_RANK) {
@@ -933,7 +961,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       else {
 	 Hybrid::logField << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
       }
-      Hybrid::logField << maxCellEpGlobal << " ";
+      Hybrid::logField << maxCellEpGlobal << " " << sumCellEp2Global*Hybrid::dV*constants::PERMITTIVITY/(2.0) << " ";
 
       // node electric field
       if(N_cellsGlobal > 0) {
@@ -946,7 +974,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       else {
 	 Hybrid::logField << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
       }
-      Hybrid::logField << maxNodeEGlobal << " ";
+      Hybrid::logField << " " << maxNodeEGlobal << " " << sumNodeE2Global*Hybrid::dV*constants::PERMITTIVITY/(2.0)  << " " << sumCellE2Global*Hybrid::dV*constants::PERMITTIVITY/(2.0)  << " ";
 
       // global field counters
       if(Dt > 0) {

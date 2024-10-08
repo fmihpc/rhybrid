@@ -2184,7 +2184,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::logField << scientific << showpos;
       Hybrid::logField
 	<< "% field" << endl
-	<< "% columns = 31" << endl
+	<< "% columns = 34" << endl
 	<< "% 01. Time [s]" << endl
 	<< "% 02. avg(faceBx) [T]" << endl
 	<< "% 03. avg(faceBy) [T]" << endl
@@ -2205,17 +2205,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< "% 18. avg(cellEpz) [V/m]" << endl
 	<< "% 19. avg(|cellEp|) [V/m]" << endl
 	<< "% 20. max(|cellEp|) [V/m]" << endl
-	<< "% 21. avg(nodeEx) [V/m]" << endl
-	<< "% 22. avg(nodeEy) [V/m]" << endl
-	<< "% 23. avg(nodeEz) [V/m]" << endl
-	<< "% 24. avg(|nodeE|) [V/m]" << endl
-	<< "% 25. max(|nodeE|) [V/m]" << endl
-	<< "% 26. Constraint maxUe rate (cell) [#/dt]" << endl
-	<< "% 27. Constraint maxUe rate (node) [#/dt]" << endl
-	<< "% 28. Constraint maxVw rate (node) [#/dt]" << endl
-	<< "% 29. Constraint maxE rate (node) [#/dt]" << endl
-	<< "% 30. Constraint minRhoQi rate (cell) [#/dt]" << endl
-	<< "% 31. Constraint minRhoQi rate (node) [#/dt]" << endl;
+	<< "% 21. energy(sum(dV*cellEp^2*eps0/2)) [J]" << endl
+	<< "% 22. avg(nodeEx) [V/m]" << endl
+	<< "% 23. avg(nodeEy) [V/m]" << endl
+	<< "% 24. avg(nodeEz) [V/m]" << endl
+	<< "% 25. avg(|nodeE|) [V/m]" << endl
+	<< "% 26. max(|nodeE|) [V/m]" << endl
+	<< "% 27. energy(sum(dV*nodeE^2*eps0/2)), nodeE = -Ue x B + eta*J [J]" << endl
+	<< "% 28. energy(sum(dV*cellE^2*eps0/2)), cellE = -Ue x B [J]" << endl
+	<< "% 29. Constraint maxUe rate (cell) [#/dt]" << endl
+	<< "% 30. Constraint maxUe rate (node) [#/dt]" << endl
+	<< "% 31. Constraint maxVw rate (node) [#/dt]" << endl
+	<< "% 32. Constraint maxE rate (node) [#/dt]" << endl
+	<< "% 33. Constraint minRhoQi rate (cell) [#/dt]" << endl
+	<< "% 34. Constraint minRhoQi rate (node) [#/dt]" << endl;
    }
 
    // initialize particle counters
