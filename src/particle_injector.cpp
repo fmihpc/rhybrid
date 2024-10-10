@@ -86,11 +86,38 @@ string radiusToString(Real R) {
      to_string((R-Hybrid::R_object)/1e3) + " km + R_object";
 }
 
+// convert string velocity vector cfg variable to Real vector
+bool convertConfigFileVariableVelocity(string velStr,vector<Real>& vel) {
+   // check velocity format: (Ux,Uy,Uz)
+   bool velStrOk = true;
+   if(count(velStr.begin(),velStr.end(),'(') != 1 ||
+      count(velStr.begin(),velStr.end(),')') != 1 ||
+      count(velStr.begin(),velStr.end(),',') != 2 ||
+      velStr.find_first_not_of("(),+-0123456789.e ") != string::npos) {
+      velStrOk = false;
+   }
+   // remove non-numeral characters from string
+   string velStrEdit(velStr);
+   replace(velStrEdit.begin(),velStrEdit.end(),'(',' ');
+   replace(velStrEdit.begin(),velStrEdit.end(),')',' ');
+   replace(velStrEdit.begin(),velStrEdit.end(),',',' ');
+   // remove multiple whitespace: not needed
+   //velStrEdit.erase(unique(velStrEdit.begin(),velStrEdit.end(),[](char a,char b) { return isspace(a) && isspace(b); } ),velStrEdit.end() );
+   // convert string to Reals
+   vel.clear();
+   Real vtmp;
+   stringstream ss(velStrEdit);
+   while (ss >> vtmp) { vel.push_back(vtmp); }
+   // check velocity format: (Ux,Uy,Uz)
+   if(vel.size() != 3) { velStrOk = false; }
+   return velStrOk;
+}
+
 // UNIFORM INJECTOR
 
 InjectorUniform::InjectorUniform(): ParticleInjectorBase() {
    initialized = false;
-   U = vth = n = w = xmin = xmax = 0.0;
+   velocity[0] = velocity[1] = velocity[2] = U = vth = n = w = xmin = xmax = 0.0;
    N_macroParticlesPerCell = -1.0;
 }
 
@@ -155,9 +182,9 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::X] = xinj[s];
       particles[p].state[particle::Y] = yinj[s];
       particles[p].state[particle::Z] = zinj[s];
-      particles[p].state[particle::VX] = -U + vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VX] = velocity[0] + vth*gaussrnd(*simClasses); // not exactly correct
+      particles[p].state[particle::VY] = velocity[1] + vth*gaussrnd(*simClasses); // should be replaced with
+      particles[p].state[particle::VZ] = velocity[2] + vth*gaussrnd(*simClasses); // derivgaussrnd
       particles[p].state[particle::WEIGHT] = w;
 /*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
@@ -179,7 +206,7 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
 }
 
 bool InjectorUniform::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
-   cr.add(configRegionName+".speed","Bulk speed [m/s] (float).",(Real)0.0);
+   cr.add(configRegionName+".velocity","Bulk velocity vector (Ux,Uy,Uz) [m/s] (float,float,float).",string(""));
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
    cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell [#] (Real).",(Real)-1.0);
@@ -193,15 +220,33 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
    this->type = "uniform";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
+   string velStr = "";
    Real T=0;
    cr.parse();
-   cr.get(configRegionName+".speed",U);
+   cr.get(configRegionName+".velocity",velStr);
    cr.get(configRegionName+".density",n);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
    cr.get(configRegionName+".xmin",xmin);
    cr.get(configRegionName+".xmax",xmax);
-   if(U <= 0) { U = 0.0; }
+
+   // bulk velocity vector
+     {
+	bool velStrOk = true;
+	vector<Real> vel;
+	velStrOk = convertConfigFileVariableVelocity(velStr,vel);
+	// if not correct format
+	if(velStrOk == false) {
+	   simClasses.logger << "(" << species->name << ") ERROR: bad format of bulk velocity vector (" << velStr << ")" << endl << write;
+	   initialized = false;
+	}
+	this->velocity[0] = vel[0];
+	this->velocity[1] = vel[1];
+	this->velocity[2] = vel[2];
+     }
+   // bulk speed
+   U = sqrt(sqr(velocity[0]) + sqr(velocity[1]) + sqr(velocity[2]));
+   
    if(N_macroParticlesPerCell > 0 && n > 0 && Hybrid::dx > 0) {
       w = n*Hybrid::dV/N_macroParticlesPerCell;
    }
@@ -215,6 +260,7 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
       initialized = false;
    }
    simClasses.logger
+     << "(" << species->name << ") velocity      = (" << velocity[0]/1e3 << "," << velocity[1]/1e3 << "," << velocity[2]/1e3 << ") km/s" << endl
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
      << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
      << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
@@ -645,29 +691,11 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
 
+   // bulk velocity vector
      {
-	// check velocity format: (Ux,Uy,Uz)
 	bool velStrOk = true;
-	if(count(velStr.begin(),velStr.end(),'(') != 1 ||
-	   count(velStr.begin(),velStr.end(),')') != 1 ||
-	   count(velStr.begin(),velStr.end(),',') != 2 ||
-	   velStr.find_first_not_of("(),+-0123456789.e ") != string::npos) {
-	   velStrOk = false;
-	}
-	// remove non-numeral characters from string
-	string velStrEdit(velStr);
-	replace(velStrEdit.begin(),velStrEdit.end(),'(',' ');
-	replace(velStrEdit.begin(),velStrEdit.end(),')',' ');
-	replace(velStrEdit.begin(),velStrEdit.end(),',',' ');
-	// remove multiple whitespace: not needed
-	//velStrEdit.erase(unique(velStrEdit.begin(),velStrEdit.end(),[](char a,char b) { return isspace(a) && isspace(b); } ),velStrEdit.end() );
-	// convert string to Reals
 	vector<Real> vel;
-	Real vtmp;
-	stringstream ss(velStrEdit);
-	while (ss >> vtmp) { vel.push_back(vtmp); }
-	// check velocity format: (Ux,Uy,Uz)
-	if(vel.size() != 3) { velStrOk = false; }
+	velStrOk = convertConfigFileVariableVelocity(velStr,vel);
 	// if not correct format
 	if(velStrOk == false) {
 	   simClasses.logger << "(" << species->name << ") ERROR: bad format of bulk velocity vector (" << velStr << ")" << endl << write;
@@ -753,6 +781,7 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    else { vth = 0.0; }
    simClasses.logger
      << "(" << species->name << ") velocity      = (" << velocity[0]/1e3 << "," << velocity[1]/1e3 << "," << velocity[2]/1e3 << ") km/s" << endl
+     << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
      << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
      << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
