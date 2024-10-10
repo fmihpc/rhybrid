@@ -19,6 +19,7 @@
 
 #include <climits>
 #include <string>
+#include <algorithm>
 
 #include "particle_injector.h"
 #include "hybrid.h"
@@ -412,7 +413,7 @@ bool InjectorAmbient::initialize(Simulation& sim,SimulationClasses& simClasses,C
 
 InjectorSolarWind::InjectorSolarWind(): ParticleInjectorBase() { 
    initialized = false;
-   U = vth = n = w = 0.0;
+   velocity[0] = velocity[1] = velocity[2] = U = vth = n = w = 0.0;
    checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellDefault;
    initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelDefault;
    N_macroParticlesPerCellPerDt = -1.0;
@@ -624,8 +625,7 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
 }
 
 bool InjectorSolarWind::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
-   cr.add(configRegionName+".injection_boundary","Outer boundary from where the population is injected [xpos/xneg/ypos/yneg/zpos/zneg] (string).",string("xpos"));
-   cr.add(configRegionName+".speed","Bulk speed [m/s] (float).",(Real)0.0);
+   cr.add(configRegionName+".velocity","Bulk velocity vector (Ux,Uy,Uz) [m/s] (float,float,float).",string(""));
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
    cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell in undisturbed solar wind [#] (Real).",(Real)-1.0);
@@ -637,15 +637,52 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
    this->type = "solarwind";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
-   string injectionBoundary = "xpos";
+   string velStr = "";
    Real T=0;
    cr.parse();
-   cr.get(configRegionName+".injection_boundary",injectionBoundary);
-   cr.get(configRegionName+".speed",U);
+   cr.get(configRegionName+".velocity",velStr);
    cr.get(configRegionName+".density",n);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
 
+     {
+	// check velocity format: (Ux,Uy,Uz)
+	bool velStrOk = true;
+	if(count(velStr.begin(),velStr.end(),'(') != 1 ||
+	   count(velStr.begin(),velStr.end(),')') != 1 ||
+	   count(velStr.begin(),velStr.end(),',') != 2 ||
+	   velStr.find_first_not_of("(),+-0123456789.e ") != string::npos) {
+	   velStrOk = false;
+	}
+	// remove non-numeral characters from string
+	string velStrEdit(velStr);
+	replace(velStrEdit.begin(),velStrEdit.end(),'(',' ');
+	replace(velStrEdit.begin(),velStrEdit.end(),')',' ');
+	replace(velStrEdit.begin(),velStrEdit.end(),',',' ');
+	// remove multiple whitespace: not needed
+	//velStrEdit.erase(unique(velStrEdit.begin(),velStrEdit.end(),[](char a,char b) { return isspace(a) && isspace(b); } ),velStrEdit.end() );
+	// convert string to Reals
+	vector<Real> vel;
+	Real vtmp;
+	stringstream ss(velStrEdit);
+	while (ss >> vtmp) { vel.push_back(vtmp); }
+	// check velocity format: (Ux,Uy,Uz)
+	if(vel.size() != 3) { velStrOk = false; }
+	// if not correct format
+	if(velStrOk == false) {
+	   simClasses.logger << "(" << species->name << ") ERROR: bad format of bulk velocity vector (" << velStr << ")" << endl << write;
+	   initialized = false;
+	}
+	// check that only one component is non-zero
+	if(count(vel.begin(),vel.end(),0) != 2) {
+	   simClasses.logger << "(" << species->name << ") ERROR: only bulk velocity vectors aligned or anti-aligned with coordinate axes allowed: (U,0,0), (0,U,0) or (0,0,U) where U < 0 or U > 0 (" << velStr << ")" << endl << write;
+	   initialized = false;
+	}
+	this->velocity[0] = vel[0];
+	this->velocity[1] = vel[1];
+	this->velocity[2] = vel[2];
+     }
+   
    // determine the number of non-ghost cells in the plane perpendicular to undisturbed solar wind flow
    int N_perp_cells = 0;
    int N_x_cells = sim.y_blocks;
@@ -658,44 +695,55 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    const int N_xz_cells = N_x_cells*N_z_cells*block::WIDTH_X*block::WIDTH_Z; // NOTE: blocks != 1 do not work in RHybrid
    const int N_xy_cells = N_x_cells*N_y_cells*block::WIDTH_X*block::WIDTH_Y; // NOTE: blocks != 1 do not work in RHybrid
    
-   // set function pointers to check injection cells and initializing properties of new particles
-   if(injectionBoundary.compare("xpos") == 0) {
+   // set function pointers to find injection cells and initializing properties of new particles
+   if(velocity[0] < 0) { // bulk velocity is (Ux,0,0), where Ux < 0
+      // setup injection from xpos wall
       checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellXPos;
       initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelXPos;
       N_perp_cells = N_yz_cells;
+      U = fabs(velocity[0]);
    }
-   else if (injectionBoundary.compare("xneg") == 0) {
+   else if(velocity[0] > 0) { // bulk velocity is (Ux,0,0), where Ux > 0
+      // setup injection from xneg wall
       checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellXNeg;
       initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelXNeg;
       N_perp_cells = N_yz_cells;
+      U = fabs(velocity[0]);
    }
-   else if(injectionBoundary.compare("ypos") == 0) {
+   else if(velocity[1] < 0) { // bulk velocity is (0,Uy,0), where Uy < 0
+      // setup injection from ypos wall
       checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellYPos;
       initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelYPos;
       N_perp_cells = N_xz_cells;
+      U = fabs(velocity[1]);
    }
-   else if (injectionBoundary.compare("yneg") == 0) {
+   else if(velocity[1] > 0) { // bulk velocity is (0,Uy,0), where Ux > 0
+      // setup injection from yneg wall
       checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellYNeg;
       initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelYNeg;
       N_perp_cells = N_xz_cells;
+      U = fabs(velocity[1]);
    }
-   else if(injectionBoundary.compare("zpos") == 0) {
+   else if(velocity[2] < 0) { // bulk velocity is (0,0,Uz), where Uz < 0
+      // setup injection from zpos wall
       checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellZPos;
       initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelZPos;
       N_perp_cells = N_xy_cells;
+      U = fabs(velocity[2]);
    }
-   else if (injectionBoundary.compare("zneg") == 0) {
+   else if(velocity[2] > 0) { // bulk velocity is (0,0,Uz), where Uz > 0
+      // setup injection from zneg wall
       checkIfInjectionCellFuncPtr = &InjectorSolarWind::checkIfInjectionCellZNeg;
       initParticleCrdVelFuncPtr = &InjectorSolarWind::initParticleCrdVelZNeg;
       N_perp_cells = N_xy_cells;
+      U = fabs(velocity[2]);
    }
    else {
-      simClasses.logger << "(" << species->name << ") ERROR: unknown injection boundary (" << injectionBoundary  << ")" << endl << write;
+      simClasses.logger << "(" << species->name << ") ERROR: zero bulk velocity vector" << endl << write;
       initialized = false;
    }
-   if(U <= 0) { U = 0.0; }
    if(N_macroParticlesPerCell > 0 && n > 0 && Hybrid::dx > 0) {
-      N_macroParticlesPerCellPerDt = N_macroParticlesPerCell*fabs(U)*sim.dt/Hybrid::dx;
+      N_macroParticlesPerCellPerDt = N_macroParticlesPerCell*U*sim.dt/Hybrid::dx;
       w = n*Hybrid::dV/N_macroParticlesPerCell;
    }
    else {
@@ -704,11 +752,10 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
    simClasses.logger
-     << "(" << species->name << ") injection boundary = " << injectionBoundary << endl
-     << "(" << species->name << ") speed              = " << U/1e3 << " km/s" << endl
-     << "(" << species->name << ") density            = " << n/1e6 << " cm^{-3}" << endl
-     << "(" << species->name << ") temperature        = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
-     << "(" << species->name << ") thermal speed      = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") velocity      = (" << velocity[0]/1e3 << "," << velocity[1]/1e3 << "," << velocity[2]/1e3 << ") km/s" << endl
+     << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
+     << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
+     << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt           = " << N_macroParticlesPerCellPerDt*N_perp_cells << endl
      << "(" << species->name << ") macroparticles per cell per dt  = " << N_macroParticlesPerCellPerDt << endl

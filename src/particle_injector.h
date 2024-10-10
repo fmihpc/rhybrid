@@ -87,6 +87,7 @@ class InjectorSolarWind: public ParticleInjectorBase {
    Real N_macroParticlesPerCellPerDt;
    Real N_macroParticlesPerCell;
    const Species* species;
+   Real velocity[3];
    Real U,vth,n,w;
    bool (InjectorSolarWind::*checkIfInjectionCellFuncPtr)(const pargrid::CellID b); // pointer to function that checks if particles should be injected in this cell
    void (InjectorSolarWind::*initParticleCrdVelFuncPtr)(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz); // pointer to function that initialize coordinates and velocity of a new particle
