@@ -27,7 +27,12 @@
 
 using namespace std;
 
-// probabilistic rounding (used to round non-integer N_macroParticlesPerCellPerDt)
+/* \brief Probabilistic Real2int rounding
+ *
+ * probround(x) (x >= 0) gives either floor(x) or ceil(x), with probability
+ * depending on which one is closer. For example, probround(2.3) gives 2
+ * with 70% probability and 3 with 30% probability.
+ */
 int probround(SimulationClasses& simClasses,Real x) {
    if(x <= 0) { return 0; }
    const int f = static_cast<int>(floor(x));
@@ -36,7 +41,16 @@ int probround(SimulationClasses& simClasses,Real x) {
    else { return f; }
 }
 
-// gaussian randomness
+/** Gaussian randomness
+ *
+ *  Generate a Gaussian deviate with zero mean and unit
+ *  standard deviation: f(x) = (1/(2*pi))*exp(-0.5*x^2), x real.
+ *  Algorithm: Generate random pairs (x,y) from unit square
+ *  -1 <= x <= 1, -1 <= y <= 1 until (x,y) is within
+ *  the unit circle. Compute fac = sqrt(-2.0*log(r2)/r2),
+ *  where r2 = x^2 + y^2. Then, x*fac and y*fac are two Gaussian
+ *  random numbers.
+ */
 Real gaussrnd(SimulationClasses& simClasses)
 {
    static Real saved;
@@ -60,7 +74,22 @@ Real gaussrnd(SimulationClasses& simClasses)
    return result;
 }
 
-// deriv gaussian randomness
+/** Deriv Gaussian randomness
+ *
+ * Return a random number distributed according to
+ * f(x) = c*max(0,x)*exp(-0.5*(x-x0)^2) where the normalization constant c
+ * is chosen so that the integrate(f(x),x,-inf,inf)=1 (notice that f(x)=0 for x<=0).
+ *
+ * Method: F(x)=c*xm*exp(-0.5*(x-xm)^2-0.5*(x0-xm)^2), where xm=0.5*(x0+sqrt(x0^2+4)),
+ * is a majorant, i.e. F(x) >= f(x) for all x>=0 and x0. The majorant is Gaussian
+ * with unit standard deviation and mean equal to xm. (Note that xm is the abscissa
+ * of the maximum of f(x), i.e. f'(xm)=0.) Generate random numbers x from
+ * the majorant Gaussian and accept it with probability f(x)/F(x).
+ * The area under the majorant curve F(x) is close to unity for x0>=0 so that
+ * only a few trials are needed. For x0<0 it is asymptotically proportional
+ * to (-x0) so that more and more trials are needed. Therefore, avoid calling
+ * the function with x0 < -10.
+ */
 Real derivgaussrnd(Real x0,SimulationClasses& simClasses)
 {
    Real x,majorant,pdf;
