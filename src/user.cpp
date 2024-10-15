@@ -2185,7 +2185,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::logField << scientific << showpos;
       Hybrid::logField
 	<< "% field" << endl
-	<< "% columns = 34" << endl
+	<< "% columns = 36" << endl
 	<< "% 01. Time [s]" << endl
 	<< "% 02. avg(faceBx) [T]" << endl
 	<< "% 03. avg(faceBy) [T]" << endl
@@ -2219,7 +2219,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< "% 31. Constraint maxVw rate (node) [#/dt]" << endl
 	<< "% 32. Constraint maxE rate (node) [#/dt]" << endl
 	<< "% 33. Constraint minRhoQi rate (cell) [#/dt]" << endl
-	<< "% 34. Constraint minRhoQi rate (node) [#/dt]" << endl;
+	<< "% 34. Constraint minRhoQi rate (node) [#/dt]" << endl
+	<< "% 35. Minimum electron inertial length [m]" << endl
+	<< "% 36. Maximum electron inertial length [m]" << endl;
    }
 
    // initialize particle counters

@@ -35,6 +35,7 @@ struct LogDataField {
    Real sumCellJix,sumCellJiy,sumCellJiz,sumCellJi,maxCellJi;
    Real sumCellEpx,sumCellEpy,sumCellEpz,sumCellEp,maxCellEp,sumCellEp2;
    Real sumNodeEx,sumNodeEy,sumNodeEz,sumNodeE,maxNodeE,sumNodeE2,sumCellE2;
+   Real minInerLengthEl,maxInerLengthEl;
 };
 
 class UserDataOP: public DataOperator {

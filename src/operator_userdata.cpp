@@ -619,7 +619,11 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    logDataField.maxNodeE = 0.0;
    logDataField.sumNodeE2 = 0.0;
    logDataField.sumCellE2 = 0.0;
+   // spatial and temporal scales
+   logDataField.minInerLengthEl = numeric_limits<Real>::max();
+   logDataField.maxInerLengthEl = numeric_limits<Real>::min();
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
+   Real* cellRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
    Real* cellJi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellUe = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellUeID);
    Real* cellEp = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellEpID);
@@ -704,6 +708,14 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	 const Real cellEz = -(cellUex*By - cellUey*Bx);
 	 const Real cellE2 = sqr(cellEx) + sqr(cellEy) + sqr(cellEz);
 	 logDataField.sumCellE2 += cellE2;
+
+	 // spatial and temporal scales
+	 if(cellRhoQi[n] > 0.0) {
+	    // electron inertial length: sqrt(m_e/(mu0*q_e^2*n_e)) = sqrt(m_e/(mu0*q_e^2*rho_q/q_e)) =  = sqrt(m_e/(mu0*q_e*rho_q))
+	    const Real de = sqrt(constants::MASS_ELECTRON/(constants::PERMEABILITY*constants::CHARGE_ELEMENTARY*cellRhoQi[n]));
+	    if(de > logDataField.maxInerLengthEl) { logDataField.maxInerLengthEl = de; }
+	    if(de < logDataField.minInerLengthEl) { logDataField.minInerLengthEl = de; }
+	 }
 
 	 // update field log cell counter
 	 logDataField.N_cells++;
@@ -924,6 +936,14 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    MPI_Reduce(&sumNodeE2ThisProcess,&sumNodeE2Global,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumCellE2ThisProcess,&sumCellE2Global,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
 
+   // spatial and temporal scal
+   Real minInerLengthElThisProcess = logDataField.minInerLengthEl;
+   Real minInerLengthElGlobal = 0.0;
+   Real maxInerLengthElThisProcess = logDataField.maxInerLengthEl;
+   Real maxInerLengthElGlobal = 0.0;
+   MPI_Reduce(&minInerLengthElThisProcess,&minInerLengthElGlobal,1,MPI_Type<Real>(),MPI_MIN,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&maxInerLengthElThisProcess,&maxInerLengthElGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
+
    // write field log
    if(sim.mpiRank==sim.MASTER_RANK) {
       // face magnetic field
@@ -995,6 +1015,11 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	 Hybrid::logField << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
       }
 
+      // spatial and temporal scales
+      Hybrid::logField
+	<< minInerLengthElGlobal << " "
+	<< maxInerLengthElGlobal << " ";
+
       // line endings particle logs
       for(size_t i=0;i<Hybrid::logParticle.size();++i) {
 	 (*Hybrid::logParticle[i]) << endl;
@@ -1011,12 +1036,15 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       }
       // write if on a save step or save step already happened after previous entry
       if(Hybrid::writeMainLogEntriesAfterSaveStep == true && sim.mpiRank == sim.MASTER_RANK) {
-	 simClasses.logger << "(RHYBRID) Maximum |Vion|        : Vimax  = " << maxViAllPopulations/1e3 << " km/s" << endl;
-	 simClasses.logger << "(RHYBRID) Maximum |faceB|       : Bmax   = " << maxBGlobal/1e-9 << " nT" << endl;
-	 simClasses.logger << "(RHYBRID) Minimum Larmor period : tL_min = " << tL_min << " s = " << tL_min/sim.dt << " dt" << endl;
-	 simClasses.logger << "(RHYBRID) Maximum |cellJi|      : Jimax  = " << maxCellJiGlobal << " A/m^2" << endl;
-	 simClasses.logger << "(RHYBRID) Maximum |cellEp|      : Epmax  = " << maxCellEpGlobal/1e-3 << " mV/m" << endl;
-	 simClasses.logger << "(RHYBRID) Maximum |nodeE|       : Emax   = " << maxNodeEGlobal/1e-3 << " mV/m" << endl;
+	 simClasses.logger
+	   << "(RHYBRID) Maximum |Vion|        : Vimax  = " << maxViAllPopulations/1e3 << " km/s" << endl
+	   << "(RHYBRID) Maximum |faceB|       : Bmax   = " << maxBGlobal/1e-9 << " nT" << endl
+	   << "(RHYBRID) Minimum Larmor period : tL_min = " << tL_min << " s = " << tL_min/sim.dt << " dt" << endl
+	   << "(RHYBRID) Maximum |cellJi|      : Jimax  = " << maxCellJiGlobal << " A/m^2" << endl
+	   << "(RHYBRID) Maximum |cellEp|      : Epmax  = " << maxCellEpGlobal/1e-3 << " mV/m" << endl
+	   << "(RHYBRID) Maximum |nodeE|       : Emax   = " << maxNodeEGlobal/1e-3 << " mV/m" << endl
+	   << "(RHYBRID) Minimum el. iner. le. : de_min = " << minInerLengthElGlobal << " m" << endl
+	   << "(RHYBRID) Maximum el. iner. le. : de_max = " << maxInerLengthElGlobal << " m" << endl;
 	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
       }
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
