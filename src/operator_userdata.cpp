@@ -1043,8 +1043,8 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	   << "(RHYBRID) Maximum |cellJi|      : Jimax  = " << maxCellJiGlobal << " A/m^2" << endl
 	   << "(RHYBRID) Maximum |cellEp|      : Epmax  = " << maxCellEpGlobal/1e-3 << " mV/m" << endl
 	   << "(RHYBRID) Maximum |nodeE|       : Emax   = " << maxNodeEGlobal/1e-3 << " mV/m" << endl
-	   << "(RHYBRID) Minimum el. iner. le. : de_min = " << minInerLengthElGlobal << " m" << endl
-	   << "(RHYBRID) Maximum el. iner. le. : de_max = " << maxInerLengthElGlobal << " m" << endl;
+	   << "(RHYBRID) Minimum el. iner. le. : de_min = " << minInerLengthElGlobal/1e3 << " km" << endl
+	   << "(RHYBRID) Maximum el. iner. le. : de_max = " << maxInerLengthElGlobal/1e3 << " km" << endl;
 	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
       }
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
