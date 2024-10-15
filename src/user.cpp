@@ -2161,7 +2161,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "% " << species->name << endl
 	   << "% m [kg] = " << species->m << endl
 	   << "% q [C] = " << species->q << endl
-	   << "% columns = 16" << endl
+	   << "% columns = 17" << endl
 	   << "% 01. Time [s]" << endl
 	   << "% 02. Particles [#]" << endl
 	   << "% 03. Macroparticles [#]" << endl
@@ -2170,14 +2170,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "% 06. avg(Vz) [m/s]" << endl
 	   << "% 07. avg(|V|) [m/s]" << endl
 	   << "% 08. Kinetic energy [J]" << endl
-	   << "% 09. Escape rate [#/s]" << endl
-	   << "% 10. Impact rate [#/s]" << endl
-	   << "% 11. Inject rate [#/s]" << endl
-	   << "% 12. Macroparticle inject rate [#/dt]" << endl
-	   << "% 13. Kinetic energy escape rate [J/s]" << endl
-	   << "% 14. Kinetic energy impact rate [J/s]" << endl
-	   << "% 15. Kinetic energy inject rate [J/s]" << endl
-	   << "% 16. Constraint maxVi rate [#/dt]" << endl;
+	   << "% 09. max(|V|) [m/s]" << endl
+	   << "% 10. Escape rate [#/s]" << endl
+	   << "% 11. Impact rate [#/s]" << endl
+	   << "% 12. Inject rate [#/s]" << endl
+	   << "% 13. Macroparticle inject rate [#/dt]" << endl
+	   << "% 14. Kinetic energy escape rate [J/s]" << endl
+	   << "% 15. Kinetic energy impact rate [J/s]" << endl
+	   << "% 16. Kinetic energy inject rate [J/s]" << endl
+	   << "% 17. Constraint maxVi rate [#/dt]" << endl;
       }
       Hybrid::logField.open("field.log",ios_base::out);
       Hybrid::logField.precision(10);

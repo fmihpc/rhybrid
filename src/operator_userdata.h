@@ -25,7 +25,7 @@
 
 // struct to store some particle population log vales
 struct LogDataParticle {
-   Real N_macroParticles,N_realParticles,sumVx,sumVy,sumVz,sumV,sumWV2;
+   Real N_macroParticles,N_realParticles,sumVx,sumVy,sumVz,sumV,sumWV2,maxVi;
 };
 
 // struct to store some field log vales

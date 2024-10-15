@@ -541,6 +541,7 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,vector<LogDat
       logDataParticle[s].sumVz = 0.0;
       logDataParticle[s].sumV = 0.0;
       logDataParticle[s].sumWV2 = 0.0;
+      logDataParticle[s].maxVi = 0.0;
    }
 #ifdef USE_XMIN_BOUNDARY
    bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
@@ -568,12 +569,11 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,vector<LogDat
 	    logDataParticle[s].sumVx += particles[p].state[particle::WEIGHT]*particles[p].state[particle::VX];
 	    logDataParticle[s].sumVy += particles[p].state[particle::WEIGHT]*particles[p].state[particle::VY];
 	    logDataParticle[s].sumVz += particles[p].state[particle::WEIGHT]*particles[p].state[particle::VZ];
-	    logDataParticle[s].sumV += particles[p].state[particle::WEIGHT]*sqrt(sqr(particles[p].state[particle::VX]) +
-									  sqr(particles[p].state[particle::VY]) +
-									  sqr(particles[p].state[particle::VZ]));
-	    logDataParticle[s].sumWV2 += particles[p].state[particle::WEIGHT]*(sqr(particles[p].state[particle::VX]) +
-									sqr(particles[p].state[particle::VY]) +
-									sqr(particles[p].state[particle::VZ]));
+	    const Real v2 = sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]);
+	    const Real vtot = sqrt(v2);
+	    logDataParticle[s].sumV += particles[p].state[particle::WEIGHT]*vtot;
+	    logDataParticle[s].sumWV2 += particles[p].state[particle::WEIGHT]*v2;
+	    if(vtot > logDataParticle[s].maxVi) { logDataParticle[s].maxVi = vtot; }
 	 }
       }
    }
@@ -727,6 +727,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       }
       Hybrid::logField << sim.t << " ";
    }
+   Real maxViAllPopulations = 0.0;
    const Real Dt = sim.t - Hybrid::logCounterTimeStart;
    // go thru populations and sum particle counters
    for(size_t s=0;s<particleLists.size();++s) {
@@ -744,6 +745,8 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       Real sumVGlobal = 0.0;
       Real sumWV2ThisProcess = logDataParticle[s].sumWV2;
       Real sumWV2Global = 0.0;
+      Real maxViThisProcess = logDataParticle[s].maxVi;
+      Real maxViGlobal = 0.0;
       Real sumEscapeThisProcess = Hybrid::logCounterParticleEscape[s];
       Real sumEscapeGlobal = 0.0;
       Real sumImpactThisProcess = Hybrid::logCounterParticleImpact[s];
@@ -767,6 +770,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       MPI_Reduce(&sumVzThisProcess,&sumVzGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumVThisProcess,&sumVGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumWV2ThisProcess,&sumWV2Global,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+      MPI_Reduce(&maxViThisProcess,&maxViGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumEscapeThisProcess,&sumEscapeGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumImpactThisProcess,&sumImpactGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumInjectThisProcess,&sumInjectGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
@@ -788,7 +792,8 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	    (*Hybrid::logParticle[s]) << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
 	 }
 	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-	 (*Hybrid::logParticle[s]) << 0.5*species->m*sumWV2Global << " ";
+	 (*Hybrid::logParticle[s]) << 0.5*species->m*sumWV2Global << " " << maxViGlobal << " ";
+	 if(maxViAllPopulations < maxViGlobal) { maxViAllPopulations = maxViGlobal; }
 	 if(Dt > 0) {
 	    (*Hybrid::logParticle[s])
 	      << sumEscapeGlobal/Dt << " "
@@ -1005,7 +1010,8 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	 if(tL_min/sim.dt < 10) { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min < 10*dt (" << tL_min/sim.dt  << ")" << endl; }
       }
       // write if on a save step or save step already happened after previous entry
-      if(Hybrid::writeMainLogEntriesAfterSaveStep == true) {
+      if(Hybrid::writeMainLogEntriesAfterSaveStep == true && sim.mpiRank == sim.MASTER_RANK) {
+	 simClasses.logger << "(RHYBRID) Maximum |Vion|        : Vimax  = " << maxViAllPopulations/1e3 << " km/s" << endl;
 	 simClasses.logger << "(RHYBRID) Maximum |faceB|       : Bmax   = " << maxBGlobal/1e-9 << " nT" << endl;
 	 simClasses.logger << "(RHYBRID) Minimum Larmor period : tL_min = " << tL_min << " s = " << tL_min/sim.dt << " dt" << endl;
 	 simClasses.logger << "(RHYBRID) Maximum |cellJi|      : Jimax  = " << maxCellJiGlobal << " A/m^2" << endl;
