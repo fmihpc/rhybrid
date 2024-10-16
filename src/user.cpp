@@ -290,6 +290,20 @@ Real getGaussianDistr(Real x,Real sigma) {
    return true;
 }*/
 
+#ifdef USE_CONIC_INNER_BOUNDARY
+// Conic section inner boundary
+bool innerBoundaryConic(const Real x, const Real y, const Real z) {
+   // Perpendicular distance of a conic section to the x axis
+   const Real yz2_conic = sqr(Hybrid::l_conicInnerBoundary - Hybrid::e_conicInnerBoundary*x) - sqr(x);
+   const Real yz2 = sqr(y) + sqr(z);
+   // Check perpendicular distance and x distance
+   if( yz2_conic > yz2 & x < (Hybrid::l_conicInnerBoundary/(1+Hybrid::e_conicInnerBoundary)) ) {
+      return true;
+   }
+   else { return false; }
+}
+#endif
+
 // sanity check of the injector type of a particle population
 bool checkInjectorName(SimulationClasses& simClasses,ConfigReader& cr,string speciesName,string injectorNameA) {
    string injectorNameB = "";
@@ -345,6 +359,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
    cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
    cr.add("Hybrid.R_cellEpObstacle","Radius of inner boundary for zero electron pressure electric field [m] (float)",defaultValue);
+#ifdef USE_CONIC_INNER_BOUNDARY
+   cr.add("Hybrid.l_conicInnerBoundary","Semi-latus rectum of conical inner boundary [m] (float)",defaultValue);
+   cr.add("Hybrid.e_conicInnerBoundary","Eccentricity of conical inner boundary [-] (float)",defaultValue);
+   cr.add("Hybrid.etaC_conicInnerBoundary","Dimensionless resistivity inside conical inner boundary [-] (float)",defaultValue);
+#endif
    cr.add("Hybrid.gravity","Use gravitational acceleration [-] (bool)",false);
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.initialFlowThroughPeriodFactor","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
@@ -420,6 +439,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.R_fieldObstacle",Hybrid::R2_fieldObstacle);
    cr.get("Hybrid.R_particleObstacle",Hybrid::R2_particleObstacle);
    cr.get("Hybrid.R_cellEpObstacle",Hybrid::R2_cellEpObstacle);
+#ifdef USE_CONIC_INNER_BOUNDARY
+   cr.get("Hybrid.l_conicInnerBoundary",Hybrid::l_conicInnerBoundary);
+   cr.get("Hybrid.e_conicInnerBoundary",Hybrid::e_conicInnerBoundary);
+   cr.get("Hybrid.etaC_conicInnerBoundary",Hybrid::eta_conicInnerBoundary);
+#endif
    cr.get("Hybrid.gravity",Hybrid::useGravity);
    cr.get("Hybrid.M_object",Hybrid::M_object);
    Hybrid::GMdt = constants::GRAVITY*Hybrid::M_object*sim.dt; // constant for gravitational acceleration
@@ -487,6 +511,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
    Hybrid::resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
    Hybrid::resistivityEta = Hybrid::resistivityEtaC*Hybrid::resistivityGridUnit;
+#ifdef USE_CONIC_INNER_BOUNDARY
+   Hybrid::eta_conicInnerBoundary *= Hybrid::resistivityGridUnit;
+#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::outerBoundaryZone.eta *= Hybrid::resistivityGridUnit;
 #endif
@@ -659,6 +686,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "dV = " << Hybrid::dV << " m^3" << endl << endl
      << "(BASIC PARAMETERS)" << endl
      << "R_object  = " << Hybrid::R_object/1e3 << " km = " << Hybrid::R_object/Hybrid::dx << " dx" << endl
+#ifdef USE_CONIC_INNER_BOUNDARY
+     << "Using conic inner boundary" << endl
+     << "Inner boundary semi-latus rectum = " << Hybrid::l_conicInnerBoundary/1e3 << " km = " << Hybrid::l_conicInnerBoundary/Hybrid::R_object << " R_object" << endl
+     << "Inner boundary eccentricity = " << Hybrid::e_conicInnerBoundary << endl
+     << "Inner boundary eta = " << Hybrid::eta_conicInnerBoundary << " Ohm m = " << Hybrid::eta_conicInnerBoundary/(Hybrid::resistivityGridUnit + 1e-30) << " mu_0*dx^2/dt" << endl;
+#else
      << "Using spherical inner boundary" << endl
      << "R_fieldObstacle = ";
    if(Hybrid::R2_fieldObstacle > 0) {
@@ -686,6 +719,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< (sqrt(Hybrid::R2_cellEpObstacle) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
    }
    else { simClasses.logger << Hybrid::R2_particleObstacle << "" << endl; }
+#endif
    simClasses.logger
      << "Gravitational acceleration = " << Hybrid::useGravity << endl
      << "M_object  = " << Hybrid::M_object     << " kg" << endl
@@ -1448,6 +1482,26 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    }
 	    faceB[n*3+0] = 1.5e-9;
 #endif
+#ifdef USE_CONIC_INNER_BOUNDARY
+            if( innerBoundaryConic(xCellCenter,yCellCenter,zCellCenter) == true ) {
+               innerFlagField[n] = true;
+               innerFlagParticle[b] = true;
+               innerFlagCellEp[b] = true;
+            }
+            else { innerFlagField[n] = false; }
+            if( innerBoundaryConic(xNode,yNode,zNode) == true ) {
+               innerFlagNode[n] = true;
+#ifdef USE_RESISTIVITY
+               nodeEta[n] = Hybrid::eta_conicInnerBoundary;
+#endif
+            }
+            else {
+               innerFlagNode[n] = false;
+#ifdef USE_RESISTIVITY
+               nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
+#endif
+            }
+#else
 	    const Real r2 = sqr(xCellCenter) + sqr(yCellCenter) + sqr(zCellCenter);
 	    if(r2 < Hybrid::R2_fieldObstacle) { innerFlagField[n] = true; }
 	    else                              { innerFlagField[n] = false; }
@@ -1459,6 +1513,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    else                                  { innerFlagNode[n] = false; }
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
+#endif
 #endif
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
             cellRhoQiBg[n] = getBackgroundChargeDensity(simClasses,bgChargeDensityProfileName,xCellCenter,yCellCenter,zCellCenter,bgChargeDensityArgs);

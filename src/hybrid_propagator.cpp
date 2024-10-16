@@ -1635,6 +1635,7 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
    for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = 3*n;
+
       Real node1x = array[(block::arrayIndex(i+0,j+0,k+1))*3+0];
       Real node1y = array[(block::arrayIndex(i+0,j+0,k+1))*3+1];
       //Real node1z = array[(block::arrayIndex(i+0,j+0,k+1))*3+2];

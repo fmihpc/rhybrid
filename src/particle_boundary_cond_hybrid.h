@@ -143,6 +143,17 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
       // Measure computation time if we are testing for repartitioning:
       if (sim->countPropagTime == true) t_propag = MPI_Wtime();
       PARTICLE* particles = wrapper.data()[b];
+#ifdef USE_CONIC_INNER_BOUNDARY
+      // remove all particles within the conic inner boundary cells
+      int current = 0;
+      int end = N_particles[b]-1;
+      while (current <= end) {
+         Hybrid::logCounterParticleImpact[this->species.popid-1] += particles[current].state[particle::WEIGHT];
+	 Hybrid::logCounterParticleImpactKineticEnergy[this->species.popid-1] += particles[current].state[particle::WEIGHT]*( sqr(particles[current].state[particle::VX]) + sqr(particles[current].state[particle::VY]) + sqr(particles[current].state[particle::VZ]) );
+         particles[current] = particles[end];
+         --end;
+      }
+#else
       const size_t b3 = 3*b;
       const Real xBlock = crd[b3+0];
       const Real yBlock = crd[b3+1];
@@ -164,6 +175,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	 }
 	 ++current;
       }
+#endif
       wrapper.resize(b,current);
       N_particles[b] = current;
       // Store block injection time:

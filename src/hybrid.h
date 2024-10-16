@@ -175,6 +175,11 @@ struct Hybrid {
    static Real R2_fieldObstacle;
    static Real R2_particleObstacle;
    static Real R2_cellEpObstacle;
+#ifdef USE_CONIC_INNER_BOUNDARY
+   static Real l_conicInnerBoundary;
+   static Real e_conicInnerBoundary;
+   static Real eta_conicInnerBoundary;
+#endif
    static Real upstreamBulkU;
    static Real M_object;
    static Real GMdt;
