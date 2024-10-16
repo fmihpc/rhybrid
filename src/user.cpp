@@ -345,6 +345,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
    cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
    cr.add("Hybrid.R_cellEpObstacle","Radius of inner boundary for zero electron pressure electric field [m] (float)",defaultValue);
+#ifdef USE_XMIN_BOUNDARY
+   cr.add("Hybrid.xMinBoundary","Back X boundary [m] (float)",defaultValue);
+#endif
    cr.add("Hybrid.gravity","Use gravitational acceleration [-] (bool)",false);
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.initialFlowThroughPeriodFactor","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
@@ -420,6 +423,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.R_fieldObstacle",Hybrid::R2_fieldObstacle);
    cr.get("Hybrid.R_particleObstacle",Hybrid::R2_particleObstacle);
    cr.get("Hybrid.R_cellEpObstacle",Hybrid::R2_cellEpObstacle);
+#ifdef USE_XMIN_BOUNDARY
+   cr.get("Hybrid.xMinBoundary",Hybrid::xMinBoundary);
+#endif
    cr.get("Hybrid.gravity",Hybrid::useGravity);
    cr.get("Hybrid.M_object",Hybrid::M_object);
    Hybrid::GMdt = constants::GRAVITY*Hybrid::M_object*sim.dt; // constant for gravitational acceleration
@@ -655,6 +661,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "x [dx] = " << sim.x_min/Hybrid::dx << " ... " << sim.x_max/Hybrid::dx << endl
      << "y [dx] = " << sim.y_min/Hybrid::dx << " ... " << sim.y_max/Hybrid::dx << endl
      << "z [dx] = " << sim.z_min/Hybrid::dx << " ... " << sim.z_max/Hybrid::dx << endl
+#ifdef USE_XMIN_BOUNDARY
+     << "xmin boundary = " << Hybrid::xMinBoundary/1e3 << " km = " << Hybrid::xMinBoundary/Hybrid::R_object << " R_object = " << Hybrid::xMinBoundary/Hybrid::dx << " dx" << endl
+#endif
      << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
      << "dV = " << Hybrid::dV << " m^3" << endl << endl
      << "(BASIC PARAMETERS)" << endl
@@ -964,6 +973,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataOuterBoundaryFlagID   = simClasses.pargrid.invalidDataID();
    Hybrid::dataOuterBoundaryFlagNodeID = simClasses.pargrid.invalidDataID();
 #endif
+#ifdef USE_XMIN_BOUNDARY
+   Hybrid::dataXminFlagID            = simClasses.pargrid.invalidDataID();
+#endif
 
    // id of a stencil used for particle accumulation into grid
    Hybrid::accumulationStencilID = sim.inverseStencilID;
@@ -1007,6 +1019,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    //addVarBool(sim,simClasses,"innerFlagCellEp_",1,sIDEmpty);
 #ifdef USE_OUTER_BOUNDARY_ZONE
    //addVarBool(sim,simClasses,"outerBoundaryFlag_",1,sIDEmpty);
+#endif
+#ifdef USE_XMIN_BOUNDARY
+   //addVarBool(sim,simClasses,"xMinFlag_",1,sIDEmpty);
 #endif
 #ifdef USE_DETECTORS
    //addVarBool(sim,simClasses,"detPleFlag_",1,sIDEmpty);
@@ -1174,6 +1189,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
 #endif
+#ifdef USE_XMIN_BOUNDARY
+   Hybrid::dataXminFlagID = simClasses.pargrid.addUserData<bool>("xMinFlag",block::SIZE*1);
+   if(Hybrid::dataXminFlagID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add xMinFlag array to ParGrid!" << endl << write;
+      return false;
+   }
+#endif
 #ifdef USE_DETECTORS
    Hybrid::dataDetectorParticleFlagID = simClasses.pargrid.addUserData<bool>("detPleFlag",1);
    if(Hybrid::dataDetectorParticleFlagID == simClasses.pargrid.invalidCellID()) {
@@ -1289,6 +1311,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_OUTER_BOUNDARY_ZONE
    bool* outerBoundaryFlag   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
    bool* outerBoundaryFlagNode = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagNodeID));
+#endif
+#ifdef USE_XMIN_BOUNDARY
+   bool* xMinFlag            = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataXminFlagID));
 #endif
 
 #ifdef USE_DETECTORS
@@ -1560,6 +1585,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	       simClasses.logger << "(RHYBRID) ERROR: unknown type of an outer boundary zone for minRhoQi (" << Hybrid::outerBoundaryZone.typeMinRhoQi << ")" << endl << write;
                return false;
             }
+#endif
+#ifdef USE_XMIN_BOUNDARY
+            if(xCellCenter < Hybrid::xMinBoundary) { xMinFlag[n] = true; }
+            else                                   { xMinFlag[n] = false; }
 #endif
 #ifdef USE_DETECTORS
             const Real xmin = xCellCenter - 0.5*Hybrid::dx;
@@ -2244,6 +2273,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"outerBoundaryFlag",false},
       {"outerBoundaryFlagNode",false},
 #endif
+#ifdef USE_XMIN_BOUNDARY
+      {"xMinFlag",false},
+#endif
       {"prod_rate_iono",false},
       {"prod_rate_exo",false},
       {"cellBAverage",false},
@@ -2377,6 +2409,9 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
 #ifdef USE_OUTER_BOUNDARY_ZONE
    if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagID)   == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagNodeID) == false) { success = false; }
+#endif
+#ifdef USE_XMIN_BOUNDARY
+   if(simClasses.pargrid.removeUserData(Hybrid::dataXminFlagID)            == false) { success = false; }
 #endif
 #ifdef USE_DETECTORS
    if(simClasses.pargrid.removeUserData(Hybrid::dataDetectorParticleFlagID)  == false) { success = false; }

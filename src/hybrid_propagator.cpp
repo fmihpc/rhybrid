@@ -1627,6 +1627,11 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
       if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
       if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
+   
+#ifdef USE_XMIN_BOUNDARY
+   bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
+   if(xMinFlag == NULL) {cerr << "ERROR: obtained NULL xMinFlag array!" << endl; exit(1);}
+#endif
 
    const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real array[size*3];
@@ -1635,6 +1640,11 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
    for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = 3*n;
+#ifdef USE_XMIN_BOUNDARY
+      // no field propagation at x < xmin
+      if(xMinFlag[n] == true && doFaraday == true) { continue; }
+#endif
+
       Real node1x = array[(block::arrayIndex(i+0,j+0,k+1))*3+0];
       Real node1y = array[(block::arrayIndex(i+0,j+0,k+1))*3+1];
       //Real node1z = array[(block::arrayIndex(i+0,j+0,k+1))*3+2];

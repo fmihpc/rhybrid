@@ -2,6 +2,7 @@ USE_NODE_UE := true
 USE_EDGE_J := true
 USE_B_INITIAL := true
 USE_B_CONSTANT := false
+USE_XMIN_BOUNDARY := false
 USE_RESISTIVITY := true
 USE_BACKGROUND_CHARGE_DENSITY := false
 USE_OUTER_BOUNDARY_ZONE := false
@@ -34,6 +35,10 @@ endif
 
 ifeq ($(USE_B_CONSTANT),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_B_CONSTANT
+endif
+
+ifeq ($(USE_XMIN_BOUNDARY),true)
+CXXFLAGS := $(CXXFLAGS) -DUSE_XMIN_BOUNDARY
 endif
 
 ifeq ($(USE_RESISTIVITY),true)

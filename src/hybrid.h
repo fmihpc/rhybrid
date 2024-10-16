@@ -135,6 +135,9 @@ struct Hybrid {
    static pargrid::DataID dataOuterBoundaryFlagID;
    static pargrid::DataID dataOuterBoundaryFlagNodeID;
 #endif
+#ifdef USE_XMIN_BOUNDARY
+   static pargrid::DataID dataXminFlagID;
+#endif
 #ifdef USE_DETECTORS
    // detector: particles
    static pargrid::DataID dataDetectorParticleFlagID;
@@ -175,6 +178,9 @@ struct Hybrid {
    static Real R2_fieldObstacle;
    static Real R2_particleObstacle;
    static Real R2_cellEpObstacle;
+#ifdef USE_XMIN_BOUNDARY
+   static Real xMinBoundary;
+#endif
    static Real upstreamBulkU;
    static Real M_object;
    static Real GMdt;
