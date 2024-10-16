@@ -35,7 +35,7 @@ struct LogDataField {
    Real sumCellJix,sumCellJiy,sumCellJiz,sumCellJi,maxCellJi;
    Real sumCellEpx,sumCellEpy,sumCellEpz,sumCellEp,maxCellEp,sumCellEp2;
    Real sumNodeEx,sumNodeEy,sumNodeEz,sumNodeE,maxNodeE,sumNodeE2,sumCellE2;
-   Real minInerLengthEl,maxInerLengthEl;
+   Real minInerLengthElectron,maxInerLengthElectron,minInerLengthProton,maxInerLengthProton,minTLarmor,maxVAlfven;
 };
 
 class UserDataOP: public DataOperator {
@@ -55,8 +55,8 @@ class UserDataOP: public DataOperator {
    void calcCellParticleBulkParameters(std::vector<Real>& cellDensity,std::vector<Real>& cellTemperature,std::vector<Real>& cellVelocity,const std::vector<ParticleListBase*>& particleLists,std::vector<unsigned int> s);
 };
 
-void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<LogDataParticle>& logDataParticle,const std::vector<ParticleListBase*>& particleLists);
-void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& logDataField);
+void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<LogDataParticle>& logDataParticle,const std::vector<ParticleListBase*>& particleLists,std::vector<Real>& cellRhoM);
+void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& logDataField,std::vector<Real>& cellRhoM);
 bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particles);
 
 #endif
