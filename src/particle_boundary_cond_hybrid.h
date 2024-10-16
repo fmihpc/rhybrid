@@ -82,7 +82,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	       // check coordinates, velocities and weight: remove if the particle is corrupted
 	       if(x < 0 || y < 0 || z < 0 || x > bs[0] || y > bs[1] || z > bs[2] ||
 		  fabs(vx) > Hybrid::maxVi || fabs(vy) > Hybrid::maxVi || fabs(vz) > Hybrid::maxVi ||
-		  w != Hybrid::allPops[species.popid-1].w ||
+		  w != Hybrid::allPopsInfo[species.popid-1].w ||
 		  std::isnan(x) == true || std::isnan(y) == true || std::isnan(z) == true ||
 		  std::isnan(vx) == true || std::isnan(vy) == true || std::isnan(vz) == true ||
 		  std::isnan(w) == true) {
@@ -121,8 +121,8 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
       PARTICLE* particles = wrapper.data()[blockLID];
       for(size_t p=0; p<N_particles[blockLID]; ++p) {
 	 // escape counter
-	 Hybrid::particleCounterEscape[species.popid-1] += particles[p].state[particle::WEIGHT];
-	 Hybrid::particleCounterEscapeKineticEnergy[species.popid-1] += particles[p].state[particle::WEIGHT]*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
+	 Hybrid::logCounterParticleEscape[species.popid-1] += particles[p].state[particle::WEIGHT];
+	 Hybrid::logCounterParticleEscapeKineticEnergy[species.popid-1] += particles[p].state[particle::WEIGHT]*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
       }
       N_particles[blockLID] = 0;
       wrapper.resize(blockLID,0);
@@ -148,8 +148,8 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
       int current = 0;
       int end = N_particles[b]-1;
       while (current <= end) {
-         Hybrid::particleCounterImpact[this->species.popid-1] += particles[current].state[particle::WEIGHT];
-	 Hybrid::particleCounterImpactKineticEnergy[this->species.popid-1] += particles[current].state[particle::WEIGHT]*( sqr(particles[current].state[particle::VX]) + sqr(particles[current].state[particle::VY]) + sqr(particles[current].state[particle::VZ]) );
+         Hybrid::logCounterParticleImpact[this->species.popid-1] += particles[current].state[particle::WEIGHT];
+	 Hybrid::logCounterParticleImpactKineticEnergy[this->species.popid-1] += particles[current].state[particle::WEIGHT]*( sqr(particles[current].state[particle::VX]) + sqr(particles[current].state[particle::VY]) + sqr(particles[current].state[particle::VZ]) );
          particles[current] = particles[end];
          --end;
       }
@@ -167,8 +167,8 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	 //if (r2 < Hybrid::R2_particleObstacle) {
          if (r2 < this->species.R2_obstacle) {
 	    // impact counter
-	    Hybrid::particleCounterImpact[this->species.popid-1] += particles[current].state[particle::WEIGHT];
-	    Hybrid::particleCounterImpactKineticEnergy[this->species.popid-1] += particles[current].state[particle::WEIGHT]*( sqr(particles[current].state[particle::VX]) + sqr(particles[current].state[particle::VY]) + sqr(particles[current].state[particle::VZ]) );
+	    Hybrid::logCounterParticleImpact[this->species.popid-1] += particles[current].state[particle::WEIGHT];
+	    Hybrid::logCounterParticleImpactKineticEnergy[this->species.popid-1] += particles[current].state[particle::WEIGHT]*( sqr(particles[current].state[particle::VX]) + sqr(particles[current].state[particle::VY]) + sqr(particles[current].state[particle::VZ]) );
 	    particles[current] = particles[end];
 	    --end;
 	    continue;

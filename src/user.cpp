@@ -76,7 +76,7 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    if(Hybrid::logInterval > 0) {
       if( (sim.timestep)%(Hybrid::logInterval) == 0.0) {
          int masterFailed = 0; // check for failure of the master PE for run termination
-         if(writeLogs(sim,simClasses,particleLists) == false) {
+         if(logWriteParticleField(sim,simClasses,particleLists) == false) {
             rvalue = false;
             if(sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
          }
@@ -112,7 +112,9 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       sim.repartitionCheckInterval = Hybrid::repartitionCheckIntervalTmp;
    }
 #endif
+#ifndef USE_TEST_PARTICLE_MODE
    setupGetFields(sim,simClasses);
+#endif
    // Propagate all particles:
    for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->propagateBoundaryCellParticles() == false) { rvalue = false; }  }
    for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->propagateInnerCellParticles() == false) { rvalue = false; } }
@@ -128,7 +130,9 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       if(particleLists[p]->injectParticles() == false) { rvalue = false; } 
    }
    // propagate magnetic field
+#ifndef USE_TEST_PARTICLE_MODE
    if(propagateB(sim,simClasses,particleLists) == false) { rvalue = false; }
+#endif
 #ifdef USE_DETECTORS
    if(Hybrid::detParticleRecording == true) {
       if(Hybrid::detParticleTimestepCnt >= Hybrid::detParticleWriteInterval) {
@@ -144,6 +148,16 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       }
    }
 #endif
+
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
+#ifdef USE_TEST_PARTICLE_MODE
+   // in case test particle mode is enabled, this
+   // counter is ignored in hybrid_propagator.cpp/propagateB
+   // and is increased here
+   Hybrid::gridTemporalAverageCounter++;
+#endif
+#endif
+
    return rvalue;
 }
 
@@ -166,8 +180,8 @@ bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,Confi
      << COMPILEINFO << endl
 #endif
      << write;
-   Hybrid::X_POS_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+1,+0,+0));   
-   Hybrid::X_NEG_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(-1,+0,+0));   
+   Hybrid::X_POS_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+1,+0,+0));
+   Hybrid::X_NEG_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(-1,+0,+0));
    Hybrid::Y_POS_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+0,+1,+0));
    Hybrid::Y_NEG_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+0,-1,+0));
    Hybrid::Z_POS_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+0,+0,+1));
@@ -241,7 +255,8 @@ Real getGaussianDistr(Real x,Real sigma) {
    }
 }
 
-bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
+// new variable handling TBD
+/*bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
    if(vectorDim <= 0) { return true; }
    // create pargrid array struct
    HybridVariable <Real>d;
@@ -273,7 +288,7 @@ bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_
    Hybrid::varReal[name] = d;
    simClasses.logger << "(USER): created ParGrid used data array: " << name << " (Real[" << vectorDim << "])" << endl << write;
    return true;
-}
+}*/
 
 #ifdef USE_CONIC_INNER_BOUNDARY
 // Conic section inner boundary
@@ -352,18 +367,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.e_conicInnerBoundary","Eccentricity of conical inner boundary [-] (float)",defaultValue);
    cr.add("Hybrid.etaC_conicInnerBoundary","Dimensionless resistivity inside conical inner boundary [-] (float)",defaultValue);
 #endif
+   cr.add("Hybrid.gravity","Use gravitational acceleration [-] (bool)",false);
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.initialFlowThroughPeriodFactor","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.terminateLimitMaxB","Maximum magnitude of magnetic field above which a simulation run is terminated [T] (float)",defaultValue);
    cr.add("Hybrid.minRhoQi","Global minimum value of ion charge density [C/m^3] (float)",defaultValue);
-#ifdef USE_ECUT
-   cr.add("Hybrid.Ecut","Maximum value of node electric field [V/m] (float)",defaultValue);
-#endif
-#ifdef USE_MAXVW
+   cr.add("Hybrid.maxE","Maximum value of node electric field [V/m] (float)",defaultValue);
    cr.add("Hybrid.maxVw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
-#endif
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
 #ifdef USE_B_CONSTANT
    cr.add("Hybrid.include_B0_faraday","Include the constant B0 term in Faraday's law [-] (bool)",false);
@@ -379,6 +391,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("OuterBoundaryZone.sizeMinRhoQi","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
    cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
    cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.constUe","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
 #endif
 #ifdef USE_RESISTIVITY
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
@@ -390,6 +403,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
+#ifdef USE_TEST_PARTICLE_MODE
+   cr.add("IMF.Uex","Upstream Uex [m/s] (float)",-1.0);
+   cr.add("IMF.Uey","Upstream Uey [m/s] (float)",-1.0);
+   cr.add("IMF.Uez","Upstream Uez [m/s] (float)",-1.0);
+   cr.add("IMF.macroparticles_per_cell_scaling","Scaling of macro particle number per cell per dt for test particle propagation (typically this is taken from the first solar wind population but in test particle propationg sw populations may not be there at all.)",-1.0);
+#endif
    cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
    cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
@@ -431,20 +450,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.e_conicInnerBoundary",Hybrid::e_conicInnerBoundary);
    cr.get("Hybrid.etaC_conicInnerBoundary",Hybrid::eta_conicInnerBoundary);
 #endif
+   cr.get("Hybrid.gravity",Hybrid::useGravity);
    cr.get("Hybrid.M_object",Hybrid::M_object);
+   Hybrid::GMdt = constants::GRAVITY*Hybrid::M_object*sim.dt; // constant for gravitational acceleration
    cr.get("Hybrid.initialFlowThroughPeriodFactor",Hybrid::initialFlowThroughPeriod);
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
-#ifdef USE_ECUT
-   cr.get("Hybrid.Ecut",Hybrid::Ecut2);
-   if(Hybrid::Ecut2 > 0) { Hybrid::Ecut2 = sqr(Hybrid::Ecut2); }
-   else { Hybrid::Ecut2 = 0; }
-#endif
-#ifdef USE_MAXVW
+   cr.get("Hybrid.maxE",Hybrid::maxE2);
+   if(Hybrid::maxE2 > 0) { Hybrid::maxE2 = sqr(Hybrid::maxE2); }
+   else { Hybrid::maxE2 = 0; }
    cr.get("Hybrid.maxVw",Hybrid::maxVw);   
-#endif
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
 #ifdef USE_B_CONSTANT
    cr.get("Hybrid.include_B0_faraday",Hybrid::includeConstantB0InFaradaysLaw);
@@ -487,6 +504,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("OuterBoundaryZone.sizeMinRhoQi",Hybrid::outerBoundaryZone.sizeMinRhoQi);
    cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
    cr.get("OuterBoundaryZone.etaC",Hybrid::outerBoundaryZone.eta);
+   cr.get("OuterBoundaryZone.constUe",Hybrid::outerBoundaryZone.constUe);
    Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
    Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
 #endif
@@ -540,6 +558,37 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
+#ifdef USE_TEST_PARTICLE_MODE
+   Real B[3],Ue[3],E[3];
+   cr.get("IMF.Uex",Ue[0]);
+   cr.get("IMF.Uey",Ue[1]);
+   cr.get("IMF.Uez",Ue[2]);
+   cr.get("IMF.macroparticles_per_cell_scaling",Hybrid::swMacroParticlesCellPerDt);
+   if(Ue[0] == -1 && Ue[2] == -1 && Ue[2] == -1) {
+      simClasses.logger << "(RHYBRID) ERROR: test particle mode enabled in Makefile but IMF.Ue not given in config file" << endl;
+      return false;
+   }
+   B[0] = Hybrid::IMFBx;
+   B[1] = Hybrid::IMFBy;
+   B[2] = Hybrid::IMFBz;
+   crossProduct(B,Ue,E);
+   Hybrid::Ex = E[0];
+   Hybrid::Ey = E[1];
+   Hybrid::Ez = E[2];
+   simClasses.logger
+     << endl
+     << "SELF-CONSISTENT HYBRID ALGORITHM DISABLED" << endl
+     << "USING TEST PARTICLE PROPAGATION MODE IN HOMOGENEOUS FIELDS:" << endl
+     << "Bx = " << Hybrid::IMFBx/1e-9 << " nT" << endl
+     << "By = " << Hybrid::IMFBy/1e-9 << " nT" << endl
+     << "Bz = " << Hybrid::IMFBz/1e-9 << " nT" << endl
+     << "Uex = " << Ue[0]/1e3 << " km/s" << endl
+     << "Uey = " << Ue[1]/1e3 << " km/s" << endl
+     << "Uez = " << Ue[2]/1e3 << " km/s" << endl
+     << "Ex = " << E[0]/1e-3 << " mV/m" << endl
+     << "Ey = " << E[1]/1e-3 << " mV/m" << endl
+     << "Ez = " << E[2]/1e-3 << " mV/m" << endl;
+#endif
    string inputStr;
    cr.get("IMF.BoundaryCellB",inputStr);
    if(inputStr.size() != 11 ||
@@ -625,26 +674,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "blocks (x y z) = " << sim.x_blocks << " " << sim.y_blocks << " " << sim.z_blocks << endl
      << "cells per block (x y z) = " << block::WIDTH_X << " " << block::WIDTH_Y << " " << block::WIDTH_Z << endl
      << "cells (x y z) = " << nx << " " << ny << " " << nz << endl
-     << "total cells = " << Ncells << " = " << Ncells/1e6 << " x 10^6" << endl << endl;
+     << "total cells = " << Ncells << " = " << Ncells/1e6 << " x 10^6" << endl
+     << "periodic (x y z) = " << sim.x_periodic << " " << sim.z_periodic << " " << sim.y_periodic << " " << endl << endl;
    
-   // a hack as there is no access to the grid builder easily from here
-   cr.get("LogicallyCartesian.x_min",Hybrid::box.xmin);
-   cr.get("LogicallyCartesian.x_max",Hybrid::box.xmax);
-   cr.get("LogicallyCartesian.y_min",Hybrid::box.ymin);
-   cr.get("LogicallyCartesian.y_max",Hybrid::box.ymax);
-   cr.get("LogicallyCartesian.z_min",Hybrid::box.zmin);
-   cr.get("LogicallyCartesian.z_max",Hybrid::box.zmax);
    simClasses.logger
      << "(SIMULATION DOMAIN)" << endl
-     << "x [km] = " << Hybrid::box.xmin/1e3 << " ... " << Hybrid::box.xmax/1e3 << endl
-     << "y [km] = " << Hybrid::box.ymin/1e3 << " ... " << Hybrid::box.ymax/1e3 << endl
-     << "z [km] = " << Hybrid::box.zmin/1e3 << " ... " << Hybrid::box.zmax/1e3 << endl
-     << "x [R_object] = " << Hybrid::box.xmin/Hybrid::R_object << " ... " << Hybrid::box.xmax/Hybrid::R_object << endl
-     << "y [R_object] = " << Hybrid::box.ymin/Hybrid::R_object << " ... " << Hybrid::box.ymax/Hybrid::R_object << endl
-     << "z [R_object] = " << Hybrid::box.zmin/Hybrid::R_object << " ... " << Hybrid::box.zmax/Hybrid::R_object << endl
-     << "x [dx] = " << Hybrid::box.xmin/Hybrid::dx << " ... " << Hybrid::box.xmax/Hybrid::dx << endl
-     << "y [dx] = " << Hybrid::box.ymin/Hybrid::dx << " ... " << Hybrid::box.ymax/Hybrid::dx << endl
-     << "z [dx] = " << Hybrid::box.zmin/Hybrid::dx << " ... " << Hybrid::box.zmax/Hybrid::dx << endl
+     << "x [km] = " << sim.x_min/1e3 << " ... " << sim.x_max/1e3 << endl
+     << "y [km] = " << sim.y_min/1e3 << " ... " << sim.y_max/1e3 << endl
+     << "z [km] = " << sim.z_min/1e3 << " ... " << sim.z_max/1e3 << endl
+     << "x [R_object] = " << sim.x_min/Hybrid::R_object << " ... " << sim.x_max/Hybrid::R_object << endl
+     << "y [R_object] = " << sim.y_min/Hybrid::R_object << " ... " << sim.y_max/Hybrid::R_object << endl
+     << "z [R_object] = " << sim.z_min/Hybrid::R_object << " ... " << sim.z_max/Hybrid::R_object << endl
+     << "x [dx] = " << sim.x_min/Hybrid::dx << " ... " << sim.x_max/Hybrid::dx << endl
+     << "y [dx] = " << sim.y_min/Hybrid::dx << " ... " << sim.y_max/Hybrid::dx << endl
+     << "z [dx] = " << sim.z_min/Hybrid::dx << " ... " << sim.z_max/Hybrid::dx << endl
 #ifdef USE_XMIN_BOUNDARY
      << "xmin boundary = " << Hybrid::xMinBoundary/1e3 << " km = " << Hybrid::xMinBoundary/Hybrid::R_object << " R_object = " << Hybrid::xMinBoundary/Hybrid::dx << " dx" << endl
 #endif
@@ -687,6 +730,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    else { simClasses.logger << Hybrid::R2_particleObstacle << "" << endl; }
 #endif
    simClasses.logger
+     << "Gravitational acceleration = " << Hybrid::useGravity << endl
      << "M_object  = " << Hybrid::M_object     << " kg" << endl
      << "Hall term = " << Hybrid::useHallElectricField << endl;
 #ifdef USE_B_CONSTANT
@@ -948,14 +992,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
    Hybrid::dataNodeEtaID             = simClasses.pargrid.invalidDataID();
 #endif
-   Hybrid::dataCounterCellMaxUeID    = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCounterCellMaxViID    = simClasses.pargrid.invalidDataID();
-   Hybrid::dataCounterCellMinRhoQiID = simClasses.pargrid.invalidDataID();
-#ifdef USE_ECUT
-   Hybrid::dataCounterNodeEcutID     = simClasses.pargrid.invalidDataID();
-#endif
-#ifdef USE_MAXVW
-   Hybrid::dataCounterNodeMaxVwID    = simClasses.pargrid.invalidDataID();
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   Hybrid::dataGridCounterCellMaxUeID    = simClasses.pargrid.invalidDataID();
+   Hybrid::dataGridCounterCellMaxViID    = simClasses.pargrid.invalidDataID();
+   Hybrid::dataGridCounterCellMinRhoQiID = simClasses.pargrid.invalidDataID();
+   Hybrid::dataGridCounterNodeMaxEID     = simClasses.pargrid.invalidDataID();
+   Hybrid::dataGridCounterNodeMaxVwID    = simClasses.pargrid.invalidDataID();
 #endif   
    Hybrid::dataInnerFlagFieldID      = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagNodeID       = simClasses.pargrid.invalidDataID();
@@ -963,6 +1005,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataInnerFlagCellEpID     = simClasses.pargrid.invalidDataID();
 #ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::dataOuterBoundaryFlagID   = simClasses.pargrid.invalidDataID();
+   Hybrid::dataOuterBoundaryFlagNodeID = simClasses.pargrid.invalidDataID();
 #endif
 #ifdef USE_XMIN_BOUNDARY
    Hybrid::dataXminFlagID            = simClasses.pargrid.invalidDataID();
@@ -997,14 +1040,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
    //addVarReal(sim,simClasses,"nodeEta_",1,sIDEmpty);
 #endif
-   //addVarReal(sim,simClasses,"counterCellMaxUe_",1,sIDEmpty);
-   //addVarReal(sim,simClasses,"counterCellMaxVi_",1,sIDEmpty);
-   //addVarReal(sim,simClasses,"counterCellMinRhoQi_",1,sIDEmpty);
-#ifdef USE_ECUT
-   //addVarReal(sim,simClasses,"counterNodeEcut_",1,sIDEmpty);
-#endif
-#ifdef USE_MAXVW
-   //addVarReal(sim,simClasses,"counterNodeMaxVw_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"gridCounterCellMaxUe_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"gridCounterCellMaxVi_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"gridCounterCellMinRhoQi_",1,sIDEmpty);
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   //addVarReal(sim,simClasses,"gridCounterNodeMaxE_",1,sIDEmpty);
+   //addVarReal(sim,simClasses,"gridCounterNodeMaxVw_",1,sIDEmpty);
 #endif
    //addVarBool(sim,simClasses,"innerFlagField_",1,sIDEmpty);
    //addVarBool(sim,simClasses,"innerFlagNode_",1,sIDEmpty);
@@ -1019,7 +1060,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_DETECTORS
    //addVarBool(sim,simClasses,"detPleFlag_",1,sIDEmpty);
 #endif
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    //addVarReal(sim,simClasses,"cellAverageB",3,sIDEmpty);
 #endif
       
@@ -1121,33 +1162,30 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
 #endif
-   // counters
-   Hybrid::dataCounterCellMaxUeID = simClasses.pargrid.addUserData<Real>("counterCellMaxUe",block::SIZE*1);
-   if(Hybrid::dataCounterCellMaxUeID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterCellMaxUe array to ParGrid!" << endl << write;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   Hybrid::dataGridCounterCellMaxUeID = simClasses.pargrid.addUserData<Real>("gridCounterCellMaxUe",block::SIZE*1);
+   if(Hybrid::dataGridCounterCellMaxUeID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMaxUe array to ParGrid!" << endl << write;
       return false;
    }
-   Hybrid::dataCounterCellMaxViID = simClasses.pargrid.addUserData<Real>("counterCellMaxVi",block::SIZE*1);
-   if(Hybrid::dataCounterCellMaxViID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterCellMaxVi array to ParGrid!" << endl << write;
+   Hybrid::dataGridCounterCellMaxViID = simClasses.pargrid.addUserData<Real>("gridCounterCellMaxVi",block::SIZE*1);
+   if(Hybrid::dataGridCounterCellMaxViID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMaxVi array to ParGrid!" << endl << write;
       return false;
    }
-   Hybrid::dataCounterCellMinRhoQiID = simClasses.pargrid.addUserData<Real>("counterCellMinRhoQi",block::SIZE*1);
-   if(Hybrid::dataCounterCellMinRhoQiID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterCellMinRhoQi array to ParGrid!" << endl << write;
+   Hybrid::dataGridCounterCellMinRhoQiID = simClasses.pargrid.addUserData<Real>("gridCounterCellMinRhoQi",block::SIZE*1);
+   if(Hybrid::dataGridCounterCellMinRhoQiID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMinRhoQi array to ParGrid!" << endl << write;
       return false;
    }
-#ifdef USE_ECUT
-   Hybrid::dataCounterNodeEcutID = simClasses.pargrid.addUserData<Real>("counterNodeEcut",block::SIZE*1);
-   if(Hybrid::dataCounterNodeEcutID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterNodeEcut array to ParGrid!" << endl << write;
+   Hybrid::dataGridCounterNodeMaxEID = simClasses.pargrid.addUserData<Real>("gridCounterNodeMaxE",block::SIZE*1);
+   if(Hybrid::dataGridCounterNodeMaxEID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterNodeMaxE array to ParGrid!" << endl << write;
       return false;
    }
-#endif
-#ifdef USE_MAXVW
-   Hybrid::dataCounterNodeMaxVwID = simClasses.pargrid.addUserData<Real>("counterNodeMaxVw",block::SIZE*1);
-   if(Hybrid::dataCounterNodeMaxVwID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add counterNodeMaxVw array to ParGrid!" << endl << write;
+   Hybrid::dataGridCounterNodeMaxVwID = simClasses.pargrid.addUserData<Real>("gridCounterNodeMaxVw",block::SIZE*1);
+   if(Hybrid::dataGridCounterNodeMaxVwID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add gridCounterNodeMaxVw array to ParGrid!" << endl << write;
       return false;
    }
 #endif
@@ -1177,6 +1215,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataOuterBoundaryFlagID = simClasses.pargrid.addUserData<bool>("outerBoundaryFlag",1);
    if(Hybrid::dataOuterBoundaryFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlag array to ParGrid!" << endl << write;
+      return false;
+   }
+   Hybrid::dataOuterBoundaryFlagNodeID = simClasses.pargrid.addUserData<bool>("outerBoundaryFlagNode",1);
+   if(Hybrid::dataOuterBoundaryFlagNodeID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlagNode array to ParGrid!" << endl << write;
       return false;
    }
 #endif
@@ -1288,14 +1331,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
    Real* nodeEta             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEtaID));
 #endif
-   Real* counterCellMaxUe    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMaxUeID));
-   Real* counterCellMaxVi    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
-   Real* counterCellMinRhoQi = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterCellMinRhoQiID));
-#ifdef USE_ECUT
-   Real* counterNodeEcut     = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterNodeEcutID));
-#endif
-#ifdef USE_MAXVW
-   Real* counterNodeMaxVw    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCounterNodeMaxVwID));
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   Real* gridCounterCellMaxUe    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterCellMaxUeID));
+   Real* gridCounterCellMaxVi    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterCellMaxViID));
+   Real* gridCounterCellMinRhoQi = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterCellMinRhoQiID));
+   Real* gridCounterNodeMaxE     = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterNodeMaxEID));
+   Real* gridCounterNodeMaxVw    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterNodeMaxVwID));
 #endif
    bool* innerFlagField      = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagFieldID));   
    bool* innerFlagNode       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagNodeID));
@@ -1303,6 +1344,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* innerFlagCellEp     = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagCellEpID));
 #ifdef USE_OUTER_BOUNDARY_ZONE
    bool* outerBoundaryFlag   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
+   bool* outerBoundaryFlagNode = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagNodeID));
 #endif
 #ifdef USE_XMIN_BOUNDARY
    bool* xMinFlag            = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataXminFlagID));
@@ -1422,15 +1464,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
       for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
       for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
-      // counters
-      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMaxUe[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMaxVi[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { counterCellMinRhoQi[i] = 0.0; }
-#ifdef USE_ECUT
-      for(size_t i=0; i<scalarArraySize; ++i) { counterNodeEcut[i] = 0.0; }
-#endif
-#ifdef USE_MAXVW
-      for(size_t i=0; i<scalarArraySize; ++i) { counterNodeMaxVw[i] = 0.0; }
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxUe[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxVi[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMinRhoQi[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterNodeMaxE[i] = 0.0; }
+      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterNodeMaxVw[i] = 0.0; }
 #endif
 
 #ifdef USE_DETECTORS
@@ -1458,14 +1497,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
 	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
+#ifdef USE_SHOCKTUBE_TEST_CONFIGURATION
 	    // initial shocktube setup
-	    /*if(xCellCenter >= 0.5e5) {
+	    if(xCellCenter >= 0.5e5) {
 	       faceB[n*3+1] = 1e-9;
 	    }
 	    else {
 	       faceB[n*3+1] = -1e-9;
 	    }
-	    faceB[n*3+0] = 1.5e-9;*/
+	    faceB[n*3+0] = 1.5e-9;
+#endif
 #ifdef USE_CONIC_INNER_BOUNDARY
             if( innerBoundaryConic(xCellCenter,yCellCenter,zCellCenter) == true ) {
                innerFlagField[n] = true;
@@ -1507,51 +1548,93 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real bZone = Hybrid::outerBoundaryZone.sizeMinRhoQi; // boundary zone
             if(Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
                outerBoundaryFlag[n] = false;
+	       outerBoundaryFlagNode[n] = false;
             }
             else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 1) {
                // all walls
-               if(xCellCenter < (Hybrid::box.xmin + bZone) || xCellCenter > (Hybrid::box.xmax - bZone) ||
-                  yCellCenter < (Hybrid::box.ymin + bZone) || yCellCenter > (Hybrid::box.ymax - bZone) ||
-                  zCellCenter < (Hybrid::box.zmin + bZone) || zCellCenter > (Hybrid::box.zmax - bZone)) {
+               if(xCellCenter < (sim.x_min + bZone) || xCellCenter > (sim.x_max - bZone) ||
+                  yCellCenter < (sim.y_min + bZone) || yCellCenter > (sim.y_max - bZone) ||
+                  zCellCenter < (sim.z_min + bZone) || zCellCenter > (sim.z_max - bZone)) {
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
+	       if(xNode < (sim.x_min + bZone) || xNode > (sim.x_max - bZone) ||
+                  yNode < (sim.y_min + bZone) || yNode > (sim.y_max - bZone) ||
+                  zNode < (sim.z_min + bZone) || zNode > (sim.z_max - bZone)) {
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else { outerBoundaryFlagNode[n] = false; }
             }
             else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 2) {
                // all edges except +x
-               if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (yCellCenter < (Hybrid::box.ymin + bZone)) ) {
+               if( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter < (sim.y_min + bZone)) ) {
                   // (-x,-y) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (yCellCenter > (Hybrid::box.ymax - bZone)) ) {
+               else if( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter > (sim.y_max - bZone)) ) {
                   // (-x,+y) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
+               else if( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (-x,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (Hybrid::box.xmin + bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
+               else if( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (-x,+z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter < (Hybrid::box.ymin + bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
+               else if( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (-y,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter < (Hybrid::box.ymin + bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
+               else if( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (-y,+z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter > (Hybrid::box.ymax - bZone)) && (zCellCenter < (Hybrid::box.zmin + bZone)) ) {
+               else if( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (+y,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter > (Hybrid::box.ymax - bZone)) && (zCellCenter > (Hybrid::box.zmax - bZone)) ) {
+               else if( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (+y,+z) edge
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
+	       // node
+               // all edges except +x
+               if( (xNode < (sim.x_min + bZone)) && (yNode < (sim.y_min + bZone)) ) {
+                  // (-x,-y) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (xNode < (sim.x_min + bZone)) && (yNode > (sim.y_max - bZone)) ) {
+                  // (-x,+y) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (xNode < (sim.x_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
+                  // (-x,-z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (xNode < (sim.x_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
+                  // (-x,+z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (yNode < (sim.y_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
+                  // (-y,-z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (yNode < (sim.y_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
+                  // (-y,+z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (yNode > (sim.y_max - bZone)) && (zNode < (sim.z_min + bZone)) ) {
+                  // (+y,-z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else if( (yNode > (sim.y_max - bZone)) && (zNode > (sim.z_max - bZone)) ) {
+                  // (+y,+z) edge
+                  outerBoundaryFlagNode[n] = true;
+               }
+               else { outerBoundaryFlagNode[n] = false; }
             }
             else {
 	       simClasses.logger << "(RHYBRID) ERROR: unknown type of an outer boundary zone for minRhoQi (" << Hybrid::outerBoundaryZone.typeMinRhoQi << ")" << endl << write;
@@ -1690,6 +1773,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
 #endif
 #ifdef USE_B_INITIAL
+#ifndef USE_SHOCKTUBE_TEST_CONFIGURATION
       // set initial B
       for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
          const size_t b3 = 3*b;
@@ -1726,6 +1810,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             cellB[n*3+2] = B_initial[2];
          }
       }
+#endif
 #endif
    }
 
@@ -1820,13 +1905,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real vA = 0.0; // alfven velocity
    Real vstmp1 = 0.0;
    Real vstmp2 = 0.0;
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
-      ni += Hybrid::swPops[s].n;
-      ne += Hybrid::swPops[s].q*Hybrid::swPops[s].n;
-      rhom += Hybrid::swPops[s].m*Hybrid::swPops[s].n;
-      Ubulk += Hybrid::swPops[s].m*Hybrid::swPops[s].n*Hybrid::swPops[s].U;
-      vstmp1 += Hybrid::swPops[s].n*Hybrid::swPops[s].T;
-      vstmp2 += Hybrid::swPops[s].n*Hybrid::swPops[s].m;
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
+      ni += Hybrid::swPopsInfo[s].n;
+      ne += Hybrid::swPopsInfo[s].q*Hybrid::swPopsInfo[s].n;
+      rhom += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n;
+      Ubulk += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].U;
+      vstmp1 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].T;
+      vstmp2 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].m;
    }
    const Real rhoq = ne;
    ne /= constants::CHARGE_ELEMENTARY;
@@ -1867,7 +1952,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
   
    if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
-      Hybrid::initialFlowThroughPeriod *= (Hybrid::box.xmax - Hybrid::box.xmin)/Ubulk;
+      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
       Hybrid::initialFlowThrough = true;
    }
    else {
@@ -1934,39 +2019,39 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       tPe = 2.0*M_PI/omega_pe;
       le = constants::SPEED_LIGHT/omega_pe;
    }
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
       // ion plasma frequency
-      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPops[s].q)/( Hybrid::swPops[s].m*constants::PERMITTIVITY  ) );
+      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
       // ion plasma period
       Real tPi = 0.0;
       if(omega_pi > 0.0) {
          tPi = 2.0*M_PI/omega_pi;
       }
       simClasses.logger
-        << "plasma period(" << Hybrid::swPops[s].name << ") = " << tPi << " s = " << tPi/sim.dt << " dt" << endl;
+        << "plasma period(" << Hybrid::swPopsInfo[s].name << ") = " << tPi << " s = " << tPi/sim.dt << " dt" << endl;
    }
    simClasses.logger
      << "plasma period(e-) = " << tPe << " s = " << tPe/sim.dt << " dt" << endl;
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
       // ion plasma frequency
-      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPops[s].q)/( Hybrid::swPops[s].m*constants::PERMITTIVITY  ) );
+      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
       // ion inertial length
       Real li = 0.0;
       if(omega_pi > 0.0) {
          li = constants::SPEED_LIGHT/omega_pi;
       }
       simClasses.logger
-        << "inertial length(" << Hybrid::swPops[s].name << ") = " << li/1e3 << " km = " << li/Hybrid::dx << " dx" << endl;
+        << "inertial length(" << Hybrid::swPopsInfo[s].name << ") = " << li/1e3 << " km = " << li/Hybrid::dx << " dx" << endl;
    }
    simClasses.logger
      << "inertial length(e-) = " << le/1e3 << " km = " << le/Hybrid::dx << " dx" << endl;
-   for (size_t s=0;s<Hybrid::swPops.size();++s) {
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
       Real rLth = 0.0; // thermal larmor radius
       if(Btot > 0.0) {
-         rLth = Hybrid::swPops[s].m*Hybrid::swPops[s].vth/(Hybrid::swPops[s].q*Btot);
+         rLth = Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].vth/(Hybrid::swPopsInfo[s].q*Btot);
       }
       simClasses.logger
-        << "thermal Larmor radius(" << Hybrid::swPops[s].name << ") = " << rLth/1e3 << " km = " << rLth/Hybrid::dx << " dx" << endl;
+        << "thermal Larmor radius(" << Hybrid::swPopsInfo[s].name << ") = " << rLth/1e3 << " km = " << rLth/Hybrid::dx << " dx" << endl;
    }
    simClasses.logger
      << endl << "(ALL POPULATIONS AS PICKUP IONS)" << endl;
@@ -2012,15 +2097,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    
    simClasses.logger
      << "(CONSTRAINTS)" << endl
-     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(Hybrid::box.xmax - Hybrid::box.xmin + 1e-30) << " (xmax-xmin)/Ubulk" << endl
+     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/Ubulk" << endl
      << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
      << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
-#ifdef USE_MAXVW
      << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " U(undisturbed solar wind) (nodeJ limiter)" << endl
-#endif
-#ifdef USE_ECUT
-     << "Ecut  = " << sqrt(Hybrid::Ecut2) << " V/m = " << sqrt(Hybrid::Ecut2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
-#endif
+     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
      << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
      << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl << endl;
 
@@ -2063,26 +2144,26 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    simClasses.logger << endl << write;
 
-   // open log files
+   // open particle population and field log files
    if(sim.mpiRank==sim.MASTER_RANK) {
       for(size_t s=0;s<particleLists.size();++s) {
 	 string zeroStr = "";
 	 if(s < 10) { zeroStr = "00"; }
 	 else if(s < 100) { zeroStr = "0"; }
 	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-	 Hybrid::plog.push_back(new ofstream());
+	 Hybrid::logParticle.push_back(new ofstream());
 	 //string fileName = "pop" + zeroStr + "_" + species->name + ".log";
 	 stringstream ss;
 	 ss << "pop" << zeroStr << s+1 << "_" << species->name << ".log";
-	 Hybrid::plog[s]->open(ss.str().c_str(),ios_base::out);
-	 //Hybrid::plog[s]->open("pop" + zeroStr + to_string(s+1) + "_" + species->name + ".log",ios_base::out);
-	 Hybrid::plog[s]->precision(10);
-	 (*Hybrid::plog[s]) << scientific << showpos;
-	 (*Hybrid::plog[s])
+	 Hybrid::logParticle[s]->open(ss.str().c_str(),ios_base::out);
+	 //Hybrid::logParticle[s]->open("pop" + zeroStr + to_string(s+1) + "_" + species->name + ".log",ios_base::out);
+	 Hybrid::logParticle[s]->precision(10);
+	 (*Hybrid::logParticle[s]) << scientific << showpos;
+	 (*Hybrid::logParticle[s])
 	   << "% " << species->name << endl
 	   << "% m [kg] = " << species->m << endl
 	   << "% q [C] = " << species->q << endl
-	   << "% columns = 15" << endl
+	   << "% columns = 17" << endl
 	   << "% 01. Time [s]" << endl
 	   << "% 02. Particles [#]" << endl
 	   << "% 03. Macroparticles [#]" << endl
@@ -2091,45 +2172,84 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "% 06. avg(Vz) [m/s]" << endl
 	   << "% 07. avg(|V|) [m/s]" << endl
 	   << "% 08. Kinetic energy [J]" << endl
-	   << "% 09. Escape rate [#/s]" << endl
-	   << "% 10. Impact rate [#/s]" << endl
-	   << "% 11. Inject rate [#/s]" << endl
-	   << "% 12. Macroparticle inject rate [#/dt]" << endl
-	   << "% 13. Kinetic energy escape rate [J/s]" << endl
-	   << "% 14. Kinetic energy impact rate [J/s]" << endl
-	   << "% 15. Kinetic energy inject rate [J/s]" << endl;
+	   << "% 09. max(|V|) [m/s]" << endl
+	   << "% 10. Escape rate [#/s]" << endl
+	   << "% 11. Impact rate [#/s]" << endl
+	   << "% 12. Inject rate [#/s]" << endl
+	   << "% 13. Macroparticle inject rate [#/dt]" << endl
+	   << "% 14. Kinetic energy escape rate [J/s]" << endl
+	   << "% 15. Kinetic energy impact rate [J/s]" << endl
+	   << "% 16. Kinetic energy inject rate [J/s]" << endl
+	   << "% 17. Constraint maxVi rate [#/dt]" << endl;
       }
-      Hybrid::flog.open("field.log",ios_base::out);
-      Hybrid::flog.precision(10);
-      Hybrid::flog << scientific << showpos;
-      Hybrid::flog
+      Hybrid::logField.open("field.log",ios_base::out);
+      Hybrid::logField.precision(10);
+      Hybrid::logField << scientific << showpos;
+      Hybrid::logField
 	<< "% field" << endl
-	<< "% columns = 10" << endl
+	<< "% columns = 36" << endl
 	<< "% 01. Time [s]" << endl
-	<< "% 02. avg(Bx) [T]" << endl
-	<< "% 03. avg(By) [T]" << endl
-	<< "% 04. avg(Bz) [T]" << endl
-	<< "% 05. avg(|B|) [T]" << endl
-	<< "% 06. max(|B|) [T]" << endl
-	<< "% 07. avg(div(B)) [T/m]" << endl
-	<< "% 08. max(div(B)) [T/m]" << endl
-	<< "% 09. max(dx*div(B)/B) [-]" << endl
-	<< "% 10. energy(sum(dV*B^2/2*mu0)) [J]" << endl;
+	<< "% 02. avg(faceBx) [T]" << endl
+	<< "% 03. avg(faceBy) [T]" << endl
+	<< "% 04. avg(faceBz) [T]" << endl
+	<< "% 05. avg(|faceB|) [T]" << endl
+	<< "% 06. max(|faceB|) [T]" << endl
+	<< "% 07. avg(div(faceB)) [T/m]" << endl
+	<< "% 08. max(div(faceB)) [T/m]" << endl
+	<< "% 09. max(dx*div(faceB)/faceB) [-]" << endl
+	<< "% 10. energy(sum(dV*faceB^2/2*mu0)) [J]" << endl
+	<< "% 11. avg(cellJix) [A/m^2]" << endl
+	<< "% 12. avg(cellJiy) [A/m^2]" << endl
+	<< "% 13. avg(cellJiz) [A/m^2]" << endl
+	<< "% 14. avg(|cellJi|) [A/m^2]" << endl
+	<< "% 15. max(|cellJi|) [A/m^2]" << endl
+	<< "% 16. avg(cellEpx) [V/m]" << endl
+	<< "% 17. avg(cellEpy) [V/m]" << endl
+	<< "% 18. avg(cellEpz) [V/m]" << endl
+	<< "% 19. avg(|cellEp|) [V/m]" << endl
+	<< "% 20. max(|cellEp|) [V/m]" << endl
+	<< "% 21. energy(sum(dV*cellEp^2*eps0/2)) [J]" << endl
+	<< "% 22. avg(nodeEx) [V/m]" << endl
+	<< "% 23. avg(nodeEy) [V/m]" << endl
+	<< "% 24. avg(nodeEz) [V/m]" << endl
+	<< "% 25. avg(|nodeE|) [V/m]" << endl
+	<< "% 26. max(|nodeE|) [V/m]" << endl
+	<< "% 27. energy(sum(dV*nodeE^2*eps0/2)), nodeE = -Ue x B + eta*J [J]" << endl
+	<< "% 28. energy(sum(dV*cellE^2*eps0/2)), cellE = -Ue x B [J]" << endl
+	<< "% 29. Constraint maxUe rate (cell) [#/dt]" << endl
+	<< "% 30. Constraint maxUe rate (node) [#/dt]" << endl
+	<< "% 31. Constraint maxVw rate (node) [#/dt]" << endl
+	<< "% 32. Constraint maxE rate (node) [#/dt]" << endl
+	<< "% 33. Constraint minRhoQi rate (cell) [#/dt]" << endl
+	<< "% 34. Constraint minRhoQi rate (node) [#/dt]" << endl
+	<< "% 35. Minimum electron inertial length [m]" << endl
+	<< "% 36. Maximum electron inertial length [m]" << endl;
    }
 
-   // counters
+   // initialize particle counters
    for(size_t s=0;s<particleLists.size();++s) {
-      Hybrid::particleCounterEscape.push_back(0.0);
-      Hybrid::particleCounterImpact.push_back(0.0);
-      Hybrid::particleCounterInject.push_back(0.0);
-      Hybrid::particleCounterInjectMacroparticles.push_back(0.0);
-      Hybrid::particleCounterEscapeKineticEnergy.push_back(0.0);
-      Hybrid::particleCounterImpactKineticEnergy.push_back(0.0);
-      Hybrid::particleCounterInjectKineticEnergy.push_back(0.0);
-      Hybrid::particleCounterTimeStart = sim.t;
+      Hybrid::logCounterParticleEscape.push_back(0.0);
+      Hybrid::logCounterParticleImpact.push_back(0.0);
+      Hybrid::logCounterParticleInject.push_back(0.0);
+      Hybrid::logCounterParticleInjectMacroparticles.push_back(0.0);
+      Hybrid::logCounterParticleEscapeKineticEnergy.push_back(0.0);
+      Hybrid::logCounterParticleImpactKineticEnergy.push_back(0.0);
+      Hybrid::logCounterParticleInjectKineticEnergy.push_back(0.0);
+      Hybrid::logCounterParticleMaxVi.push_back(0.0);
    }
+
+   // initialize field counters
+   Hybrid::logCounterFieldMaxCellUe = 0.0;
+   Hybrid::logCounterFieldMaxNodeUe = 0.0;
+   Hybrid::logCounterFieldMaxVw = 0.0;
+   Hybrid::logCounterFieldMaxE = 0.0;
+   Hybrid::logCounterFieldMinCellRhoQi = 0.0;
+   Hybrid::logCounterFieldMinNodeRhoQi = 0.0;
+
+   // initialize counter start time
+   Hybrid::logCounterTimeStart = sim.t;
    
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // magnetic field
    Hybrid::dataCellAverageBID  = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellAverageBID = simClasses.pargrid.addUserData<Real>("cellAverageB",block::SIZE*3);
@@ -2195,14 +2315,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_RESISTIVITY
       {"nodeEta",false},
 #endif
-      {"counterCellMaxUe",false},
-      {"counterCellMaxVi",false},
-      {"counterCellMinRhoQi",false},
-#ifdef USE_ECUT
-      {"counterNodeEcut",false},
-#endif
-#ifdef USE_MAXVW
-      {"counterNodeMaxVw",false},
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+      {"gridCounterCellMaxUe",false},
+      {"gridCounterCellMaxVi",false},
+      {"gridCounterCellMinRhoQi",false},
+      {"gridCounterNodeMaxE",false},
+      {"gridCounterNodeMaxVw",false},
 #endif
       {"innerFlagField",false},
       {"innerFlagNode",false},
@@ -2210,6 +2328,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"innerFlagCellEp",false},
 #ifdef USE_OUTER_BOUNDARY_ZONE
       {"outerBoundaryFlag",false},
+      {"outerBoundaryFlagNode",false},
 #endif
 #ifdef USE_XMIN_BOUNDARY
       {"xMinFlag",false},
@@ -2271,9 +2390,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       if(p.second == false) { simClasses.logger << p.first << endl; }
    }
    simClasses.logger << endl;
-#ifndef WRITE_POPULATION_AVERAGES
+#ifndef WRITE_GRID_TEMPORAL_AVERAGES
    if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true || Hybrid::outputCellParams["n_tot_ave"] == true || Hybrid::outputCellParams["v_tot_ave"] == true) {
-      simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_POPULATION_AVERAGES not defined in Makefile" << endl;
+      simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_GRID_TEMPORAL_AVERAGES not defined in Makefile" << endl;
    }
 #endif
 #ifndef USE_B_CONSTANT
@@ -2281,7 +2400,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(RHYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
    }
 #endif
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // initial values
    if(sim.restarted == false) {
       for(size_t i=0; i<vectorArraySize;   ++i) { cellAverageB[i] = 0.0; }
@@ -2289,7 +2408,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          for(size_t j=0; j<scalarArraySize;++j) { nAve[i][j] = 0.0; }
          for(size_t j=0; j<vectorArraySize;++j) { vAve[i][j] = 0.0; }
       }
-      Hybrid::averageCounter = 0;
+      Hybrid::gridTemporalAverageCounter = 0;
    }
 #endif
    if(sim.restarted == true) {
@@ -2304,9 +2423,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
  * @return If true, finalization completed successfully.*/
 bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool success = true;
-   for(const auto &p : Hybrid::varReal) {
+   // new variable handling TBD
+   /*for(const auto &p : Hybrid::varReal) {
       simClasses.logger << "(USER) removed ParGrid array: " << p.first << endl << write;
-   }
+   }*/
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
@@ -2333,20 +2453,19 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
 #ifdef USE_RESISTIVITY
    if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEtaID)             == false) { success = false; }
 #endif
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMaxUeID)    == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMaxViID)    == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterCellMinRhoQiID) == false) { success = false; }
-#ifdef USE_ECUT
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterNodeEcutID)     == false) { success = false; }
-#endif
-#ifdef USE_MAXVW
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCounterNodeMaxVwID)    == false) { success = false; }
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxUeID)    == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxViID)    == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMinRhoQiID) == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterNodeMaxEID)     == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterNodeMaxVwID)    == false) { success = false; }
 #endif
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)      == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID)   == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagCellEpID)     == false) { success = false; }
 #ifdef USE_OUTER_BOUNDARY_ZONE
    if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagID)   == false) { success = false; }
+   if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagNodeID) == false) { success = false; }
 #endif
 #ifdef USE_XMIN_BOUNDARY
    if(simClasses.pargrid.removeUserData(Hybrid::dataXminFlagID)            == false) { success = false; }
@@ -2355,23 +2474,23 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if(simClasses.pargrid.removeUserData(Hybrid::dataDetectorParticleFlagID)  == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataDetectorBulkParamFlagID) == false) { success = false; }
 #endif
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)        == false) { success = false; }
    for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
       if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageDensityID[i])  == false) { success = false; }
       if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageVelocityID[i]) == false) { success = false; }
    }
 #endif
-   // close log files
+   // close particle population and field log files
    if(sim.mpiRank==sim.MASTER_RANK) {
-      for(size_t i=0;i<Hybrid::plog.size();++i) {
-	 Hybrid::plog[i]->flush();
-	 Hybrid::plog[i]->close();
-	 delete Hybrid::plog[i];
+      for(size_t i=0;i<Hybrid::logParticle.size();++i) {
+	 Hybrid::logParticle[i]->flush();
+	 Hybrid::logParticle[i]->close();
+	 delete Hybrid::logParticle[i];
       }
-      Hybrid::plog.clear();
-      Hybrid::flog.flush();
-      Hybrid::flog.close();
+      Hybrid::logParticle.clear();
+      Hybrid::logField.flush();
+      Hybrid::logField.close();
    }
    return success;
 }

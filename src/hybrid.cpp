@@ -23,8 +23,9 @@ using namespace std;
 
 // Init static variables:
 
-map< string , HybridVariable<Real> > Hybrid::varReal;
-map< string , HybridVariable<bool> > Hybrid::varBool;
+// new variable handling TBD
+//map< string , HybridVariable<Real> > Hybrid::varReal;
+//map< string , HybridVariable<bool> > Hybrid::varBool;
 
 // face data
 pargrid::DataID Hybrid::dataFaceBID;
@@ -55,15 +56,13 @@ pargrid::DataID Hybrid::dataNodeJiID;
 pargrid::DataID Hybrid::dataNodeEtaID;
 #endif
 
-// counters
-pargrid::DataID Hybrid::dataCounterCellMaxUeID;
-pargrid::DataID Hybrid::dataCounterCellMaxViID;
-pargrid::DataID Hybrid::dataCounterCellMinRhoQiID;
-#ifdef USE_ECUT
-pargrid::DataID Hybrid::dataCounterNodeEcutID;
-#endif
-#ifdef USE_MAXVW
-pargrid::DataID Hybrid::dataCounterNodeMaxVwID;
+// grid constraint counters
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+pargrid::DataID Hybrid::dataGridCounterCellMaxUeID;
+pargrid::DataID Hybrid::dataGridCounterCellMaxViID;
+pargrid::DataID Hybrid::dataGridCounterCellMinRhoQiID;
+pargrid::DataID Hybrid::dataGridCounterNodeMaxEID;
+pargrid::DataID Hybrid::dataGridCounterNodeMaxVwID;
 #endif
 
 // stencils
@@ -74,7 +73,10 @@ pargrid::DataID Hybrid::dataInnerFlagFieldID;
 pargrid::DataID Hybrid::dataInnerFlagNodeID;
 pargrid::DataID Hybrid::dataInnerFlagParticleID;
 pargrid::DataID Hybrid::dataInnerFlagCellEpID;
+#ifdef USE_OUTER_BOUNDARY_ZONE
 pargrid::DataID Hybrid::dataOuterBoundaryFlagID;
+pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
+#endif
 #ifdef USE_XMIN_BOUNDARY
 pargrid::DataID Hybrid::dataXminFlagID;
 #endif
@@ -113,7 +115,6 @@ int Hybrid::logInterval;
 bool Hybrid::includeInnerCellsInFieldLog;
 bool Hybrid::writeMainLogEntriesAfterSaveStep;
 Real Hybrid::dx;
-Box Hybrid::box;
 Real Hybrid::dV;
 Real Hybrid::R_object;
 Real Hybrid::R2_fieldObstacle;
@@ -129,6 +130,7 @@ Real Hybrid::eta_conicInnerBoundary;
 #endif
 Real Hybrid::upstreamBulkU;
 Real Hybrid::M_object;
+Real Hybrid::GMdt;
 bool Hybrid::initialFlowThrough;
 Real Hybrid::initialFlowThroughPeriod;
 Real Hybrid::maxUe2;
@@ -139,12 +141,8 @@ Real Hybrid::minRhoQi;
 #ifdef USE_OUTER_BOUNDARY_ZONE
 OuterBoundaryZone Hybrid::outerBoundaryZone;
 #endif
-#ifdef USE_ECUT
-Real Hybrid::Ecut2;
-#endif
-#ifdef USE_MAXVW
+Real Hybrid::maxE2;
 Real Hybrid::maxVw;
-#endif
 bool Hybrid::useHallElectricField;
 bool Hybrid::useElectronPressureElectricField;
 bool Hybrid::useAdiabaticElectronPressure;
@@ -154,6 +152,7 @@ bool Hybrid::includeConstantB0InFaradaysLaw = false;
 Real Hybrid::electronTemperature;
 Real Hybrid::electronPressureCoeff;
 Real Hybrid::swMacroParticlesCellPerDt;
+bool Hybrid::useGravity;
 int Hybrid::Efilter;
 Real Hybrid::EfilterNodeGaussSigma;
 Real Hybrid::EfilterNodeGaussCoeffs[4];
@@ -170,6 +169,11 @@ Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const R
 Real Hybrid::IMFBx;
 Real Hybrid::IMFBy;
 Real Hybrid::IMFBz;
+#ifdef USE_TEST_PARTICLE_MODE
+Real Hybrid::Ex;
+Real Hybrid::Ey;
+Real Hybrid::Ez;
+#endif
 Real Hybrid::swJi;
 bool Hybrid::IMFBoundaryCellB[6];
 bool Hybrid::IMFBoundaryFaceB[6];
@@ -199,9 +203,9 @@ unsigned int Hybrid::N_ionospherePopulations;
 // number of exospheric particle populations
 unsigned int Hybrid::N_exospherePopulations;
 // properties of all particle populations
-vector<particlePopulation> Hybrid::allPops;
+vector<particlePopulationInfo> Hybrid::allPopsInfo;
 // properties of all solar wind populations
-vector<solarWindPopulation> Hybrid::swPops;
+vector<solarWindPopulationInfo> Hybrid::swPopsInfo;
 // names of particle populations
 vector<string> Hybrid::populationNames;
 // number of output particle variables
@@ -217,25 +221,32 @@ vector<unsigned int> Hybrid::outputPlasmaPopId;
 // output cell variables
 map<string,bool> Hybrid::outputCellParams;
 
-vector<ofstream*> Hybrid::plog;
-ofstream Hybrid::flog;
-
-vector<Real> Hybrid::particleCounterEscape;
-vector<Real> Hybrid::particleCounterImpact;
-vector<Real> Hybrid::particleCounterInject;
-vector<Real> Hybrid::particleCounterInjectMacroparticles;
-vector<Real> Hybrid::particleCounterEscapeKineticEnergy;
-vector<Real> Hybrid::particleCounterImpactKineticEnergy;
-vector<Real> Hybrid::particleCounterInjectKineticEnergy;
-Real Hybrid::particleCounterTimeStart;
+// particle population and field logs and their counters
+vector<ofstream*> Hybrid::logParticle;
+ofstream Hybrid::logField;
+vector<Real> Hybrid::logCounterParticleEscape;
+vector<Real> Hybrid::logCounterParticleImpact;
+vector<Real> Hybrid::logCounterParticleInject;
+vector<Real> Hybrid::logCounterParticleInjectMacroparticles;
+vector<Real> Hybrid::logCounterParticleEscapeKineticEnergy;
+vector<Real> Hybrid::logCounterParticleImpactKineticEnergy;
+vector<Real> Hybrid::logCounterParticleInjectKineticEnergy;
+vector<Real> Hybrid::logCounterParticleMaxVi;
+Real Hybrid::logCounterFieldMaxCellUe;
+Real Hybrid::logCounterFieldMaxNodeUe;
+Real Hybrid::logCounterFieldMaxVw;
+Real Hybrid::logCounterFieldMaxE;
+Real Hybrid::logCounterFieldMinCellRhoQi;
+Real Hybrid::logCounterFieldMinNodeRhoQi;
+Real Hybrid::logCounterTimeStart;
 
 bool Hybrid::filterParticlesAfterRestartDone = true;
 
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
 pargrid::DataID Hybrid::dataCellAverageBID;
 vector<pargrid::DataID> Hybrid::dataCellAverageDensityID;
 vector<pargrid::DataID> Hybrid::dataCellAverageVelocityID;
-int Hybrid::averageCounter;
+int Hybrid::gridTemporalAverageCounter;
 #endif
 
 int Hybrid::repartitionCheckIntervalTmp = -1;

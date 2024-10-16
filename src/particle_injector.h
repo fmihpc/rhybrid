@@ -45,6 +45,7 @@ class InjectorUniform: public ParticleInjectorBase {
    bool initialized;
    Real N_macroParticlesPerCell;
    const Species* species;
+   Real velocity[3];
    Real U,vth,n,w,xmin,xmax;
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 			pargrid::DataWrapper<Particle<Real> >& wrapper);
@@ -87,7 +88,24 @@ class InjectorSolarWind: public ParticleInjectorBase {
    Real N_macroParticlesPerCellPerDt;
    Real N_macroParticlesPerCell;
    const Species* species;
+   Real velocity[3];
    Real U,vth,n,w;
+   bool (InjectorSolarWind::*checkIfInjectionCellFuncPtr)(const pargrid::CellID b); // pointer to function that checks if particles should be injected in this cell
+   void (InjectorSolarWind::*initParticleCrdVelFuncPtr)(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz); // pointer to function that initialize coordinates and velocity of a new particle
+   bool checkIfInjectionCellDefault(const pargrid::CellID b);
+   bool checkIfInjectionCellXPos(const pargrid::CellID b);
+   bool checkIfInjectionCellXNeg(const pargrid::CellID b);
+   bool checkIfInjectionCellYPos(const pargrid::CellID b);
+   bool checkIfInjectionCellYNeg(const pargrid::CellID b);
+   bool checkIfInjectionCellZPos(const pargrid::CellID b);
+   bool checkIfInjectionCellZNeg(const pargrid::CellID b);
+   void initParticleCrdVelDefault(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
+   void initParticleCrdVelXPos(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
+   void initParticleCrdVelXNeg(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
+   void initParticleCrdVelYPos(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
+   void initParticleCrdVelYNeg(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
+   void initParticleCrdVelZPos(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
+   void initParticleCrdVelZNeg(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
 			pargrid::DataWrapper<Particle<Real> >& wrapper);
 };

@@ -1,5 +1,7 @@
 Peer-reviewed scientific publications with RHybrid:
 
+Hinton P.C., Brain D.A., Schnepf N.R., Jarvinen R., Ramstad R. (2024), Atmospheric ion escape and solar wind deposition as a function of planetary radius, Mon. Notices Royal Astron. Soc. 533, 4, 3999-4006, doi:10.1093/mnras/stae2032
+Yang Z.W., Jarvinen R., Guo X.C., Sun T.R., Koutroumpa D., Parks G.K., Huang C., Tang B.B., Lu Q.M., Wang C. (2023), Deformations at Earth’s dayside magnetopause during quasi-radial IMF conditions: Global kinetic simulations and Soft X-ray Imaging, Earth Planet. Phys. 8, 1, 1-11, doi:10.26464/epp2023059
 Wang L., Huang C., Du A., Ge Y., Chen G., Yang Z., Li S., Zhang K. (2023), Kelvin-Helmholtz Instability at Mars: In Situ Observations and Kinetic Simulations, ApJ 947, 51, doi:10.3847/1538-4357/acc655
 Stergiopoulou K., Jarvinen R., Andrews D.J., Edberg N.J.T., Dimmock A.P., Kallio E., Persson M., Khotyaintsev Y.V. (2023), Solar Orbiter Data-Model Comparison in Venus' Induced Magnetotail, J. Geophys. Res. 128, 2, doi:10.1029/2022JA031023
 Kallio E., Jarvinen R., Massetti S., Alberti T., Milillo A., Orsini S., De Angelis E., Laky G., Slavin J., Raines J.M., Pulkkinen T.I. (2022), Ultra-low frequency waves in the Hermean magnetosphere: On the role of the morphology of the magnetic field and the foreshock, Geophys. Res. Lett. 49, 24, doi:10.1029/2022GL101850

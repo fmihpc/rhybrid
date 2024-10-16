@@ -62,30 +62,28 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[2] = a[0]*b[1] - a[1]*b[0];
 }
 
-struct particlePopulation {
+struct particlePopulationInfo {
     Real w;
     std::string name;
 };
 
-struct solarWindPopulation {
+struct solarWindPopulationInfo {
    Real m,q,U,n,vth,T;
    std::string name;
-};
-
-struct Box {
-   Real xmin=0.0,xmax=0.0,ymin=0.0,ymax=0.0,zmin=0.0,zmax=0.0;
 };
 
 #ifdef USE_OUTER_BOUNDARY_ZONE
 struct OuterBoundaryZone {
    int typeEta=0,typeMinRhoQi=0;
    Real sizeEta=0.0,sizeMinRhoQi=0.0,minRhoQi=0.0,eta=0.0;
+   bool constUe = false;
 };
 #endif
 
 struct Hybrid {
-   static std::map< std::string, HybridVariable<Real> > varReal;
-   static std::map< std::string, HybridVariable<bool> > varBool;
+   // new variable handling TBD
+   //static std::map< std::string, HybridVariable<Real> > varReal;
+   //static std::map< std::string, HybridVariable<bool> > varBool;
 
    // face data
    static pargrid::DataID dataFaceBID;
@@ -116,15 +114,13 @@ struct Hybrid {
    static pargrid::DataID dataNodeEtaID;
 #endif
 
-   // counters
-   static pargrid::DataID dataCounterCellMaxUeID;
-   static pargrid::DataID dataCounterCellMaxViID;
-   static pargrid::DataID dataCounterCellMinRhoQiID;
-#ifdef USE_ECUT
-   static pargrid::DataID dataCounterNodeEcutID;
-#endif
-#ifdef USE_MAXVW
-   static pargrid::DataID dataCounterNodeMaxVwID;
+   // grid constraint counters
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   static pargrid::DataID dataGridCounterCellMaxUeID;
+   static pargrid::DataID dataGridCounterCellMaxViID;
+   static pargrid::DataID dataGridCounterCellMinRhoQiID;
+   static pargrid::DataID dataGridCounterNodeMaxEID;
+   static pargrid::DataID dataGridCounterNodeMaxVwID;
 #endif
 
    // stencils
@@ -135,7 +131,10 @@ struct Hybrid {
    static pargrid::DataID dataInnerFlagNodeID;
    static pargrid::DataID dataInnerFlagParticleID;
    static pargrid::DataID dataInnerFlagCellEpID;
+#ifdef USE_OUTER_BOUNDARY_ZONE
    static pargrid::DataID dataOuterBoundaryFlagID;
+   static pargrid::DataID dataOuterBoundaryFlagNodeID;
+#endif
 #ifdef USE_XMIN_BOUNDARY
    static pargrid::DataID dataXminFlagID;
 #endif
@@ -174,7 +173,6 @@ struct Hybrid {
    static bool includeInnerCellsInFieldLog;
    static bool writeMainLogEntriesAfterSaveStep;
    static Real dx;
-   static Box box;
    static Real dV;
    static Real R_object;
    static Real R2_fieldObstacle;
@@ -190,6 +188,7 @@ struct Hybrid {
 #endif
    static Real upstreamBulkU;
    static Real M_object;
+   static Real GMdt;
    static bool initialFlowThrough;
    static Real initialFlowThroughPeriod;
    static Real maxUe2;
@@ -200,12 +199,8 @@ struct Hybrid {
 #ifdef USE_OUTER_BOUNDARY_ZONE
    static OuterBoundaryZone outerBoundaryZone;
 #endif
-#ifdef USE_ECUT
-   static Real Ecut2;
-#endif
-#ifdef USE_MAXVW
+   static Real maxE2;
    static Real maxVw;
-#endif
 #ifdef USE_RESISTIVITY
    static Real resistivityEta;
    static Real resistivityEtaC;
@@ -225,10 +220,14 @@ struct Hybrid {
    static Real electronTemperature;
    static Real electronPressureCoeff;
    static Real swMacroParticlesCellPerDt;
+   static bool useGravity;
    static int Efilter;
    static Real EfilterNodeGaussSigma;
    static Real EfilterNodeGaussCoeffs[4];
    static Real IMFBx,IMFBy,IMFBz;
+#ifdef USE_TEST_PARTICLE_MODE
+   static Real Ex,Ey,Ez;
+#endif
    static Real swJi;
    static bool IMFBoundaryCellB[6];
    static bool IMFBoundaryFaceB[6];
@@ -241,8 +240,8 @@ struct Hybrid {
    static unsigned int N_ionospherePopulations;
    static unsigned int N_exospherePopulations;
    static unsigned int N_outputPopVars;
-   static std::vector<particlePopulation> allPops;
-   static std::vector<solarWindPopulation> swPops;
+   static std::vector<particlePopulationInfo> allPopsInfo;
+   static std::vector<solarWindPopulationInfo> swPopsInfo;
    static std::vector<std::string> populationNames;
    static std::vector<std::string> outputPopVarStr;
    static std::vector<int> outputPopVarId;
@@ -250,24 +249,32 @@ struct Hybrid {
    static std::vector<unsigned int> outputPlasmaPopId;
    static std::map<std::string,bool> outputCellParams;
 
-   static std::vector<std::ofstream*> plog;
-   static std::ofstream flog;
-   static std::vector<Real> particleCounterEscape;
-   static std::vector<Real> particleCounterImpact;
-   static std::vector<Real> particleCounterInject;
-   static std::vector<Real> particleCounterInjectMacroparticles;
-   static std::vector<Real> particleCounterEscapeKineticEnergy;
-   static std::vector<Real> particleCounterImpactKineticEnergy;
-   static std::vector<Real> particleCounterInjectKineticEnergy;
-   static Real particleCounterTimeStart;
+   // particle population and field logs and their counters
+   static std::vector<std::ofstream*> logParticle;
+   static std::ofstream logField;
+   static std::vector<Real> logCounterParticleEscape;
+   static std::vector<Real> logCounterParticleImpact;
+   static std::vector<Real> logCounterParticleInject;
+   static std::vector<Real> logCounterParticleInjectMacroparticles;
+   static std::vector<Real> logCounterParticleEscapeKineticEnergy;
+   static std::vector<Real> logCounterParticleImpactKineticEnergy;
+   static std::vector<Real> logCounterParticleInjectKineticEnergy;
+   static std::vector<Real> logCounterParticleMaxVi;
+   static Real logCounterFieldMaxCellUe;
+   static Real logCounterFieldMaxNodeUe;
+   static Real logCounterFieldMaxVw;
+   static Real logCounterFieldMaxE;
+   static Real logCounterFieldMinCellRhoQi;
+   static Real logCounterFieldMinNodeRhoQi;
+   static Real logCounterTimeStart;
 
    static bool filterParticlesAfterRestartDone;
    
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    static pargrid::DataID dataCellAverageBID;
    static std::vector<pargrid::DataID> dataCellAverageDensityID;
    static std::vector<pargrid::DataID> dataCellAverageVelocityID;
-   static int averageCounter;
+   static int gridTemporalAverageCounter;
 #endif
    static int repartitionCheckIntervalTmp;
 };

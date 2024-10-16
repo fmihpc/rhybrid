@@ -81,7 +81,7 @@ template<class PARTICLE>
      // experimental back wall outflow
      /*bool* outerBoundaryFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
      if(outerBoundaryFlag[blockID] == true) {
-        if( (particle.state[particle::X]+xBlock) < (Hybrid::box.xmin + Hybrid::outerBoundaryZone.sizeEta + Hybrid::dx)) {
+        if( (particle.state[particle::X]+xBlock) < (sim->.x_min + Hybrid::outerBoundaryZone.sizeEta + Hybrid::dx)) {
            accelerate = false;
            particle.state[particle::VX] = -Hybrid::upstreamBulkU;
            particle.state[particle::VY] = 0.0;
@@ -108,8 +108,11 @@ template<class PARTICLE>
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
 	 particle.state[particle::VZ] *= norm;
-	 Real* counterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
-	 counterCellMaxVi[blockID]++;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+	 Real* gridCounterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataGridCounterCellMaxViID));
+	 gridCounterCellMaxVi[blockID]++;
+#endif
+         Hybrid::logCounterParticleMaxVi[species.popid-1]++;
       }
    }*/
    
@@ -117,9 +120,20 @@ template<class PARTICLE>
    if(accelerate == true) {
       Real E[3],B[3],Ue[3],Ep[3];
       Real r[3] = {particle.state[particle::X],particle.state[particle::Y],particle.state[particle::Z]};
+      const Real rGlobal[3] = {r[0]+xBlock,r[1]+yBlock,r[2]+zBlock};
+#ifdef USE_TEST_PARTICLE_MODE
+      // if in test particle mode, use homogeneous B and E
+      B[0] = Hybrid::IMFBx;
+      B[1] = Hybrid::IMFBy;
+      B[2] = Hybrid::IMFBz;
+      E[0] = Hybrid::Ex;
+      E[1] = Hybrid::Ey;
+      E[2] = Hybrid::Ez;
+#else
+      // if not in test particle mode, use normal hybrid model approach
       getFields(r,B,Ue,Ep,*sim,*simClasses,blockID);
 #ifdef USE_B_CONSTANT
-      addConstantB(r[0]+xBlock,r[1]+yBlock,r[2]+zBlock,B);
+      addConstantB(rGlobal[0],rGlobal[1],rGlobal[2],B);
 #endif
       // E = -Ue x B
       crossProduct(B,Ue,E);
@@ -127,6 +141,7 @@ template<class PARTICLE>
       if(Hybrid::useElectronPressureElectricField == true) {
          for (unsigned int i=0;i<3;++i) { E[i] += Ep[i]; }
       }
+#endif
       Real tx,ty,tz,sx,sy,sz,dvx,dvy,dvz,vmx,vmy,vmz,v0x,v0y,v0z,vpx,vpy,vpz,qmideltT2,t2,b2;
       qmideltT2= 0.5*species.q*sim->dt/species.m;
       dvx=qmideltT2*E[0];
@@ -152,14 +167,27 @@ template<class PARTICLE>
       particle.state[particle::VX]=vpx+dvx;
       particle.state[particle::VY]=vpy+dvy;
       particle.state[particle::VZ]=vpz+dvz;
+      // gravitational acceleration
+      if(Hybrid::useGravity == true) {
+	 Real r3 = cube( sqrt( sqr(rGlobal[0]) + sqr(rGlobal[1]) + sqr(rGlobal[2]) ) );
+	 if(r3 > 0) {
+	    const Real s = -Hybrid::GMdt/r3;
+	    particle.state[particle::VX] += s*rGlobal[0];
+	    particle.state[particle::VY] += s*rGlobal[1];
+	    particle.state[particle::VZ] += s*rGlobal[2];
+	 }
+      }
       const Real v2 = sqr(particle.state[particle::VX]) + sqr(particle.state[particle::VY]) + sqr(particle.state[particle::VZ]);
       if(v2 > Hybrid::maxVi2) {
 	 const Real norm = sqrt(Hybrid::maxVi2/v2);
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
 	 particle.state[particle::VZ] *= norm;
-	 Real* counterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCounterCellMaxViID));
-	 counterCellMaxVi[blockID]++;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+	 Real* gridCounterCellMaxVi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataGridCounterCellMaxViID));
+	 gridCounterCellMaxVi[blockID]++;
+#endif
+	 Hybrid::logCounterParticleMaxVi[species.popid-1]++;
       }
    }
 

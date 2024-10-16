@@ -56,7 +56,7 @@ class Accumulator: public ParticleAccumulatorBase {
       int particleAccumulation;
    #endif
 
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    void accumulateCell(const Species& species,pargrid::CellID blockID,unsigned int N_particles,
 		       const Particle<Real>* particles,Real* cellRhoQi,Real* cellJi,
 		       Real* nAve,Real* vAve);

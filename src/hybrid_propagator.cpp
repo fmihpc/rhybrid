@@ -62,14 +62,12 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #ifdef USE_RESISTIVITY
    Real* nodeEta             = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEtaID);
 #endif
-   Real* counterCellMaxUe    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCounterCellMaxUeID);
-   Real* counterCellMaxVi    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCounterCellMaxViID);
-   Real* counterCellMinRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCounterCellMinRhoQiID);
-#ifdef USE_ECUT
-   Real* counterNodeEcut     = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCounterNodeEcutID);
-#endif
-#ifdef USE_MAXVW
-   Real* counterNodeMaxVw    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCounterNodeMaxVwID);
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   Real* gridCounterCellMaxUe    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMaxUeID);
+   Real* gridCounterCellMaxVi    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMaxViID);
+   Real* gridCounterCellMinRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMinRhoQiID);
+   Real* gridCounterNodeMaxE     = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterNodeMaxEID);
+   Real* gridCounterNodeMaxVw    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterNodeMaxVwID);
 #endif
    bool* innerFlag           = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
    bool* innerFlagNode       = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagNodeID);
@@ -77,6 +75,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    bool* innerFlagCellEp     = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagCellEpID);
 #ifdef USE_OUTER_BOUNDARY_ZONE
    bool* outerBoundaryFlag   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
+   bool* outerBoundaryFlagNode   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagNodeID);
 #endif
    
    if(faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; exit(1);}
@@ -96,14 +95,12 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #ifdef USE_RESISTIVITY
    if(nodeEta             == NULL) {cerr << "ERROR: obtained NULL nodeEta array!"      << endl; exit(1);}
 #endif
-   if(counterCellMaxUe    == NULL) {cerr << "ERROR: obtained NULL counterCellMaxUe array!"    << endl; exit(1);}
-   if(counterCellMaxVi    == NULL) {cerr << "ERROR: obtained NULL counterCellMaxVi array!"    << endl; exit(1);}
-   if(counterCellMinRhoQi == NULL) {cerr << "ERROR: obtained NULL counterCellMinRhoQi array!" << endl; exit(1);}
-#ifdef USE_ECUT
-   if(counterNodeEcut     == NULL) {cerr << "ERROR: obtained NULL counterNodeEcut array!"     << endl; exit(1);}
-#endif
-#ifdef USE_MAXVW
-   if(counterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL counterNodeMaxVw array!"    << endl; exit(1);}
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+   if(gridCounterCellMaxUe    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxUe array!"    << endl; exit(1);}
+   if(gridCounterCellMaxVi    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxVi array!"    << endl; exit(1);}
+   if(gridCounterCellMinRhoQi == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMinRhoQi array!" << endl; exit(1);}
+   if(gridCounterNodeMaxE     == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxE array!"     << endl; exit(1);}
+   if(gridCounterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxVw array!"    << endl; exit(1);}
 #endif
    if(innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
    if(innerFlagParticle   == NULL) {cerr << "ERROR: obtained NULL innerFlagParticle array!" << endl; exit(1);}
@@ -111,6 +108,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
 #ifdef USE_OUTER_BOUNDARY_ZONE
    if(outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; exit(1);}
+   if(outerBoundaryFlagNode == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlagNode array!"<< endl; exit(1);}
 #endif   
    // get block vectors
    const vector<pargrid::CellID>& innerBlocks = simClasses.pargrid.getInnerCells(pargrid::DEFAULT_STENCIL);
@@ -121,14 +119,12 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if(saveStepHappened == true) {
       for(pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
-	 counterCellMaxUe[n]=0.0;
-	 counterCellMaxVi[n]=0.0;
-	 counterCellMinRhoQi[n]=0.0;
-#ifdef USE_ECUT
-         counterNodeEcut[n]=0.0;
-#endif
-#ifdef USE_MAXVW
-         counterNodeMaxVw[n]=0.0;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+	 gridCounterCellMaxUe[n]=0.0;
+	 gridCounterCellMaxVi[n]=0.0;
+	 gridCounterCellMinRhoQi[n]=0.0;
+         gridCounterNodeMaxE[n]=0.0;
+         gridCounterNodeMaxVw[n]=0.0;
 #endif
       }
       saveStepHappened = false;
@@ -164,7 +160,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    setIMFCell(cellB,sim,simClasses,exteriorBlocks);
    profile::stop();
    
-#ifdef WRITE_POPULATION_AVERAGES
+#ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // add cellB to cellAverageB and increase average counter
    Real* cellAverageB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageBID);
    if(cellAverageB == NULL) { cerr << "ERROR: obtained NULL cellAverageB array!" << endl; exit(1); }
@@ -173,7 +169,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
       const int n3 = n*3;
       for(int l=0;l<3;++l) { cellAverageB[n3+l] += cellB[n3+l]; }
    }
-   Hybrid::averageCounter++;
+   Hybrid::gridTemporalAverageCounter++;
 #endif
    
    // cell->node B
@@ -208,8 +204,8 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::start("field propag",profPropagFieldID);
    for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) {
       calcNodeJ(faceB,nodeB,nodeRhoQi,nodeJ,
-#ifdef USE_MAXVW
-                counterNodeMaxVw,
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+                gridCounterNodeMaxVw,
 #endif
                 sim,simClasses,innerBlocks[b]);
    }
@@ -220,8 +216,8 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::start("field propag",profPropagFieldID);
    for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) {
       calcNodeJ(faceB,nodeB,nodeRhoQi,nodeJ,
-#ifdef USE_MAXVW
-                counterNodeMaxVw,
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+                gridCounterNodeMaxVw,
 #endif
                 sim,simClasses,boundaryBlocks[b]);
    }
@@ -281,7 +277,16 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 
    // calculate cellUe
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { calcCellUe(cellJ,cellJi,cellRhoQi,cellUe,innerFlag,counterCellMaxUe,sim,simClasses,b); }
+   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      calcCellUe(cellJ,cellJi,cellRhoQi,cellUe,innerFlag,
+#ifdef USE_OUTER_BOUNDARY_ZONE
+		 outerBoundaryFlag,
+#endif
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+		 gridCounterCellMaxUe,
+#endif
+		 sim,simClasses,b);
+   }
    profile::stop();
    
    // loop thru ghost cells
@@ -311,7 +316,15 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();*/
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { calcNodeUe(nodeRhoQi,nodeJi,nodeJ,nodeUe,innerFlagNode,counterCellMaxUe,sim,simClasses,b); }
+   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      calcNodeUe(nodeRhoQi,nodeJi,nodeJ,nodeUe,innerFlagNode,
+#ifdef USE_OUTER_BOUNDARY_ZONE
+		 outerBoundaryFlagNode,
+#endif
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+		 gridCounterCellMaxUe,
+#endif
+		 sim,simClasses,b); }
    profile::stop();
 #else
    // cell->node Ue
@@ -340,8 +353,8 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
       nodeEta,
 #endif
       nodeJ,nodeE,
-#ifdef USE_ECUT
-      counterNodeEcut,
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+      gridCounterNodeMaxE,
 #endif
       innerFlagNode,sim,simClasses,b);
    }
@@ -1329,7 +1342,14 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
 }
 
 // calculate cellUe
-void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,
+#ifdef USE_OUTER_BOUNDARY_ZONE
+		bool* outerBoundaryFlag,
+#endif
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+		Real* gridCounterCellMaxUe,
+#endif
+		Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
 #ifdef USE_AIRLESS_OBJECT_CONFIGURATION
@@ -1358,7 +1378,14 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
       const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
       const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
       const Real yzCellCenter = sqrt(sqr(yCellCenter) +sqr(zCellCenter));
-      if(absJi < (Hybrid::swJi*0.05) && xCellCenter <= 0.0 && xCellCenter > (Hybrid::box.xmin + 10*Hybrid::dx) && yzCellCenter < (1.5*Hybrid::R_object)) {
+      if(absJi < (Hybrid::swJi*0.05) && xCellCenter <= 0.0 && xCellCenter > (sim.x_min + 10*Hybrid::dx) && yzCellCenter < (1.5*Hybrid::R_object)) {
+	 cellUe[n3+0] = -Hybrid::upstreamBulkU;
+	 cellUe[n3+1] = cellUe[n3+2] = 0.0;
+	 continue;
+      }
+#endif
+#ifdef USE_OUTER_BOUNDARY_ZONE
+      if(outerBoundaryFlag[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
 	 cellUe[n3+0] = -Hybrid::upstreamBulkU;
 	 cellUe[n3+1] = cellUe[n3+2] = 0.0;
 	 continue;
@@ -1386,7 +1413,10 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 	 cellUe[n3+0] *= norm;
 	 cellUe[n3+1] *= norm;
 	 cellUe[n3+2] *= norm;
-         counterCellMaxUe[n]++;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+         gridCounterCellMaxUe[n]++;
+#endif
+	 Hybrid::logCounterFieldMaxCellUe++;
       }
    }
 }
@@ -1398,8 +1428,8 @@ void calcNodeE(Real* nodeUe,Real* nodeB,
 Real* nodeEta,
 #endif
 Real* nodeJ,Real* nodeE,
-#ifdef USE_ECUT
-Real* counterNodeEcut,
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+Real* gridCounterNodeMaxE,
 #endif
 bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
@@ -1440,25 +1470,26 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
       nodeE[n3+1] += nodeEta[n]*nodeJ[n3+1];
       nodeE[n3+2] += nodeEta[n]*nodeJ[n3+2];
 #endif
-#ifdef USE_ECUT
-      if(Hybrid::Ecut2 > 0) {
+      if(Hybrid::maxE2 > 0) {
          const Real E2 = sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]);
-         if (E2 > Hybrid::Ecut2) {
-            Real scaling = sqrt(Hybrid::Ecut2/E2);
+         if (E2 > Hybrid::maxE2) {
+            Real scaling = sqrt(Hybrid::maxE2/E2);
             nodeE[n3+0] *= scaling;
             nodeE[n3+1] *= scaling;
             nodeE[n3+2] *= scaling;
-            counterNodeEcut[n]++;
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+            gridCounterNodeMaxE[n]++;
+#endif
+	    Hybrid::logCounterFieldMaxE++;
          }
       }
-#endif
    }
 }
 
 // nodeJ = nabla x faceB/mu0
 void calcNodeJ(Real* faceB,Real* nodeB,Real* nodeRhoQi,Real* nodeJ,
-#ifdef USE_MAXVW
-Real* counterNodeMaxVw,
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+Real* gridCounterNodeMaxVw,
 #endif
 Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
@@ -1510,7 +1541,6 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
         + Bf[(block::arrayIndex(i+2,j+1,k+2))*3+1]
         - Bf[(block::arrayIndex(i+1,j+2,k+2))*3+0];
       Real d = 1.0;
-#ifdef USE_MAXVW
       Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
       const Real ne = nodeRhoQi[n]/constants::CHARGE_ELEMENTARY;
       const Real Btot = sqrt( sqr(nodeB[n3+0]) + sqr(nodeB[n3+1]) + sqr(nodeB[n3+2]) );
@@ -1519,9 +1549,11 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
       }
       if (vw > Hybrid::maxVw && Hybrid::maxVw > 0.0) {
 	d = vw/Hybrid::maxVw;
-	counterNodeMaxVw[n]++;
-      }
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+	gridCounterNodeMaxVw[n]++;
 #endif
+	Hybrid::logCounterFieldMaxVw++;
+      }
       const Real a = 0.5/(Hybrid::dx*constants::PERMEABILITY*d);
       nodeJ[n3+0] = (edgeJx1 + edgeJx2)*a;
       nodeJ[n3+1] = (edgeJy1 + edgeJy2)*a;
@@ -1529,7 +1561,14 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
    }
 }
 
-void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,Real* counterCellMaxUe,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,
+#ifdef USE_OUTER_BOUNDARY_ZONE
+		bool* outerBoundaryFlagNode,
+#endif
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+		Real* gridCounterCellMaxUe,
+#endif
+		Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    int di=0;
    int dj=0;
@@ -1568,14 +1607,24 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
       const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
       const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
       const Real yzNode = sqrt(sqr(yNode) +sqr(zNode));
-      if(absJi < (Hybrid::swJi*0.05) && xNode <= 0.0 && xNode > (Hybrid::box.xmin + 10*Hybrid::dx) && yzNode < (1.5*Hybrid::R_object)) {
+      if(absJi < (Hybrid::swJi*0.05) && xNode <= 0.0 && xNode > (sim.x_min + 10*Hybrid::dx) && yzNode < (1.5*Hybrid::R_object)) {
+	 nodeUe[n3+0] = -Hybrid::upstreamBulkU;
+	 nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
+	 continue;
+      }
+#endif
+#ifdef USE_OUTER_BOUNDARY_ZONE
+      if(outerBoundaryFlagNode[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
 	 nodeUe[n3+0] = -Hybrid::upstreamBulkU;
 	 nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
 	 continue;
       }
 #endif
       // check min nodeRhoQi
-      if(nodeRhoQi[n] < Hybrid::minRhoQi) { nodeRhoQi[n] = Hybrid::minRhoQi; }
+      if(nodeRhoQi[n] < Hybrid::minRhoQi) {
+	 nodeRhoQi[n] = Hybrid::minRhoQi;
+	 Hybrid::logCounterFieldMinNodeRhoQi++;
+      }
       // calc Ue = (J - Ji)/rhoqi
       for(int l=0;l<3;++l) {
 	 if(fabs(nodeRhoQi[n]) > 0) {
@@ -1598,7 +1647,10 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
 	 nodeUe[n3+0] *= norm;
 	 nodeUe[n3+1] *= norm;
 	 nodeUe[n3+2] *= norm;
-         counterCellMaxUe[n]++; // using cell array here to avoid introducing a new node array
+#ifdef USE_GRID_CONSTRAINT_COUNTERS
+         gridCounterCellMaxUe[n]++; // using cell array here to avoid introducing a new node array
+#endif
+	 Hybrid::logCounterFieldMaxNodeUe++;
       }
    }
 }
