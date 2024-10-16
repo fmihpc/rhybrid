@@ -72,11 +72,6 @@ template<class PARTICLE>
       Hybrid::initialFlowThrough == true) {
       accelerate = false;
    }
-#ifdef USE_XMIN_BOUNDARY
-     // no particle velocity propagation at x < xmin
-     bool* xMinFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataXminFlagID));
-     if(xMinFlag[blockID] == true) { accelerate = false; }
-#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
      // experimental back wall outflow
      /*bool* outerBoundaryFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));

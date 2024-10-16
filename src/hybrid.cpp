@@ -77,9 +77,6 @@ pargrid::DataID Hybrid::dataInnerFlagCellEpID;
 pargrid::DataID Hybrid::dataOuterBoundaryFlagID;
 pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
 #endif
-#ifdef USE_XMIN_BOUNDARY
-pargrid::DataID Hybrid::dataXminFlagID;
-#endif
 #ifdef USE_DETECTORS
 // detector: particle
 pargrid::DataID Hybrid::dataDetectorParticleFlagID;
@@ -120,14 +117,6 @@ Real Hybrid::R_object;
 Real Hybrid::R2_fieldObstacle;
 Real Hybrid::R2_particleObstacle;
 Real Hybrid::R2_cellEpObstacle;
-#ifdef USE_XMIN_BOUNDARY
-Real Hybrid::xMinBoundary;
-#endif
-#ifdef USE_CONIC_INNER_BOUNDARY
-Real Hybrid::l_conicInnerBoundary;
-Real Hybrid::e_conicInnerBoundary;
-Real Hybrid::eta_conicInnerBoundary;
-#endif
 Real Hybrid::upstreamBulkU;
 Real Hybrid::M_object;
 Real Hybrid::GMdt;

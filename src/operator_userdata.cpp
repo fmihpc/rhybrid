@@ -133,9 +133,6 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    writeCellDataVariableBool(spatMeshName,Hybrid::dataOuterBoundaryFlagID,"outerBoundaryFlag",   N_blocks,1);
    writeCellDataVariableBool(spatMeshName,Hybrid::dataOuterBoundaryFlagNodeID,"outerBoundaryFlagNode",   N_blocks,1);
 #endif
-#ifdef USE_XMIN_BOUNDARY
-   writeCellDataVariableBool(spatMeshName,Hybrid::dataXminFlagID,         "xMinFlag",            N_blocks,1);
-#endif
    // write production rates of ionosphere populations
    if(Hybrid::outputCellParams["prod_rate_iono"] == true) {
       Real* const cellIonosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellIonosphereID));
@@ -543,19 +540,7 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,vector<LogDat
       logDataParticle[s].sumWV2 = 0.0;
       logDataParticle[s].maxVi = 0.0;
    }
-#ifdef USE_XMIN_BOUNDARY
-   bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
-#endif
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
-#ifdef USE_XMIN_BOUNDARY
-      // do not include particles if this block has a cell with xMinFlag == true
-      bool skipBlock = false;
-      for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
-	 const int n = (b*block::SIZE+block::index(i,j,k));
-         if(xMinFlag[n] == true) { skipBlock = true; }
-      }
-      if(skipBlock == true) { continue; }
-#endif
       for(size_t s=0;s<particleLists.size();++s) {
 	 pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
 	 if(particleLists[s]->getParticles(speciesDataID) == false) { continue; }
@@ -629,9 +614,6 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    Real* cellEp = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellEpID);
    Real* nodeE  = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    bool* innerFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
-#ifdef USE_XMIN_BOUNDARY
-   bool* xMinFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataXminFlagID);
-#endif
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       if(simClasses.pargrid.getNeighbourFlags(b) != pargrid::ALL_NEIGHBOURS_EXIST) { continue; }
       const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
@@ -644,10 +626,6 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	 if(Hybrid::includeInnerCellsInFieldLog == false) {
 	    if(innerFlag[n] == true) { continue; }
 	 }
-#ifdef USE_XMIN_BOUNDARY
-         // do not include cells at x < xmin
-         if(xMinFlag[n] == true) { continue; }
-#endif
 	 // divergence of B in a cell from face magnetic field
 	 Real divB = ((allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+0] - allFaceB[(block::arrayIndex(i+0,j+1,k+1))*3+0])
 		    + (allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+1] - allFaceB[(block::arrayIndex(i+1,j+0,k+1))*3+1])
