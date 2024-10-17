@@ -2101,7 +2101,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::logField << scientific << showpos;
       Hybrid::logField
 	<< "% field" << endl
-	<< "% columns = 40" << endl
+	<< "% columns = 41" << endl
 	<< "% 01. Time [s]" << endl
 	<< "% 02. avg(faceBx) [T]" << endl
 	<< "% 03. avg(faceBy) [T]" << endl
@@ -2141,7 +2141,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< "% 37. Minimum proton inertial length [m]" << endl
 	<< "% 38. Maximum proton inertial length [m]" << endl
 	<< "% 39. Minimum ion Larmor period [s]" << endl
-	<< "% 40. Maximum Alfven speed [m/s]" << endl;
+	<< "% 40. Maximum Alfven speed [m/s]" << endl
+	<< "% 41. Maximum electron fluid speed [m/s]" << endl;
    }
 
    // initialize particle counters

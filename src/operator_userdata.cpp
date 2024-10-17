@@ -622,6 +622,7 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    logDataField.maxInerLengthProton = numeric_limits<Real>::min();
    logDataField.minTLarmor = numeric_limits<Real>::max();
    logDataField.maxVAlfven = 0.0;
+   logDataField.maxUe = 0.0;
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
    Real* cellRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
    Real* cellJi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
@@ -703,6 +704,7 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	 logDataField.sumCellE2 += cellE2;
 
 	 // spatial, temporal and velocity scales
+	 const Real cellUetot = sqrt(sqr(cellUex) + sqr(cellUey) + sqr(cellUez));
 	 if(cellRhoQi[n] > 0.0) {
 	    // electron inertial length: sqrt(m_e/(mu0*q_e^2*n_e)) = sqrt(m_e/(mu0*q_e^2*rho_q/q_e)) =  = sqrt(m_e/(mu0*q_e*rho_q))
 	    const Real de = sqrt(constants::MASS_ELECTRON/(constants::PERMEABILITY*constants::CHARGE_ELEMENTARY*cellRhoQi[n]));
@@ -722,6 +724,7 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	    if(di < logDataField.minInerLengthProton) { logDataField.minInerLengthProton = di; }
 	    if(vA > logDataField.maxVAlfven) { logDataField.maxVAlfven = vA; }
 	 }
+	 if(cellUetot > logDataField.maxUe) { logDataField.maxUe = cellUetot; }
 
 	 // update field log cell counter
 	 logDataField.N_cells++;
@@ -960,12 +963,15 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    Real minTLarmorGlobal = 0.0;
    Real maxVAlfvenThisProcess = logDataField.maxVAlfven;
    Real maxVAlfvenGlobal = 0.0;
+   Real maxUeThisProcess = logDataField.maxUe;
+   Real maxUeGlobal = 0.0;
    MPI_Reduce(&minInerLengthElectronThisProcess,&minInerLengthElectronGlobal,1,MPI_Type<Real>(),MPI_MIN,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&maxInerLengthElectronThisProcess,&maxInerLengthElectronGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&minInerLengthProtonThisProcess,&minInerLengthProtonGlobal,1,MPI_Type<Real>(),MPI_MIN,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&maxInerLengthProtonThisProcess,&maxInerLengthProtonGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&minTLarmorThisProcess,&minTLarmorGlobal,1,MPI_Type<Real>(),MPI_MIN,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&maxVAlfvenThisProcess,&maxVAlfvenGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
+   MPI_Reduce(&maxUeThisProcess,&maxUeGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
 
    // write field log
    if(sim.mpiRank==sim.MASTER_RANK) {
@@ -1045,7 +1051,8 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	<< minInerLengthProtonGlobal << " "
 	<< maxInerLengthProtonGlobal << " "
 	<< minTLarmorGlobal << " "
-	<< maxVAlfvenGlobal << " ";
+	<< maxVAlfvenGlobal << " "
+	<< maxUeGlobal << " ";
 
       // line endings particle logs
       for(size_t i=0;i<Hybrid::logParticle.size();++i) {
@@ -1058,11 +1065,13 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       const Real tL_min_dt = minTLarmorGlobal/sim.dt;
       const Real maxVi_dxdt = maxViAllPopulations/(Hybrid::dx/sim.dt);
       const Real maxVA_dxdt = maxVAlfvenGlobal/(Hybrid::dx/sim.dt);
+      const Real maxUe_dxdt = maxUeGlobal/(Hybrid::dx/sim.dt);
 
       // write if on a save step or save step already happened after previous entry
       if(Hybrid::writeMainLogEntriesAfterSaveStep == true && sim.mpiRank == sim.MASTER_RANK) {
 	 simClasses.logger
 	   << "(RHYBRID) Max. |Vion|             : Vi_max  = " << maxViAllPopulations/1e3 << " km/s = " << maxVi_dxdt << " dx/dt" << endl
+	   << "(RHYBRID) Max. |Ue|               : Ue_max  = " << maxUeGlobal/1e3 << " km/s = " << maxUe_dxdt << " dx/dt" << endl
 	   << "(RHYBRID) Max. |VAlfven|          : Va_max  = " << maxVAlfvenGlobal/1e3 << " km/s = " << maxVA_dxdt << " dx/dt" << endl
 	   << "(RHYBRID) Max. |faceB|            : B_max   = " << maxBGlobal/1e-9 << " nT" << endl
 	   << "(RHYBRID) Min. ion Larmor period  : tL_min  = " << minTLarmorGlobal << " s = " << minTLarmorGlobal/sim.dt << " dt" << endl
@@ -1078,6 +1087,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       if(sim.mpiRank == sim.MASTER_RANK) {
 	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << "), time step = " << sim.timestep << ", time = " << sim.t << " s" << endl; }
 	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << "), time step = " << sim.timestep << ", time = " << sim.t << " s" << endl; }
+	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << "), time step = " << sim.timestep << ", time = " << sim.t << " s" << endl; }
 	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << "), time step = " << sim.timestep << ", time = " << sim.t << " s" << endl; }
       }
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
