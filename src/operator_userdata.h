@@ -23,21 +23,6 @@
 #include <dataoperator.h>
 #include "particle_species.h"
 
-// struct to store some particle population log vales
-struct LogDataParticle {
-   Real N_macroParticles,N_realParticles,sumVx,sumVy,sumVz,sumV,sumWV2,maxVi;
-};
-
-// struct to store some field log vales
-struct LogDataField {
-   Real N_cells;
-   Real sumBx,sumBy,sumBz,sumB,maxB,sumDivB,maxDivB,maxDivBPerB,sumB2;
-   Real sumCellJix,sumCellJiy,sumCellJiz,sumCellJi,maxCellJi;
-   Real sumCellEpx,sumCellEpy,sumCellEpz,sumCellEp,maxCellEp,sumCellEp2;
-   Real sumNodeEx,sumNodeEy,sumNodeEz,sumNodeE,maxNodeE,sumNodeE2,sumCellE2;
-   Real minInerLengthElectron,maxInerLengthElectron,minInerLengthProton,maxInerLengthProton,minTLarmor,maxVAlfven,maxUe;
-};
-
 class UserDataOP: public DataOperator {
  public:
    UserDataOP();
@@ -54,9 +39,5 @@ class UserDataOP: public DataOperator {
    void calcCellNPles(std::vector<Real>& cellNPles,const std::vector<ParticleListBase*>& particleLists);
    void calcCellParticleBulkParameters(std::vector<Real>& cellDensity,std::vector<Real>& cellTemperature,std::vector<Real>& cellVelocity,const std::vector<ParticleListBase*>& particleLists,std::vector<unsigned int> s);
 };
-
-void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<LogDataParticle>& logDataParticle,const std::vector<ParticleListBase*>& particleLists,std::vector<Real>& cellRhoM);
-void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& logDataField,std::vector<Real>& cellRhoM);
-bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particles);
 
 #endif

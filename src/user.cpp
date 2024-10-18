@@ -34,6 +34,7 @@
 #include "particle_injector.h"
 #include "particle_list_hybrid.h"
 #include "operator_userdata.h"
+#include "diagnostics.h"
 #ifdef USE_RESISTIVITY
 #include "resistivity.h"
 #endif
@@ -59,7 +60,6 @@ bool str2bool(SimulationClasses& simClasses,const string & v) {
 
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool rvalue = true;
-   if(sim.atDataSaveStep == true) { Hybrid::writeMainLogEntriesAfterSaveStep = true; }
    if(Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::initialFlowThrough == true) {
       static bool switchOffDone = false;
       if(switchOffDone == false) {
@@ -73,8 +73,13 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
        for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
        Hybrid::filterParticlesAfterRestartDone = true;
    }
+   // logging: main, field, particles
+   if(sim.atDataSaveStep == true) {
+      Hybrid::writeMainLogEntriesAfterSaveStep = true;
+      logWriteMainMacroparticles(sim,simClasses,particleLists);
+   }
    if(Hybrid::logInterval > 0) {
-      if( (sim.timestep)%(Hybrid::logInterval) == 0.0) {
+      if((sim.timestep)%(Hybrid::logInterval) == 0.0) {
          int masterFailed = 0; // check for failure of the master PE for run termination
          if(logWriteParticleField(sim,simClasses,particleLists) == false) {
             rvalue = false;
@@ -835,7 +840,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger
      << "(LOGGING)" << endl
      << "Particle and field log file interval = " << Hybrid::logInterval*sim.dt << " s = " << Hybrid::logInterval << " dt" << endl
-     << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl << endl;
+     << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl;
    
    // read particle populations: uniform
    vector<string> uniformPopulations;
@@ -1731,7 +1736,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // initialize particle lists: uniform
    for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing an uniform particle population: " << *it << endl;
+      simClasses.logger << endl << "(RHYBRID) Initializing a uniform particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -1739,7 +1744,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    // initialize particle lists: ambient
    for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing an ambient particle population: " << *it << endl;
+      simClasses.logger << endl << "(RHYBRID) Initializing an ambient particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -1747,7 +1752,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    // initialize particle lists: solar wind
    for (vector<string>::iterator it=solarwindPopulations.begin(); it!=solarwindPopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing a solar wind particle population: " << *it << endl;
+      simClasses.logger << endl << "(RHYBRID) Initializing a solar wind particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"SolarWindInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -1755,7 +1760,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    // initialize particle lists: ionosphere
    for (vector<string>::iterator it=ionospherePopulations.begin(); it!=ionospherePopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl;
+      simClasses.logger << endl << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"IonosphereInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -1763,12 +1768,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }   
    // initialize particle lists: exosphere
    for (vector<string>::iterator it=exospherePopulations.begin(); it!=exospherePopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing an exospheric particle population: " << *it << endl;
+      simClasses.logger << endl << "(RHYBRID) Initializing an exospheric particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"ExosphereInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
    }
+   simClasses.logger << endl;
    // population output configurations
    for(unsigned int i=0;i<particleLists.size();++i) {
       const Species* species = reinterpret_cast<const Species*>(particleLists[i]->getSpecies());
