@@ -297,7 +297,7 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
      << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticle weight    = " << w << endl
      << "(" << species->name << ") xmin = " << xmin/1e3 << " km" << endl
-     << "(" << species->name << ") xmax = " << xmax/1e3 << " km" << endl << write;
+     << "(" << species->name << ") xmax = " << xmax/1e3 << " km" << endl;
    particlePopulationInfo popInfo;
    popInfo.w = w;
    popInfo.name = species->name;
@@ -476,7 +476,7 @@ bool InjectorAmbient::initialize(Simulation& sim,SimulationClasses& simClasses,C
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per cell per dt  = " << N_macroParticlesPerCellPerDt << endl
-     << "(" << species->name << ") macroparticle weight    = " << w << endl << write;
+     << "(" << species->name << ") macroparticle weight    = " << w << endl;
    particlePopulationInfo popInfo;
    popInfo.w = w;
    popInfo.name = species->name;
@@ -817,7 +817,7 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
      << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt           = " << N_macroParticlesPerCellPerDt*N_perp_cells << endl
      << "(" << species->name << ") macroparticles per cell per dt  = " << N_macroParticlesPerCellPerDt << endl
-     << "(" << species->name << ") macroparticle weight            = " << w << endl << write;
+     << "(" << species->name << ") macroparticle weight            = " << w << endl;
    static unsigned int swPopCnt = 0;
    swPopCnt++;
    if(swPopCnt == 1) {
@@ -994,7 +994,7 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
    }
    else {
       simClasses.logger
-        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl << write;
+        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl;
       N_macroParticlesPerDt = N_macroParticlesPerCell*100;
    }
    if(N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
@@ -1015,7 +1015,7 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
-     << "(" << species->name << ") macroparticle weight      = " << w << endl << write;
+     << "(" << species->name << ") macroparticle weight      = " << w << endl;
 
    static unsigned int ionoPopCnt = 0;
    N_ionoPop = ionoPopCnt;
@@ -1223,14 +1223,14 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
    if(noonFactor < 0.0 || nightFactor < 0.0) {
       simClasses.logger
-        << "(" << species->name << ") WARNING: negative noon or night factor" << endl << write;
+        << "(" << species->name << ") WARNING: negative noon or night factor" << endl;
    }
    if(Hybrid::swMacroParticlesCellPerDt > 0.0) {
       N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
    }
    else {
       simClasses.logger
-        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl << write;
+        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl;
       N_macroParticlesPerDt = N_macroParticlesPerCell*100;
    }
    if(N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
@@ -1252,7 +1252,7 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
-     << "(" << species->name << ") macroparticle weight      = " << w << endl << write;
+     << "(" << species->name << ") macroparticle weight      = " << w << endl;
 
    static unsigned int ionoPopCnt = 0;
    N_ionoPop = ionoPopCnt;
@@ -1519,7 +1519,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    }
    else {
       simClasses.logger
-        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl << write;
+        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl;
       N_macroParticlesPerDt = N_macroParticlesPerCell*100;
    }
    if(N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
@@ -1604,7 +1604,7 @@ break_for:
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
-     << "(" << species->name << ") macroparticle weight      = " << w << endl << write;
+     << "(" << species->name << ") macroparticle weight      = " << w << endl;
    particlePopulationInfo popInfo;
    popInfo.w = w;
    popInfo.name = species->name;

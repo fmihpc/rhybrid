@@ -104,8 +104,7 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
      << "accumulate = " << accumulate << endl 
      << "accelerate = " << accelerate << endl
      << "output str = " << outStr << endl
-     << "output in plasma = " << outIncludeInPlasma << endl
-     << write;
+     << "output in plasma = " << outIncludeInPlasma << endl;
    
    return success;
 }

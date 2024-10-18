@@ -106,7 +106,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	       << real2str(N_badMacroParticlesGlobal,15) << " (" << species.name << ")" << std::endl;
 	   simClasses->logger
 	       << "Number of macroparticles checked: "
-	       << real2str(N_macroParticlesGlobal,15) << " (" << species.name << ")" << std::endl << write;
+	       << real2str(N_macroParticlesGlobal,15) << " (" << species.name << ")" << std::endl;
        }
        return true;
    }

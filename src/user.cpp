@@ -63,7 +63,7 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    if(Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::initialFlowThrough == true) {
       static bool switchOffDone = false;
       if(switchOffDone == false) {
-         simClasses.logger << "(RHYBRID) initialFlowThroughPeriod reached, switching initial flow through off..." << endl << write;
+         simClasses.logger << "(RHYBRID) initialFlowThroughPeriod reached, switching initial flow through off..." << endl;
          Hybrid::initialFlowThrough = false;
          switchOffDone = true;
       }
@@ -101,13 +101,13 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    // set repartitioning off if detectors are recording
    if(Hybrid::detParticleRecording == true || Hybrid::detBulkParamRecording == true) {
       if(sim.repartitionCheckInterval > 0) {
-	 simClasses.logger << "(RHYBRID) DETECTORS: detectors recording, setting repartitioning off" << endl << write;
+	 simClasses.logger << "(RHYBRID) DETECTORS: detectors recording, setting repartitioning off" << endl;
       }
       sim.repartitionCheckInterval = -100;
    }
    else {
       if(sim.repartitionCheckInterval < 0 && Hybrid::repartitionCheckIntervalTmp > 0) {
-	 simClasses.logger << "(RHYBRID) DETECTORS: detectors not recording anymore, setting repartitioning back on" << endl << write;
+	 simClasses.logger << "(RHYBRID) DETECTORS: detectors not recording anymore, setting repartitioning back on" << endl;
       }
       sim.repartitionCheckInterval = Hybrid::repartitionCheckIntervalTmp;
    }
@@ -168,24 +168,24 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
 #endif
 
 bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,vector<ParticleListBase*>& particleLists) {
+   simClasses.logger << "(RHYBRID) Starting early initialization." << endl;
    Hybrid hybrid;
 #if defined(USE_B_INITIAL) && defined(USE_B_CONSTANT)
 #error                  "(RHYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time"
    simClasses.logger << "(RHYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time" << endl << write;
    return false;
 #endif
-   simClasses.logger
-     << "(RHYBRID) Compile information and Makefile options: " << endl
+   simClasses.logger << "(RHYBRID) Compile information and Makefile options: " << endl;
 #ifdef COMPILEINFO
-     << COMPILEINFO << endl
+   simClasses.logger << COMPILEINFO << endl;
 #endif
-     << write;
    Hybrid::X_POS_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+1,+0,+0));
    Hybrid::X_NEG_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(-1,+0,+0));
    Hybrid::Y_POS_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+0,+1,+0));
    Hybrid::Y_NEG_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+0,-1,+0));
    Hybrid::Z_POS_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+0,+0,+1));
    Hybrid::Z_NEG_EXISTS = (1 << simClasses.pargrid.calcNeighbourTypeID(+0,+0,-1));
+   simClasses.logger << "(RHYBRID) Early initialization successful." << endl;
    return true;
 }
 
@@ -286,7 +286,7 @@ Real getGaussianDistr(Real x,Real sigma) {
    }
    // add variable to global map
    Hybrid::varReal[name] = d;
-   simClasses.logger << "(USER): created ParGrid used data array: " << name << " (Real[" << vectorDim << "])" << endl << write;
+   simClasses.logger << "(USER): created ParGrid used data array: " << name << " (Real[" << vectorDim << "])" << endl;
    return true;
 }*/
 
@@ -308,7 +308,7 @@ bool checkInjectorName(SimulationClasses& simClasses,ConfigReader& cr,string spe
 
 bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const ObjectFactories& objectFactories,
 			    vector<ParticleListBase*>& particleLists) {
-   simClasses.logger << "(RHYBRID) INITIALIZATION" << endl << endl << write;
+   simClasses.logger << "(RHYBRID) Starting late initialization." << endl;
    // Figure out dx. If this process has at least one cell, send its 
    // size to master. The master will then broadcast the cellsize to 
    // all processes.
@@ -1372,7 +1372,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
    int N_detBulkParamCells = 0;
-   simClasses.logger << write;
 #endif
 
    const size_t scalarArraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE;
@@ -1623,7 +1622,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
       MPI_Barrier(sim.comm);
       if(sim.mpiRank == sim.MASTER_RANK) {
-         simClasses.logger << "(RHYBRID) DETECTORS: recording particles in " << N_detParticleCellsGlobalSum << " cells" << endl << write;
+         simClasses.logger << "(RHYBRID) DETECTORS: recording particles in " << N_detParticleCellsGlobalSum << " cells" << endl;
          // write detector cell indices in a file
          ofstream detParticleCellIndicesFile;
          detParticleCellIndicesFile.open("det_ple_cell_indices.dat",ios_base::out);
@@ -1667,7 +1666,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
       MPI_Barrier(sim.comm);
       if(sim.mpiRank == sim.MASTER_RANK) {
-         simClasses.logger << "(RHYBRID) DETECTORS: recording bulk parameters in " << N_detBulkParamCellsGlobalSum << " cells" << endl << write;
+         simClasses.logger << "(RHYBRID) DETECTORS: recording bulk parameters in " << N_detBulkParamCellsGlobalSum << " cells" << endl;
          // write detector cell indices in a file
          ofstream detBulkParamCellIndicesFile;
          detBulkParamCellIndicesFile.open("det_blk_cell_indices.dat",ios_base::out);
@@ -1732,7 +1731,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // initialize particle lists: uniform
    for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing an uniform particle population: " << *it << endl << write;
+      simClasses.logger << "(RHYBRID) Initializing an uniform particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -1740,7 +1739,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    // initialize particle lists: ambient
    for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing an ambient particle population: " << *it << endl << write;
+      simClasses.logger << "(RHYBRID) Initializing an ambient particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -1748,7 +1747,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    // initialize particle lists: solar wind
    for (vector<string>::iterator it=solarwindPopulations.begin(); it!=solarwindPopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing a solar wind particle population: " << *it << endl << write;
+      simClasses.logger << "(RHYBRID) Initializing a solar wind particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"SolarWindInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -1756,7 +1755,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    // initialize particle lists: ionosphere
    for (vector<string>::iterator it=ionospherePopulations.begin(); it!=ionospherePopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl << write;
+      simClasses.logger << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"IonosphereInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -1764,7 +1763,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }   
    // initialize particle lists: exosphere
    for (vector<string>::iterator it=exospherePopulations.begin(); it!=exospherePopulations.end(); ++it) {
-      simClasses.logger << "(RHYBRID) Initializing an exospheric particle population: " << *it << endl << write;
+      simClasses.logger << "(RHYBRID) Initializing an exospheric particle population: " << *it << endl;
       if(checkInjectorName(simClasses,cr,*it,"ExosphereInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
@@ -2003,7 +2002,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    
    Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
    if(Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
-      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi2/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt" << endl << write;
+      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi2/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt" << endl;
       Hybrid::maxVi2 = 0.9*Hybrid::dx/sim.dt;
    }
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
@@ -2056,7 +2055,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
       simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
    }
-   simClasses.logger << endl << write;
+   simClasses.logger << endl;
 
    // open particle population and field log files
    if(sim.mpiRank==sim.MASTER_RANK) {
@@ -2331,6 +2330,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::filterParticlesAfterRestartDone = false;
    }
    Hybrid::repartitionCheckIntervalTmp = sim.repartitionCheckInterval;
+   simClasses.logger << "(RHYBRID) Late initialization successful." << endl;
    return true;
 }
 
@@ -2338,10 +2338,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
  * has been allocated by userEarlyInitialization or userLateInitialization functions.
  * @return If true, finalization completed successfully.*/
 bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
+   simClasses.logger << "(RHYBRID) Starting finalization." << endl;
    bool success = true;
    // new variable handling TBD
    /*for(const auto &p : Hybrid::varReal) {
-      simClasses.logger << "(USER) removed ParGrid array: " << p.first << endl << write;
+      simClasses.logger << "(USER) removed ParGrid array: " << p.first << endl;
    }*/
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
    if(simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
@@ -2405,6 +2406,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
       Hybrid::logField.flush();
       Hybrid::logField.close();
    }
+   if(success == true) {simClasses.logger << "(RHYBRID) Finalization successful." << endl; }
    return success;
 }
 

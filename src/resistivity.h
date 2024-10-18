@@ -67,31 +67,31 @@ inline bool setResistivityProfile(std::string name,SimulationClasses& simClasses
    if(name.compare("resistivityConstant") == 0) {
       Hybrid::resistivityProfilePtr = &resistivityConstant;
       if(Hybrid::resistivitySphericalR2.size() > 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, parameters of resistivitySphericalShells are ignored" << std::endl << write;
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, parameters of resistivitySphericalShells are ignored" << std::endl;
       }
       if(Hybrid::resistivityR2 > 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, R parameter is ignored" << std::endl << write;
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, R parameter is ignored" << std::endl;
       }
       if(Hybrid::resistivityEta <= 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: eta <= 0 in resistivityConstant" << std::endl << write;
+	 simClasses.logger << "(setResistivityProfile) WARNING: eta <= 0 in resistivityConstant" << std::endl;
       }
    }
    else if(name.compare("resistivitySuperConductingSphere") == 0){
       Hybrid::resistivityProfilePtr = &resistivitySuperConductingSphere;
       if(Hybrid::resistivitySphericalR2.size() > 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySuperConductingSphere profile is used, parameters of resistivitySphericalShells are ignored" << std::endl << write;
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySuperConductingSphere profile is used, parameters of resistivitySphericalShells are ignored" << std::endl;
       }
       if(Hybrid::resistivityR2 <= 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: R <= 0 in resistivitySuperConductingSphere" << std::endl << write;
+	 simClasses.logger << "(setResistivityProfile) WARNING: R <= 0 in resistivitySuperConductingSphere" << std::endl;
       }
       if(Hybrid::resistivityEta <= 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: eta <= 0 in resistivitySuperConductingSphere" << std::endl << write;
+	 simClasses.logger << "(setResistivityProfile) WARNING: eta <= 0 in resistivitySuperConductingSphere" << std::endl;
       }
    }
    else if(name.compare("resistivitySphericalShells") == 0){
       Hybrid::resistivityProfilePtr = &resistivitySphericalShells;
       if(Hybrid::resistivityR2 > 0 || Hybrid::resistivityEta > 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySphericalShells profile is used, eta and R parameters are ignored" << std::endl << write;
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySphericalShells profile is used, eta and R parameters are ignored" << std::endl;
       }
    }
    else {

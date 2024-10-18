@@ -92,7 +92,7 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
 	 Hybrid::detParticleFileLineCnt += fileLineCnt;
 	 simClasses.logger
 	   << "(RHYBRID) DETECTORS: written " << fileLineCnt << " particles in " << particleFileName << endl
-	   << "(RHYBRID) DETECTORS: particle detector max. counter: " << static_cast<long long>(Hybrid::detParticleFileLineCnt) << "/" << static_cast<long long>(Hybrid::N_detParticleMaxFileLines) << endl << write;
+	   << "(RHYBRID) DETECTORS: particle detector max. counter: " << static_cast<long long>(Hybrid::detParticleFileLineCnt) << "/" << static_cast<long long>(Hybrid::N_detParticleMaxFileLines) << endl;
       }
    }
    MPI_Barrier(sim.comm);
@@ -203,7 +203,7 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	 Hybrid::detBulkParamFileLineCnt += fileLineCnt;
 	 simClasses.logger
 	   << "(RHYBRID) DETECTORS: written " << fileLineCnt << " entries in " << bulkParamFileName << endl
-	   << "(RHYBRID) DETECTORS: bulk parameter detector max. counter: " << static_cast<long long>(Hybrid::detBulkParamFileLineCnt) << "/" << static_cast<long long>(Hybrid::N_detBulkParamMaxFileLines) << endl << write;
+	   << "(RHYBRID) DETECTORS: bulk parameter detector max. counter: " << static_cast<long long>(Hybrid::detBulkParamFileLineCnt) << "/" << static_cast<long long>(Hybrid::N_detBulkParamMaxFileLines) << endl;
       }
    }
    MPI_Barrier(sim.comm);

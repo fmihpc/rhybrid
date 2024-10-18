@@ -71,11 +71,11 @@ void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,co
 	const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
 	simClasses.logger << "N(" << species->name << ") = " << real2str(N_macroParticlesGlobal,15) << " = " << real2str(N_macroParticlesGlobal/1.0e9,15) << " x 10^9" << endl;
     }
-    simClasses.logger << write;
 }
 
 bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<ParticleListBase*>& particleLists) {
    bool success = true;
+   simClasses->logger << "(RHYBRID) Starting data save." << endl << write;
    if(getInitialized() == false) { return false; }
    profile::start("UserData",profileID);
    // Get the number of local blocks/patches on this process:
@@ -379,8 +379,10 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       if(simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detBlkFlag) == false) { success = false; }
    }
 #endif
+   
    logWriteMainMacroparticles(*sim,*simClasses,particleLists);
    profile::stop();
+   if(success == true) { simClasses->logger << "(RHYBRID) Data save successful." << endl; }
    return success;
 }
 
@@ -1112,14 +1114,14 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
       }
       if(sim.mpiRank == sim.MASTER_RANK) {
-	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << "), time step = " << sim.timestep << ", time = " << sim.t << " s" << endl; }
-	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << "), time step = " << sim.timestep << ", time = " << sim.t << " s" << endl; }
-	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << "), time step = " << sim.timestep << ", time = " << sim.t << " s" << endl; }
-	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << "), time step = " << sim.timestep << ", time = " << sim.t << " s" << endl; }
+	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ")" << endl; }
+	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ")" << endl; }
+	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ")" << endl; }
+	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ")" << endl; }
       }
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
          success = false;
-	 if(sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT), time step = " << sim.timestep << ", time = " << sim.t << " s, exiting." << endl << write; }
+	 if(sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT), exiting." << endl << write; }
       }
    }
 
