@@ -68,6 +68,7 @@ void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,co
 	const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
 	simClasses.logger << "\t N(" << species->name << ") = " << real2str(N_macroParticlesGlobal,15) << " = " << real2str(N_macroParticlesGlobal/1.0e9,15) << " x 10^9" << endl;
     }
+   simClasses.logger << write;
 }
 
 // calculate particle log quantities
@@ -654,14 +655,14 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	   << "\t Min. e- inertial length : de_min  = " << minInerLengthElectronGlobal/1e3 << " km = " << minInerLengthElectronGlobal/Hybrid::dx << " dx" << endl
 	   << "\t Max. e- inertial length : de_max  = " << maxInerLengthElectronGlobal/1e3 << " km = " << maxInerLengthElectronGlobal/Hybrid::dx << " dx" << endl
 	   << "\t Min. H+ inertial length : di_min  = " << minInerLengthProtonGlobal/1e3 << " km = " << minInerLengthProtonGlobal/Hybrid::dx << " dx" << endl
-	   << "\t Max. H+ inertial length : di_max  = " << maxInerLengthProtonGlobal/1e3 << " km = " << maxInerLengthProtonGlobal/Hybrid::dx << " dx" << endl << endl;
+	   << "\t Max. H+ inertial length : di_max  = " << maxInerLengthProtonGlobal/1e3 << " km = " << maxInerLengthProtonGlobal/Hybrid::dx << " dx" << endl << endl << write;
 	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
       }
       if(sim.mpiRank == sim.MASTER_RANK) {
-	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ")" << endl << endl; }
-	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ")" << endl << endl; }
-	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ")" << endl << endl; }
-	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ")" << endl << endl; }
+	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ")" << endl << endl << write; }
+	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ")" << endl << endl << write; }
+	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ")" << endl << endl << write; }
+	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ")" << endl << endl << write; }
       }
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
          success = false;
