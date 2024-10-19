@@ -51,7 +51,7 @@ struct LogDataField {
 
 // log amounts of macroparticles
 void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
-    simClasses.logger << "(RHYBRID) Number of macroparticles per population:" << endl;
+    simClasses.logger << "(RHYBRID) Number of macroparticles per population (time step = " << sim.timestep << ", time = " << sim.t << "):" << endl;
     for(size_t s=0;s<particleLists.size();++s) {
 	Real N_macroParticles = 0.0;
 	// For now skip particles with invalid data id:
@@ -643,7 +643,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       // write if on a save step or save step already happened after previous entry
       if(Hybrid::writeMainLogEntriesAfterSaveStep == true && sim.mpiRank == sim.MASTER_RANK) {
 	 simClasses.logger
-	   << "(RHYBRID) Diagnostics:" << endl
+	   << "(RHYBRID) Diagnostics (time step = " << sim.timestep << ", time = " << sim.t << "):" << endl
 	   << "\t Max. |Vion|             : Vi_max  = " << maxViAllPopulations/1e3 << " km/s = " << maxVi_dxdt << " dx/dt" << endl
 	   << "\t Max. |Ue|               : Ue_max  = " << maxUeGlobal/1e3 << " km/s = " << maxUe_dxdt << " dx/dt" << endl
 	   << "\t Max. |VAlfven|          : Va_max  = " << maxVAlfvenGlobal/1e3 << " km/s = " << maxVA_dxdt << " dx/dt" << endl
@@ -655,18 +655,18 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	   << "\t Min. e- inertial length : de_min  = " << minInerLengthElectronGlobal/1e3 << " km = " << minInerLengthElectronGlobal/Hybrid::dx << " dx" << endl
 	   << "\t Max. e- inertial length : de_max  = " << maxInerLengthElectronGlobal/1e3 << " km = " << maxInerLengthElectronGlobal/Hybrid::dx << " dx" << endl
 	   << "\t Min. H+ inertial length : di_min  = " << minInerLengthProtonGlobal/1e3 << " km = " << minInerLengthProtonGlobal/Hybrid::dx << " dx" << endl
-	   << "\t Max. H+ inertial length : di_max  = " << maxInerLengthProtonGlobal/1e3 << " km = " << maxInerLengthProtonGlobal/Hybrid::dx << " dx" << endl << endl << write;
+	   << "\t Max. H+ inertial length : di_max  = " << maxInerLengthProtonGlobal/1e3 << " km = " << maxInerLengthProtonGlobal/Hybrid::dx << " dx" << endl << write;
 	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
       }
       if(sim.mpiRank == sim.MASTER_RANK) {
-	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ")" << endl << endl << write; }
-	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ")" << endl << endl << write; }
-	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ")" << endl << endl << write; }
-	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ")" << endl << endl << write; }
+	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << endl << write; }
+	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << endl << write; }
+	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << endl << write; }
+	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << endl << write; }
       }
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
          success = false;
-	 if(sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT), exiting." << endl << endl << write; }
+	 if(sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT) (time step = " << sim.timestep << ", time = " << sim.t << "), exiting." << endl << write; }
       }
    }
 
