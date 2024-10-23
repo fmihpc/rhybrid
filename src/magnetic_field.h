@@ -28,6 +28,12 @@ inline void constantBx(Real x,Real y,Real z,Real B[3]) {
    B[0] += Hybrid::IMFBx;
 }
 
+inline void constantB(Real x,Real y,Real z,Real B[3]) {
+   B[0] += Hybrid::IMFBx;
+   B[1] += Hybrid::IMFBy;
+   B[2] += Hybrid::IMFBz;
+}
+
 inline void laminarFlowAroundSphereBx(Real x,Real y,Real z,Real B[3]) {
    const Real r2 = sqr(x) + sqr(y) + sqr(z);
    if(r2 < Hybrid::laminarR2) { return; }
@@ -198,6 +204,9 @@ inline bool setMagneticFieldProfile(std::string name) {
    Hybrid::magneticFieldProfilePtr = NULL;
    if(name.compare("constantBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &constantBx;
+   }
+   else if(name.compare("constantB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &constantB;
    }
    else if(name.compare("laminarFlowAroundSphereBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &laminarFlowAroundSphereBx;
