@@ -53,13 +53,17 @@ Bz = 0.0
 
 # varied parameters
 listUsw = np.linspace(350,650,2)*1e3
+#listUsw = np.array((350e3,))
 #listUdir = ("-x","+x","-y","+y","-z","+z")
 listUdir = ("-x","+y")
-listNsw = np.linspace(100,10,2)*1e6
-listTsw = np.array((1e5,1e4))
+#listUdir = ("-x",)
+#listNsw = np.linspace(100,10,2)*1e6
+listNsw = np.array((1e6,))
+#listTsw = np.array((1e5,1e4))
+listTsw = np.array((1e5,))
 
 # estimate of dx/dt (max. signal speed) for time step calculation
-maxSignalSpeed = 5.0*max(listUsw)
+maxSignalSpeed = 10.0*max(listUsw)
 
 # round to Nsig significant digits
 def roundToSigificantDigits(x,Nsig=2):
@@ -148,70 +152,9 @@ for nsw,Tsw,Usw,Udir in comb:
  rp["TMP_SW_DENSITY"] = nsw
  rp["TMP_SW_TEMPERATURE"] = Tsw
  runParams.append(rp)
- 
-# create run folder and config file from templace
-def createAndPerformRun(rp,runNumber):
- runNumberStr = str(runNumber).zfill(4)
- runFolder = tmpDateTimeStr + "_run" + runNumberStr + "/"
- runCfgFile = tmpDateTimeStr + "_test_empty_1d_run" + runNumberStr + ".cfg"
- print("RUN: " + runFolder)
- # create run folder
- if subprocess.run(["mkdir","-p",runFolder]).returncode != 0:
-  print("ERROR creating: " + runFolder)
-  quit()
- # cd to run folder
- try:
-  os.chdir(runFolder)
- except:
-  print("ERROR changing to a folder: " + runFolder,sys.exc_info())
-  quit()
- # copy template cfg file to folder
- if subprocess.run(["cp","-p","../test_empty_1d.cfg","./" + runCfgFile]).returncode != 0:
-  print("ERROR creating file: " + runCfgFile)
-  quit()
- # update variable place holders in template cfg file
- for k in rp.keys():
-  #print(k + " : " + str(rp[k]))
-  if subprocess.run(["sed","-i","s/" + str(k) + "/" + str(rp[k]) + "/g",runCfgFile]).returncode != 0:
-   print("ERROR updating parameter: " + str(k) + " in file: " + runCfgFile)
-   quit()
- # check all place holders updated in template cfg file
- if subprocess.run(["grep","-q","TMP_",runCfgFile]).returncode != 1:
-  print("ERROR TMP_* place holder variable(s) still exists in : " + runCfgFile)
-  quit() 
- # perfom simulation run
- runCommandFull = runCommandPrefix + runCfgFile + runCommandSuffix
- print(runCommandFull)
- if subprocess.run([runCommandFull],shell=True).returncode != 0:
-  print("RUN FAILED: " + runCommandFull)
- # check if run finished successfully
- if subprocess.run(["grep","-q","(MAIN) Exiting simulation after successful run.","logfile.txt"]).returncode == 1:
-  print("RUN FAILED: " + runCommandFull)
- if subprocess.run(["grep","-q","ERROR","logfile.txt"]).returncode == 0:
-  print("RUN FAILED: " + runCommandFull)
- if subprocess.run(["grep","-q","WARNING","logfile.txt"]).returncode == 0:
-  print("RUN HAD WARNING(S): " + runCommandFull)
- del runCommandFull
- # return to parent folder
- try:
-  os.chdir("../")
- except:
-  print("ERROR changing to folder: ../",sys.exc_info())
-  quit()
- # check we really are in the main folder
- if os.path.isfile(runCfgFileTemplate) == False:
-  print("ERROR changing to main folder")
-  quit() 
 
-# perform runs
-for ii in range(len(runParams)):
- rp = runParams[ii]
- createAndPerformRun(runParams[ii],ii)
-
- 
-# do run analysis
-def analyzeRun():
- fileName = "state00001000.vlsv"
+# plot all scalar and vector variable from a file along primary axis with interpolation
+def doPlotsWithInterpolation(fileName):
  intpolOrder = 0 # 0: NGP interpolation, 1: linear interpolation
 
  # read file
@@ -325,6 +268,199 @@ def analyzeRun():
   plt.ylabel(varName)
   plt.grid()
   plt.xlabel(pstr);
+ plt.savefig("fig_all_vars_intpol.png",bbox_inches="tight")
 
- plt.savefig("testfig.png",bbox_inches="tight")
+# plot all scalar and vector variables from a file along primary axis
+def doPlots(fileName):
+ # read file
+ vr = pt.vlsvfile.VlsvReader(fileName)
+ [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent() # simulation box dimensions
+ [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
+ [sx,sy,sz] = vr.get_spatial_block_size() # how many cells per block per direction
+ nx = mx*sx # number of cells along x
+ ny = my*sy # number of cells along y
+ nz = mz*sz # number of cells along z
+ dx = (xmax-xmin)/nx # should be dx = dy = dz in rhybrid
+ # find out run dimensionality
+ pstr = ""
+ if (nx > 1) & (ny == 1) & (nz == 1):
+  pstr = "x"
+  pp = np.linspace(xmin + 0.5*dx,xmax - 0.5*dx,nx) # plotting parameter along x axis
+ elif (nx == 1) & (ny > 1) & (nz == 1):
+  pstr = "y"
+  pp = np.linspace(ymin + 0.5*dx,ymax - 0.5*dx,ny) # plotting parameter along y axis
+ elif (nx == 1) & (ny == 1) & (nz > 1):
+  pstr = "z"
+  pp = np.linspace(zmin + 0.5*dx,zmax - 0.5*dx,nz) # plotting parameter along z axis
+ else:
+  print("ERROR: more than 1D")
+  return
+
+ # 1D sorting indices
+ iiSorted = vr.read_variable("CellID").argsort()
+ #cids = vr.read_variable("CellID")[iiSorted]
+ #crds = vr.get_cell_coordinates(cids)
+ varList = vr.get_all_variables()
+
+ # create figure and subplots
+ plt.figure(figsize=(12,18))
+ Ny = len(varList)
+ Nx = 1
+ Nsub = 1
+ for varName in varList:
+  plt.subplot(Ny,Nx,Nsub); Nsub = Nsub + 1;
+  D = vr.read_variable(varName)[iiSorted]
+  Ndim = vr.read_variable_vectorsize(varName)
+  if Ndim == 1:
+   plt.plot(pp/1e3,D)
+  elif Ndim == 3:
+   Dtot = np.sqrt(np.square(D[:,0]) + np.square(D[:,1]) + np.square(D[:,2]))
+   plt.plot(pp/1e3,D[:,0],"-r",label=varName + "_x")
+   plt.plot(pp/1e3,D[:,1],"-g",label=varName + "_y")
+   plt.plot(pp/1e3,D[:,2],"-b",label=varName + "_z")
+   plt.plot(pp/1e3,Dtot,"--k",label=varName + "_tot")
+   plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+  else:
+   print("ERROR: dimensionality: " + varName)
+  plt.ylabel(varName)
+  plt.xlabel(pstr + " [km]")
+  plt.grid()
+ plt.savefig("fig_all_vars.png",bbox_inches="tight")
+
+def checkFlowConditions(fileName):
+ # read file
+ vr = pt.vlsvfile.VlsvReader(fileName)
+ [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent() # simulation box dimensions
+ [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
+ [sx,sy,sz] = vr.get_spatial_block_size() # how many cells per block per direction
+ nx = mx*sx # number of cells along x
+ ny = my*sy # number of cells along y
+ nz = mz*sz # number of cells along z
+ dx = (xmax-xmin)/nx # should be dx = dy = dz in rhybrid
+ Ncells = nx*ny*nz
+ Nbc = round(np.floor(Ncells/10)) # boundary cells not to include in mean
+
+ # 1D sorting indices
+ iiSorted = vr.read_variable("CellID").argsort()
+ # flow variables
+ n = vr.read_variable("n_H+")[iiSorted]
+ T = vr.read_variable("T_H+")[iiSorted]
+ U = vr.read_variable("v_H+")[iiSorted]; Ux = U[:,0]; Uy = U[:,1]; Uz = U[:,2];
+ B = vr.read_variable("cellB")[iiSorted]; Bx = B[:,0]; By = B[:,1]; Bz = B[:,2];
+ # average flow conditions in the domain (not including cells near the boundaries of the primary axis)
+ n_ = np.mean(n[0+Nbc:-1-Nbc])
+ T_ = np.mean(T[0+Nbc:-1-Nbc])
+ Ux_ = np.mean(Ux[0+Nbc:-1-Nbc])
+ Uy_ = np.mean(Uy[0+Nbc:-1-Nbc])
+ Uz_ = np.mean(Uz[0+Nbc:-1-Nbc])
+ Bx_ = np.mean(Bx[0+Nbc:-1-Nbc])
+ By_ = np.mean(By[0+Nbc:-1-Nbc])
+ Bz_ = np.mean(Bz[0+Nbc:-1-Nbc])
+ #print("n = " + str(n_) + ", T = " + str(T_) + ", Ux = " + str(Ux_) + ", Uy = " + str(Uy_) + ", Uz = " + str(Uz_) + ", Bx = " + str(Bx_) + ", By = " + str(By_) + ", Bz = " + str(Bz_))
+
+# function: do run analysis
+def analyzeRun():
+ # check if logfile.txt exists
+ if os.path.isfile("logfile.txt") == False:
+  print("ERROR: no logfile.txt found")
+  return False
+ # check if run finished successfully
+ if subprocess.run(["grep","-q","(MAIN) Exiting simulation after successful run.","logfile.txt"]).returncode == 1:
+  print("RUN FAILED")
+ sr = subprocess.run(["grep","ERROR","logfile.txt"],capture_output=True)
+ # check if run had errors
+ if sr.returncode == 0:
+  print("RUN HAD ERRORS:")
+  print("\t stdout: " + str(sr.stdout))
+  print("\t stderr: " + str(sr.stderr))
+ del sr
+ # check if run had warnings
+ sr = subprocess.run(["grep","WARNING","logfile.txt"],capture_output=True)
+ if sr.returncode == 0:
+  print("RUN HAD WARNINGS:")
+  print("\t stdout: " + str(sr.stdout))
+  print("\t stderr: " + str(sr.stderr))
+ del sr
+
+ # find VLSV files
+ runFiles = []
+ for f in sorted(os.listdir("./")):
+  if (f.startswith("state") and f.endswith(".vlsv")):
+   runFiles.append(f)
+ if len(runFiles) < 1:
+  print("NO VLSV FILES FOUND")
+  return False
+
+ # analyze the second last file
+ fileName = runFiles[-2]
+
+ #print(fileName)
+ #doPlotsWithInterpolation(fileName)
+ doPlots(fileName)
+ checkFlowConditions(fileName)
+ return True
+
+# create run folder and config file from templace
+def createAndPerformRun(rp,runNumber):
+ runNumberStr = str(runNumber).zfill(4)
+ runFolder = tmpDateTimeStr + "_run" + runNumberStr + "/"
+ runCfgFile = tmpDateTimeStr + "_test_empty_1d_run" + runNumberStr + ".cfg"
+ print("RUN: " + runFolder)
+ # create run folder
+ if subprocess.run(["mkdir","-p",runFolder]).returncode != 0:
+  print("ERROR creating: " + runFolder)
+  quit()
+ # cd to run folder
+ try:
+  os.chdir(runFolder)
+ except:
+  print("ERROR changing to a folder: " + runFolder,sys.exc_info())
+  quit()
+ # copy template cfg file to folder
+ if subprocess.run(["cp","-p","../test_empty_1d.cfg","./" + runCfgFile]).returncode != 0:
+  print("ERROR creating file: " + runCfgFile)
+  quit()
+ # update variable place holders in template cfg file
+ for k in rp.keys():
+  #print(k + " : " + str(rp[k]))
+  if subprocess.run(["sed","-i","s/" + str(k) + "/" + str(rp[k]) + "/g",runCfgFile]).returncode != 0:
+   print("ERROR updating parameter: " + str(k) + " in file: " + runCfgFile)
+   quit()
+ # check all place holders updated in template cfg file
+ if subprocess.run(["grep","-q","TMP_",runCfgFile]).returncode != 1:
+  print("ERROR TMP_* place holder variable(s) still exists in : " + runCfgFile)
+  quit()
+
+ # perfom simulation run
+ runCommandFull = runCommandPrefix + runCfgFile + runCommandSuffix
+ print(runCommandFull)
+ if subprocess.run([runCommandFull],shell=True).returncode != 0:
+  print("RUN FAILED: " + runCommandFull)
+
+ # analyze run
+ if analyzeRun() == False:
+  print("ANALYSIS: FAILED")
+ else:
+  print("ANALYSIS: OK")
+
+ del runCommandFull
+
+ # return to parent folder
+ try:
+  os.chdir("../")
+ except:
+  print("ERROR changing to folder: ../",sys.exc_info())
+  quit()
+ # check we really are in the main folder
+ if os.path.isfile(runCfgFileTemplate) == False:
+  print("ERROR changing to main folder")
+  quit()
+
+# perform runs
+for ii in range(len(runParams)):
+ rp = runParams[ii]
+ createAndPerformRun(runParams[ii],ii)
+
+
+
 
