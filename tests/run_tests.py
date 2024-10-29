@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# run RHybrid test suite
+# RHybrid test suite for 1D empty box (free flow) runs
+
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -39,7 +40,7 @@ runBinary = "~/bin/corsair/corsair_rhybrid"
 runCommandPrefix = "mpirun -n 3 " + runBinary + " --runconfig="
 runCommandSuffix = " >> std_out_err.txt"
 
-# 1D test parameters
+separatorStr = "=================================================="
 
 # fixed parameters
 Ncells = 40
@@ -51,16 +52,17 @@ Bx = 0.0
 By = 0.0
 Bz = 0.0
 
+# allowed variation between modeled flow conditions and input parameters
+aVar = 1.0/np.sqrt(macroparticlesPerCell)
+aMin = 1.0 - aVar
+aMax = 1.0 + aVar
+
 # varied parameters
-listUsw = np.linspace(350,650,2)*1e3
-#listUsw = np.array((350e3,))
-#listUdir = ("-x","+x","-y","+y","-z","+z")
-listUdir = ("-x","+y")
-#listUdir = ("-x",)
-#listNsw = np.linspace(100,10,2)*1e6
-listNsw = np.array((1e6,))
-#listTsw = np.array((1e5,1e4))
-listTsw = np.array((1e5,))
+#listUsw = np.linspace(250,1200,4)*1e3
+listUsw = np.array((300,400))*1e3
+listUdir = ("-x","+x","-y","+y","-z","+z")
+listNsw = np.array((1,10))*1e6
+listTsw = np.array((1e4,1e5))
 
 # estimate of dx/dt (max. signal speed) for time step calculation
 maxSignalSpeed = 10.0*max(listUsw)
@@ -327,7 +329,35 @@ def doPlots(fileName):
   plt.grid()
  plt.savefig("fig_all_vars.png",bbox_inches="tight")
 
-def checkFlowConditions(fileName):
+# compare input and modeled flow conditions
+def doComparison(varModeledValue,tmpInputVarName,rp,Ncomp=-1):
+ if tmpInputVarName in rp.keys():
+  inputValue = rp[tmpInputVarName]
+  vectorComp = ""
+  # if vector component given
+  if (Ncomp > -1) & (Ncomp < 3):
+   inputValue = inputValue[Ncomp]
+   if Ncomp == 0:
+    vectorComp = "_x"
+   if Ncomp == 1:
+    vectorComp = "_y"
+   if Ncomp == 2:
+    vectorComp = "_z"
+  # compare if input value is not zero
+  if np.fabs(inputValue) > 0:
+   relValue = np.fabs(varModeledValue/inputValue)
+   # write a log message and return false if compared value outside statistical fluctuation level
+   if (relValue < aMin) | (relValue > aMax):
+    print("FAILED: input and modeled " + tmpInputVarName + vectorComp + " values do not match: input = " + str(inputValue) + ", modeled = " + str(varModeledValue) + ", |input/modeled| = " + str(relValue))
+    return False
+  #else:
+  # print("WARNING: input parameter set as zero: " + tmpInputVarName)
+ else:
+  print("WARNING: input parameter not found: " + tmpInputVarName)
+ return True
+
+# determine conditions of the flow and compare them to input parameters
+def checkFlowConditions(fileName,rp):
  # read file
  vr = pt.vlsvfile.VlsvReader(fileName)
  [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent() # simulation box dimensions
@@ -356,10 +386,24 @@ def checkFlowConditions(fileName):
  Bx_ = np.mean(Bx[0+Nbc:-1-Nbc])
  By_ = np.mean(By[0+Nbc:-1-Nbc])
  Bz_ = np.mean(Bz[0+Nbc:-1-Nbc])
- #print("n = " + str(n_) + ", T = " + str(T_) + ", Ux = " + str(Ux_) + ", Uy = " + str(Uy_) + ", Uz = " + str(Uz_) + ", Bx = " + str(Bx_) + ", By = " + str(By_) + ", Bz = " + str(Bz_))
+ # do comparisons
+ testOk = list()
+ testOk.append( doComparison(n_,"TMP_SW_DENSITY",rp) )
+ testOk.append( doComparison(T_,"TMP_SW_TEMPERATURE",rp) )
+ testOk.append( doComparison(Ux_,"TMP_SW_VELOCITY",rp,0) )
+ testOk.append( doComparison(Uy_,"TMP_SW_VELOCITY",rp,1) )
+ testOk.append( doComparison(Uz_,"TMP_SW_VELOCITY",rp,2) )
+ testOk.append( doComparison(Bx_,"TMP_IMF_BX",rp) )
+ testOk.append( doComparison(By_,"TMP_IMF_BY",rp) )
+ testOk.append( doComparison(Bz_,"TMP_IMF_BZ",rp) )
+ # return failed/successful
+ if all(testOk) == True:
+  return True
+ else:
+  return False
 
 # function: do run analysis
-def analyzeRun():
+def analyzeRun(rp):
  # check if logfile.txt exists
  if os.path.isfile("logfile.txt") == False:
   print("ERROR: no logfile.txt found")
@@ -396,16 +440,18 @@ def analyzeRun():
 
  #print(fileName)
  #doPlotsWithInterpolation(fileName)
- doPlots(fileName)
- checkFlowConditions(fileName)
- return True
+ #doPlots(fileName)
+ checkOk = checkFlowConditions(fileName,rp)
+ return checkOk
 
-# create run folder and config file from templace
-def createAndPerformRun(rp,runNumber):
+# create run folder and config file from templace, run test, analyze test
+def createPerformAndAnalyzeRun(rp,runNumber):
  runNumberStr = str(runNumber).zfill(4)
  runFolder = tmpDateTimeStr + "_run" + runNumberStr + "/"
  runCfgFile = tmpDateTimeStr + "_test_empty_1d_run" + runNumberStr + ".cfg"
+ print(separatorStr)
  print("RUN: " + runFolder)
+ print("Params : " + str(rp))
  # create run folder
  if subprocess.run(["mkdir","-p",runFolder]).returncode != 0:
   print("ERROR creating: " + runFolder)
@@ -438,10 +484,11 @@ def createAndPerformRun(rp,runNumber):
   print("RUN FAILED: " + runCommandFull)
 
  # analyze run
- if analyzeRun() == False:
-  print("ANALYSIS: FAILED")
+ runOk = analyzeRun(rp)
+ if runOk == False:
+  print("TEST: FAILED")
  else:
-  print("ANALYSIS: OK")
+  print("TEST: SUCCESSFUL")
 
  del runCommandFull
 
@@ -455,11 +502,21 @@ def createAndPerformRun(rp,runNumber):
  if os.path.isfile(runCfgFileTemplate) == False:
   print("ERROR changing to main folder")
   quit()
+ return runOk
 
-# perform runs
+# perform tests
+print("NUMBER OF TEST RUNS: " + str(len(runParams)))
+testsOk = list()
 for ii in range(len(runParams)):
  rp = runParams[ii]
- createAndPerformRun(runParams[ii],ii)
+ testsOk.append( createPerformAndAnalyzeRun(runParams[ii],ii) )
+
+# report results
+print(separatorStr)
+if all(testsOk) == True:
+ print("ALL TESTS SUCCESSFUL: " + str(sum(testsOk)) + "/" + str(len(testsOk)))
+else:
+ print("TEST(S) FAILED, SUCCESSFUL: " + str(sum(testsOk)) + "/" + str(len(testsOk)))
 
 
 
