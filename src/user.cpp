@@ -24,6 +24,9 @@
 #include <user.h>
 #include <particle_list_skeleton.h>
 #include <gridbuilder.h>
+#include <main.h>
+#include <operator_mpirank.h>
+#include <operator_load.h>
 
 #include "hybrid.h"
 #include "hybrid_propagator.h"
@@ -2269,7 +2272,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"v",false},
       {"n_tot",false},
       {"T_tot",false},
-      {"v_tot",false}
+      {"v_tot",false},
+      {"MPI_rank",false},
+      {"Load",false}
    };
    /*for(auto p : Hybrid::varReal) {
       if(Hybrid::outputCellParams.count(p.first) < 1) {
@@ -2321,6 +2326,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(RHYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
    }
 #endif
+   if(Hybrid::outputCellParams["MPI_rank"] == true) {
+      DataOperatorContainer& doc = corsair::getObjectWrapper().dataOperatorContainer;
+      if(doc.registerOperator(new MPIRank) == false) {
+	 simClasses.logger << "(RHYBRID) ERROR: failed to add MPIRank output operator" << endl;
+	 return false;
+      }
+   }
+   if(Hybrid::outputCellParams["Load"] == true) {
+      DataOperatorContainer& doc = corsair::getObjectWrapper().dataOperatorContainer;
+      if(doc.registerOperator(new LoadOP) == false) {
+	 simClasses.logger << "(RHYBRID) ERROR: failed to add LoadOP output operator" << endl;
+	 return false;
+      }
+   }
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // initial values
    if(sim.restarted == false) {
