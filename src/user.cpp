@@ -415,10 +415,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IntrinsicB.phi","phi angle of the field [deg] (float)",defaultValue);
 #endif
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
-   cr.add("BackgroundChargeDensity.profile_name","Background charge density profile name [-] (string)","");
-   cr.add("BackgroundChargeDensity.R","Radius of the background charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.r0","r0 of the background charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.n0","n0 of the background charge density [m^-3] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.profile_name","Background ion charge density profile name [-] (string)","");
+   cr.add("BackgroundChargeDensity.R","Radius of the background ion charge density [m] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.r0","r0 of the background ion charge density [m] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.rhoQi0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
 #endif
    cr.parse();
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
@@ -629,7 +629,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("BackgroundChargeDensity.profile_name",bgChargeDensityProfileName);
    cr.get("BackgroundChargeDensity.R",bgChargeDensityArgs.R);
    cr.get("BackgroundChargeDensity.r0",bgChargeDensityArgs.r0);
-   cr.get("BackgroundChargeDensity.n0",bgChargeDensityArgs.n0);
+   cr.get("BackgroundChargeDensity.rhoQi0",bgChargeDensityArgs.rhoQi0);
 #endif
    if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }   
    if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
@@ -833,11 +833,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    simClasses.logger
-     << "(BACKGROUND CHARGE DENSITY)" << endl
+     << "(BACKGROUND ION CHARGE DENSITY)" << endl
      << "Density profile = " << bgChargeDensityProfileName << endl
-     << "R = " << bgChargeDensityArgs.R/1e3 << " km = " << bgChargeDensityArgs.R/Hybrid::R_object << " R_object = " << bgChargeDensityArgs.R/Hybrid::dx << " dx = " << (bgChargeDensityArgs.R - Hybrid::R_object)/1e3 << " km + R_object" << endl
-     << "r0 = " << bgChargeDensityArgs.r0/1e3 << " km = " << bgChargeDensityArgs.r0/Hybrid::dx << " dx" << endl
-     << "n0 = " << bgChargeDensityArgs.n0/1e6 << " cm^-3" << endl << endl;
+     << "R      = " << bgChargeDensityArgs.R/1e3 << " km = " << bgChargeDensityArgs.R/Hybrid::R_object << " R_object = " << bgChargeDensityArgs.R/Hybrid::dx << " dx = " << (bgChargeDensityArgs.R - Hybrid::R_object)/1e3 << " km + R_object" << endl
+     << "r0     = " << bgChargeDensityArgs.r0/1e3 << " km = " << bgChargeDensityArgs.r0/Hybrid::dx << " dx" << endl
+     << "rhoQi0 = " << bgChargeDensityArgs.rhoQi0 << " C/m^3 = " << bgChargeDensityArgs.rhoQi0/1e6/constants::CHARGE_ELEMENTARY << " qe/cm^3" << endl << endl;
 #endif
 
    simClasses.logger

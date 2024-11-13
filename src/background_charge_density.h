@@ -29,22 +29,29 @@
 #include "hybrid.h"
 
 struct BackgroundChargeDensityArgs{
-   Real R,r0,n0;
+   Real R,r0,rhoQi0;
 };
 
-Real smoothObstacle(SimulationClasses& simClasses,Real x,Real y,Real z,Real R,Real r0,Real n0) {
+// spherical background ion charge density: rhoQi0 at r < R and zero at r >= R
+Real bgChargeDensitySphere(SimulationClasses& simClasses,Real x,Real y,Real z,Real R,Real rhoQi0) {
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
-   if(r < R) {
-      return n0;
-   }
-   else {
-      return n0*exp(-(r-R)/r0);
-   }
+   if(r < R) { return rhoQi0; }
+   else { return 0.0; }
+}
+
+// spherical background ion charge density: rhoQi0 at r < R and rhoQi0*exp(-(r-R)/r0) at r >= R
+Real bgChargeDensitySphereSmooth(SimulationClasses& simClasses,Real x,Real y,Real z,Real R,Real r0,Real rhoQi0) {
+   const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
+   if(r < R) { return rhoQi0; }
+   else { return rhoQi0*exp(-(r-R)/r0); }
 }
 
 Real getBackgroundChargeDensity(SimulationClasses& simClasses,std::string name,Real x,Real y,Real z,BackgroundChargeDensityArgs a) {
-   if(name.compare("smoothObstacle") == 0) {
-      return smoothObstacle(simClasses,x,y,z,a.R,a.r0,a.n0);
+   if(name.compare("bgChargeDensitySphere") == 0) {
+      return bgChargeDensitySphere(simClasses,x,y,z,a.R,a.rhoQi0);
+   }
+   else if(name.compare("bgChargeDensitySphereSmooth") == 0) {
+      return bgChargeDensitySphereSmooth(simClasses,x,y,z,a.R,a.r0,a.rhoQi0);
    }
    else if(name.compare("none") == 0) {
       return 0.0;
