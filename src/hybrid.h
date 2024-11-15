@@ -185,20 +185,17 @@ struct Hybrid {
    static Real maxVi;
    static Real terminateLimitMaxB;
    static Real minRhoQi;
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   static OuterBoundaryZone outerBoundaryZone;
-#endif
    static Real maxE2;
    static Real maxVw;
 #ifdef USE_RESISTIVITY
    static Real resistivityEta;
-   static Real resistivityEtaC;
    static Real resistivityR2;
    static std::vector<Real> resistivitySphericalEta;
-   static std::vector<Real> resistivitySphericalEtaC;
    static std::vector<Real> resistivitySphericalR2;
-   static Real resistivityGridUnit;
    static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
+#endif
+#ifdef USE_OUTER_BOUNDARY_ZONE
+   static OuterBoundaryZone outerBoundaryZone;
 #endif
    static bool useHallElectricField;
 #ifdef USE_B_CONSTANT

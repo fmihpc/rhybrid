@@ -343,12 +343,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    string magneticFieldProfileName = "";
 #endif
-#ifdef USE_RESISTIVITY
-   string resistivityProfileName = "";
-#endif
    cr.add("Hybrid.log_interval","Log interval in units of timestep [-] (int)",0);
    cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
-   cr.add("Hybrid.output_parameters","Parameters to write in output files (string)","");
+   cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
    cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
@@ -370,6 +367,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.Te","Temperature of isothermal electrons or upstream temperature of adiabatic electrons [K] (float)",defaultValue);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
+#ifdef USE_RESISTIVITY
+   cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)",string(""));
+   cr.add("Resistivity.eta_unit","Unit of given eta [SI/grid/td/Rm/URm] (string)",string(""));
+   cr.add("Resistivity.eta","Resistivity in units of eta_unit [] (float)",defaultValue);
+   cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
+   cr.addComposed("Resistivity.eta_spherical","Resistivity of spherical resistivity shells in units of eta_unit [-] (float vector)");
+   cr.addComposed("Resistivity.R_spherical","Radii of spherical resistivity shells [m] (float vector)");
+#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
    cr.add("OuterBoundaryZone.typeEta","Type of the outer boundary zone for resistivity: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-], 3 = -x wall and all edges except +x edges (int)",0);
    cr.add("OuterBoundaryZone.typeMinRhoQi","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
@@ -378,13 +383,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
    cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
    cr.add("OuterBoundaryZone.constUe","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
-#endif
-#ifdef USE_RESISTIVITY
-   cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)","");
-   cr.add("Resistivity.etaC","Dimensionless resistivity constant [-] (float)",defaultValue);
-   cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
-   cr.addComposed("Resistivity.etaC_spherical","Dimensionless resistivity constants of spherical resistivity shells [-] (float vector)");
-   cr.addComposed("Resistivity.R_spherical","Radii of spherical resistivity shells [m] (float vector)");
 #endif
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
@@ -395,10 +393,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.Uez","Upstream Uez [m/s] (float)",-1.0);
    cr.add("IMF.macroparticles_per_cell_scaling","Scaling of macro particle number per cell per dt for test particle propagation (typically this is taken from the first solar wind population but in test particle propationg sw populations may not be there at all.)",-1.0);
 #endif
-   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
-   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)","");
+   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
+   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
-   cr.add("IntrinsicB.profile_name","Magnetic field profile name [-] (string)","");
+   cr.add("IntrinsicB.profile_name","Magnetic field profile name [-] (string)",string(""));
    cr.add("IntrinsicB.laminarR","Laminar flow around sphere R [m] (float)",defaultValue);
    cr.add("IntrinsicB.coeffDipole","Dipole coefficient [-] (float)",defaultValue);
    cr.add("IntrinsicB.coeffQuadrupole","Quadrupole coefficient [-] (float)",defaultValue);
@@ -415,7 +413,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IntrinsicB.phi","phi angle of the field [deg] (float)",defaultValue);
 #endif
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
-   cr.add("BackgroundChargeDensity.profile_name","Background ion charge density profile name [-] (string)","");
+   cr.add("BackgroundChargeDensity.profile_name","Background ion charge density profile name [-] (string)",string(""));
    cr.add("BackgroundChargeDensity.R","Radius of the background ion charge density [m] (float)",defaultValue);
    cr.add("BackgroundChargeDensity.r0","r0 of the background ion charge density [m] (float)",defaultValue);
    cr.add("BackgroundChargeDensity.rhoQi0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
@@ -439,7 +437,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxE",Hybrid::maxE2);
    if(Hybrid::maxE2 > 0) { Hybrid::maxE2 = sqr(Hybrid::maxE2); }
    else { Hybrid::maxE2 = 0; }
-   cr.get("Hybrid.maxVw",Hybrid::maxVw);   
+   cr.get("Hybrid.maxVw",Hybrid::maxVw);
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
 #ifdef USE_B_CONSTANT
    cr.get("Hybrid.include_B0_faraday",Hybrid::includeConstantB0InFaradaysLaw);
@@ -475,61 +473,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   cr.get("OuterBoundaryZone.typeEta",Hybrid::outerBoundaryZone.typeEta);
-   cr.get("OuterBoundaryZone.typeMinRhoQi",Hybrid::outerBoundaryZone.typeMinRhoQi);
-   cr.get("OuterBoundaryZone.sizeEta",Hybrid::outerBoundaryZone.sizeEta);
-   cr.get("OuterBoundaryZone.sizeMinRhoQi",Hybrid::outerBoundaryZone.sizeMinRhoQi);
-   cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
-   cr.get("OuterBoundaryZone.etaC",Hybrid::outerBoundaryZone.eta);
-   cr.get("OuterBoundaryZone.constUe",Hybrid::outerBoundaryZone.constUe);
-   Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
-   Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
-#endif
-#ifdef USE_RESISTIVITY
-   cr.get("Resistivity.profile_name",resistivityProfileName);
-   cr.get("Resistivity.etaC",Hybrid::resistivityEtaC);
-   cr.get("Resistivity.R",Hybrid::resistivityR2);
-   cr.get("Resistivity.etaC_spherical",Hybrid::resistivitySphericalEtaC);
-   cr.get("Resistivity.R_spherical",Hybrid::resistivitySphericalR2);
-   Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
-   Hybrid::resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
-   Hybrid::resistivityEta = Hybrid::resistivityEtaC*Hybrid::resistivityGridUnit;
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   Hybrid::outerBoundaryZone.eta *= Hybrid::resistivityGridUnit;
-#endif
-   if(setResistivityProfile(resistivityProfileName,simClasses) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: unknown name of a resistivity profile (" << resistivityProfileName << ")" << endl << write;
-      exit(1);
-   }
-   if(Hybrid::resistivitySphericalEtaC.size() != Hybrid::resistivitySphericalR2.size()) {
-      simClasses.logger << "(RHYBRID) ERROR: parameter arrays of the spherical shell resistivity model should be the same size (" << Hybrid::resistivitySphericalEtaC.size() << ", " << Hybrid::resistivitySphericalR2.size() << ")" << endl << write;
-      exit(1);
-   }
-   for(size_t i=0;i<Hybrid::resistivitySphericalEtaC.size();i++) {
-      if(Hybrid::resistivitySphericalEtaC[i] >= 0) {
-	 Hybrid::resistivitySphericalEta.push_back(Hybrid::resistivitySphericalEtaC[i]*Hybrid::resistivityGridUnit);
-      }
-      else {
-	 simClasses.logger << "(RHYBRID) ERROR: resistivity etaC_spherical < 0 (" << Hybrid::resistivitySphericalEtaC[i] << ")" << endl << write;
-	 exit(1);
-      }
-      if(Hybrid::resistivitySphericalR2[i] >= 0) {
-	 Hybrid::resistivitySphericalR2[i] = sqr(Hybrid::resistivitySphericalR2[i]);
-      }
-      else {
-	 simClasses.logger << "(RHYBRID) ERROR: resistivity R_spherical < 0 (" << Hybrid::resistivitySphericalR2[i] << ")" << endl << write;
-	 exit(1);
-      }
-      // check that the radii are given in monotonically growing order
-      if(i > 0) {
-	 if(Hybrid::resistivitySphericalR2[i-1] >= Hybrid::resistivitySphericalR2[i]) {
-	    simClasses.logger << "(RHYBRID) ERROR: radii parameters of the spherical shell resistivity model should be given in a monotonically growing order" << endl << write;
-	    exit(1);
-	 }
-      }
-   }
-#endif
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
@@ -631,7 +574,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("BackgroundChargeDensity.r0",bgChargeDensityArgs.r0);
    cr.get("BackgroundChargeDensity.rhoQi0",bgChargeDensityArgs.rhoQi0);
 #endif
-   if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }   
+   if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
    if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if(Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
    else { Hybrid::R2_fieldObstacle = -1; }
@@ -767,34 +710,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
         << "C4 = " << Hybrid::EfilterNodeGaussCoeffs[3] << " (d = sqrt(3)dx)" << endl;
    }
    simClasses.logger << endl;
-#ifdef USE_RESISTIVITY
-   simClasses.logger
-     << "(RESISTIVITY)" << endl
-     << "Resistivity profile = " << resistivityProfileName << endl
-     << "eta = " << Hybrid::resistivityEtaC << " mu_0*dx^2/dt = "
-     << Hybrid::resistivityEta << " Ohm m" << endl
-     << "R = " << sqrt(Hybrid::resistivityR2)/1e3 << " km = "
-     << sqrt(Hybrid::resistivityR2)/Hybrid::R_object << " R_object = "
-     << sqrt(Hybrid::resistivityR2)/Hybrid::dx << " dx = "
-     << (sqrt(Hybrid::resistivityR2) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
-   simClasses.logger << "Parameters of spherical resistivity shells: " << endl;
-   if(Hybrid::resistivitySphericalEtaC.size() > 0) {
-      for(size_t i=0;i<Hybrid::resistivitySphericalEtaC.size();i++) {
-	 simClasses.logger
-	   << "resistive shell " << i << ": R = "
-	   << sqrt(Hybrid::resistivitySphericalR2[i])/1e3 << " km = "
-	   << sqrt(Hybrid::resistivitySphericalR2[i])/Hybrid::R_object << " R_object = "
-	   << sqrt(Hybrid::resistivitySphericalR2[i])/Hybrid::R_object << " dx, "
-	   << "eta = " << Hybrid::resistivitySphericalEtaC[i] << " mu_0*dx^2/dt = "
-	   << Hybrid::resistivitySphericalEta[i] << " Ohm m" << endl;
-      }
-      simClasses.logger << endl;
-   }
-   else {
-      simClasses.logger << "none" << endl;
-   }
-   simClasses.logger << endl;
-#endif
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    simClasses.logger
      << "(INTRINSIC MAGNETIC FIELD)" << endl
@@ -844,7 +759,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "(LOGGING)" << endl
      << "Particle and field log file interval = " << Hybrid::logInterval*sim.dt << " s = " << Hybrid::logInterval << " dt" << endl
      << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl;
-   
+
    // read particle populations: uniform
    vector<string> uniformPopulations;
    cr.addComposed("Hybrid.particle.population.uniform","Names of uniform particle populations (string)");
@@ -930,7 +845,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 }
       }
    } while (erased == true);
-
+   // number of all, ionospheric and exospheric particle populations
    Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + ambientPopulations.size() + solarwindPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
    Hybrid::N_ionospherePopulations = static_cast<unsigned int>( ionospherePopulations.size() );
    Hybrid::N_exospherePopulations = static_cast<unsigned int>( exospherePopulations.size() );
@@ -963,7 +878,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataGridCounterCellMinRhoQiID = simClasses.pargrid.invalidDataID();
    Hybrid::dataGridCounterNodeMaxEID     = simClasses.pargrid.invalidDataID();
    Hybrid::dataGridCounterNodeMaxVwID    = simClasses.pargrid.invalidDataID();
-#endif   
+#endif
    Hybrid::dataInnerFlagFieldID      = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagNodeID       = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagParticleID   = simClasses.pargrid.invalidDataID();
@@ -975,7 +890,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // id of a stencil used for particle accumulation into grid
    Hybrid::accumulationStencilID = sim.inverseStencilID;
-   
+
    // create a parallel data arrays
    //vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
    //vector<pargrid::StencilID> sIDAcc = {pargrid::DEFAULT_STENCIL,Hybrid::accumulationStencilID};
@@ -1022,7 +937,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    //addVarReal(sim,simClasses,"cellAverageB",3,sIDEmpty);
 #endif
-      
+
    Hybrid::dataFaceBID = simClasses.pargrid.addUserData<Real>("faceB",block::SIZE*3);
    if(Hybrid::dataFaceBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add faceB array to ParGrid!" << endl << write;
@@ -1148,7 +1063,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
 #endif
-   
+
    // flags
    Hybrid::dataInnerFlagFieldID = simClasses.pargrid.addUserData<bool>("innerFlagField",block::SIZE*1);
    if(Hybrid::dataInnerFlagFieldID == simClasses.pargrid.invalidCellID()) {
@@ -1194,7 +1109,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
 #endif
-   
+
    // Create data transfers
 
    if(simClasses.pargrid.addDataTransfer(Hybrid::dataFaceBID,pargrid::DEFAULT_STENCIL) == false) {
@@ -1290,7 +1205,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real* gridCounterNodeMaxE     = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterNodeMaxEID));
    Real* gridCounterNodeMaxVw    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterNodeMaxVwID));
 #endif
-   bool* innerFlagField      = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagFieldID));   
+   bool* innerFlagField      = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagFieldID));
    bool* innerFlagNode       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagNodeID));
    bool* innerFlagParticle   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagParticleID));
    bool* innerFlagCellEp     = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagCellEpID));
@@ -1382,13 +1297,514 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    int N_detBulkParamCells = 0;
 #endif
 
+   // Intialize ionospheric and exospheric injector cell arrays (have to be done before particle list initializations) if simulation was not restarted
+   if (sim.restarted == false) {
+      const size_t ionoArraySize   = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*Hybrid::N_ionospherePopulations;
+      const size_t exoArraySize    = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*Hybrid::N_exospherePopulations;
+      for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
+      for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
+   }
+
+   // initialize particle lists: uniform
+   for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
+      simClasses.logger << endl << "(RHYBRID) Initializing a uniform particle population: " << *it << endl;
+      if(checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
+      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
+      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
+      Hybrid::populationNames.push_back(*it);
+   }
+   // initialize particle lists: ambient
+   for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
+      simClasses.logger << endl << "(RHYBRID) Initializing an ambient particle population: " << *it << endl;
+      if(checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
+      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
+      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
+      Hybrid::populationNames.push_back(*it);
+   }
+   // initialize particle lists: solar wind
+   for (vector<string>::iterator it=solarwindPopulations.begin(); it!=solarwindPopulations.end(); ++it) {
+      simClasses.logger << endl << "(RHYBRID) Initializing a solar wind particle population: " << *it << endl;
+      if(checkInjectorName(simClasses,cr,*it,"SolarWindInjector") == false) { return false; }
+      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
+      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
+      Hybrid::populationNames.push_back(*it);
+   }
+   // initialize particle lists: ionosphere
+   for (vector<string>::iterator it=ionospherePopulations.begin(); it!=ionospherePopulations.end(); ++it) {
+      simClasses.logger << endl << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl;
+      if(checkInjectorName(simClasses,cr,*it,"IonosphereInjector") == false) { return false; }
+      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
+      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
+      Hybrid::populationNames.push_back(*it);
+   }
+   // initialize particle lists: exosphere
+   for (vector<string>::iterator it=exospherePopulations.begin(); it!=exospherePopulations.end(); ++it) {
+      simClasses.logger << endl << "(RHYBRID) Initializing an exospheric particle population: " << *it << endl;
+      if(checkInjectorName(simClasses,cr,*it,"ExosphereInjector") == false) { return false; }
+      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
+      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
+      Hybrid::populationNames.push_back(*it);
+   }
+   simClasses.logger << endl;
+   // population output configurations
+   for(unsigned int i=0;i<particleLists.size();++i) {
+      const Species* species = reinterpret_cast<const Species*>(particleLists[i]->getSpecies());
+      if(species->outIncludeInPlasma == true) {
+         Hybrid::outputPlasmaPopId.push_back(i);
+      }
+      if(species->outStr == string("tot")) {
+         simClasses.logger << "(USER) ERROR: Particle species cannot have output_str = tot (" << species->name << ")" << endl << write;
+         return false;
+      }
+      if(species->outStr == string("-")) {
+         Hybrid::outputPopVarId.push_back(-1);
+         continue;
+      }
+      bool strFound = false;
+      for(unsigned int j=0;j<Hybrid::outputPopVarStr.size();++j) {
+         if(species->outStr == Hybrid::outputPopVarStr[j]) {
+            Hybrid::outputPopVarId.push_back(j);
+            Hybrid::outputPopVarIdVector[j].push_back(i);
+            strFound = true;
+         }
+      }
+      if(strFound == false) {
+         const int newOutputId = static_cast<int>( Hybrid::outputPopVarStr.size() );
+         Hybrid::outputPopVarId.push_back(newOutputId);
+         Hybrid::outputPopVarStr.push_back(species->outStr);
+         vector<unsigned int> a;
+         a.push_back(i);
+         Hybrid::outputPopVarIdVector.push_back(a);
+      }
+   }
+   Hybrid::N_outputPopVars =  Hybrid::outputPopVarStr.size();
+   // check number of particle lists and populations
+   if( (Hybrid::N_populations   != particleLists.size()) ||
+       (Hybrid::N_populations   != Hybrid::populationNames.size()) ||
+       (Hybrid::N_populations   != Hybrid::outputPopVarId.size()) ||
+       (Hybrid::N_populations    < Hybrid::N_outputPopVars) ||
+       (Hybrid::N_populations    < Hybrid::outputPlasmaPopId.size()) ||
+       (Hybrid::N_outputPopVars != Hybrid::outputPopVarIdVector.size()) ) {
+      simClasses.logger << "(RHYBRID) ERROR: Something went wrong in particle list initialization" << endl << write;
+      return false;
+   }
+
+   // determine solar wind properties
+   Real ni = 0.0; //total ion number density
+   Real ne = 0.0; // total electron density
+   Real rhom = 0.0; // total ion mass density
+   Real Ubulk = 0.0; // bulk speed
+   Real vA = 0.0; // alfven velocity
+   Real vstmp1 = 0.0;
+   Real vstmp2 = 0.0;
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
+      ni += Hybrid::swPopsInfo[s].n;
+      ne += Hybrid::swPopsInfo[s].q*Hybrid::swPopsInfo[s].n;
+      rhom += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n;
+      Ubulk += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].U;
+      vstmp1 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].T;
+      vstmp2 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].m;
+   }
+   const Real rhoq = ne;
+   ne /= constants::CHARGE_ELEMENTARY;
+   // sound velocity approximated as vs = sqrt(gamma*p/rho_m) = sqrt( kB*gamma*sum_i(ni*Ti)/sum_i(ni*mi) ),
+   // where gamma = 5/3 and sum is over all solar wind populations
+   Real vs = 0.0;
+   if(vstmp2 > 0) {
+      vs = sqrt(5.0/3.0*constants::BOLTZMANN*vstmp1/vstmp2);
+   }
+   const Real Btot2 = sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz);
+   const Real Btot = sqrt(Btot2);
+   if(rhom > 0.0) {
+      vA = Btot/( sqrt(constants::PERMEABILITY*rhom) );
+      Ubulk /= rhom;
+   }
+   else {
+      Ubulk = 0.0;
+   }
+   Hybrid::upstreamBulkU = Ubulk;
+   Real Esw[3] = {0.0,0.0,0.0};
+   Real Bsw[3] = {Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz};
+   Real Usw[3] = {-Ubulk,0.0,0.0};
+   Real VExB[3] = {0.0,0.0,0.0};
+   cross(Bsw,Usw,Esw); // Esw = B x (-Ubulk,0,0)
+   const Real EswMagnitude = normvec(Esw);
+   // VExB = E x B/B^2
+   if(Btot2 > 0.0) {
+      cross(Esw,Bsw,VExB);
+      VExB[0] /= Btot2;
+      VExB[1] /= Btot2;
+      VExB[2] /= Btot2;
+   }
+   const Real VExBMagnitude = normvec(VExB);
+   Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
+   if(ne > 0.0 && Hybrid::dx > 0.0) {
+      vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
+   }
+
+   if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
+      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
+      Hybrid::initialFlowThrough = true;
+   }
+   else {
+      Hybrid::initialFlowThroughPeriod = -100;
+      Hybrid::initialFlowThrough = false;
+   }
+
+   // set adiabatic electron pressure coefficient with gamma = 2
+   if(Hybrid::useAdiabaticElectronPressure == true) {
+      if(ne > 0) {
+         Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( ne * sqr(constants::CHARGE_ELEMENTARY) );
+      }
+      else {
+         Hybrid::electronPressureCoeff = 0.0;
+      }
+   }
+
+   simClasses.logger
+     << "(CFL CONDITION)" << endl
+     << "dt = " << sim.dt << " s = " << sim.dt/1e-3 << " ms" << endl
+     << "dx/dt = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl << endl
+     << "(UNDISTURBED UPSTREAM SOLAR WIND)" << endl
+     << "ni = ion number density = " << ni/1e6 << " cm^-3 = " << ni*Hybrid::dV << " dV^-1" << endl
+     << "ne = electron number density = " << ne/1e6 << " cm^-3 = " << ne*Hybrid::dV << " dV^-1" << endl
+     << "rhoqi = total ion charge density = -electron charge density = " << rhoq << " C/m^3 = " << rhoq*Hybrid::dV << " C/dV" << endl
+     << "Ubulk = bulk speed = " << Ubulk/1e3 << " km/s" << endl
+     << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
+     << "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << vs/1e3 << " km/s" << endl
+     << "vms = magnetosonic velocity = " << sqrt(vA*vA + vs*vs)/1e3 << " km/s" << endl
+     << "MA = Alfven mach number = " << Ubulk/(vA + 1e-30) << endl
+     << "Ms = sonic mach number = " << Ubulk/(vs + 1e-30) << endl
+     << "Mms = magnetosonic mach number = " << Ubulk/(sqrt(vA*vA + vs*vs) + 1e-30) << endl
+     << "Econv = -UxB = (" << Esw[0]/1e-3 << "," << Esw[1]/1e-3 << "," << Esw[2]/1e-3 << ") mV/m" << endl
+     << "|Econv| = " << EswMagnitude/1e-3 << " mV/m" << endl
+     << "dE = |Econv|*dx = " << EswMagnitude*Hybrid::dx << " V" << endl
+     << "vE(H+) = sqrt(2*e*dE/mp) = " << sqrt(2.0*constants::CHARGE_ELEMENTARY*EswMagnitude*Hybrid::dx/constants::MASS_PROTON )/1e3 << " km/s" << endl
+     << "ExB drift velocity = (" << VExB[0]/1e3 << "," << VExB[1]/1e3 << "," << VExB[2]/1e3 << ") km/s" << endl
+     << "ExB drift speed = " << VExBMagnitude/1e3 << " km/s" << endl
+     << "Pickup ion avg speed (4*VExB/pi) = " << 4.0*VExBMagnitude/M_PI/1e3 << " km/s" << endl
+     << "Pickup ion max speed (2*VExB) = " << 2.0*VExBMagnitude/1e3 << " km/s" << endl
+     << "Fastest whistler speed = " << vw/1e3 << " km/s" << endl;
+   simClasses.logger
+     << endl
+     << "(SOLAR WIND POPULATIONS)" << endl;
+   // solar wind populations
+   // electron plasma frequency
+   const Real omega_pe = sqrt( ne*sqr(constants::CHARGE_ELEMENTARY)/( constants::MASS_ELECTRON*constants::PERMITTIVITY  ) );
+   // electron plasma period
+   Real tPe = 0.0;
+   // electron inertial length
+   Real le = 0.0;
+   if(omega_pe > 0.0) {
+      tPe = 2.0*M_PI/omega_pe;
+      le = constants::SPEED_LIGHT/omega_pe;
+   }
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
+      // ion plasma frequency
+      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
+      // ion plasma period
+      Real tPi = 0.0;
+      if(omega_pi > 0.0) {
+         tPi = 2.0*M_PI/omega_pi;
+      }
+      simClasses.logger
+        << "plasma period(" << Hybrid::swPopsInfo[s].name << ") = " << tPi << " s = " << tPi/sim.dt << " dt" << endl;
+   }
+   simClasses.logger
+     << "plasma period(e-) = " << tPe << " s = " << tPe/sim.dt << " dt" << endl;
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
+      // ion plasma frequency
+      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
+      // ion inertial length
+      Real li = 0.0;
+      if(omega_pi > 0.0) {
+         li = constants::SPEED_LIGHT/omega_pi;
+      }
+      simClasses.logger
+        << "inertial length(" << Hybrid::swPopsInfo[s].name << ") = " << li/1e3 << " km = " << li/Hybrid::dx << " dx" << endl;
+   }
+   simClasses.logger
+     << "inertial length(e-) = " << le/1e3 << " km = " << le/Hybrid::dx << " dx" << endl;
+   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
+      Real rLth = 0.0; // thermal larmor radius
+      if(Btot > 0.0) {
+         rLth = Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].vth/(Hybrid::swPopsInfo[s].q*Btot);
+      }
+      simClasses.logger
+        << "thermal Larmor radius(" << Hybrid::swPopsInfo[s].name << ") = " << rLth/1e3 << " km = " << rLth/Hybrid::dx << " dx" << endl;
+   }
+   simClasses.logger
+     << endl << "(ALL POPULATIONS AS PICKUP IONS)" << endl;
+   for(size_t s=0;s<particleLists.size();++s) {
+      const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
+      Real tL = 0.0; // larmor period
+      if(Btot > 0.0) {
+         tL = 2.0*M_PI*species->m/(species->q*Btot);
+      }
+      simClasses.logger
+        << "Larmor period(" << species->name << ") = " << tL << " s = " << tL/sim.dt << " dt" << endl;
+   }
+   Real tLe = 0.0;
+   if(Btot > 0.0) {
+      tLe = 2.0*M_PI*constants::MASS_ELECTRON/(constants::CHARGE_ELEMENTARY*Btot);
+   }
+   simClasses.logger
+     << "Larmor period(e-) = " << tLe << " s = " << tLe/sim.dt << " dt" << endl;
+   for(size_t s=0;s<particleLists.size();++s) {
+      const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
+      Real rL = 0.0; // larmor radius
+      if(Btot > 0.0) {
+         rL = species->m*VExBMagnitude/(species->q*Btot);
+      }
+      simClasses.logger
+        << "Larmor radius(" << species->name << ") = " << rL/1e3 << " km = " << rL/Hybrid::dx << " dx" << endl;
+   }
+   Real rLe = 0.0;
+   if(Btot > 0.0) {
+      rLe = constants::MASS_ELECTRON*VExBMagnitude/(constants::CHARGE_ELEMENTARY*Btot);
+   }
+   simClasses.logger
+     << "Larmor radius(e-) = " << rLe/1e3 << " km = " << rLe/Hybrid::dx << " dx" << endl;
+   simClasses.logger << endl;
+
+   Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
+   if(Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
+      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi2/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt" << endl;
+      Hybrid::maxVi2 = 0.9*Hybrid::dx/sim.dt;
+   }
+   Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
+   Hybrid::maxVi = sqrt(Hybrid::maxVi2);
+
+   simClasses.logger
+     << "(CONSTRAINTS)" << endl
+     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/Ubulk" << endl
+     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
+     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
+     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " U(undisturbed solar wind) (nodeJ limiter)" << endl
+     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
+     << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
+     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl << endl;
+
+   // write log entry of output configs
+   simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
+   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+      simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
+      for(unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
+         simClasses.logger << Hybrid::populationNames[Hybrid::outputPopVarIdVector[i][j]] << " ";
+      }
+      simClasses.logger << endl;
+   }
+   simClasses.logger << "-: ";
+   for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
+      if(Hybrid::outputPopVarId[i] < 0) {
+         simClasses.logger << Hybrid::populationNames[i] << " ";
+      }
+   }
+   simClasses.logger << endl;
+   simClasses.logger << "tot plasma (snapshot): ";
+   for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
+      simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
+   }
+   simClasses.logger << endl;
+   simClasses.logger << "tot plasma (average): ";
+   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+      simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
+   }
+   simClasses.logger << endl << endl;
+
+#ifdef USE_OUTER_BOUNDARY_ZONE
+   cr.get("OuterBoundaryZone.typeEta",Hybrid::outerBoundaryZone.typeEta);
+   cr.get("OuterBoundaryZone.typeMinRhoQi",Hybrid::outerBoundaryZone.typeMinRhoQi);
+   cr.get("OuterBoundaryZone.sizeEta",Hybrid::outerBoundaryZone.sizeEta);
+   cr.get("OuterBoundaryZone.sizeMinRhoQi",Hybrid::outerBoundaryZone.sizeMinRhoQi);
+   cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
+   cr.get("OuterBoundaryZone.etaC",Hybrid::outerBoundaryZone.eta);
+   cr.get("OuterBoundaryZone.constUe",Hybrid::outerBoundaryZone.constUe);
+   Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
+   Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
+#endif
+#ifdef USE_RESISTIVITY
+   string resProfileName = "";
+   string resEtaUnit = "";
+   Real resEta = 0.0;
+   vector<Real> resSphericalEta;
+   cr.get("Resistivity.profile_name",resProfileName);
+   cr.get("Resistivity.eta_unit",resEtaUnit);
+   cr.get("Resistivity.eta",resEta);
+   cr.get("Resistivity.R",Hybrid::resistivityR2);
+   cr.get("Resistivity.eta_spherical",resSphericalEta);
+   cr.get("Resistivity.R_spherical",Hybrid::resistivitySphericalR2);
+
+   // check and calculate resistivity radii parameters
+   Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
+   // spherical profile
+   if(resSphericalEta.size() != Hybrid::resistivitySphericalR2.size()) {
+      simClasses.logger << "(RHYBRID) ERROR: parameter arrays of the spherical shell resistivity model should be the same size (" << resSphericalEta.size() << ", " << Hybrid::resistivitySphericalR2.size() << ")" << endl << write;
+      exit(1);
+   }
+   for(size_t i=0;i<Hybrid::resistivitySphericalR2.size();i++) {
+      if(Hybrid::resistivitySphericalR2[i] < 0) {
+	 simClasses.logger << "(RHYBRID) ERROR: resistivity R_spherical < 0 (" << Hybrid::resistivitySphericalR2[i] << ")" << endl << write;
+	 exit(1);
+      }
+      Hybrid::resistivitySphericalR2[i] = sqr(Hybrid::resistivitySphericalR2[i]);
+      // check that the radii are given in monotonically growing order
+      if(i > 0) {
+	 if(Hybrid::resistivitySphericalR2[i-1] >= Hybrid::resistivitySphericalR2[i]) {
+	    simClasses.logger << "(RHYBRID) ERROR: radii parameters of the spherical shell resistivity model should be given in a monotonically growing order" << endl << write;
+	    exit(1);
+	 }
+      }
+   }
+
+   // convert eta from config file to SI units
+   Real resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
+   if(resEtaUnit.compare("SI") == 0) {
+      // resEta is already in SI units
+      Hybrid::resistivityEta = resEta;
+      // spherical profile
+      for(size_t i=0;i<resSphericalEta.size();i++) {
+	 Hybrid::resistivitySphericalEta.push_back(resSphericalEta[i]);
+      }
+   }
+   else if(resEtaUnit.compare("grid") == 0){
+      // resEta is in grid units, and eta_a = resEta * mu0*dx^2/dt, where resEta = eta_c = dimensionless constant
+      Hybrid::resistivityEta = resEta*resistivityGridUnit;
+      // spherical profile
+      for(size_t i=0;i<resSphericalEta.size();i++) {
+	 Hybrid::resistivitySphericalEta.push_back(resSphericalEta[i]*resistivityGridUnit);
+      }
+   }
+   else if(resEtaUnit.compare("td") == 0) {
+      if(resEta == 0) {
+	 simClasses.logger << "(RHYBRID) ERROR: eta cannot be zero in units of td_per_dt (" << resEta << ")" << endl << write;
+	 exit(1);
+      }
+      // resEta is diffusion time divided by dt, and eta_a = 1/resEta * mu0*dx^2/dt, where resEta = td/dt = dimensionless constant
+      Hybrid::resistivityEta = resistivityGridUnit/resEta;
+      // spherical profile
+      for(size_t i=0;i<resSphericalEta.size();i++) {
+	 if(resSphericalEta[i] == 0) {
+	    simClasses.logger << "(RHYBRID) ERROR: resistivity eta_spherical cannot be zero in units of td_per_dt" << endl << write;
+	    exit(1);
+	 }
+	 Hybrid::resistivitySphericalEta.push_back(resistivityGridUnit/resSphericalEta[i]);
+      }
+   }
+   else if(resEtaUnit.compare("Rm") == 0) {
+      if(resEta == 0) {
+	 simClasses.logger << "(RHYBRID) ERROR: eta cannot be zero in units of Rm" << endl << write;
+	 exit(1);
+      }
+      // resEta is minimum magnetic Reynolds number, and eta_a = 1/resEta * mu0*dx*Ubulk, where resEta = Rm = dimensionless constant
+      Hybrid::resistivityEta = 1.0/resEta * constants::PERMEABILITY*Hybrid::dx*Ubulk;
+      // spherical profile
+      for(size_t i=0;i<resSphericalEta.size();i++) {
+	 if(resSphericalEta[i] == 0) {
+	    simClasses.logger << "(RHYBRID) ERROR: resistivity eta_spherical cannot be zero in units of Rm" << endl << write;
+	    exit(1);
+	 }
+	 Hybrid::resistivitySphericalEta.push_back(1.0/resSphericalEta[i] * constants::PERMEABILITY*Hybrid::dx*Ubulk);
+      }
+   }
+   else if(resEtaUnit.compare("URm") == 0) {
+      // resEta is velocity divided by minimum magnetic Reynolds number, and eta_a = resEta * mu0*dx, where resEta = U/Rm = [m/s]
+      Hybrid::resistivityEta = resEta * constants::PERMEABILITY*Hybrid::dx;
+      // spherical profile
+      for(size_t i=0;i<resSphericalEta.size();i++) {
+	 Hybrid::resistivitySphericalEta.push_back(resSphericalEta[i] * constants::PERMEABILITY*Hybrid::dx);
+      }
+   }
+   else {
+      simClasses.logger << "(RHYBRID) ERROR: unknown unit of eta (" << resEtaUnit << ")" << endl << write;
+      exit(1);
+   }
+
+   // set resistivity profile after all its parameters are parsed
+   if(setResistivityProfile(resProfileName,simClasses) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: unknown name of a resistivity profile (" << resProfileName << ")" << endl << write;
+      exit(1);
+   }
+
+   simClasses.logger
+     << "(RESISTIVITY)" << endl
+     << "Resistivity profile = " << resProfileName << endl
+     << "eta = " << Hybrid::resistivityEta << " Ohm m = " << Hybrid::resistivityEta/resistivityGridUnit << " mu0*dx^2/dt" << endl;
+   if(Hybrid::resistivityEta != 0) {
+      simClasses.logger
+	<< "td_min = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta/sim.dt << " dt" << endl
+	<< "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl;
+   }
+   else {
+      simClasses.logger
+	<< "td_min = mu0*dx^2/eta = infinity" << endl
+	<< "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = infinity" << endl;
+   }
+   simClasses.logger
+     << "R = " << sqrt(Hybrid::resistivityR2)/1e3 << " km = "
+     << sqrt(Hybrid::resistivityR2)/Hybrid::R_object << " R_object = "
+     << sqrt(Hybrid::resistivityR2)/Hybrid::dx << " dx = "
+     << (sqrt(Hybrid::resistivityR2) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
+   simClasses.logger << "Parameters of spherical resistivity shells:" << endl;
+   if(Hybrid::resistivitySphericalEta.size() > 0) {
+      for(size_t i=0;i<Hybrid::resistivitySphericalEta.size();i++) {
+	 simClasses.logger
+	   << "===== resistive shell " << i << endl
+	   << "\t Rmin = ";
+	 if(i == 0) { simClasses.logger << "0" << endl; }
+	 else {
+	    simClasses.logger
+	      << sqrt(Hybrid::resistivitySphericalR2[i-1])/1e3 << " km = "
+	      << sqrt(Hybrid::resistivitySphericalR2[i-1])/Hybrid::R_object << " R_object = "
+	      << sqrt(Hybrid::resistivitySphericalR2[i-1])/Hybrid::dx << " dx" << endl;
+	 }
+	 simClasses.logger
+	   << "\t Rmax = "
+	   << sqrt(Hybrid::resistivitySphericalR2[i])/1e3 << " km = "
+	   << sqrt(Hybrid::resistivitySphericalR2[i])/Hybrid::R_object << " R_object = "
+	   << sqrt(Hybrid::resistivitySphericalR2[i])/Hybrid::dx << " dx";
+	 simClasses.logger
+	   << endl
+	   << "\t eta = " << Hybrid::resistivitySphericalEta[i] << " Ohm m = " << Hybrid::resistivitySphericalEta[i]/resistivityGridUnit << " mu0*dx^2/dt" << endl;
+	 if(Hybrid::resistivitySphericalEta[i] != 0) {
+	    simClasses.logger
+	      << "\t td_min = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i] << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i]/sim.dt << " dt" << endl
+	      << "\t Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivitySphericalEta[i] << endl;
+	 }
+	 else {
+	    simClasses.logger
+	      << "\t td_min = mu0*dx^2/eta = inifinity" << endl
+	      << "\t Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = infinity" << endl;
+	 }
+      }
+      simClasses.logger << endl;
+   }
+   else {
+      simClasses.logger << "none" << endl;
+   }
+   simClasses.logger << endl;
+#endif
+#ifdef USE_OUTER_BOUNDARY_ZONE
+   simClasses.logger
+     << "(OUTER BOUNDARY ZONE)" << endl
+     << "type (eta)       = " << Hybrid::outerBoundaryZone.typeEta << endl
+     << "type (minRhoQi)  = " << Hybrid::outerBoundaryZone.typeMinRhoQi << endl
+     << "size (eta)       = " << Hybrid::outerBoundaryZone.sizeEta/(Hybrid::dx + 1e-30) << " dx" << endl
+     << "size (minRhoQi)  = " << Hybrid::outerBoundaryZone.sizeMinRhoQi/(Hybrid::dx + 1e-30) << " dx" << endl
+     << "minRhoQi(obzone) = " << Hybrid::outerBoundaryZone.minRhoQi << " C/m^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
+     << "eta(obzone)      = " << Hybrid::outerBoundaryZone.eta/(resistivityGridUnit + 1e-30) << " mu0*dx^2/dt = " << Hybrid::outerBoundaryZone.eta << " Ohm m = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityEta + 1e-30) << " eta(global)" << endl
+     << endl;
+#endif
+
+#ifdef USE_OUTER_BOUNDARY_ZONE
+   Hybrid::outerBoundaryZone.eta *= resistivityGridUnit;
+#endif
+
+   // number local cells of scalar and vector variables in this process
    const size_t scalarArraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE;
    const size_t vectorArraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*3;
-   const size_t ionoArraySize   = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*Hybrid::N_ionospherePopulations;
-   const size_t exoArraySize    = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*Hybrid::N_exospherePopulations;
-   
-   // Initial state (skip if simulation was restarted).
-   // Iterate over all blocks local to this process:
+
+   // initialize cell arrays with an initial state if simulation was not restarted
    if (sim.restarted == false) {
       for(size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
       for(size_t i=0; i<vectorArraySize; ++i) { faceJ[i] = 0.0; }
@@ -1410,8 +1826,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
       for(size_t i=0; i<scalarArraySize; ++i) { cellRhoQiBg[i] = 0.0; }
 #endif
-      for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
-      for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
       for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxUe[i] = 0.0; }
       for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxVi[i] = 0.0; }
@@ -1424,7 +1838,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       // variable to record cellid and cell centroid coordinates for output
       vector< vector<Real> > detParticleCellIDXYZ;
       vector< vector<Real> > detBulkParamCellIDXYZ;
-#endif      
+#endif
       // create flags for inner boundary
       const Real* crd = getBlockCoordinateArray(sim,simClasses);
       for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
@@ -1621,7 +2035,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
       if(sim.mpiRank == sim.MASTER_RANK) {
          int N_rowsToReceive = N_detParticleCellsGlobalSum - N_detParticleCells;
-         for(unsigned int i = 0;i<N_rowsToReceive;++i) { 
+         for(unsigned int i = 0;i<N_rowsToReceive;++i) {
             vector<Real> tmpRecv;
             tmpRecv.resize(4);
             MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
@@ -1665,7 +2079,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
       if(sim.mpiRank == sim.MASTER_RANK) {
          int N_rowsToReceive = N_detBulkParamCellsGlobalSum - N_detBulkParamCells;
-         for(unsigned int i = 0;i<N_rowsToReceive;++i) { 
+         for(unsigned int i = 0;i<N_rowsToReceive;++i) {
             vector<Real> tmpRecv;
             tmpRecv.resize(4);
             MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
@@ -1692,8 +2106,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          detBulkParamCellIndicesFile << flush;
          detBulkParamCellIndicesFile.close();
       }
-      
-
 #endif
 #ifdef USE_B_INITIAL
 #ifndef USE_SHOCKTUBE_TEST_CONFIGURATION
@@ -1736,335 +2148,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 #endif
    }
-
-   // initialize particle lists: uniform
-   for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
-      simClasses.logger << endl << "(RHYBRID) Initializing a uniform particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
-      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
-      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
-      Hybrid::populationNames.push_back(*it);
-   }
-   // initialize particle lists: ambient
-   for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
-      simClasses.logger << endl << "(RHYBRID) Initializing an ambient particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
-      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
-      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
-      Hybrid::populationNames.push_back(*it);
-   }
-   // initialize particle lists: solar wind
-   for (vector<string>::iterator it=solarwindPopulations.begin(); it!=solarwindPopulations.end(); ++it) {
-      simClasses.logger << endl << "(RHYBRID) Initializing a solar wind particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"SolarWindInjector") == false) { return false; }
-      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
-      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
-      Hybrid::populationNames.push_back(*it);
-   }
-   // initialize particle lists: ionosphere
-   for (vector<string>::iterator it=ionospherePopulations.begin(); it!=ionospherePopulations.end(); ++it) {
-      simClasses.logger << endl << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"IonosphereInjector") == false) { return false; }
-      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
-      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
-      Hybrid::populationNames.push_back(*it);
-   }   
-   // initialize particle lists: exosphere
-   for (vector<string>::iterator it=exospherePopulations.begin(); it!=exospherePopulations.end(); ++it) {
-      simClasses.logger << endl << "(RHYBRID) Initializing an exospheric particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"ExosphereInjector") == false) { return false; }
-      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
-      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
-      Hybrid::populationNames.push_back(*it);
-   }
-   simClasses.logger << endl;
-   // population output configurations
-   for(unsigned int i=0;i<particleLists.size();++i) {
-      const Species* species = reinterpret_cast<const Species*>(particleLists[i]->getSpecies());
-      if(species->outIncludeInPlasma == true) {
-         Hybrid::outputPlasmaPopId.push_back(i);
-      }
-      if(species->outStr == string("tot")) {
-         simClasses.logger << "(USER) ERROR: Particle species cannot have output_str = tot (" << species->name << ")" << endl << write;         
-         return false;
-      }
-      if(species->outStr == string("-")) {
-         Hybrid::outputPopVarId.push_back(-1);
-         continue;
-      }
-      bool strFound = false;
-      for(unsigned int j=0;j<Hybrid::outputPopVarStr.size();++j) {
-         if(species->outStr == Hybrid::outputPopVarStr[j]) {
-            Hybrid::outputPopVarId.push_back(j);
-            Hybrid::outputPopVarIdVector[j].push_back(i);
-            strFound = true;
-         }
-      }
-      if(strFound == false) {
-         const int newOutputId = static_cast<int>( Hybrid::outputPopVarStr.size() );
-         Hybrid::outputPopVarId.push_back(newOutputId);
-         Hybrid::outputPopVarStr.push_back(species->outStr);
-         vector<unsigned int> a;
-         a.push_back(i);
-         Hybrid::outputPopVarIdVector.push_back(a);
-      }
-   }
-   Hybrid::N_outputPopVars =  Hybrid::outputPopVarStr.size();
-   // check number of particle lists and populations
-   if( (Hybrid::N_populations   != particleLists.size()) || 
-       (Hybrid::N_populations   != Hybrid::populationNames.size()) || 
-       (Hybrid::N_populations   != Hybrid::outputPopVarId.size()) ||
-       (Hybrid::N_populations    < Hybrid::N_outputPopVars) ||
-       (Hybrid::N_populations    < Hybrid::outputPlasmaPopId.size()) ||
-       (Hybrid::N_outputPopVars != Hybrid::outputPopVarIdVector.size()) ) {
-      simClasses.logger << "(RHYBRID) ERROR: Something went wrong in particle list initialization" << endl << write;
-      return false;
-   }
-
-   // determine solar wind properties
-   Real ni = 0.0; //total ion number density
-   Real ne = 0.0; // total electron density
-   Real rhom = 0.0; // total ion mass density
-   Real Ubulk = 0.0; // bulk speed
-   Real vA = 0.0; // alfven velocity
-   Real vstmp1 = 0.0;
-   Real vstmp2 = 0.0;
-   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
-      ni += Hybrid::swPopsInfo[s].n;
-      ne += Hybrid::swPopsInfo[s].q*Hybrid::swPopsInfo[s].n;
-      rhom += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n;
-      Ubulk += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].U;
-      vstmp1 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].T;
-      vstmp2 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].m;
-   }
-   const Real rhoq = ne;
-   ne /= constants::CHARGE_ELEMENTARY;
-   // sound velocity approximated as vs = sqrt(gamma*p/rho_m) = sqrt( kB*gamma*sum_i(ni*Ti)/sum_i(ni*mi) ),
-   // where gamma = 5/3 and sum is over all solar wind populations
-   Real vs = 0.0;
-   if(vstmp2 > 0) {
-      vs = sqrt(5.0/3.0*constants::BOLTZMANN*vstmp1/vstmp2);
-   }
-   const Real Btot2 = sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz);
-   const Real Btot = sqrt(Btot2);
-   if(rhom > 0.0) {
-      vA = Btot/( sqrt(constants::PERMEABILITY*rhom) );
-      Ubulk /= rhom;
-   }
-   else {
-      Ubulk = 0.0;
-   }
-   Hybrid::upstreamBulkU = Ubulk;
-   Real Esw[3] = {0.0,0.0,0.0};
-   Real Bsw[3] = {Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz};
-   Real Usw[3] = {-Ubulk,0.0,0.0};
-   Real VExB[3] = {0.0,0.0,0.0};
-   cross(Bsw,Usw,Esw); // Esw = B x (-Ubulk,0,0)
-   const Real EswMagnitude = normvec(Esw);
-   // VExB = E x B/B^2
-   if(Btot2 > 0.0) {
-      cross(Esw,Bsw,VExB);
-      VExB[0] /= Btot2;
-      VExB[1] /= Btot2;
-      VExB[2] /= Btot2;
-   }
-   const Real VExBMagnitude = normvec(VExB);
-   Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
-   if(ne > 0.0 && Hybrid::dx > 0.0) {
-      vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
-   }
-  
-   if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
-      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
-      Hybrid::initialFlowThrough = true;
-   }
-   else {
-      Hybrid::initialFlowThroughPeriod = -100;
-      Hybrid::initialFlowThrough = false;
-   }
-   
-   // set adiabatic electron pressure coefficient with gamma = 2
-   if(Hybrid::useAdiabaticElectronPressure == true) {
-      if(ne > 0) {
-         Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( ne * sqr(constants::CHARGE_ELEMENTARY) );
-      }
-      else {
-         Hybrid::electronPressureCoeff = 0.0;
-      }
-   }
-
-   simClasses.logger
-     << "(CFL CONDITION)" << endl
-     << "dt = " << sim.dt << " s = " << sim.dt/1e-3 << " ms" << endl
-     << "dx/dt = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl << endl
-     << "(UNDISTURBED UPSTREAM SOLAR WIND)" << endl
-     << "ni = ion number density = " << ni/1e6 << " cm^-3 = " << ni*Hybrid::dV << " dV^-1" << endl
-     << "ne = electron number density = " << ne/1e6 << " cm^-3 = " << ne*Hybrid::dV << " dV^-1" << endl
-     << "rhoqi = total ion charge density = -electron charge density = " << rhoq << " C/m^3 = " << rhoq*Hybrid::dV << " C/dV" << endl
-     << "U = bulk speed = " << Ubulk/1e3 << " km/s" << endl
-     << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
-     << "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << vs/1e3 << " km/s" << endl
-     << "vms = magnetosonic velocity = " << sqrt(vA*vA + vs*vs)/1e3 << " km/s" << endl 
-     << "MA = Alfven mach number = " << Ubulk/(vA + 1e-30) << endl
-     << "Ms = sonic mach number = " << Ubulk/(vs + 1e-30) << endl
-     << "Mms = magnetosonic mach number = " << Ubulk/(sqrt(vA*vA + vs*vs) + 1e-30) << endl
-     << "Econv = -UxB = (" << Esw[0]/1e-3 << "," << Esw[1]/1e-3 << "," << Esw[2]/1e-3 << ") mV/m" << endl
-     << "|Econv| = " << EswMagnitude/1e-3 << " mV/m" << endl
-     << "dE = |Econv|*dx = " << EswMagnitude*Hybrid::dx << " V" << endl
-     << "vE(H+) = sqrt(2*e*dE/mp) = " << sqrt(2.0*constants::CHARGE_ELEMENTARY*EswMagnitude*Hybrid::dx/constants::MASS_PROTON )/1e3 << " km/s" << endl
-     << "ExB drift velocity = (" << VExB[0]/1e3 << "," << VExB[1]/1e3 << "," << VExB[2]/1e3 << ") km/s" << endl
-     << "ExB drift speed = " << VExBMagnitude/1e3 << " km/s" << endl
-     << "Pickup ion avg speed (4*VExB/pi) = " << 4.0*VExBMagnitude/M_PI/1e3 << " km/s" << endl
-     << "Pickup ion max speed (2*VExB) = " << 2.0*VExBMagnitude/1e3 << " km/s" << endl
-     << "Fastest whistler speed = " << vw/1e3 << " km/s" << endl;
-#ifdef USE_RESISTIVITY
-   simClasses.logger << "td_min(global) = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta/sim.dt << " dt" << endl;
-   for(size_t i=0;i<Hybrid::resistivitySphericalEta.size();i++) {
-      simClasses.logger << "td_min(resistive shell " << i << ") = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i] << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i]/sim.dt << " dt" << endl;
-   }
-   simClasses.logger << "Rm_min(global) = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl;
-   for(size_t i=0;i<Hybrid::resistivitySphericalEta.size();i++) {
-      simClasses.logger << "Rm_min(resistive shell " << i << ") = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivitySphericalEta[i] << endl;
-   }
-#endif
-   simClasses.logger
-     << endl
-     << "(SOLAR WIND POPULATIONS)" << endl;
-   // solar wind populations
-   // electron plasma frequency
-   const Real omega_pe = sqrt( ne*sqr(constants::CHARGE_ELEMENTARY)/( constants::MASS_ELECTRON*constants::PERMITTIVITY  ) );
-   // electron plasma period
-   Real tPe = 0.0;
-   // electron inertial length
-   Real le = 0.0;
-   if(omega_pe > 0.0) {
-      tPe = 2.0*M_PI/omega_pe;
-      le = constants::SPEED_LIGHT/omega_pe;
-   }
-   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
-      // ion plasma frequency
-      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
-      // ion plasma period
-      Real tPi = 0.0;
-      if(omega_pi > 0.0) {
-         tPi = 2.0*M_PI/omega_pi;
-      }
-      simClasses.logger
-        << "plasma period(" << Hybrid::swPopsInfo[s].name << ") = " << tPi << " s = " << tPi/sim.dt << " dt" << endl;
-   }
-   simClasses.logger
-     << "plasma period(e-) = " << tPe << " s = " << tPe/sim.dt << " dt" << endl;
-   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
-      // ion plasma frequency
-      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
-      // ion inertial length
-      Real li = 0.0;
-      if(omega_pi > 0.0) {
-         li = constants::SPEED_LIGHT/omega_pi;
-      }
-      simClasses.logger
-        << "inertial length(" << Hybrid::swPopsInfo[s].name << ") = " << li/1e3 << " km = " << li/Hybrid::dx << " dx" << endl;
-   }
-   simClasses.logger
-     << "inertial length(e-) = " << le/1e3 << " km = " << le/Hybrid::dx << " dx" << endl;
-   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
-      Real rLth = 0.0; // thermal larmor radius
-      if(Btot > 0.0) {
-         rLth = Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].vth/(Hybrid::swPopsInfo[s].q*Btot);
-      }
-      simClasses.logger
-        << "thermal Larmor radius(" << Hybrid::swPopsInfo[s].name << ") = " << rLth/1e3 << " km = " << rLth/Hybrid::dx << " dx" << endl;
-   }
-   simClasses.logger
-     << endl << "(ALL POPULATIONS AS PICKUP IONS)" << endl;
-   for(size_t s=0;s<particleLists.size();++s) {
-      const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-      Real tL = 0.0; // larmor period
-      if(Btot > 0.0) {
-         tL = 2.0*M_PI*species->m/(species->q*Btot);
-      }
-      simClasses.logger
-        << "Larmor period(" << species->name << ") = " << tL << " s = " << tL/sim.dt << " dt" << endl;
-   }
-   Real tLe = 0.0;
-   if(Btot > 0.0) {
-      tLe = 2.0*M_PI*constants::MASS_ELECTRON/(constants::CHARGE_ELEMENTARY*Btot);
-   }
-   simClasses.logger
-     << "Larmor period(e-) = " << tLe << " s = " << tLe/sim.dt << " dt" << endl;
-   for(size_t s=0;s<particleLists.size();++s) {
-      const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-      Real rL = 0.0; // larmor radius
-      if(Btot > 0.0) {
-         rL = species->m*VExBMagnitude/(species->q*Btot);
-      }
-      simClasses.logger
-        << "Larmor radius(" << species->name << ") = " << rL/1e3 << " km = " << rL/Hybrid::dx << " dx" << endl;
-   }
-   Real rLe = 0.0;
-   if(Btot > 0.0) {
-      rLe = constants::MASS_ELECTRON*VExBMagnitude/(constants::CHARGE_ELEMENTARY*Btot);
-   }
-   simClasses.logger
-     << "Larmor radius(e-) = " << rLe/1e3 << " km = " << rLe/Hybrid::dx << " dx" << endl;
-   simClasses.logger << endl;
-   
-   Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
-   if(Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
-      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi2/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt" << endl;
-      Hybrid::maxVi2 = 0.9*Hybrid::dx/sim.dt;
-   }
-   Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
-   Hybrid::maxVi = sqrt(Hybrid::maxVi2);
-   
-   simClasses.logger
-     << "(CONSTRAINTS)" << endl
-     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/Ubulk" << endl
-     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
-     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
-     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " U(undisturbed solar wind) (nodeJ limiter)" << endl
-     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
-     << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
-     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl << endl;
-
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   simClasses.logger
-     << "(OUTER BOUNDARY ZONE)" << endl
-     << "type (eta)       = " << Hybrid::outerBoundaryZone.typeEta << endl
-     << "type (minRhoQi)  = " << Hybrid::outerBoundaryZone.typeMinRhoQi << endl
-     << "size (eta)       = " << Hybrid::outerBoundaryZone.sizeEta/(Hybrid::dx + 1e-30) << " dx" << endl
-     << "size (minRhoQi)  = " << Hybrid::outerBoundaryZone.sizeMinRhoQi/(Hybrid::dx + 1e-30) << " dx" << endl
-     << "minRhoQi(obzone) = " << Hybrid::outerBoundaryZone.minRhoQi << " C/m^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
-     << "eta(obzone)      = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityGridUnit + 1e-30) << " mu_0*dx^2/dt = " << Hybrid::outerBoundaryZone.eta << " Ohm m = " << Hybrid::outerBoundaryZone.eta/(Hybrid::resistivityEta + 1e-30) << " eta(global)" << endl
-     << endl;
-#endif
-   
-   // write log entry of output configs
-   simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
-   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
-      simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
-      for(unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
-         simClasses.logger << Hybrid::populationNames[Hybrid::outputPopVarIdVector[i][j]] << " ";
-      }
-      simClasses.logger << endl;
-   }
-   simClasses.logger << "-: ";
-   for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
-      if(Hybrid::outputPopVarId[i] < 0) {
-         simClasses.logger << Hybrid::populationNames[i] << " ";
-      }
-   }
-   simClasses.logger << endl;
-   simClasses.logger << "tot plasma (snapshot): ";
-   for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
-      simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
-   }
-   simClasses.logger << endl;
-   simClasses.logger << "tot plasma (average): ";
-   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
-      simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
-   }
-   simClasses.logger << endl;
 
    // open particle population and field log files
    if(sim.mpiRank==sim.MASTER_RANK) {
@@ -2175,7 +2258,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // initialize counter start time
    Hybrid::logCounterTimeStart = sim.t;
-   
+
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // magnetic field
    Hybrid::dataCellAverageBID  = simClasses.pargrid.invalidDataID();

@@ -1193,7 +1193,7 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
 }
 
 bool InjectorIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
-   cr.add(configRegionName+".profile_name","Ionospheric emission profile name [-] (string)","");
+   cr.add(configRegionName+".profile_name","Ionospheric emission profile name [-] (string)",string(""));
    cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (Real)",(Real)-1.0);
    cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (Real)",(Real)-1.0);
    cr.add(configRegionName+".night","Night side emission factor [-] (Real)",(Real)-1.0);
