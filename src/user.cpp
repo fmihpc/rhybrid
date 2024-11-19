@@ -369,10 +369,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
 #ifdef USE_RESISTIVITY
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)",string(""));
-   cr.add("Resistivity.eta_unit","Unit of given eta [SI/grid/td/Rm/URm] (string)",string(""));
-   cr.add("Resistivity.eta","Resistivity in units of eta_unit [] (float)",defaultValue);
+   cr.add("Resistivity.value_unit","Unit and quantity used to define value of resistivity [SI/grid/td/Rm/URm] (string)",string(""));
+   cr.add("Resistivity.value","Parameter value used to define the value of resistivity [] (float)",defaultValue);
    cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
-   cr.addComposed("Resistivity.eta_spherical","Resistivity of spherical resistivity shells in units of eta_unit [-] (float vector)");
+   cr.addComposed("Resistivity.value_spherical","Parameter values used to define the resistivity values of spherical shells [] (float vector)");
    cr.addComposed("Resistivity.R_spherical","Radii of spherical resistivity shells [m] (float vector)");
 #endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
@@ -1625,21 +1625,21 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 #ifdef USE_RESISTIVITY
    string resProfileName = "";
-   string resEtaUnit = "";
-   Real resEta = 0.0;
-   vector<Real> resSphericalEta;
+   string resValueUnit = "";
+   Real resValue = 0.0;
+   vector<Real> resSphericalValue;
    cr.get("Resistivity.profile_name",resProfileName);
-   cr.get("Resistivity.eta_unit",resEtaUnit);
-   cr.get("Resistivity.eta",resEta);
+   cr.get("Resistivity.value_unit",resValueUnit);
+   cr.get("Resistivity.value",resValue);
    cr.get("Resistivity.R",Hybrid::resistivityR2);
-   cr.get("Resistivity.eta_spherical",resSphericalEta);
+   cr.get("Resistivity.value_spherical",resSphericalValue);
    cr.get("Resistivity.R_spherical",Hybrid::resistivitySphericalR2);
 
    // check and calculate resistivity radii parameters
    Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
    // spherical profile
-   if(resSphericalEta.size() != Hybrid::resistivitySphericalR2.size()) {
-      simClasses.logger << "(RHYBRID) ERROR: parameter arrays of the spherical shell resistivity model should be the same size (" << resSphericalEta.size() << ", " << Hybrid::resistivitySphericalR2.size() << ")" << endl << write;
+   if(resSphericalValue.size() != Hybrid::resistivitySphericalR2.size()) {
+      simClasses.logger << "(RHYBRID) ERROR: parameter arrays of the spherical shell resistivity model should be the same size (" << resSphericalValue.size() << ", " << Hybrid::resistivitySphericalR2.size() << ")" << endl << write;
       exit(1);
    }
    for(size_t i=0;i<Hybrid::resistivitySphericalR2.size();i++) {
@@ -1659,64 +1659,64 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // convert eta from config file to SI units
    Real resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
-   if(resEtaUnit.compare("SI") == 0) {
-      // resEta is already in SI units
-      Hybrid::resistivityEta = resEta;
+   if(resValueUnit.compare("SI") == 0) {
+      // resValue is already in SI units
+      Hybrid::resistivityEta = (resValue);
       // spherical profile
-      for(size_t i=0;i<resSphericalEta.size();i++) {
-	 Hybrid::resistivitySphericalEta.push_back(resSphericalEta[i]);
+      for(size_t i=0;i<resSphericalValue.size();i++) {
+	 Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i]) );
       }
    }
-   else if(resEtaUnit.compare("grid") == 0){
-      // resEta is in grid units, and eta_a = resEta * mu0*dx^2/dt, where resEta = eta_c = dimensionless constant
-      Hybrid::resistivityEta = resEta*resistivityGridUnit;
+   else if(resValueUnit.compare("grid") == 0){
+      // resValue is in grid units, and eta_a = (resValue) * mu0*dx^2/dt, where resValue = eta_c = dimensionless constant
+      Hybrid::resistivityEta = (resValue)*resistivityGridUnit;
       // spherical profile
-      for(size_t i=0;i<resSphericalEta.size();i++) {
-	 Hybrid::resistivitySphericalEta.push_back(resSphericalEta[i]*resistivityGridUnit);
+      for(size_t i=0;i<resSphericalValue.size();i++) {
+	 Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i])*resistivityGridUnit );
       }
    }
-   else if(resEtaUnit.compare("td") == 0) {
-      if(resEta == 0) {
-	 simClasses.logger << "(RHYBRID) ERROR: eta cannot be zero in units of td_per_dt (" << resEta << ")" << endl << write;
+   else if(resValueUnit.compare("td") == 0) {
+      if(resValue == 0) {
+	 simClasses.logger << "(RHYBRID) ERROR: value to define resistivity cannot be zero in units of td_per_dt (" << resValue << ")" << endl << write;
 	 exit(1);
       }
-      // resEta is diffusion time divided by dt, and eta_a = 1/resEta * mu0*dx^2/dt, where resEta = td/dt = dimensionless constant
-      Hybrid::resistivityEta = resistivityGridUnit/resEta;
+      // resValue is diffusion time divided by dt, and eta_a = (1/resValue) * mu0*dx^2/dt, where resValue = td/dt = dimensionless constant
+      Hybrid::resistivityEta = (1.0/resValue) * resistivityGridUnit;
       // spherical profile
-      for(size_t i=0;i<resSphericalEta.size();i++) {
-	 if(resSphericalEta[i] == 0) {
-	    simClasses.logger << "(RHYBRID) ERROR: resistivity eta_spherical cannot be zero in units of td_per_dt" << endl << write;
+      for(size_t i=0;i<resSphericalValue.size();i++) {
+	 if(resSphericalValue[i] == 0) {
+	    simClasses.logger << "(RHYBRID) ERROR: value_spherical to defined resistivity cannot be zero in units of td_per_dt" << endl << write;
 	    exit(1);
 	 }
-	 Hybrid::resistivitySphericalEta.push_back(resistivityGridUnit/resSphericalEta[i]);
+	 Hybrid::resistivitySphericalEta.push_back( (1.0/resSphericalValue[i]) * resistivityGridUnit );
       }
    }
-   else if(resEtaUnit.compare("Rm") == 0) {
-      if(resEta == 0) {
-	 simClasses.logger << "(RHYBRID) ERROR: eta cannot be zero in units of Rm" << endl << write;
+   else if(resValueUnit.compare("Rm") == 0) {
+      if(resValue == 0) {
+	 simClasses.logger << "(RHYBRID) ERROR: value to define resistivity cannot be zero in units of Rm" << endl << write;
 	 exit(1);
       }
-      // resEta is minimum magnetic Reynolds number, and eta_a = 1/resEta * mu0*dx*Ubulk, where resEta = Rm = dimensionless constant
-      Hybrid::resistivityEta = 1.0/resEta * constants::PERMEABILITY*Hybrid::dx*Ubulk;
+      // resValue is minimum magnetic Reynolds number, and eta_a = (1/resValue) * mu0*dx*Ubulk, where resValue = Rm = dimensionless constant
+      Hybrid::resistivityEta = (1.0/resValue) * constants::PERMEABILITY*Hybrid::dx*Ubulk;
       // spherical profile
-      for(size_t i=0;i<resSphericalEta.size();i++) {
-	 if(resSphericalEta[i] == 0) {
-	    simClasses.logger << "(RHYBRID) ERROR: resistivity eta_spherical cannot be zero in units of Rm" << endl << write;
+      for(size_t i=0;i<resSphericalValue.size();i++) {
+	 if(resSphericalValue[i] == 0) {
+	    simClasses.logger << "(RHYBRID) ERROR: value_spherical to defined resistivity cannot be zero in units of Rm" << endl << write;
 	    exit(1);
 	 }
-	 Hybrid::resistivitySphericalEta.push_back(1.0/resSphericalEta[i] * constants::PERMEABILITY*Hybrid::dx*Ubulk);
+	 Hybrid::resistivitySphericalEta.push_back( (1.0/resSphericalValue[i]) * constants::PERMEABILITY*Hybrid::dx*Ubulk );
       }
    }
-   else if(resEtaUnit.compare("URm") == 0) {
-      // resEta is velocity divided by minimum magnetic Reynolds number, and eta_a = resEta * mu0*dx, where resEta = U/Rm = [m/s]
-      Hybrid::resistivityEta = resEta * constants::PERMEABILITY*Hybrid::dx;
+   else if(resValueUnit.compare("URm") == 0) {
+      // resValue is velocity divided by minimum magnetic Reynolds number, and eta_a = (resValue) * mu0*dx, where resValue = U/Rm = [m/s]
+      Hybrid::resistivityEta = (resValue) * constants::PERMEABILITY*Hybrid::dx;
       // spherical profile
-      for(size_t i=0;i<resSphericalEta.size();i++) {
-	 Hybrid::resistivitySphericalEta.push_back(resSphericalEta[i] * constants::PERMEABILITY*Hybrid::dx);
+      for(size_t i=0;i<resSphericalValue.size();i++) {
+	 Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i]) * constants::PERMEABILITY*Hybrid::dx );
       }
    }
    else {
-      simClasses.logger << "(RHYBRID) ERROR: unknown unit of eta (" << resEtaUnit << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: unknown unit and quantity to define resistivity (" << resValueUnit << ")" << endl << write;
       exit(1);
    }
 
