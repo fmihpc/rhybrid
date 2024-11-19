@@ -1393,8 +1393,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real ni = 0.0; //total ion number density
    Real ne = 0.0; // total electron density
    Real rhom = 0.0; // total ion mass density
-   Real Ubulk = 0.0; // bulk speed
-   Real vA = 0.0; // alfven velocity
+   Real Ubulk = 0.0; // solar wind bulk speed
+   Real vA = 0.0; // alfven speed
    Real vstmp1 = 0.0;
    Real vstmp2 = 0.0;
    for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
@@ -1413,6 +1413,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if(vstmp2 > 0) {
       vs = sqrt(5.0/3.0*constants::BOLTZMANN*vstmp1/vstmp2);
    }
+   const Real vms = sqrt(vA*vA + vs*vs); // magnetosonic speed
    const Real Btot2 = sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz);
    const Real Btot = sqrt(Btot2);
    if(rhom > 0.0) {
@@ -1462,9 +1463,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 
    simClasses.logger
-     << "(CFL CONDITION)" << endl
-     << "dt = " << sim.dt << " s = " << sim.dt/1e-3 << " ms" << endl
-     << "dx/dt = " << Hybrid::dx/sim.dt/1e3 << " km/s" << endl << endl
      << "(UNDISTURBED UPSTREAM SOLAR WIND)" << endl
      << "ni = ion number density = " << ni/1e6 << " cm^-3 = " << ni*Hybrid::dV << " dV^-1" << endl
      << "ne = electron number density = " << ne/1e6 << " cm^-3 = " << ne*Hybrid::dV << " dV^-1" << endl
@@ -1472,7 +1470,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Ubulk = bulk speed = " << Ubulk/1e3 << " km/s" << endl
      << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
      << "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << vs/1e3 << " km/s" << endl
-     << "vms = magnetosonic velocity = " << sqrt(vA*vA + vs*vs)/1e3 << " km/s" << endl
+     << "vms = magnetosonic velocity = " << vms/1e3 << " km/s" << endl
      << "MA = Alfven mach number = " << Ubulk/(vA + 1e-30) << endl
      << "Ms = sonic mach number = " << Ubulk/(vs + 1e-30) << endl
      << "Mms = magnetosonic mach number = " << Ubulk/(sqrt(vA*vA + vs*vs) + 1e-30) << endl
@@ -1574,16 +1572,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
    Hybrid::maxVi = sqrt(Hybrid::maxVi2);
-
-   simClasses.logger
-     << "(CONSTRAINTS)" << endl
-     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/Ubulk" << endl
-     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
-     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " U(undisturbed solar wind)" << endl
-     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " U(undisturbed solar wind) (nodeJ limiter)" << endl
-     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(EswMagnitude + 1e-30) << " Econv(undisturbed solar wind)" << endl
-     << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
-     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl << endl;
 
    // write log entry of output configs
    simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
@@ -1726,18 +1714,25 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       exit(1);
    }
 
+   // find smallest diffusion speed
+   Real td_min_smallest = numeric_limits<Real>::max();
+
    simClasses.logger
      << "(RESISTIVITY)" << endl
      << "Resistivity profile = " << resProfileName << endl
      << "eta = " << Hybrid::resistivityEta << " Ohm m = " << Hybrid::resistivityEta/resistivityGridUnit << " mu0*dx^2/dt" << endl;
    if(Hybrid::resistivityEta != 0) {
+      const Real td_min = constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta;
+      if(td_min_smallest > td_min) { td_min_smallest = td_min; }
       simClasses.logger
-	<< "td_min = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta/sim.dt << " dt" << endl
+	<< "td_min = mu0*dx^2/eta = " << td_min << " s = " << td_min/sim.dt << " dt" << endl
+	<< "dx/td_min = " << Hybrid::dx/td_min/1e3 << " km/s" << endl
 	<< "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl;
    }
    else {
       simClasses.logger
 	<< "td_min = mu0*dx^2/eta = infinity" << endl
+	<< "dx/td_min = 0" << endl
 	<< "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = infinity" << endl;
    }
    simClasses.logger
@@ -1767,13 +1762,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << endl
 	   << "\t eta = " << Hybrid::resistivitySphericalEta[i] << " Ohm m = " << Hybrid::resistivitySphericalEta[i]/resistivityGridUnit << " mu0*dx^2/dt" << endl;
 	 if(Hybrid::resistivitySphericalEta[i] != 0) {
+	    const Real td_min_shell = constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i];
+	    if(td_min_smallest > td_min_shell) { td_min_smallest = td_min_shell; }
 	    simClasses.logger
-	      << "\t td_min = mu0*dx^2/eta = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i] << " s = " << constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i]/sim.dt << " dt" << endl
+	      << "\t td_min = mu0*dx^2/eta = " << td_min_shell << " s = " << td_min_shell/sim.dt << " dt" << endl
+	      << "\t dx/td_min = " << Hybrid::dx/td_min_shell/1e3 << " km/s" << endl
 	      << "\t Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivitySphericalEta[i] << endl;
 	 }
 	 else {
 	    simClasses.logger
 	      << "\t td_min = mu0*dx^2/eta = inifinity" << endl
+	      << "\t dx/td_min = 0" << endl
 	      << "\t Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = infinity" << endl;
 	 }
       }
@@ -1799,6 +1798,38 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::outerBoundaryZone.eta *= resistivityGridUnit;
 #endif
+
+   // log constraint values
+   const Real dx_per_dt = Hybrid::dx/sim.dt;
+   simClasses.logger
+     << "(CONSTRAINTS)" << endl
+     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/Ubulk" << endl
+     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " Ubulk = " << sqrt(Hybrid::maxUe2)/dx_per_dt << " dx/dt"  << endl
+     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " Ubulk = " << sqrt(Hybrid::maxVi2)/dx_per_dt << " dx/dt" << endl
+     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " Ubulk = " << Hybrid::maxVw/dx_per_dt << " dx/dt" << endl
+     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(EswMagnitude + 1e-30) << " Econv" << endl
+     << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
+     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi" << endl << endl;
+
+   // evaluate and log CFL conditions from individual signal speeds and all summed together
+   const Real dx_per_td_min = Hybrid::dx/td_min_smallest;
+   const Real summedSignalSpeed = Ubulk + vms + 2*VExBMagnitude + vw + dx_per_td_min;
+   const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + sqrt(Hybrid::maxVi2) + Hybrid::maxVw + vms + dx_per_td_min;
+   simClasses.logger
+     << "(COURANT-FRIEDRICHS-LEWY (CFL) CONDITION)" << endl
+     << "dx = " << Hybrid::dx/1e3 << " km = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
+     << "dt = " << sim.dt << " s = " << sim.dt/1e-3 << " ms" << endl
+     << "dx/dt = " << dx_per_dt/1e3 << " km/s" << endl
+     << "Ubulk = " << Ubulk/1e3 << " km/s = " << Ubulk/dx_per_dt << " dx/dt" << endl
+     << "vA = " << vA/1e3 << " km/s = " << vA/dx_per_dt << " dx/dt" << endl
+     << "vs = " << vs/1e3 << " km/s = " << vs/dx_per_dt << " dx/dt" << endl
+     << "vms = " << vms/1e3 << " km/s = " << vms/dx_per_dt << " dx/dt" << endl
+     << "2*VExBMagnitude = " << 2*VExBMagnitude/1e3 << " km/s = " << 2*VExBMagnitude/dx_per_dt << " dx/dt" << endl
+     << "vw = " << vw/1e3 << " km/s = " << vw/dx_per_dt << " dx/dt" << endl
+     << "dx/min(td_min) = " << dx_per_td_min/1e3 << " km/s = " << dx_per_td_min/dx_per_dt << " dx/dt" << endl
+     << "summedSignalSpeed = " << summedSignalSpeed/1e3 << " km/s = " << summedSignalSpeed/dx_per_dt << " dx/dt" << endl
+     << "summedFullConstraintedSignalSpeed = " << summedFullConstraintedSignalSpeed/1e3 << " km/s = " << summedFullConstraintedSignalSpeed/dx_per_dt << " dx/dt" << endl
+     << endl;
 
    // number local cells of scalar and vector variables in this process
    const size_t scalarArraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE;
