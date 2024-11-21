@@ -17,8 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DEFAULT_INJECTOR_H
-#define DEFAULT_INJECTOR_H
+#ifndef PARTICLE_INJECTOR_H
+#define PARTICLE_INJECTOR_H
 
 #include <cstdlib>
 #include <climits>
@@ -31,65 +31,65 @@
 #include "particle_definition.h"
 #include "particle_species.h"
 
+struct InjectorParameters {
+   std::string name,type;
+   Real m,q,w,T,vth,n,U,velocity[3];
+};
+
+bool getInjectorParameters(ParticleInjectorBase* injBasePtr,InjectorParameters& p);
+
 class InjectorUniform: public ParticleInjectorBase {
  public:
    InjectorUniform();
    ~InjectorUniform();
-
    bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
    bool finalize();
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-		   const std::string& regionName,const ParticleListBase* plist);
+   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist);
    bool inject(pargrid::DataID speciesDataID,unsigned int* N_particles);
+   void getParams(InjectorParameters& p);
  private:
    bool initialized;
    Real N_macroParticlesPerCell;
    const Species* species;
    Real velocity[3];
-   Real U,vth,n,w,xmin,xmax;
-   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
-			pargrid::DataWrapper<Particle<Real> >& wrapper);
+   Real U,T,vth,n,w,xmin,xmax;
+   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
 class InjectorAmbient: public ParticleInjectorBase {
  public:
    InjectorAmbient();
    ~InjectorAmbient();
-
    bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
    bool finalize();
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-		   const std::string& regionName,const ParticleListBase* plist);
+   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist);
    bool inject(pargrid::DataID speciesDataID,unsigned int* N_particles);
-
+   void getParams(InjectorParameters& p);
  private:
    bool initialized;
    Real N_macroParticlesPerCellPerDt;
    Real N_macroParticlesPerCell;
    const Species* species;
-   Real vth,w;
-   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
-			pargrid::DataWrapper<Particle<Real> >& wrapper,unsigned int wall);
+   Real T,vth,n,w;
+   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper,unsigned int wall);
 };
 
 class InjectorSolarWind: public ParticleInjectorBase {
  public:
    InjectorSolarWind();
    ~InjectorSolarWind();
-      
    bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
    bool finalize();
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-		   const std::string& regionName,const ParticleListBase* plist);
+   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist);
    bool inject(pargrid::DataID speciesDataID,unsigned int* N_particles);
-
+   void getParams(InjectorParameters& p);
  private:
    bool initialized;
    Real N_macroParticlesPerCellPerDt;
    Real N_macroParticlesPerCell;
    const Species* species;
    Real velocity[3];
-   Real U,vth,n,w;
+   Real U,T,vth,n,w;
    bool (InjectorSolarWind::*checkIfInjectionCellFuncPtr)(const pargrid::CellID b); // pointer to function that checks if particles should be injected in this cell
    void (InjectorSolarWind::*initParticleCrdVelFuncPtr)(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz); // pointer to function that initialize coordinates and velocity of a new particle
    bool checkIfInjectionCellDefault(const pargrid::CellID b);
@@ -106,70 +106,60 @@ class InjectorSolarWind: public ParticleInjectorBase {
    void initParticleCrdVelYNeg(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
    void initParticleCrdVelZPos(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
    void initParticleCrdVelZNeg(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz);
-   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
-			pargrid::DataWrapper<Particle<Real> >& wrapper);
+   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
 class InjectorIonosphere: public ParticleInjectorBase {
  public:
    InjectorIonosphere();
    ~InjectorIonosphere();
-      
    bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
    bool finalize();
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-		   const std::string& regionName,const ParticleListBase* plist); 
+   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist);
    bool inject(pargrid::DataID speciesDataID,unsigned int* N_particles);
-  
+   void getParams(InjectorParameters& p);
  private:
    bool initialized;
    const Species* species;
    unsigned int N_ionoPop;
-   Real N_macroParticlesPerCell,N_macroParticlesPerDt,vth,w,R;
-   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
-			pargrid::DataWrapper<Particle<Real> >& wrapper);
+   Real N_macroParticlesPerCell,N_macroParticlesPerDt,T,vth,w,R;
+   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
 class InjectorChapmanIonosphere: public ParticleInjectorBase {
  public:
    InjectorChapmanIonosphere();
    ~InjectorChapmanIonosphere();
-      
    bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
    bool finalize();
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-		   const std::string& regionName,const ParticleListBase* plist); 
+   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist);
    bool inject(pargrid::DataID speciesDataID,unsigned int* N_particles);
-  
+   void getParams(InjectorParameters& p);
  private:
    bool initialized;
    const Species* species;
    unsigned int N_ionoPop;
    Real N_macroParticlesPerCell,N_macroParticlesPerDt,vth,w,R,T,noonFactor, nightFactor;
-   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
-			pargrid::DataWrapper<Particle<Real> >& wrapper);
+   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
 class InjectorExosphere: public ParticleInjectorBase {
  public:
    InjectorExosphere();
    ~InjectorExosphere();
-      
    bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
    bool finalize();
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-		   const std::string& regionName,const ParticleListBase* plist); 
+   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist);
    bool inject(pargrid::DataID speciesDataID,unsigned int* N_particles);
-  
+   void getParams(InjectorParameters& p);
  private:
    bool initialized;
    const Species* species;
    unsigned int N_exoPop;
    std::string neutralProfileName;
-   Real N_macroParticlesPerCell,N_macroParticlesPerDt,vth,w,r0,R_exobase,R_shadow;
+   Real N_macroParticlesPerCell,N_macroParticlesPerDt,T,vth,w,r0,R_exobase,R_shadow;
    std::vector<Real> n0,H0,T0,k0;
-   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,
-			pargrid::DataWrapper<Particle<Real> >& wrapper);
+   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
 inline ParticleInjectorBase* UniformIonCreator() {return new InjectorUniform();}

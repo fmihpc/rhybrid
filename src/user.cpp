@@ -1462,6 +1462,28 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
    }
 
+   /*if(sim.mpiRank == sim.MASTER_RANK) {
+      for(size_t s=0;s<particleLists.size();++s) {
+	 InjectorParameters p;
+	 if(getInjectorParameters(particleLists[s]->getInjector(),p) == false) {
+	    cerr << "error getting injector parameters" << endl;
+	    exit(1);
+	 }
+	 cerr
+	   << p.name << ": " << p.type << ", "
+	   << p.m << ", "
+	   << p.q << ", "
+	   << p.w << ", "
+	   << p.T << ", "
+	   << p.vth << ", "
+	   << p.n << ", "
+	   << p.U << ", "
+	   << p.velocity[0] << ", "
+	   << p.velocity[1] << ", "
+	   << p.velocity[2] << endl;
+      }
+   }*/
+
    simClasses.logger
      << "(UNDISTURBED UPSTREAM SOLAR WIND)" << endl
      << "ni = ion number density = " << ni/1e6 << " cm^-3 = " << ni*Hybrid::dV << " dV^-1" << endl
