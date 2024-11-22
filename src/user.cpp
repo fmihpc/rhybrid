@@ -796,6 +796,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    } while (erased == true);
    // number of all, ionospheric and exospheric particle populations
    Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + ambientPopulations.size() + solarwindPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
+   const size_t N_uniformPopulations = uniformPopulations.size();
+   const size_t N_solarWindPopulations = solarwindPopulations.size();
    Hybrid::N_ionospherePopulations = static_cast<unsigned int>( ionospherePopulations.size() );
    Hybrid::N_exospherePopulations = static_cast<unsigned int>( exospherePopulations.size() );
 
@@ -1368,7 +1370,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // determine different plasma parameters
    /*if(sim.mpiRank == sim.MASTER_RANK) {
       PlasmaParameters pp;
-      calcPlamaParameters(particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,pp);
+      if(calcPlamaParameters(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::electronTemperature,Hybrid::dx,N_uniformPopulations,N_solarWindPopulations,pp) == false) {
+	 return false;
+	 //exit(1);
+      }
       simClasses.logger
 	<< "(UNDISTURBED UPSTREAM SOLAR WIND: NEW)" << endl
 	<< "ni = ion number density = " << 0.0 << " cm^-3 = " << 0.0 << " dV^-1" << endl
@@ -1388,8 +1393,33 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< "ExB drift velocity = (" << pp.VExB[0]/1e3 << "," << pp.VExB[1]/1e3 << "," << pp.VExB[2]/1e3 << ") km/s" << endl
 	<< "ExB drift speed = " << pp.VExBtot/1e3 << " km/s" << endl
 	<< "Pickup ion avg speed (4*VExB/pi) = " << 4.0*pp.VExBtot/M_PI/1e3 << " km/s" << endl
-	<< "Pickup ion max speed (2*VExB) = " << 2.0*pp.VExBtot/1e3 << " km/s" << endl
-	<< "Fastest whistler speed = " << pp.vw/1e3 << " km/s" << endl;
+	<< "Pickup ion max speed (2*VExB) = " << pp.vpui/1e3 << " km/s" << endl
+	<< "Fastest whistler speed = " << pp.vw/1e3 << " km/s" << endl << endl;
+
+      simClasses.logger << "(SOLAR WIND POPULATIONS: NEW)" << endl;
+      for(size_t s=0;s<pp.populationName.size();++s) {
+	 simClasses.logger
+	   << "plasma period(" << pp.populationName[s] << ") = " << pp.periodPlasma[s] << " s = " << pp.periodPlasma[s]/sim.dt << " dt" << endl;
+      }
+      for(size_t s=0;s<pp.populationName.size();++s) {
+	 simClasses.logger
+	   << "inertial length(" << pp.populationName[s] << ") = " << pp.lengthInertial[s]/1e3 << " km = " << pp.lengthInertial[s]/Hybrid::dx << " dx" << endl;
+      }
+      for(size_t s=0;s<pp.populationName.size();++s) {
+	 simClasses.logger
+	   << "thermal Larmor radius(" << pp.populationName[s] << ") = " << pp.radiusLarmorThermal[s]/1e3 << " km = " << pp.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
+      }
+
+      simClasses.logger << "(ALL POPULATIONS AS PICKUP: NEW)" << endl;
+      for(size_t s=0;s<pp.populationName.size();++s) {
+	 simClasses.logger
+	   << "Larmor period(" << pp.populationName[s] << ") = " << pp.periodLarmor[s] << " s = " << pp.periodLarmor[s]/sim.dt << " dt" << endl;
+      }
+      for(size_t s=0;s<pp.populationName.size();++s) {
+	 simClasses.logger
+	   << "Larmor radius(" << pp.populationName[s] << ") = " << pp.radiusLarmorPickUp[s]/1e3 << " km = " << pp.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
+      }
+      simClasses.logger << endl;
    }*/
 
    // determine solar wind properties

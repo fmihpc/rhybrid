@@ -42,8 +42,9 @@ struct PlasmaParameters {
    Real VExB[3] = {0.0,0.0,0.0};
    Real Btot=0.0,Ubulktot=0.0,VExBtot=0.0,Ectot=0.0;
    Real ne=0.0,rhoq=0.0,rhom=0.0;
-   Real vA=0.0,vs=0.0,vms=0.0,vw=0.0;
+   Real vA=0.0,vs=0.0,vms=0.0,vpui=0.0,vw=0.0;
    Real MA=0.0,Ms=0.0,Mms=0.0;
+   std::vector<std::string> populationName;
    std::vector<Real> periodPlasma;
    std::vector<Real> periodLarmor;
    std::vector<Real> lengthInertial;
@@ -67,51 +68,116 @@ struct LogDataField {
 };
 
 // determine different plasma parameters (bulk, per population, single particle, waves, etc)
-bool calcPlamaParameters(std::vector<ParticleListBase*>& particleLists,Real Bx,Real By,Real Bz,Real dx,PlasmaParameters& pp) {
+bool calcPlamaParameters(SimulationClasses& simClasses,std::vector<ParticleListBase*>& particleLists,Real Bx,Real By,Real Bz,Real Te,Real dx,size_t NpopsUni,size_t NpopsSw,PlasmaParameters& pp) {
    // magnetic field
    pp.B[0] = Bx;
    pp.B[1] = By;
    pp.B[2] = Bz;
    pp.Btot = normvec(pp.B);
+   // decide if solar wind or uniform injectors are used to calculate plasma bulk properties
+   string bulkParamInjectorType = "";
+   if(NpopsSw > 0)       { bulkParamInjectorType = "solarwind"; } // use solar wind populations if present
+   else if(NpopsUni > 0) { bulkParamInjectorType = "uniform"; } // if no solar wind populations, use uniform populations if present
+   else { // if no solar wind or uniform populations are present, skip bulk parameters calculation (they remain as zero)
+      simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind or uniform populations are present" << endl;
+      goto perPopulationParameters;
+   }
+     {
+	for(size_t s=0;s<particleLists.size();++s) {
+	   // read parameters of this particle population from species and injector
+	   InjectorParameters ip;
+	   if(getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
+	      simClasses.logger << "(RHYBRID) ERROR: failed to get injector and species parameters (" << ip.name << ")" << endl;
+	      return false;
+	   }
+	   if(ip.type.compare(bulkParamInjectorType) != 0) { continue; } // include only chosen type populations
+	   pp.rhoq += ip.n*ip.q; // ion charge density
+	   pp.rhom += ip.n*ip.m; // ion mass density
+	   for(size_t ii=0;ii<3;++ii) {
+	      pp.Ubulk[ii] += ip.n*ip.m*ip.velocity[ii]; // bulk velocity (mass density weighted average)
+	   }
+	   pp.vs += ip.n*ip.T; // sound velocity
+	}
+	pp.ne = pp.rhoq/constants::CHARGE_ELEMENTARY; // electron number density
+	if(pp.rhom != 0) {
+	   for(size_t ii=0;ii<3;++ii) { pp.Ubulk[ii] /= pp.rhom; }
+	   pp.vA = pp.Btot/( sqrt(constants::PERMEABILITY*pp.rhom) ); // alfven velocity
+	   pp.vs = sqrt(5.0/3.0 * constants::BOLTZMANN*pp.vs/pp.rhom);
+	}
+	else {
+	   for(size_t ii=0;ii<3;++ii) { pp.Ubulk[ii] = 0.0; }
+	   pp.vA = 0.0;
+	   pp.vs = 0.0;
+	}
+	pp.Ubulktot = normvec(pp.Ubulk);
+	pp.vms = sqrt( sqr(pp.vA) + sqr(pp.vs) ); // magnetosonic velocity
+	pp.MA = (pp.vA != 0) ? pp.Ubulktot/pp.vA : 0.0; // Alfven Mach number
+	pp.Ms = (pp.vs != 0) ? pp.Ubulktot/pp.vs : 0.0; // sonic Mach number
+	pp.Mms = (pp.vms != 0) ? pp.Ubulktot/pp.vms : 0.0; // magnetosonic mach number
+	cross(pp.B,pp.Ubulk,pp.Ec); // convection electric field Ec = -Ubulk x B
+	pp.Ectot = normvec(pp.Ec);
+	// VExB = E x B/B^2
+	if(pp.Btot != 0) {
+	   cross(pp.Ec,pp.B,pp.VExB);
+	   for(size_t ii=0;ii<3;++ii) { pp.VExB[ii] /= sqr(pp.Btot); }
+	}
+	pp.VExBtot = normvec(pp.VExB);
+	pp.vpui = 2*pp.VExBtot; // fastest pickup ion velocity
+	// fastest whistler signal p. 28 Alho (2016)
+	if(pp.ne != 0 && dx != 0) {
+	   pp.vw = 2.0*pp.Btot*M_PI/( constants::PERMEABILITY*pp.ne*constants::CHARGE_ELEMENTARY*dx );
+	}
+     }
+
+perPopulationParameters:
+
+   // parameters per population or species
+
+   // simulation particle populations
    for(size_t s=0;s<particleLists.size();++s) {
       // read parameters of this particle population from species and injector
       InjectorParameters ip;
       if(getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
-	 //cerr << "error getting injector parameters" << endl;
+	 simClasses.logger << "(RHYBRID) ERROR: failed to get injector and species parameters (" << ip.name << ")" << endl;
 	 return false;
       }
-      if(ip.type.compare("solarwind") != 0) { continue; } // include only solar wind populations
-      pp.rhoq += ip.n*ip.q; // ion charge density
-      pp.rhom += ip.n*ip.m; // ion mass density
-      for(size_t ii=0;ii<3;++ii) {
-	 pp.Ubulk[ii] += ip.n*ip.m*ip.velocity[ii]; // bulk velocity (mass density weighted average)
-      }
-      pp.vs += ip.n*ip.T; // sound speed
+	{
+	   pp.populationName.push_back(ip.name);
+	   const Real m = ip.m;
+	   const Real q = ip.q;
+	   const Real qB = q*pp.Btot;
+	   const Real wP = sqrt( pp.ne*sqr(q)/( m*constants::PERMITTIVITY  ) ); // angular plasma frequency (using ne as density)
+	   const Real vth = ip.vth; // thermal speed
+	   pp.periodPlasma.push_back((wP != 0) ? 2.0*M_PI/wP : 0.0); // plasma period
+	   pp.periodLarmor.push_back((qB != 0) ? 2.0*M_PI*m/qB : 0.0); // Larmor period
+	   pp.lengthInertial.push_back((wP != 0) ? constants::SPEED_LIGHT/wP : 0.0); // inertial length
+	   pp.radiusLarmorThermal.push_back((qB != 0) ? m*vth/qB : 0.0); // thermal Larmor radius
+	   pp.radiusLarmorPickUp.push_back((qB != 0) ? m*pp.VExBtot/qB : 0.0); // PU Larmor radius
+	}
    }
-   pp.ne = pp.rhoq/constants::CHARGE_ELEMENTARY; // electron number density
-   if(pp.rhom != 0) {
-      for(size_t ii=0;ii<3;++ii) { pp.Ubulk[ii] /= pp.rhom; }
-      pp.vA = pp.Btot/( sqrt(constants::PERMEABILITY*pp.rhom) );
-      pp.vs = sqrt(5.0/3.0 * constants::BOLTZMANN*pp.vs/pp.rhom);
-   }
-   else {
-      for(size_t ii=0;ii<3;++ii) { pp.Ubulk[ii] = 0.0; }
-      pp.vA = 0.0;
-      pp.vs = 0.0;
-   }
-   pp.Ubulktot = normvec(pp.Ubulk);
-   pp.vms = sqrt( sqr(pp.vA) + sqr(pp.vs) );
-   cross(pp.B,pp.Ubulk,pp.Ec); // convection electric field Ec = -Ubulk x B
-   pp.Ectot = normvec(pp.Ec);
-   // VExB = E x B/B^2
-   if(pp.Btot != 0) {
-      cross(pp.Ec,pp.B,pp.VExB);
-      for(size_t ii=0;ii<3;++ii) { pp.VExB[ii] /= sqr(pp.Btot); }
-   }
-   pp.VExBtot =  normvec(pp.VExB);
-   // fastest whistler signal p. 28 Alho (2016)
-   if(pp.ne != 0 && dx != 0) {
-      pp.vw = 2.0*pp.Btot*M_PI/( constants::PERMEABILITY*pp.ne*constants::CHARGE_ELEMENTARY*dx );
+   // electrons (not a particle population in the model but for information purposes included)
+     {
+	pp.populationName.push_back("e-");
+	const Real m = constants::MASS_ELECTRON;
+	const Real q = constants::CHARGE_ELEMENTARY;
+	const Real qB = q*pp.Btot;
+	const Real wP = sqrt( pp.ne*sqr(q)/( m*constants::PERMITTIVITY  ) ); // angular plasma frequency
+	const Real vth = sqrt(constants::BOLTZMANN*Te/m); // thermal speed
+	pp.periodPlasma.push_back((wP != 0) ? 2.0*M_PI/wP : 0.0); // plasma period
+	pp.periodLarmor.push_back((qB != 0) ? 2.0*M_PI*m/qB : 0.0); // Larmor period
+	pp.lengthInertial.push_back((wP != 0) ? constants::SPEED_LIGHT/wP : 0.0); // inertial length
+	pp.radiusLarmorThermal.push_back((qB != 0) ? m*vth/qB : 0.0); // thermal Larmor radius
+	pp.radiusLarmorPickUp.push_back((qB != 0) ? m*pp.VExBtot/qB : 0.0); // PU Larmor radius
+     }
+
+   if(pp.populationName.size() != pp.periodPlasma.size() ||
+      pp.populationName.size() != pp.periodLarmor.size() ||
+      pp.populationName.size() != pp.lengthInertial.size() ||
+      pp.populationName.size() != pp.radiusLarmorThermal.size() ||
+      pp.populationName.size() != pp.radiusLarmorPickUp.size()
+     ) {
+      std::cerr << "error here" << endl;
+      return false;
    }
    return true;
 }
