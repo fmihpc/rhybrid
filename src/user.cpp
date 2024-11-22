@@ -1338,6 +1338,60 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       return false;
    }
 
+   // write log entry of output configs
+   simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
+   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+      simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
+      for(unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
+         simClasses.logger << Hybrid::populationNames[Hybrid::outputPopVarIdVector[i][j]] << " ";
+      }
+      simClasses.logger << endl;
+   }
+   simClasses.logger << "-: ";
+   for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
+      if(Hybrid::outputPopVarId[i] < 0) {
+         simClasses.logger << Hybrid::populationNames[i] << " ";
+      }
+   }
+   simClasses.logger << endl;
+   simClasses.logger << "tot plasma (snapshot): ";
+   for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
+      simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
+   }
+   simClasses.logger << endl;
+   simClasses.logger << "tot plasma (average): ";
+   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+      simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
+   }
+   simClasses.logger << endl << endl;
+
+   // determine different plasma parameters
+   /*if(sim.mpiRank == sim.MASTER_RANK) {
+      PlasmaParameters pp;
+      calcPlamaParameters(particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,pp);
+      simClasses.logger
+	<< "(UNDISTURBED UPSTREAM SOLAR WIND: NEW)" << endl
+	<< "ni = ion number density = " << 0.0 << " cm^-3 = " << 0.0 << " dV^-1" << endl
+	<< "ne = electron number density = " << pp.ne/1e6 << " cm^-3 = " << pp.ne*Hybrid::dV << " dV^-1" << endl
+	<< "rhoqi = total ion charge density = -electron charge density = " << pp.rhoq << " C/m^3 = " << pp.rhoq*Hybrid::dV << " C/dV" << endl
+	<< "Ubulk = bulk speed = " << pp.Ubulktot/1e3 << " km/s" << endl
+	<< "vA = Alfven velocity = " << pp.vA/1e3 << " km/s" << endl
+	<< "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << pp.vs/1e3 << " km/s" << endl
+	<< "vms = magnetosonic velocity = " << pp.vms/1e3 << " km/s" << endl
+	<< "MA = Alfven mach number = " << pp.MA << endl
+	<< "Ms = sonic mach number = " << pp.Ms << endl
+	<< "Mms = magnetosonic mach number = " << pp.Mms << endl
+	<< "Econv = -UxB = (" << pp.Ec[0]/1e-3 << "," << pp.Ec[1]/1e-3 << "," << pp.Ec[2]/1e-3 << ") mV/m" << endl
+	<< "|Econv| = " << pp.Ectot/1e-3 << " mV/m" << endl
+	<< "dE = |Econv|*dx = " << 0.0 << " V" << endl
+	<< "vE(H+) = sqrt(2*e*dE/mp) = " << 0.0 << " km/s" << endl
+	<< "ExB drift velocity = (" << pp.VExB[0]/1e3 << "," << pp.VExB[1]/1e3 << "," << pp.VExB[2]/1e3 << ") km/s" << endl
+	<< "ExB drift speed = " << pp.VExBtot/1e3 << " km/s" << endl
+	<< "Pickup ion avg speed (4*VExB/pi) = " << 4.0*pp.VExBtot/M_PI/1e3 << " km/s" << endl
+	<< "Pickup ion max speed (2*VExB) = " << 2.0*pp.VExBtot/1e3 << " km/s" << endl
+	<< "Fastest whistler speed = " << pp.vw/1e3 << " km/s" << endl;
+   }*/
+
    // determine solar wind properties
    Real ni = 0.0; //total ion number density
    Real ne = 0.0; // total electron density
@@ -1410,28 +1464,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          Hybrid::electronPressureCoeff = 0.0;
       }
    }
-
-   /*if(sim.mpiRank == sim.MASTER_RANK) {
-      for(size_t s=0;s<particleLists.size();++s) {
-	 InjectorParameters p;
-	 if(getInjectorParameters(particleLists[s]->getInjector(),p) == false) {
-	    cerr << "error getting injector parameters" << endl;
-	    exit(1);
-	 }
-	 cerr
-	   << p.name << ": " << p.type << ", "
-	   << p.m << ", "
-	   << p.q << ", "
-	   << p.w << ", "
-	   << p.T << ", "
-	   << p.vth << ", "
-	   << p.n << ", "
-	   << p.U << ", "
-	   << p.velocity[0] << ", "
-	   << p.velocity[1] << ", "
-	   << p.velocity[2] << endl;
-      }
-   }*/
 
    simClasses.logger
      << "(UNDISTURBED UPSTREAM SOLAR WIND)" << endl
@@ -1543,33 +1575,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
    Hybrid::maxVi = sqrt(Hybrid::maxVi2);
-
-   // write log entry of output configs
-   simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
-   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
-      simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
-      for(unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
-         simClasses.logger << Hybrid::populationNames[Hybrid::outputPopVarIdVector[i][j]] << " ";
-      }
-      simClasses.logger << endl;
-   }
-   simClasses.logger << "-: ";
-   for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
-      if(Hybrid::outputPopVarId[i] < 0) {
-         simClasses.logger << Hybrid::populationNames[i] << " ";
-      }
-   }
-   simClasses.logger << endl;
-   simClasses.logger << "tot plasma (snapshot): ";
-   for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
-      simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
-   }
-   simClasses.logger << endl;
-   simClasses.logger << "tot plasma (average): ";
-   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
-      simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
-   }
-   simClasses.logger << endl << endl;
 
 #ifdef USE_OUTER_BOUNDARY_ZONE
    cr.get("OuterBoundaryZone.typeEta",Hybrid::outerBoundaryZone.typeEta);

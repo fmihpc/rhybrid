@@ -34,6 +34,23 @@
 
 using namespace std;
 
+// plasma parameters
+struct PlasmaParameters {
+   Real B[3] = {0.0,0.0,0.0};
+   Real Ubulk[3] = {0.0,0.0,0.0};
+   Real Ec[3] = {0.0,0.0,0.0};
+   Real VExB[3] = {0.0,0.0,0.0};
+   Real Btot=0.0,Ubulktot=0.0,VExBtot=0.0,Ectot=0.0;
+   Real ne=0.0,rhoq=0.0,rhom=0.0;
+   Real vA=0.0,vs=0.0,vms=0.0,vw=0.0;
+   Real MA=0.0,Ms=0.0,Mms=0.0;
+   std::vector<Real> periodPlasma;
+   std::vector<Real> periodLarmor;
+   std::vector<Real> lengthInertial;
+   std::vector<Real> radiusLarmorThermal;
+   std::vector<Real> radiusLarmorPickUp;
+};
+
 // struct to store some particle population log vales
 struct LogDataParticle {
    Real N_macroParticles,N_realParticles,sumVx,sumVy,sumVz,sumV,sumWV2,maxVi;
@@ -48,6 +65,56 @@ struct LogDataField {
    Real sumNodeEx,sumNodeEy,sumNodeEz,sumNodeE,maxNodeE,sumNodeE2,sumCellE2;
    Real minInerLengthElectron,maxInerLengthElectron,minInerLengthProton,maxInerLengthProton,minTLarmor,maxVAlfven,maxUe;
 };
+
+// determine different plasma parameters (bulk, per population, single particle, waves, etc)
+bool calcPlamaParameters(std::vector<ParticleListBase*>& particleLists,Real Bx,Real By,Real Bz,Real dx,PlasmaParameters& pp) {
+   // magnetic field
+   pp.B[0] = Bx;
+   pp.B[1] = By;
+   pp.B[2] = Bz;
+   pp.Btot = normvec(pp.B);
+   for(size_t s=0;s<particleLists.size();++s) {
+      // read parameters of this particle population from species and injector
+      InjectorParameters ip;
+      if(getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
+	 //cerr << "error getting injector parameters" << endl;
+	 return false;
+      }
+      if(ip.type.compare("solarwind") != 0) { continue; } // include only solar wind populations
+      pp.rhoq += ip.n*ip.q; // ion charge density
+      pp.rhom += ip.n*ip.m; // ion mass density
+      for(size_t ii=0;ii<3;++ii) {
+	 pp.Ubulk[ii] += ip.n*ip.m*ip.velocity[ii]; // bulk velocity (mass density weighted average)
+      }
+      pp.vs += ip.n*ip.T; // sound speed
+   }
+   pp.ne = pp.rhoq/constants::CHARGE_ELEMENTARY; // electron number density
+   if(pp.rhom != 0) {
+      for(size_t ii=0;ii<3;++ii) { pp.Ubulk[ii] /= pp.rhom; }
+      pp.vA = pp.Btot/( sqrt(constants::PERMEABILITY*pp.rhom) );
+      pp.vs = sqrt(5.0/3.0 * constants::BOLTZMANN*pp.vs/pp.rhom);
+   }
+   else {
+      for(size_t ii=0;ii<3;++ii) { pp.Ubulk[ii] = 0.0; }
+      pp.vA = 0.0;
+      pp.vs = 0.0;
+   }
+   pp.Ubulktot = normvec(pp.Ubulk);
+   pp.vms = sqrt( sqr(pp.vA) + sqr(pp.vs) );
+   cross(pp.B,pp.Ubulk,pp.Ec); // convection electric field Ec = -Ubulk x B
+   pp.Ectot = normvec(pp.Ec);
+   // VExB = E x B/B^2
+   if(pp.Btot != 0) {
+      cross(pp.Ec,pp.B,pp.VExB);
+      for(size_t ii=0;ii<3;++ii) { pp.VExB[ii] /= sqr(pp.Btot); }
+   }
+   pp.VExBtot =  normvec(pp.VExB);
+   // fastest whistler signal p. 28 Alho (2016)
+   if(pp.ne != 0 && dx != 0) {
+      pp.vw = 2.0*pp.Btot*M_PI/( constants::PERMEABILITY*pp.ne*constants::CHARGE_ELEMENTARY*dx );
+   }
+   return true;
+}
 
 // log amounts of macroparticles
 void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
