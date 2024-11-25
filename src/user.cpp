@@ -79,12 +79,12 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    // logging: main, field, particles
    if(sim.atDataSaveStep == true) {
       Hybrid::writeMainLogEntriesAfterSaveStep = true;
-      logWriteMainMacroparticles(sim,simClasses,particleLists);
+      diagnostics::logWriteMainMacroparticles(sim,simClasses,particleLists);
    }
    if(Hybrid::logInterval > 0) {
       if((sim.timestep)%(Hybrid::logInterval) == 0.0) {
          int masterFailed = 0; // check for failure of the master PE for run termination
-         if(logWriteParticleField(sim,simClasses,particleLists) == false) {
+         if(diagnostics::logWriteParticleField(sim,simClasses,particleLists) == false) {
             rvalue = false;
             if(sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
          }
@@ -1369,7 +1369,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // determine different plasma parameters
    /*if(sim.mpiRank == sim.MASTER_RANK) {
-      PlasmaParameters pp;
+      diagnostics::PlasmaParameters pp;
       if(calcPlamaParameters(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::electronTemperature,Hybrid::dx,N_uniformPopulations,N_solarWindPopulations,pp) == false) {
 	 return false;
 	 //exit(1);
@@ -1395,7 +1395,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< "Pickup ion avg speed (4*VExB/pi) = " << 4.0*pp.VExBtot/M_PI/1e3 << " km/s" << endl
 	<< "Pickup ion max speed (2*VExB) = " << pp.vpui/1e3 << " km/s" << endl
 	<< "Fastest whistler speed = " << pp.vw/1e3 << " km/s" << endl << endl;
-
       simClasses.logger << "(SOLAR WIND POPULATIONS: NEW)" << endl;
       for(size_t s=0;s<pp.populationName.size();++s) {
 	 simClasses.logger

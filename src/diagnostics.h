@@ -29,10 +29,10 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
-
 #include "hybrid.h"
 
-using namespace std;
+namespace diagnostics
+{
 
 // plasma parameters
 struct PlasmaParameters {
@@ -75,19 +75,20 @@ bool calcPlamaParameters(SimulationClasses& simClasses,std::vector<ParticleListB
    pp.B[2] = Bz;
    pp.Btot = normvec(pp.B);
    // decide if solar wind or uniform injectors are used to calculate plasma bulk properties
-   string bulkParamInjectorType = "";
+   std::string bulkParamInjectorType = "";
    if(NpopsSw > 0)       { bulkParamInjectorType = "solarwind"; } // use solar wind populations if present
    else if(NpopsUni > 0) { bulkParamInjectorType = "uniform"; } // if no solar wind populations, use uniform populations if present
    else { // if no solar wind or uniform populations are present, skip bulk parameters calculation (they remain as zero)
-      simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind or uniform populations are present" << endl;
+      simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind or uniform populations are present" << std::endl;
       goto perPopulationParameters;
    }
+   // plasma bulk properties
      {
 	for(size_t s=0;s<particleLists.size();++s) {
 	   // read parameters of this particle population from species and injector
 	   InjectorParameters ip;
 	   if(getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
-	      simClasses.logger << "(RHYBRID) ERROR: failed to get injector and species parameters (" << ip.name << ")" << endl;
+	      simClasses.logger << "(RHYBRID) ERROR: failed to get injector and species parameters (" << ip.name << ")" << std::endl;
 	      return false;
 	   }
 	   if(ip.type.compare(bulkParamInjectorType) != 0) { continue; } // include only chosen type populations
@@ -138,7 +139,7 @@ perPopulationParameters:
       // read parameters of this particle population from species and injector
       InjectorParameters ip;
       if(getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
-	 simClasses.logger << "(RHYBRID) ERROR: failed to get injector and species parameters (" << ip.name << ")" << endl;
+	 simClasses.logger << "(RHYBRID) ERROR: failed to get injector and species parameters (" << ip.name << ")" << std::endl;
 	 return false;
       }
 	{
@@ -176,7 +177,7 @@ perPopulationParameters:
       pp.populationName.size() != pp.radiusLarmorThermal.size() ||
       pp.populationName.size() != pp.radiusLarmorPickUp.size()
      ) {
-      std::cerr << "error here" << endl;
+      simClasses.logger << "(RHYBRID) ERROR: calcPlamaParameters function failed" << std::endl;
       return false;
    }
    return true;
@@ -184,7 +185,7 @@ perPopulationParameters:
 
 // log amounts of macroparticles
 void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
-    simClasses.logger << "(RHYBRID) Number of macroparticles per population (time step = " << sim.timestep << ", time = " << sim.t << "):" << endl;
+    simClasses.logger << "(RHYBRID) Number of macroparticles per population (time step = " << sim.timestep << ", time = " << sim.t << "):" << std::endl;
     for(size_t s=0;s<particleLists.size();++s) {
 	Real N_macroParticles = 0.0;
 	// For now skip particles with invalid data id:
@@ -199,13 +200,13 @@ void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,co
 	Real N_macroParticlesGlobal = 0.0;
 	MPI_Reduce(&N_macroParticles,&N_macroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
 	const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-	simClasses.logger << "\t N(" << species->name << ") = " << real2str(N_macroParticlesGlobal,15) << " = " << real2str(N_macroParticlesGlobal/1.0e9,15) << " x 10^9" << endl;
+	simClasses.logger << "\t N(" << species->name << ") = " << real2str(N_macroParticlesGlobal,15) << " = " << real2str(N_macroParticlesGlobal/1.0e9,15) << " x 10^9" << std::endl;
     }
    simClasses.logger << write;
 }
 
 // calculate particle log quantities
-void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,vector<LogDataParticle>& logDataParticle,const std::vector<ParticleListBase*>& particleLists,vector<Real>& cellRhoM)
+void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<LogDataParticle>& logDataParticle,const std::vector<ParticleListBase*>& particleLists,std::vector<Real>& cellRhoM)
 {
    logDataParticle.clear();
    for(size_t s=0;s<particleLists.size();++s) {
@@ -282,7 +283,7 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,vector<LogDat
 }
 
 // calculate field log quantities
-void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& logDataField,vector<Real>& cellRhoM)
+void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& logDataField,std::vector<Real>& cellRhoM)
 {
    // synchronize faceB before using it below
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
@@ -322,11 +323,11 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    logDataField.sumNodeE2 = 0.0;
    logDataField.sumCellE2 = 0.0;
    // spatial, temporal and velocity scales
-   logDataField.minInerLengthElectron = numeric_limits<Real>::max();
-   logDataField.maxInerLengthElectron = numeric_limits<Real>::min();
-   logDataField.minInerLengthProton = numeric_limits<Real>::max();
-   logDataField.maxInerLengthProton = numeric_limits<Real>::min();
-   logDataField.minTLarmor = numeric_limits<Real>::max();
+   logDataField.minInerLengthElectron = std::numeric_limits<Real>::max();
+   logDataField.maxInerLengthElectron = std::numeric_limits<Real>::min();
+   logDataField.minInerLengthProton = std::numeric_limits<Real>::max();
+   logDataField.maxInerLengthProton = std::numeric_limits<Real>::min();
+   logDataField.minTLarmor = std::numeric_limits<Real>::max();
    logDataField.maxVAlfven = 0.0;
    logDataField.maxUe = 0.0;
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
@@ -444,10 +445,10 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    static int profWriteLogsID = -1;
    //if(getInitialized() == false) { return false; }
    profile::start("logWriteParticleField",profWriteLogsID);
-   vector<LogDataParticle> logDataParticle;
+   std::vector<LogDataParticle> logDataParticle;
    LogDataField logDataField;
    // total mass density for Alfven speed
-   vector<Real> cellRhoM;
+   std::vector<Real> cellRhoM;
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
       cellRhoM.push_back(0.0);
    }
@@ -762,10 +763,10 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 
       // line endings particle logs
       for(size_t i=0;i<Hybrid::logParticle.size();++i) {
-	 (*Hybrid::logParticle[i]) << endl;
+	 (*Hybrid::logParticle[i]) << std::endl;
       }
       // line ending field log
-      Hybrid::logField << endl;
+      Hybrid::logField << std::endl;
 
       // warnings
       const Real tL_min_dt = minTLarmorGlobal/sim.dt;
@@ -776,30 +777,30 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       // write if on a save step or save step already happened after previous entry
       if(Hybrid::writeMainLogEntriesAfterSaveStep == true && sim.mpiRank == sim.MASTER_RANK) {
 	 simClasses.logger
-	   << "(RHYBRID) Diagnostics (time step = " << sim.timestep << ", time = " << sim.t << "):" << endl
-	   << "\t Max. |Vion|             : Vi_max  = " << maxViAllPopulations/1e3 << " km/s = " << maxVi_dxdt << " dx/dt" << endl
-	   << "\t Max. |Ue|               : Ue_max  = " << maxUeGlobal/1e3 << " km/s = " << maxUe_dxdt << " dx/dt" << endl
-	   << "\t Max. |VAlfven|          : Va_max  = " << maxVAlfvenGlobal/1e3 << " km/s = " << maxVA_dxdt << " dx/dt" << endl
-	   << "\t Max. |faceB|            : B_max   = " << maxBGlobal/1e-9 << " nT" << endl
-	   << "\t Min. ion Larmor period  : tL_min  = " << minTLarmorGlobal << " s = " << minTLarmorGlobal/sim.dt << " dt" << endl
-	   << "\t Max. |cellJi|           : Ji_max  = " << maxCellJiGlobal << " A/m^2" << endl
-	   << "\t Max. |cellEp|           : Ep_max  = " << maxCellEpGlobal/1e-3 << " mV/m" << endl
-	   << "\t Max. |nodeE|            : E_max   = " << maxNodeEGlobal/1e-3 << " mV/m" << endl
-	   << "\t Min. e- inertial length : de_min  = " << minInerLengthElectronGlobal/1e3 << " km = " << minInerLengthElectronGlobal/Hybrid::dx << " dx" << endl
-	   << "\t Max. e- inertial length : de_max  = " << maxInerLengthElectronGlobal/1e3 << " km = " << maxInerLengthElectronGlobal/Hybrid::dx << " dx" << endl
-	   << "\t Min. H+ inertial length : di_min  = " << minInerLengthProtonGlobal/1e3 << " km = " << minInerLengthProtonGlobal/Hybrid::dx << " dx" << endl
-	   << "\t Max. H+ inertial length : di_max  = " << maxInerLengthProtonGlobal/1e3 << " km = " << maxInerLengthProtonGlobal/Hybrid::dx << " dx" << endl << write;
+	   << "(RHYBRID) Diagnostics (time step = " << sim.timestep << ", time = " << sim.t << "):" << std::endl
+	   << "\t Max. |Vion|             : Vi_max  = " << maxViAllPopulations/1e3 << " km/s = " << maxVi_dxdt << " dx/dt" << std::endl
+	   << "\t Max. |Ue|               : Ue_max  = " << maxUeGlobal/1e3 << " km/s = " << maxUe_dxdt << " dx/dt" << std::endl
+	   << "\t Max. |VAlfven|          : Va_max  = " << maxVAlfvenGlobal/1e3 << " km/s = " << maxVA_dxdt << " dx/dt" << std::endl
+	   << "\t Max. |faceB|            : B_max   = " << maxBGlobal/1e-9 << " nT" << std::endl
+	   << "\t Min. ion Larmor period  : tL_min  = " << minTLarmorGlobal << " s = " << minTLarmorGlobal/sim.dt << " dt" << std::endl
+	   << "\t Max. |cellJi|           : Ji_max  = " << maxCellJiGlobal << " A/m^2" << std::endl
+	   << "\t Max. |cellEp|           : Ep_max  = " << maxCellEpGlobal/1e-3 << " mV/m" << std::endl
+	   << "\t Max. |nodeE|            : E_max   = " << maxNodeEGlobal/1e-3 << " mV/m" << std::endl
+	   << "\t Min. e- inertial length : de_min  = " << minInerLengthElectronGlobal/1e3 << " km = " << minInerLengthElectronGlobal/Hybrid::dx << " dx" << std::endl
+	   << "\t Max. e- inertial length : de_max  = " << maxInerLengthElectronGlobal/1e3 << " km = " << maxInerLengthElectronGlobal/Hybrid::dx << " dx" << std::endl
+	   << "\t Min. H+ inertial length : di_min  = " << minInerLengthProtonGlobal/1e3 << " km = " << minInerLengthProtonGlobal/Hybrid::dx << " dx" << std::endl
+	   << "\t Max. H+ inertial length : di_max  = " << maxInerLengthProtonGlobal/1e3 << " km = " << maxInerLengthProtonGlobal/Hybrid::dx << " dx" << std::endl << write;
 	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
       }
       if(sim.mpiRank == sim.MASTER_RANK) {
-	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << endl << write; }
-	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << endl << write; }
-	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << endl << write; }
-	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << endl << write; }
+	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
+	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
+	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
+	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
       }
       if(maxBGlobal > Hybrid::terminateLimitMaxB) {
          success = false;
-	 if(sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT) (time step = " << sim.timestep << ", time = " << sim.t << "), exiting." << endl << write; }
+	 if(sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT) (time step = " << sim.timestep << ", time = " << sim.t << "), exiting." << std::endl << write; }
       }
    }
 
@@ -814,7 +815,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       Hybrid::logCounterParticleInjectKineticEnergy[s] = 0.0;
       Hybrid::logCounterParticleMaxVi[s] = 0.0;
    }
-   
+
    // zero field counters
    Hybrid::logCounterFieldMaxCellUe = 0.0;
    Hybrid::logCounterFieldMaxNodeUe = 0.0;
@@ -825,24 +826,24 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 
    // reset counter start time
    Hybrid::logCounterTimeStart = sim.t;
-   
-   /*
+
    // silo time series (curves.silo)
-   Real cnt=0;
+   /*Real cnt=0;
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b){ cnt+=1.0; }
    
-   map<string,string> attribs;
+   map<std::string,std::string> attribs;
    attribs["name"] = "blah";
    attribs["xlabel"] = "time";
    attribs["ylabel"] = "y laabeli";
    attribs["xunit"] = "s";
    attribs["yunit"] = "y unitti";   
    
-   simClasses.vlsv.writeWithReduction("TIMESERIES",attribs,1,&cnt,MPI_SUM);
-   */
-   
+   simClasses.vlsv.writeWithReduction("TIMESERIES",attribs,1,&cnt,MPI_SUM);*/
+
    profile::stop();
    return success;
+}
+
 }
 
 #endif
