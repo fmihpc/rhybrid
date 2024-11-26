@@ -37,7 +37,7 @@ runCfgFileTemplate = "test_empty_1d.cfg"
 
 # used corsair/rhybrid binary and mpirun commands
 runBinary = "~/bin/corsair/corsair_rhybrid"
-runCommandPrefix = "mpirun -n 3 " + runBinary + " --runconfig="
+runCommandPrefix = "OMPI_MCA_io=^ompio mpirun -n 3 " + runBinary + " --runconfig="
 runCommandSuffix = " >> std_out_err.txt"
 
 separatorStr = "=================================================="
