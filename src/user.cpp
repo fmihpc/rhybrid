@@ -1369,54 +1369,59 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // determine different plasma parameters
    /*if(sim.mpiRank == sim.MASTER_RANK) {
-      diagnostics::PlasmaParameters pp;
-      if(calcPlamaParameters(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::electronTemperature,Hybrid::dx,N_uniformPopulations,N_solarWindPopulations,pp) == false) {
+      diagnostics::PlasmaParametersBulk ppB;
+      if(calcPlasmaParametersBulk(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::electronTemperature,Hybrid::dx,N_uniformPopulations,N_solarWindPopulations,ppB) == false) {
+	 return false;
+	 //exit(1);
+      }
+      diagnostics::PlasmaParametersSingleParticle ppSP;
+      if(calcPlasmaParametersSingleParticle(simClasses,particleLists,ppB,ppSP) == false) {
 	 return false;
 	 //exit(1);
       }
       simClasses.logger
 	<< "(UNDISTURBED UPSTREAM SOLAR WIND: NEW)" << endl
 	<< "ni = ion number density = " << 0.0 << " cm^-3 = " << 0.0 << " dV^-1" << endl
-	<< "ne = electron number density = " << pp.ne/1e6 << " cm^-3 = " << pp.ne*Hybrid::dV << " dV^-1" << endl
-	<< "rhoqi = total ion charge density = -electron charge density = " << pp.rhoq << " C/m^3 = " << pp.rhoq*Hybrid::dV << " C/dV" << endl
-	<< "Ubulk = bulk speed = " << pp.Ubulktot/1e3 << " km/s" << endl
-	<< "vA = Alfven velocity = " << pp.vA/1e3 << " km/s" << endl
-	<< "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << pp.vs/1e3 << " km/s" << endl
-	<< "vms = magnetosonic velocity = " << pp.vms/1e3 << " km/s" << endl
-	<< "MA = Alfven mach number = " << pp.MA << endl
-	<< "Ms = sonic mach number = " << pp.Ms << endl
-	<< "Mms = magnetosonic mach number = " << pp.Mms << endl
-	<< "Econv = -UxB = (" << pp.Ec[0]/1e-3 << "," << pp.Ec[1]/1e-3 << "," << pp.Ec[2]/1e-3 << ") mV/m" << endl
-	<< "|Econv| = " << pp.Ectot/1e-3 << " mV/m" << endl
+	<< "ne = electron number density = " << ppB.ne/1e6 << " cm^-3 = " << ppB.ne*Hybrid::dV << " dV^-1" << endl
+	<< "rhoqi = total ion charge density = -electron charge density = " << ppB.rhoq << " C/m^3 = " << ppB.rhoq*Hybrid::dV << " C/dV" << endl
+	<< "Ubulk = bulk speed = " << ppB.Ubulktot/1e3 << " km/s" << endl
+	<< "vA = Alfven velocity = " << ppB.vA/1e3 << " km/s" << endl
+	<< "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppB.vs/1e3 << " km/s" << endl
+	<< "vms = magnetosonic velocity = " << ppB.vms/1e3 << " km/s" << endl
+	<< "MA = Alfven mach number = " << ppB.MA << endl
+	<< "Ms = sonic mach number = " << ppB.Ms << endl
+	<< "Mms = magnetosonic mach number = " << ppB.Mms << endl
+	<< "Econv = -UxB = (" << ppB.Ec[0]/1e-3 << "," << ppB.Ec[1]/1e-3 << "," << ppB.Ec[2]/1e-3 << ") mV/m" << endl
+	<< "|Econv| = " << ppB.Ectot/1e-3 << " mV/m" << endl
 	<< "dE = |Econv|*dx = " << 0.0 << " V" << endl
 	<< "vE(H+) = sqrt(2*e*dE/mp) = " << 0.0 << " km/s" << endl
-	<< "ExB drift velocity = (" << pp.VExB[0]/1e3 << "," << pp.VExB[1]/1e3 << "," << pp.VExB[2]/1e3 << ") km/s" << endl
-	<< "ExB drift speed = " << pp.VExBtot/1e3 << " km/s" << endl
-	<< "Pickup ion avg speed (4*VExB/pi) = " << 4.0*pp.VExBtot/M_PI/1e3 << " km/s" << endl
-	<< "Pickup ion max speed (2*VExB) = " << pp.vpui/1e3 << " km/s" << endl
-	<< "Fastest whistler speed = " << pp.vw/1e3 << " km/s" << endl << endl;
+	<< "ExB drift velocity = (" << ppB.VExB[0]/1e3 << "," << ppB.VExB[1]/1e3 << "," << ppB.VExB[2]/1e3 << ") km/s" << endl
+	<< "ExB drift speed = " << ppB.VExBtot/1e3 << " km/s" << endl
+	<< "Pickup ion avg speed (4*VExB/pi) = " << 4.0*ppB.VExBtot/M_PI/1e3 << " km/s" << endl
+	<< "Pickup ion max speed (2*VExB) = " << ppB.vpui/1e3 << " km/s" << endl
+	<< "Fastest whistler speed = " << ppB.vw/1e3 << " km/s" << endl << endl;
       simClasses.logger << "(SOLAR WIND POPULATIONS: NEW)" << endl;
-      for(size_t s=0;s<pp.populationName.size();++s) {
+      for(size_t s=0;s<ppSP.populationName.size();++s) {
 	 simClasses.logger
-	   << "plasma period(" << pp.populationName[s] << ") = " << pp.periodPlasma[s] << " s = " << pp.periodPlasma[s]/sim.dt << " dt" << endl;
+	   << "plasma period(" << ppSP.populationName[s] << ") = " << ppSP.periodPlasma[s] << " s = " << ppSP.periodPlasma[s]/sim.dt << " dt" << endl;
       }
-      for(size_t s=0;s<pp.populationName.size();++s) {
+      for(size_t s=0;s<ppSP.populationName.size();++s) {
 	 simClasses.logger
-	   << "inertial length(" << pp.populationName[s] << ") = " << pp.lengthInertial[s]/1e3 << " km = " << pp.lengthInertial[s]/Hybrid::dx << " dx" << endl;
+	   << "inertial length(" << ppSP.populationName[s] << ") = " << ppSP.lengthInertial[s]/1e3 << " km = " << ppSP.lengthInertial[s]/Hybrid::dx << " dx" << endl;
       }
-      for(size_t s=0;s<pp.populationName.size();++s) {
+      for(size_t s=0;s<ppSP.populationName.size();++s) {
 	 simClasses.logger
-	   << "thermal Larmor radius(" << pp.populationName[s] << ") = " << pp.radiusLarmorThermal[s]/1e3 << " km = " << pp.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
+	   << "thermal Larmor radius(" << ppSP.populationName[s] << ") = " << ppSP.radiusLarmorThermal[s]/1e3 << " km = " << ppSP.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
       }
 
       simClasses.logger << "(ALL POPULATIONS AS PICKUP: NEW)" << endl;
-      for(size_t s=0;s<pp.populationName.size();++s) {
+      for(size_t s=0;s<ppSP.populationName.size();++s) {
 	 simClasses.logger
-	   << "Larmor period(" << pp.populationName[s] << ") = " << pp.periodLarmor[s] << " s = " << pp.periodLarmor[s]/sim.dt << " dt" << endl;
+	   << "Larmor period(" << ppSP.populationName[s] << ") = " << ppSP.periodLarmor[s] << " s = " << ppSP.periodLarmor[s]/sim.dt << " dt" << endl;
       }
-      for(size_t s=0;s<pp.populationName.size();++s) {
+      for(size_t s=0;s<ppSP.populationName.size();++s) {
 	 simClasses.logger
-	   << "Larmor radius(" << pp.populationName[s] << ") = " << pp.radiusLarmorPickUp[s]/1e3 << " km = " << pp.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
+	   << "Larmor radius(" << ppSP.populationName[s] << ") = " << ppSP.radiusLarmorPickUp[s]/1e3 << " km = " << ppSP.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
       }
       simClasses.logger << endl;
    }*/

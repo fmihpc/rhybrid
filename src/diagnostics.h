@@ -34,16 +34,20 @@
 namespace diagnostics
 {
 
-// plasma parameters
-struct PlasmaParameters {
+// plasma bulk, wave, etc, collective parameters
+struct PlasmaParametersBulk {
    Real B[3] = {0.0,0.0,0.0};
    Real Ubulk[3] = {0.0,0.0,0.0};
    Real Ec[3] = {0.0,0.0,0.0};
    Real VExB[3] = {0.0,0.0,0.0};
    Real Btot=0.0,Ubulktot=0.0,VExBtot=0.0,Ectot=0.0;
-   Real ne=0.0,rhoq=0.0,rhom=0.0;
+   Real ne=0.0,Te=0.0,rhoq=0.0,rhom=0.0;
    Real vA=0.0,vs=0.0,vms=0.0,vpui=0.0,vw=0.0;
    Real MA=0.0,Ms=0.0,Mms=0.0;
+};
+
+// plasma singe particle, per species, per population, etc, parameters
+struct PlasmaParametersSingleParticle {
    std::vector<std::string> populationName;
    std::vector<Real> periodPlasma;
    std::vector<Real> periodLarmor;
@@ -67,20 +71,20 @@ struct LogDataField {
    Real minInerLengthElectron,maxInerLengthElectron,minInerLengthProton,maxInerLengthProton,minTLarmor,maxVAlfven,maxUe;
 };
 
-// determine different plasma parameters (bulk, per population, single particle, waves, etc)
-bool calcPlamaParameters(SimulationClasses& simClasses,std::vector<ParticleListBase*>& particleLists,Real Bx,Real By,Real Bz,Real Te,Real dx,size_t NpopsUni,size_t NpopsSw,PlasmaParameters& pp) {
+// determine plasma parameters (bulk, waves, etc)
+bool calcPlasmaParametersBulk(SimulationClasses& simClasses,std::vector<ParticleListBase*>& particleLists,Real Bx,Real By,Real Bz,Real Te,Real dx,size_t NpopsUni,size_t NpopsSw,PlasmaParametersBulk& ppB) {
    // magnetic field
-   pp.B[0] = Bx;
-   pp.B[1] = By;
-   pp.B[2] = Bz;
-   pp.Btot = normvec(pp.B);
+   ppB.B[0] = Bx;
+   ppB.B[1] = By;
+   ppB.B[2] = Bz;
+   ppB.Btot = normvec(ppB.B);
+   ppB.Te = Te;
    // decide if solar wind or uniform injectors are used to calculate plasma bulk properties
    std::string bulkParamInjectorType = "";
    if(NpopsSw > 0)       { bulkParamInjectorType = "solarwind"; } // use solar wind populations if present
    else if(NpopsUni > 0) { bulkParamInjectorType = "uniform"; } // if no solar wind populations, use uniform populations if present
    else { // if no solar wind or uniform populations are present, skip bulk parameters calculation (they remain as zero)
       simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind or uniform populations are present" << std::endl;
-      goto perPopulationParameters;
    }
    // plasma bulk properties
      {
@@ -92,48 +96,48 @@ bool calcPlamaParameters(SimulationClasses& simClasses,std::vector<ParticleListB
 	      return false;
 	   }
 	   if(ip.type.compare(bulkParamInjectorType) != 0) { continue; } // include only chosen type populations
-	   pp.rhoq += ip.n*ip.q; // ion charge density
-	   pp.rhom += ip.n*ip.m; // ion mass density
+	   ppB.rhoq += ip.n*ip.q; // ion charge density
+	   ppB.rhom += ip.n*ip.m; // ion mass density
 	   for(size_t ii=0;ii<3;++ii) {
-	      pp.Ubulk[ii] += ip.n*ip.m*ip.velocity[ii]; // bulk velocity (mass density weighted average)
+	      ppB.Ubulk[ii] += ip.n*ip.m*ip.velocity[ii]; // bulk velocity (mass density weighted average)
 	   }
-	   pp.vs += ip.n*ip.T; // sound velocity
+	   ppB.vs += ip.n*ip.T; // sound velocity
 	}
-	pp.ne = pp.rhoq/constants::CHARGE_ELEMENTARY; // electron number density
-	if(pp.rhom != 0) {
-	   for(size_t ii=0;ii<3;++ii) { pp.Ubulk[ii] /= pp.rhom; }
-	   pp.vA = pp.Btot/( sqrt(constants::PERMEABILITY*pp.rhom) ); // alfven velocity
-	   pp.vs = sqrt(5.0/3.0 * constants::BOLTZMANN*pp.vs/pp.rhom);
+	ppB.ne = ppB.rhoq/constants::CHARGE_ELEMENTARY; // electron number density
+	if(ppB.rhom != 0) {
+	   for(size_t ii=0;ii<3;++ii) { ppB.Ubulk[ii] /= ppB.rhom; }
+	   ppB.vA = ppB.Btot/( sqrt(constants::PERMEABILITY*ppB.rhom) ); // alfven velocity
+	   ppB.vs = sqrt(5.0/3.0 * constants::BOLTZMANN*ppB.vs/ppB.rhom);
 	}
 	else {
-	   for(size_t ii=0;ii<3;++ii) { pp.Ubulk[ii] = 0.0; }
-	   pp.vA = 0.0;
-	   pp.vs = 0.0;
+	   for(size_t ii=0;ii<3;++ii) { ppB.Ubulk[ii] = 0.0; }
+	   ppB.vA = 0.0;
+	   ppB.vs = 0.0;
 	}
-	pp.Ubulktot = normvec(pp.Ubulk);
-	pp.vms = sqrt( sqr(pp.vA) + sqr(pp.vs) ); // magnetosonic velocity
-	pp.MA = (pp.vA != 0) ? pp.Ubulktot/pp.vA : 0.0; // Alfven Mach number
-	pp.Ms = (pp.vs != 0) ? pp.Ubulktot/pp.vs : 0.0; // sonic Mach number
-	pp.Mms = (pp.vms != 0) ? pp.Ubulktot/pp.vms : 0.0; // magnetosonic mach number
-	cross(pp.B,pp.Ubulk,pp.Ec); // convection electric field Ec = -Ubulk x B
-	pp.Ectot = normvec(pp.Ec);
+	ppB.Ubulktot = normvec(ppB.Ubulk);
+	ppB.vms = sqrt( sqr(ppB.vA) + sqr(ppB.vs) ); // magnetosonic velocity
+	ppB.MA = (ppB.vA != 0) ? ppB.Ubulktot/ppB.vA : 0.0; // Alfven Mach number
+	ppB.Ms = (ppB.vs != 0) ? ppB.Ubulktot/ppB.vs : 0.0; // sonic Mach number
+	ppB.Mms = (ppB.vms != 0) ? ppB.Ubulktot/ppB.vms : 0.0; // magnetosonic mach number
+	cross(ppB.B,ppB.Ubulk,ppB.Ec); // convection electric field Ec = -Ubulk x B
+	ppB.Ectot = normvec(ppB.Ec);
 	// VExB = E x B/B^2
-	if(pp.Btot != 0) {
-	   cross(pp.Ec,pp.B,pp.VExB);
-	   for(size_t ii=0;ii<3;++ii) { pp.VExB[ii] /= sqr(pp.Btot); }
+	if(ppB.Btot != 0) {
+	   cross(ppB.Ec,ppB.B,ppB.VExB);
+	   for(size_t ii=0;ii<3;++ii) { ppB.VExB[ii] /= sqr(ppB.Btot); }
 	}
-	pp.VExBtot = normvec(pp.VExB);
-	pp.vpui = 2*pp.VExBtot; // fastest pickup ion velocity
+	ppB.VExBtot = normvec(ppB.VExB);
+	ppB.vpui = 2*ppB.VExBtot; // fastest pickup ion velocity
 	// fastest whistler signal p. 28 Alho (2016)
-	if(pp.ne != 0 && dx != 0) {
-	   pp.vw = 2.0*pp.Btot*M_PI/( constants::PERMEABILITY*pp.ne*constants::CHARGE_ELEMENTARY*dx );
+	if(ppB.ne != 0 && dx != 0) {
+	   ppB.vw = 2.0*ppB.Btot*M_PI/( constants::PERMEABILITY*ppB.ne*constants::CHARGE_ELEMENTARY*dx );
 	}
      }
+   return true;
+}
 
-perPopulationParameters:
-
-   // parameters per population or species
-
+// determine plasma parameters (per population, per species, single particle, etc)
+bool calcPlasmaParametersSingleParticle(SimulationClasses& simClasses,std::vector<ParticleListBase*>& particleLists,PlasmaParametersBulk& ppB,PlasmaParametersSingleParticle& ppSP) {
    // simulation particle populations
    for(size_t s=0;s<particleLists.size();++s) {
       // read parameters of this particle population from species and injector
@@ -143,39 +147,39 @@ perPopulationParameters:
 	 return false;
       }
 	{
-	   pp.populationName.push_back(ip.name);
+	   ppSP.populationName.push_back(ip.name);
 	   const Real m = ip.m;
 	   const Real q = ip.q;
-	   const Real qB = q*pp.Btot;
-	   const Real wP = sqrt( pp.ne*sqr(q)/( m*constants::PERMITTIVITY  ) ); // angular plasma frequency (using ne as density)
+	   const Real qB = q*ppB.Btot;
+	   const Real wP = sqrt( ppB.ne*sqr(q)/( m*constants::PERMITTIVITY  ) ); // angular plasma frequency (using ne as density)
 	   const Real vth = ip.vth; // thermal speed
-	   pp.periodPlasma.push_back((wP != 0) ? 2.0*M_PI/wP : 0.0); // plasma period
-	   pp.periodLarmor.push_back((qB != 0) ? 2.0*M_PI*m/qB : 0.0); // Larmor period
-	   pp.lengthInertial.push_back((wP != 0) ? constants::SPEED_LIGHT/wP : 0.0); // inertial length
-	   pp.radiusLarmorThermal.push_back((qB != 0) ? m*vth/qB : 0.0); // thermal Larmor radius
-	   pp.radiusLarmorPickUp.push_back((qB != 0) ? m*pp.VExBtot/qB : 0.0); // PU Larmor radius
+	   ppSP.periodPlasma.push_back((wP != 0) ? 2.0*M_PI/wP : 0.0); // plasma period
+	   ppSP.periodLarmor.push_back((qB != 0) ? 2.0*M_PI*m/qB : 0.0); // Larmor period
+	   ppSP.lengthInertial.push_back((wP != 0) ? constants::SPEED_LIGHT/wP : 0.0); // inertial length
+	   ppSP.radiusLarmorThermal.push_back((qB != 0) ? m*vth/qB : 0.0); // thermal Larmor radius
+	   ppSP.radiusLarmorPickUp.push_back((qB != 0) ? m*ppB.VExBtot/qB : 0.0); // PU Larmor radius
 	}
    }
    // electrons (not a particle population in the model but for information purposes included)
      {
-	pp.populationName.push_back("e-");
+	ppSP.populationName.push_back("e-");
 	const Real m = constants::MASS_ELECTRON;
 	const Real q = constants::CHARGE_ELEMENTARY;
-	const Real qB = q*pp.Btot;
-	const Real wP = sqrt( pp.ne*sqr(q)/( m*constants::PERMITTIVITY  ) ); // angular plasma frequency
-	const Real vth = sqrt(constants::BOLTZMANN*Te/m); // thermal speed
-	pp.periodPlasma.push_back((wP != 0) ? 2.0*M_PI/wP : 0.0); // plasma period
-	pp.periodLarmor.push_back((qB != 0) ? 2.0*M_PI*m/qB : 0.0); // Larmor period
-	pp.lengthInertial.push_back((wP != 0) ? constants::SPEED_LIGHT/wP : 0.0); // inertial length
-	pp.radiusLarmorThermal.push_back((qB != 0) ? m*vth/qB : 0.0); // thermal Larmor radius
-	pp.radiusLarmorPickUp.push_back((qB != 0) ? m*pp.VExBtot/qB : 0.0); // PU Larmor radius
+	const Real qB = q*ppB.Btot;
+	const Real wP = sqrt( ppB.ne*sqr(q)/( m*constants::PERMITTIVITY  ) ); // angular plasma frequency
+	const Real vth = sqrt(constants::BOLTZMANN*ppB.Te/m); // thermal speed
+	ppSP.periodPlasma.push_back((wP != 0) ? 2.0*M_PI/wP : 0.0); // plasma period
+	ppSP.periodLarmor.push_back((qB != 0) ? 2.0*M_PI*m/qB : 0.0); // Larmor period
+	ppSP.lengthInertial.push_back((wP != 0) ? constants::SPEED_LIGHT/wP : 0.0); // inertial length
+	ppSP.radiusLarmorThermal.push_back((qB != 0) ? m*vth/qB : 0.0); // thermal Larmor radius
+	ppSP.radiusLarmorPickUp.push_back((qB != 0) ? m*ppB.VExBtot/qB : 0.0); // PU Larmor radius
      }
 
-   if(pp.populationName.size() != pp.periodPlasma.size() ||
-      pp.populationName.size() != pp.periodLarmor.size() ||
-      pp.populationName.size() != pp.lengthInertial.size() ||
-      pp.populationName.size() != pp.radiusLarmorThermal.size() ||
-      pp.populationName.size() != pp.radiusLarmorPickUp.size()
+   if(ppSP.populationName.size() != ppSP.periodPlasma.size() ||
+      ppSP.populationName.size() != ppSP.periodLarmor.size() ||
+      ppSP.populationName.size() != ppSP.lengthInertial.size() ||
+      ppSP.populationName.size() != ppSP.radiusLarmorThermal.size() ||
+      ppSP.populationName.size() != ppSP.radiusLarmorPickUp.size()
      ) {
       simClasses.logger << "(RHYBRID) ERROR: calcPlamaParameters function failed" << std::endl;
       return false;
