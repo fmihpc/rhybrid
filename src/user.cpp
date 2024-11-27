@@ -442,7 +442,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       exit(1);
    }
    if(Hybrid::useElectronPressureElectricField == false) {
-      Hybrid::electronTemperature = -1;
+      Hybrid::electronTemperature = 0.0;
       Hybrid::electronPressureCoeff = 0.0;
    }
    else {
@@ -1367,240 +1367,160 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    simClasses.logger << endl << endl;
 
-   // determine different plasma parameters
-   /*if(sim.mpiRank == sim.MASTER_RANK) {
-      diagnostics::PlasmaParametersBulk ppB;
-      if(calcPlasmaParametersBulk(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::electronTemperature,Hybrid::dx,N_uniformPopulations,N_solarWindPopulations,ppB) == false) {
-	 return false;
-	 //exit(1);
+   // determine different plasma parameters 
+   Real rhoq=0.0,Ubulk=0.0,vA=0.0,vs=0.0,vms=0.0,Econv=0.0,vExB=0.0,vw=0.0; // undisturbed bulk parameters needed below
+   // calculate bulk parameters as average from all solar wind populations
+   diagnostics::PlasmaParametersBulk ppBulkSolarWind;
+   if(diagnostics::calcPlasmaParametersBulk(simClasses,"solarwind",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkSolarWind) == false) {
+      return false;
+   }
+   // calculate bulk parameters as average from all uniform populations
+   diagnostics::PlasmaParametersBulk ppBulkUniform;
+   if(diagnostics::calcPlasmaParametersBulk(simClasses,"uniform",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkUniform) == false) {
+      return false;
+   }
+   // no known initial bulk parameters if no solar wind or uniform populations present
+   if(N_solarWindPopulations < 1 && N_uniformPopulations < 1) {
+      simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind or uniform populations are present" << endl;
+   }
+   // calculate single particle parameters from all populations using bulk conditions of solar wind populations
+   diagnostics::PlasmaParametersSingleParticle ppSPSW;
+   if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkSolarWind.ne,ppBulkSolarWind.vExBtot,Hybrid::electronTemperature,ppSPSW) == false) {
+      return false;
+   }
+   // calculate single particle parameters from all populations bulk conditions of uniform populations
+   diagnostics::PlasmaParametersSingleParticle ppSPU;
+   if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkUniform.ne,ppBulkUniform.vExBtot,Hybrid::electronTemperature,ppSPU) == false) {
+      return false;
+   }
+   // if solar wind populations present (or no uniform populations), write undisturbed solar wind bulk parameters in the log
+   if(N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
+      simClasses.logger
+	<< "(UNDISTURBED BULK PARAMETERS: SOLAR WIND POPULATIONS)" << endl
+	<< "\t ne = " << ppBulkSolarWind.ne/1e6 << " cm^-3 = " << ppBulkSolarWind.ne*Hybrid::dV << " 1/dV" << endl
+	<< "\t rhoq = " << ppBulkSolarWind.rhoq << " C/m^3 = " << ppBulkSolarWind.rhoq*Hybrid::dV << " C/dV" << endl
+	<< "\t Ubulk = (" << ppBulkSolarWind.Ubulk[0]/1e3 << "," << ppBulkSolarWind.Ubulk[1]/1e3 << "," << ppBulkSolarWind.Ubulk[2]/1e3 << ") km/s" << endl
+	<< "\t |Ubulk| = " << ppBulkSolarWind.Ubulktot/1e3 << " km/s" << endl
+	<< "\t vA = " << ppBulkSolarWind.vA/1e3 << " km/s" << endl
+	<< "\t vs = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppBulkSolarWind.vs/1e3 << " km/s" << endl
+	<< "\t vms = " << ppBulkSolarWind.vms/1e3 << " km/s" << endl
+	<< "\t MA = " << ppBulkSolarWind.MA << endl
+	<< "\t Ms = " << ppBulkSolarWind.Ms << endl
+	<< "\t Mms = " << ppBulkSolarWind.Mms << endl
+	<< "\t Econv = -UxB = (" << ppBulkSolarWind.Ec[0]/1e-3 << "," << ppBulkSolarWind.Ec[1]/1e-3 << "," << ppBulkSolarWind.Ec[2]/1e-3 << ") mV/m" << endl
+	<< "\t |Econv| = " << ppBulkSolarWind.Ectot/1e-3 << " mV/m" << endl
+	<< "\t vExB = ExB/B^2 = (" << ppBulkSolarWind.vExB[0]/1e3 << "," << ppBulkSolarWind.vExB[1]/1e3 << "," << ppBulkSolarWind.vExB[2]/1e3 << ") km/s" << endl
+	<< "\t |vExB| = " << ppBulkSolarWind.vExBtot/1e3 << " km/s" << endl
+	<< "\t vMaxPU = 2*|vExB| = " << ppBulkSolarWind.vpui/1e3 << " km/s" << endl
+	<< "\t vMaxW = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkSolarWind.vw/1e3 << " km/s" << endl << endl;
+      rhoq = ppBulkSolarWind.rhoq;
+      Ubulk = ppBulkSolarWind.Ubulktot;
+      vA = ppBulkSolarWind.vA;
+      vs = ppBulkSolarWind.vs;
+      vms = ppBulkSolarWind.vms;
+      Econv = ppBulkSolarWind.Ectot;
+      vExB = ppBulkSolarWind.vExBtot;
+      vw = ppBulkSolarWind.vw;
+   }
+   // if uniform populations present, write undisturbed uniform plasma bulk parameters in the log
+   if(N_uniformPopulations > 0) {
+      simClasses.logger
+	<< "(UNDISTURBED BULK PARAMETERS: UNIFORM POPULATIONS)" << endl
+	<< "\t ne = " << ppBulkUniform.ne/1e6 << " cm^-3 = " << ppBulkUniform.ne*Hybrid::dV << " 1/dV" << endl
+	<< "\t rhoq = " << ppBulkUniform.rhoq << " C/m^3 = " << ppBulkUniform.rhoq*Hybrid::dV << " C/dV" << endl
+	<< "\t Ubulk = (" << ppBulkUniform.Ubulk[0]/1e3 << "," << ppBulkUniform.Ubulk[1]/1e3 << "," << ppBulkUniform.Ubulk[2]/1e3 << ") km/s" << endl
+	<< "\t |Ubulk| = " << ppBulkUniform.Ubulktot/1e3 << " km/s" << endl
+	<< "\t vA = " << ppBulkUniform.vA/1e3 << " km/s" << endl
+	<< "\t vs = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppBulkUniform.vs/1e3 << " km/s" << endl
+	<< "\t vms = " << ppBulkUniform.vms/1e3 << " km/s" << endl
+	<< "\t MA = " << ppBulkUniform.MA << endl
+	<< "\t Ms = " << ppBulkUniform.Ms << endl
+	<< "\t Mms = " << ppBulkUniform.Mms << endl
+	<< "\t Econv = -UxB = (" << ppBulkUniform.Ec[0]/1e-3 << "," << ppBulkUniform.Ec[1]/1e-3 << "," << ppBulkUniform.Ec[2]/1e-3 << ") mV/m" << endl
+	<< "\t |Econv| = " << ppBulkUniform.Ectot/1e-3 << " mV/m" << endl
+	<< "\t vExB = ExB/B^2 = (" << ppBulkUniform.vExB[0]/1e3 << "," << ppBulkUniform.vExB[1]/1e3 << "," << ppBulkUniform.vExB[2]/1e3 << ") km/s" << endl
+	<< "\t |vExB| = " << ppBulkUniform.vExBtot/1e3 << " km/s" << endl
+	<< "\t vMaxPU = 2*|vExB| = " << ppBulkUniform.vpui/1e3 << " km/s" << endl
+	<< "\t vMaxW = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkUniform.vw/1e3 << " km/s" << endl << endl;
+      if(N_solarWindPopulations < 1) {
+	 rhoq = ppBulkUniform.rhoq;
+	 Ubulk = ppBulkUniform.Ubulktot;
+	 vA = ppBulkUniform.vA;
+	 vs = ppBulkUniform.vs;
+	 vms = ppBulkUniform.vms;
+	 Econv = ppBulkUniform.Ectot;
+	 vExB = ppBulkUniform.vExBtot;
+	 vw = ppBulkUniform.vw;
       }
-      diagnostics::PlasmaParametersSingleParticle ppSP;
-      if(calcPlasmaParametersSingleParticle(simClasses,particleLists,ppB,ppSP) == false) {
-	 return false;
-	 //exit(1);
+   }
+   // if solar wind populations present (or no uniform populations), write single particle parameters in undisturbed solar wind plasma in the log
+   if(N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
+      simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED SOLAR WIND)" << endl;
+      simClasses.logger
+	<< "\t TEMPORAL:" << endl
+	<< "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
+      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	 simClasses.logger
+	   << "\t tP(" << ppSPSW.populationName[s] << ") = " << ppSPSW.periodPlasma[s] << " s = " << ppSPSW.periodPlasma[s]/sim.dt << " dt" << endl;
+      }
+      simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
+      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	 simClasses.logger
+	   << "\t tL(" << ppSPSW.populationName[s] << ") = " << ppSPSW.periodLarmor[s] << " s = " << ppSPSW.periodLarmor[s]/sim.dt << " dt" << endl;
       }
       simClasses.logger
-	<< "(UNDISTURBED UPSTREAM SOLAR WIND: NEW)" << endl
-	<< "ni = ion number density = " << 0.0 << " cm^-3 = " << 0.0 << " dV^-1" << endl
-	<< "ne = electron number density = " << ppB.ne/1e6 << " cm^-3 = " << ppB.ne*Hybrid::dV << " dV^-1" << endl
-	<< "rhoqi = total ion charge density = -electron charge density = " << ppB.rhoq << " C/m^3 = " << ppB.rhoq*Hybrid::dV << " C/dV" << endl
-	<< "Ubulk = bulk speed = " << ppB.Ubulktot/1e3 << " km/s" << endl
-	<< "vA = Alfven velocity = " << ppB.vA/1e3 << " km/s" << endl
-	<< "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppB.vs/1e3 << " km/s" << endl
-	<< "vms = magnetosonic velocity = " << ppB.vms/1e3 << " km/s" << endl
-	<< "MA = Alfven mach number = " << ppB.MA << endl
-	<< "Ms = sonic mach number = " << ppB.Ms << endl
-	<< "Mms = magnetosonic mach number = " << ppB.Mms << endl
-	<< "Econv = -UxB = (" << ppB.Ec[0]/1e-3 << "," << ppB.Ec[1]/1e-3 << "," << ppB.Ec[2]/1e-3 << ") mV/m" << endl
-	<< "|Econv| = " << ppB.Ectot/1e-3 << " mV/m" << endl
-	<< "dE = |Econv|*dx = " << 0.0 << " V" << endl
-	<< "vE(H+) = sqrt(2*e*dE/mp) = " << 0.0 << " km/s" << endl
-	<< "ExB drift velocity = (" << ppB.VExB[0]/1e3 << "," << ppB.VExB[1]/1e3 << "," << ppB.VExB[2]/1e3 << ") km/s" << endl
-	<< "ExB drift speed = " << ppB.VExBtot/1e3 << " km/s" << endl
-	<< "Pickup ion avg speed (4*VExB/pi) = " << 4.0*ppB.VExBtot/M_PI/1e3 << " km/s" << endl
-	<< "Pickup ion max speed (2*VExB) = " << ppB.vpui/1e3 << " km/s" << endl
-	<< "Fastest whistler speed = " << ppB.vw/1e3 << " km/s" << endl << endl;
-      simClasses.logger << "(SOLAR WIND POPULATIONS: NEW)" << endl;
-      for(size_t s=0;s<ppSP.populationName.size();++s) {
+	<< "\t SPATIAL:" << endl
+	<< "\t d = inertial length = c/wP = c**qrt( m*eps0/(ne*q^2) )" << endl;
+      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
 	 simClasses.logger
-	   << "plasma period(" << ppSP.populationName[s] << ") = " << ppSP.periodPlasma[s] << " s = " << ppSP.periodPlasma[s]/sim.dt << " dt" << endl;
+	   << "\t d(" << ppSPSW.populationName[s] << ") = " << ppSPSW.lengthInertial[s]/1e3 << " km = " << ppSPSW.lengthInertial[s]/Hybrid::dx << " dx" << endl;
       }
-      for(size_t s=0;s<ppSP.populationName.size();++s) {
+      simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
+      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
 	 simClasses.logger
-	   << "inertial length(" << ppSP.populationName[s] << ") = " << ppSP.lengthInertial[s]/1e3 << " km = " << ppSP.lengthInertial[s]/Hybrid::dx << " dx" << endl;
+	   << "\t rLth(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorThermal[s]/1e3 << " km = " << ppSPSW.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
       }
-      for(size_t s=0;s<ppSP.populationName.size();++s) {
+      simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
+      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
 	 simClasses.logger
-	   << "thermal Larmor radius(" << ppSP.populationName[s] << ") = " << ppSP.radiusLarmorThermal[s]/1e3 << " km = " << ppSP.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
-      }
-
-      simClasses.logger << "(ALL POPULATIONS AS PICKUP: NEW)" << endl;
-      for(size_t s=0;s<ppSP.populationName.size();++s) {
-	 simClasses.logger
-	   << "Larmor period(" << ppSP.populationName[s] << ") = " << ppSP.periodLarmor[s] << " s = " << ppSP.periodLarmor[s]/sim.dt << " dt" << endl;
-      }
-      for(size_t s=0;s<ppSP.populationName.size();++s) {
-	 simClasses.logger
-	   << "Larmor radius(" << ppSP.populationName[s] << ") = " << ppSP.radiusLarmorPickUp[s]/1e3 << " km = " << ppSP.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
+	   << "\t rLpu(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPSW.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
       }
       simClasses.logger << endl;
-   }*/
-
-   // determine solar wind properties
-   Real ni = 0.0; //total ion number density
-   Real ne = 0.0; // total electron density
-   Real rhom = 0.0; // total ion mass density
-   Real Ubulk = 0.0; // solar wind bulk speed
-   Real vA = 0.0; // alfven speed
-   Real vstmp1 = 0.0;
-   Real vstmp2 = 0.0;
-   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
-      ni += Hybrid::swPopsInfo[s].n;
-      ne += Hybrid::swPopsInfo[s].q*Hybrid::swPopsInfo[s].n;
-      rhom += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n;
-      Ubulk += Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].U;
-      vstmp1 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].T;
-      vstmp2 += Hybrid::swPopsInfo[s].n*Hybrid::swPopsInfo[s].m;
    }
-   const Real rhoq = ne;
-   ne /= constants::CHARGE_ELEMENTARY;
-   // sound velocity approximated as vs = sqrt(gamma*p/rho_m) = sqrt( kB*gamma*sum_i(ni*Ti)/sum_i(ni*mi) ),
-   // where gamma = 5/3 and sum is over all solar wind populations
-   Real vs = 0.0;
-   if(vstmp2 > 0) {
-      vs = sqrt(5.0/3.0*constants::BOLTZMANN*vstmp1/vstmp2);
-   }
-   const Real vms = sqrt(vA*vA + vs*vs); // magnetosonic speed
-   const Real Btot2 = sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy) + sqr(Hybrid::IMFBz);
-   const Real Btot = sqrt(Btot2);
-   if(rhom > 0.0) {
-      vA = Btot/( sqrt(constants::PERMEABILITY*rhom) );
-      Ubulk /= rhom;
-   }
-   else {
-      Ubulk = 0.0;
-   }
-   Hybrid::upstreamBulkU = Ubulk;
-   Real Esw[3] = {0.0,0.0,0.0};
-   Real Bsw[3] = {Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz};
-   Real Usw[3] = {-Ubulk,0.0,0.0};
-   Real VExB[3] = {0.0,0.0,0.0};
-   cross(Bsw,Usw,Esw); // Esw = B x (-Ubulk,0,0)
-   const Real EswMagnitude = normvec(Esw);
-   // VExB = E x B/B^2
-   if(Btot2 > 0.0) {
-      cross(Esw,Bsw,VExB);
-      VExB[0] /= Btot2;
-      VExB[1] /= Btot2;
-      VExB[2] /= Btot2;
-   }
-   const Real VExBMagnitude = normvec(VExB);
-   Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
-   if(ne > 0.0 && Hybrid::dx > 0.0) {
-      vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
-   }
-
-   if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
-      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
-      Hybrid::initialFlowThrough = true;
-   }
-   else {
-      Hybrid::initialFlowThroughPeriod = -100;
-      Hybrid::initialFlowThrough = false;
-   }
-
-   // set adiabatic electron pressure coefficient with gamma = 2
-   if(Hybrid::useAdiabaticElectronPressure == true) {
-      if(ne > 0) {
-         Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( ne * sqr(constants::CHARGE_ELEMENTARY) );
+   // if uniform populations present, write single particle parameters in undisturbed uniform plasma in the log
+   if(N_uniformPopulations > 0) {
+      simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED UNIFORM PLASMA)" << endl;
+      simClasses.logger
+	<< "\t TEMPORAL:" << endl
+	<< "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
+      for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	 simClasses.logger
+	   << "\t tP(" << ppSPU.populationName[s] << ") = " << ppSPU.periodPlasma[s] << " s = " << ppSPU.periodPlasma[s]/sim.dt << " dt" << endl;
       }
-      else {
-         Hybrid::electronPressureCoeff = 0.0;
-      }
-   }
-
-   simClasses.logger
-     << "(UNDISTURBED UPSTREAM SOLAR WIND)" << endl
-     << "ni = ion number density = " << ni/1e6 << " cm^-3 = " << ni*Hybrid::dV << " dV^-1" << endl
-     << "ne = electron number density = " << ne/1e6 << " cm^-3 = " << ne*Hybrid::dV << " dV^-1" << endl
-     << "rhoqi = total ion charge density = -electron charge density = " << rhoq << " C/m^3 = " << rhoq*Hybrid::dV << " C/dV" << endl
-     << "Ubulk = bulk speed = " << Ubulk/1e3 << " km/s" << endl
-     << "vA = Alfven velocity = " << vA/1e3 << " km/s" << endl
-     << "vs = sound velocity = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << vs/1e3 << " km/s" << endl
-     << "vms = magnetosonic velocity = " << vms/1e3 << " km/s" << endl
-     << "MA = Alfven mach number = " << Ubulk/(vA + 1e-30) << endl
-     << "Ms = sonic mach number = " << Ubulk/(vs + 1e-30) << endl
-     << "Mms = magnetosonic mach number = " << Ubulk/(sqrt(vA*vA + vs*vs) + 1e-30) << endl
-     << "Econv = -UxB = (" << Esw[0]/1e-3 << "," << Esw[1]/1e-3 << "," << Esw[2]/1e-3 << ") mV/m" << endl
-     << "|Econv| = " << EswMagnitude/1e-3 << " mV/m" << endl
-     << "dE = |Econv|*dx = " << EswMagnitude*Hybrid::dx << " V" << endl
-     << "vE(H+) = sqrt(2*e*dE/mp) = " << sqrt(2.0*constants::CHARGE_ELEMENTARY*EswMagnitude*Hybrid::dx/constants::MASS_PROTON )/1e3 << " km/s" << endl
-     << "ExB drift velocity = (" << VExB[0]/1e3 << "," << VExB[1]/1e3 << "," << VExB[2]/1e3 << ") km/s" << endl
-     << "ExB drift speed = " << VExBMagnitude/1e3 << " km/s" << endl
-     << "Pickup ion avg speed (4*VExB/pi) = " << 4.0*VExBMagnitude/M_PI/1e3 << " km/s" << endl
-     << "Pickup ion max speed (2*VExB) = " << 2.0*VExBMagnitude/1e3 << " km/s" << endl
-     << "Fastest whistler speed = " << vw/1e3 << " km/s" << endl;
-   simClasses.logger
-     << endl
-     << "(SOLAR WIND POPULATIONS)" << endl;
-   // solar wind populations
-   // electron plasma frequency
-   const Real omega_pe = sqrt( ne*sqr(constants::CHARGE_ELEMENTARY)/( constants::MASS_ELECTRON*constants::PERMITTIVITY  ) );
-   // electron plasma period
-   Real tPe = 0.0;
-   // electron inertial length
-   Real le = 0.0;
-   if(omega_pe > 0.0) {
-      tPe = 2.0*M_PI/omega_pe;
-      le = constants::SPEED_LIGHT/omega_pe;
-   }
-   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
-      // ion plasma frequency
-      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
-      // ion plasma period
-      Real tPi = 0.0;
-      if(omega_pi > 0.0) {
-         tPi = 2.0*M_PI/omega_pi;
+      simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
+      for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	 simClasses.logger
+	   << "\t tL(" << ppSPU.populationName[s] << ") = " << ppSPU.periodLarmor[s] << " s = " << ppSPU.periodLarmor[s]/sim.dt << " dt" << endl;
       }
       simClasses.logger
-        << "plasma period(" << Hybrid::swPopsInfo[s].name << ") = " << tPi << " s = " << tPi/sim.dt << " dt" << endl;
-   }
-   simClasses.logger
-     << "plasma period(e-) = " << tPe << " s = " << tPe/sim.dt << " dt" << endl;
-   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
-      // ion plasma frequency
-      const Real omega_pi = sqrt( ne*sqr(Hybrid::swPopsInfo[s].q)/( Hybrid::swPopsInfo[s].m*constants::PERMITTIVITY  ) );
-      // ion inertial length
-      Real li = 0.0;
-      if(omega_pi > 0.0) {
-         li = constants::SPEED_LIGHT/omega_pi;
+	<< "\t SPATIAL:" << endl
+	<< "\t d = inertial length = c/wP = c**qrt( m*eps0/(ne*q^2) )" << endl;
+      for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	 simClasses.logger
+	   << "\t d(" << ppSPU.populationName[s] << ") = " << ppSPU.lengthInertial[s]/1e3 << " km = " << ppSPU.lengthInertial[s]/Hybrid::dx << " dx" << endl;
       }
-      simClasses.logger
-        << "inertial length(" << Hybrid::swPopsInfo[s].name << ") = " << li/1e3 << " km = " << li/Hybrid::dx << " dx" << endl;
-   }
-   simClasses.logger
-     << "inertial length(e-) = " << le/1e3 << " km = " << le/Hybrid::dx << " dx" << endl;
-   for (size_t s=0;s<Hybrid::swPopsInfo.size();++s) {
-      Real rLth = 0.0; // thermal larmor radius
-      if(Btot > 0.0) {
-         rLth = Hybrid::swPopsInfo[s].m*Hybrid::swPopsInfo[s].vth/(Hybrid::swPopsInfo[s].q*Btot);
+      simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
+      for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	 simClasses.logger
+	   << "\t rLth(" << ppSPU.populationName[s] << ") = " << ppSPU.radiusLarmorThermal[s]/1e3 << " km = " << ppSPU.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
       }
-      simClasses.logger
-        << "thermal Larmor radius(" << Hybrid::swPopsInfo[s].name << ") = " << rLth/1e3 << " km = " << rLth/Hybrid::dx << " dx" << endl;
-   }
-   simClasses.logger
-     << endl << "(ALL POPULATIONS AS PICKUP IONS)" << endl;
-   for(size_t s=0;s<particleLists.size();++s) {
-      const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-      Real tL = 0.0; // larmor period
-      if(Btot > 0.0) {
-         tL = 2.0*M_PI*species->m/(species->q*Btot);
+      simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
+      for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	 simClasses.logger
+	   << "\t rLpu(" << ppSPU.populationName[s] << ") = " << ppSPU.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPU.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
       }
-      simClasses.logger
-        << "Larmor period(" << species->name << ") = " << tL << " s = " << tL/sim.dt << " dt" << endl;
+      simClasses.logger << endl;
    }
-   Real tLe = 0.0;
-   if(Btot > 0.0) {
-      tLe = 2.0*M_PI*constants::MASS_ELECTRON/(constants::CHARGE_ELEMENTARY*Btot);
-   }
-   simClasses.logger
-     << "Larmor period(e-) = " << tLe << " s = " << tLe/sim.dt << " dt" << endl;
-   for(size_t s=0;s<particleLists.size();++s) {
-      const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-      Real rL = 0.0; // larmor radius
-      if(Btot > 0.0) {
-         rL = species->m*VExBMagnitude/(species->q*Btot);
-      }
-      simClasses.logger
-        << "Larmor radius(" << species->name << ") = " << rL/1e3 << " km = " << rL/Hybrid::dx << " dx" << endl;
-   }
-   Real rLe = 0.0;
-   if(Btot > 0.0) {
-      rLe = constants::MASS_ELECTRON*VExBMagnitude/(constants::CHARGE_ELEMENTARY*Btot);
-   }
-   simClasses.logger
-     << "Larmor radius(e-) = " << rLe/1e3 << " km = " << rLe/Hybrid::dx << " dx" << endl;
-   simClasses.logger << endl;
 
    Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
    if(Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
@@ -1813,17 +1733,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    const Real dx_per_dt = Hybrid::dx/sim.dt;
    simClasses.logger
      << "(CONSTRAINTS)" << endl
-     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/Ubulk" << endl
-     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " Ubulk = " << sqrt(Hybrid::maxUe2)/dx_per_dt << " dx/dt"  << endl
-     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " Ubulk = " << sqrt(Hybrid::maxVi2)/dx_per_dt << " dx/dt" << endl
-     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " Ubulk = " << Hybrid::maxVw/dx_per_dt << " dx/dt" << endl
-     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(EswMagnitude + 1e-30) << " Econv" << endl
+     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/|Ubulk|" << endl
+     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxUe2)/dx_per_dt << " dx/dt"  << endl
+     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxVi2)/dx_per_dt << " dx/dt" << endl
+     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " |Ubulk| = " << Hybrid::maxVw/dx_per_dt << " dx/dt" << endl
+     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(Econv + 1e-30) << " |Econv|" << endl
      << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
-     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoqi" << endl << endl;
+     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoq" << endl << endl;
 
    // evaluate and log CFL conditions from individual signal speeds and all summed together
    const Real dx_per_td_min = Hybrid::dx/td_min_smallest;
-   const Real summedSignalSpeed = Ubulk + vms + 2*VExBMagnitude + vw + dx_per_td_min;
+   const Real summedSignalSpeed = Ubulk + vms + 2*vExB + vw + dx_per_td_min;
    const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + sqrt(Hybrid::maxVi2) + Hybrid::maxVw + vms + dx_per_td_min;
    simClasses.logger
      << "(COURANT-FRIEDRICHS-LEWY (CFL) CONDITION)" << endl
@@ -1834,7 +1754,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "vA = " << vA/1e3 << " km/s = " << vA/dx_per_dt << " dx/dt" << endl
      << "vs = " << vs/1e3 << " km/s = " << vs/dx_per_dt << " dx/dt" << endl
      << "vms = " << vms/1e3 << " km/s = " << vms/dx_per_dt << " dx/dt" << endl
-     << "2*VExBMagnitude = " << 2*VExBMagnitude/1e3 << " km/s = " << 2*VExBMagnitude/dx_per_dt << " dx/dt" << endl
+     << "2*|vExB| = " << 2*vExB/1e3 << " km/s = " << 2*vExB/dx_per_dt << " dx/dt" << endl
      << "vw = " << vw/1e3 << " km/s = " << vw/dx_per_dt << " dx/dt" << endl
      << "dx/min(td_min) = " << dx_per_td_min/1e3 << " km/s = " << dx_per_td_min/dx_per_dt << " dx/dt" << endl
      << "summedSignalSpeed = " << summedSignalSpeed/1e3 << " km/s = " << summedSignalSpeed/dx_per_dt << " dx/dt" << endl
@@ -2092,7 +2012,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          detParticleCellIndicesFile.precision(6);
          detParticleCellIndicesFile << scientific;
          detParticleCellIndicesFile << "% cellid x y z" << endl;
-	 sort(detParticleCellIDXYZ.begin(), detParticleCellIDXYZ.end(), [](const std::vector<Real>& a, const std::vector<Real>& b) { return a[0] < b[0]; });
+	 sort(detParticleCellIDXYZ.begin(), detParticleCellIDXYZ.end(), [](const vector<Real>& a, const vector<Real>& b) { return a[0] < b[0]; });
          for(unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
             if(detParticleCellIDXYZ[i].size() != 4) {
                simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
@@ -2136,7 +2056,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          detBulkParamCellIndicesFile.precision(6);
          detBulkParamCellIndicesFile << scientific;
          detBulkParamCellIndicesFile << "% cellid x y z" << endl;
-	 sort(detBulkParamCellIDXYZ.begin(), detBulkParamCellIDXYZ.end(), [](const std::vector<Real>& a, const std::vector<Real>& b) { return a[0] < b[0]; });
+	 sort(detBulkParamCellIDXYZ.begin(), detBulkParamCellIDXYZ.end(), [](const vector<Real>& a, const vector<Real>& b) { return a[0] < b[0]; });
          for(unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
             if(detBulkParamCellIDXYZ[i].size() != 4) {
                simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
@@ -2559,6 +2479,6 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    return success;
 }
 
-bool userRunTests(Simulation& sim,SimulationClasses& simClasses,std::vector<ParticleListBase*>& particleLists) {
+bool userRunTests(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    return true;
 }
