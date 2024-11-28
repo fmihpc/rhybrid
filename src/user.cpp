@@ -377,6 +377,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    cr.add("IntrinsicB.profile_name","Magnetic field profile name [-] (string)",string(""));
+   cr.add("IntrinsicB.dBx","Magnitude of Bx random fluctuations [T] (float)",defaultValue);
+   cr.add("IntrinsicB.dBy","Magnitude of By random  fluctuations [T] (float)",defaultValue);
+   cr.add("IntrinsicB.dBz","Magnitude of Bz random  fluctuations [T] (float)",defaultValue);
    cr.add("IntrinsicB.laminarR","Laminar flow around sphere R [m] (float)",defaultValue);
    cr.add("IntrinsicB.coeffDipole","Dipole coefficient [-] (float)",defaultValue);
    cr.add("IntrinsicB.coeffQuadrupole","Quadrupole coefficient [-] (float)",defaultValue);
@@ -492,6 +495,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::IMFBoundaryFaceB[5] = str2bool(simClasses,inputStr.substr(10,1));
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    cr.get("IntrinsicB.profile_name",magneticFieldProfileName);
+   cr.get("IntrinsicB.dBx",Hybrid::dBx);
+   cr.get("IntrinsicB.dBy",Hybrid::dBy);
+   cr.get("IntrinsicB.dBz",Hybrid::dBz);
    cr.get("IntrinsicB.laminarR",Hybrid::laminarR2);
    cr.get("IntrinsicB.coeffDipole",Hybrid::coeffDip);
    cr.get("IntrinsicB.coeffQuadrupole",Hybrid::coeffQuad);
@@ -669,6 +675,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Using constant field (splitting B -> B1 + B0)" << endl
 #endif
      << "Magnetic field profile = " << magneticFieldProfileName << endl
+     << "dBx  = " << Hybrid::dBx/1e-9 << " nT" << endl
+     << "dBy  = " << Hybrid::dBy/1e-9 << " nT" << endl
+     << "dBz  = " << Hybrid::dBz/1e-9 << " nT" << endl
      << "Laminar flow around sphere R = " << sqrt(Hybrid::laminarR2)/1e3 << " km = " << sqrt(Hybrid::laminarR2)/Hybrid::dx << " dx" << endl
      << "Dipole coefficient = " << Hybrid::coeffDip << endl
      << "Quadrupole coefficient = " << Hybrid::coeffQuad << endl
@@ -2091,21 +2100,21 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real zFaceZCenter = crd[b3+2] + (k+1.0)*Hybrid::dx;
             Real B_initial[3] = {0.0,0.0,0.0};
             // +x face
-            setInitialB(xFaceXCenter,yFaceXCenter,zFaceXCenter,B_initial);
+            setInitialB(sim,simClasses,xFaceXCenter,yFaceXCenter,zFaceXCenter,B_initial);
             faceB[n*3+0] = B_initial[0];
 	    //Hybrid::varReal["faceB_"].ptr[n*3+0] = B_initial[0];
             // +y face
-            setInitialB(xFaceYCenter,yFaceYCenter,zFaceYCenter,B_initial);
+            setInitialB(sim,simClasses,xFaceYCenter,yFaceYCenter,zFaceYCenter,B_initial);
             faceB[n*3+1] = B_initial[1];
 	    //Hybrid::varReal["faceB_"].ptr[n*3+1] = B_initial[1];
             // +z face
-            setInitialB(xFaceZCenter,yFaceZCenter,zFaceZCenter,B_initial);
+            setInitialB(sim,simClasses,xFaceZCenter,yFaceZCenter,zFaceZCenter,B_initial);
             faceB[n*3+2] = B_initial[2];
 	    //Hybrid::varReal["faceB_"].ptr[n*3+2] = B_initial[2];
 	    const Real xCellCenter = crd[b3+0] + (i+0.5)*Hybrid::dx;
 	    const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
 	    const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
-            setInitialB(xCellCenter,yCellCenter,zCellCenter,B_initial);
+            setInitialB(sim,simClasses,xCellCenter,yCellCenter,zCellCenter,B_initial);
             cellB[n*3+0] = B_initial[0];
             cellB[n*3+1] = B_initial[1];
             cellB[n*3+2] = B_initial[2];

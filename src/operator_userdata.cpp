@@ -267,7 +267,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
 	 const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
 	 const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
 	 Real B0_temp[3] = {0.0,0.0,0.0};
-	 addConstantB(xCellCenter,yCellCenter,zCellCenter,B0_temp);
+	 addConstantB(*sim,*simClasses,xCellCenter,yCellCenter,zCellCenter,B0_temp);
 	 for(int l=0;l<3;l++) { B0.push_back(B0_temp[l]); }
 #endif
       }

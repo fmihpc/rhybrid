@@ -157,6 +157,9 @@ Real Hybrid::IMFBz;
 bool Hybrid::IMFBoundaryCellB[6];
 bool Hybrid::IMFBoundaryFaceB[6];
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
+Real Hybrid::dBx;
+Real Hybrid::dBy;
+Real Hybrid::dBz;
 Real Hybrid::laminarR2;
 Real Hybrid::laminarR3;
 Real Hybrid::coeffDip;
@@ -173,7 +176,7 @@ vector<Real> Hybrid::yDipMirror;
 vector<Real> Hybrid::zDipMirror;
 Real Hybrid::thetaDip;
 Real Hybrid::phiDip;
-void (*Hybrid::magneticFieldProfilePtr)(const Real x,const Real y,const Real z,Real B[3]);
+void (*Hybrid::magneticFieldProfilePtr)(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z,Real B[3]);
 #endif
 // total number of particle populations
 unsigned int Hybrid::N_populations;

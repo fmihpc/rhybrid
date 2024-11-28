@@ -20,21 +20,28 @@
 #ifndef MAGNETIC_FIELD_H
 #define MAGNETIC_FIELD_H
 
+#include <random>
 #include "hybrid.h"
 
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
 
-inline void constantBx(Real x,Real y,Real z,Real B[3]) {
+inline void constantBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    B[0] += Hybrid::IMFBx;
 }
 
-inline void constantB(Real x,Real y,Real z,Real B[3]) {
+inline void constantB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    B[0] += Hybrid::IMFBx;
    B[1] += Hybrid::IMFBy;
    B[2] += Hybrid::IMFBz;
 }
 
-inline void laminarFlowAroundSphereBx(Real x,Real y,Real z,Real B[3]) {
+inline void randomB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   B[0] += Hybrid::IMFBx + ( Hybrid::dBx*simClasses.random.uniformPM() );
+   B[1] += Hybrid::IMFBy + ( Hybrid::dBy*simClasses.random.uniformPM() );
+   B[2] += Hybrid::IMFBz + ( Hybrid::dBz*simClasses.random.uniformPM() );
+}
+
+inline void laminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    const Real r2 = sqr(x) + sqr(y) + sqr(z);
    if(r2 < Hybrid::laminarR2) { return; }
    const Real r = sqrt(r2);
@@ -46,12 +53,12 @@ inline void laminarFlowAroundSphereBx(Real x,Real y,Real z,Real B[3]) {
    B[2] += coeff*z;
 }
 
-inline void hemisphericDipoleB(Real x,Real y,Real z,Real B[3]) {
+inline void hemisphericDipoleB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    // translation
    const Real x1 = x - Hybrid::xDip;
    const Real y1 = y - Hybrid::yDip;
    const Real z1 = z - Hybrid::zDip;
-   
+
    //Rotation matrix R_y(theta) (=theta around y):
    // x'      cos theta     0   sin theta   x
    // y'   =      0         1      0        y
@@ -60,7 +67,7 @@ inline void hemisphericDipoleB(Real x,Real y,Real z,Real B[3]) {
    // x'          1         0      0       x
    // y'   =      0   cos phi   -sin phi   y
    // z'          0   sin phi    cos phi   z
-   
+
    // (x2,y2,z2) = R_y(theta) (x1,y1,z1)   
    const Real x2 = x1*cos(Hybrid::thetaDip*M_PI/180.0) + z1*sin(Hybrid::thetaDip*M_PI/180.0);
    const Real y2 = y1;
@@ -88,7 +95,7 @@ inline void hemisphericDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[2] += Bx2*sin(Hybrid::thetaDip*M_PI/180.0) + Bz2*cos(Hybrid::thetaDip*M_PI/180.0);
 }
 
-inline void translateDipoleB(Real x,Real y,Real z,Real B[3]) {
+inline void translateDipoleB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    // translation
    const Real x1 = x - Hybrid::xDip;
    const Real y1 = y - Hybrid::yDip;
@@ -103,7 +110,7 @@ inline void translateDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[2] += coeff*(sqr(z1) - r2/3.0);
 }
 
-inline void translateMirrorDipoleB(Real x,Real y,Real z,Real B[3],Real x0,Real y0,Real z0) {
+inline void translateMirrorDipoleB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3],Real x0,Real y0,Real z0) {
    // translation
    const Real x1 = x - x0;
    const Real y1 = y - y0;
@@ -118,7 +125,7 @@ inline void translateMirrorDipoleB(Real x,Real y,Real z,Real B[3],Real x0,Real y
    B[2] -= coeff*(sqr(z1) - r2/3.0);
 }
 
-inline void generalDipoleB(Real x,Real y,Real z,Real B[3]) {
+inline void generalDipoleB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    // translation
    const Real x1 = x - Hybrid::xDip;
    const Real y1 = y - Hybrid::yDip;
@@ -160,7 +167,7 @@ inline void generalDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[2] += Bx2*sin(Hybrid::thetaDip*M_PI/180.0) + Bz2*cos(Hybrid::thetaDip*M_PI/180.0);
 }
 
-inline void lineDipoleB(Real x,Real y,Real z,Real B[3]) {
+inline void lineDipoleB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    const Real x1 = x - Hybrid::xDip;
    const Real y1 = y - Hybrid::yDip;
    const Real z1 = z - Hybrid::zDip;
@@ -172,29 +179,28 @@ inline void lineDipoleB(Real x,Real y,Real z,Real B[3]) {
    B[2] += D*( sqr(z) - sqr(x) )/( sqr(r2) );
 }
 
-inline void translateDipoleBAndLaminarFlowAroundSphereBx(Real x,Real y,Real z,Real B[3]) {
-   translateDipoleB(x,y,z,B);
-   laminarFlowAroundSphereBx(x,y,z,B);
+inline void translateDipoleBAndLaminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   translateDipoleB(sim,simClasses,x,y,z,B);
+   laminarFlowAroundSphereBx(sim,simClasses,x,y,z,B);
 }
 
-inline void translateDipoleBWithMirrorAndLaminarFlowAroundSphereBx(Real x,Real y,Real z,Real B[3]) {
-   translateDipoleB(x,y,z,B);
+inline void translateDipoleBWithMirrorAndLaminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   translateDipoleB(sim,simClasses,x,y,z,B);
    for(size_t i=0;i<Hybrid::xDipMirror.size();i++) {
-      translateMirrorDipoleB(x,y,z,B,Hybrid::xDipMirror[i],Hybrid::yDipMirror[i],Hybrid::zDipMirror[i]);
+      translateMirrorDipoleB(sim,simClasses,x,y,z,B,Hybrid::xDipMirror[i],Hybrid::yDipMirror[i],Hybrid::zDipMirror[i]);
    }
-   laminarFlowAroundSphereBx(x,y,z,B);
+   laminarFlowAroundSphereBx(sim,simClasses,x,y,z,B);
 }
 
-inline void generalDipoleBAndConstantBx(Real x,Real y,Real z,Real B[3]) {
-   generalDipoleB(x,y,z,B);
-   constantBx(x,y,z,B);
+inline void generalDipoleBAndConstantBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   generalDipoleB(sim,simClasses,x,y,z,B);
+   constantBx(sim,simClasses,x,y,z,B);
 }
 
-inline void marsCrustalB(Real x,Real y,Real z,Real B[3]) {
+inline void marsCrustalB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    Real Bx_crustal = 0.0;
    Real By_crustal = 0.0;
    Real Bz_crustal = 0.0;
-   
    B[0] += Bx_crustal;
    B[1] += By_crustal;
    B[2] += Bz_crustal;
@@ -208,6 +214,9 @@ inline bool setMagneticFieldProfile(std::string name) {
    else if(name.compare("constantB") == 0) {
       Hybrid::magneticFieldProfilePtr = &constantB;
    }
+   else if(name.compare("randomB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &randomB;
+   }
    else if(name.compare("laminarFlowAroundSphereBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &laminarFlowAroundSphereBx;
    }
@@ -216,6 +225,7 @@ inline bool setMagneticFieldProfile(std::string name) {
    }
    else if(name.compare("translateDipoleB") == 0) {
       Hybrid::magneticFieldProfilePtr = &translateDipoleB;
+
    }
    else if(name.compare("generalDipoleB") == 0) {
       Hybrid::magneticFieldProfilePtr = &generalDipoleB;
@@ -244,15 +254,15 @@ inline bool setMagneticFieldProfile(std::string name) {
 #endif
 
 #ifdef USE_B_INITIAL
-inline void setInitialB(const Real x,const Real y,const Real z,Real B[3]) {
+inline void setInitialB(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z,Real B[3]) {
    B[0] = B[1] = B[2] = 0.0;
-   Hybrid::magneticFieldProfilePtr(x,y,z,B);
+   Hybrid::magneticFieldProfilePtr(sim,simClasses,x,y,z,B);
 }
 #endif
 
 #ifdef USE_B_CONSTANT
-inline void addConstantB(const Real x,const Real y,const Real z,Real B[3]) {
-   Hybrid::magneticFieldProfilePtr(x,y,z,B);
+inline void addConstantB(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z,Real B[3]) {
+   Hybrid::magneticFieldProfilePtr(sim,simClasses,x,y,z,B);
 }
 #endif
 

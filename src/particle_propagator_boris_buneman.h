@@ -37,17 +37,12 @@ template<class PARTICLE>
 class BorisBuneman: public ParticlePropagatorBase {
  public:
    BorisBuneman();
-   
    bool addConfigFileItems(ConfigReader& cr,const std::string& configName);
    bool finalize();
-   bool propagateCell(pargrid::CellID block,pargrid::DataID particleDataID,const double* const coordinates,
-		      unsigned int N_particles);
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-		   const std::string& configName,const ParticleListBase* plist);
-   
+   bool propagateCell(pargrid::CellID block,pargrid::DataID particleDataID,const double* const coordinates,unsigned int N_particles);
+   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& configName,const ParticleListBase* plist);
  private:
    const Species* species;
-   
    void propagate(const Real xBlock,const Real yBlock,const Real zBlock,pargrid::CellID blockID,const Species& species,PARTICLE& particle,pargrid::CellID globalID);
 };
 
@@ -118,7 +113,7 @@ template<class PARTICLE>
       const Real rGlobal[3] = {r[0]+xBlock,r[1]+yBlock,r[2]+zBlock};
       getFields(r,B,Ue,Ep,*sim,*simClasses,blockID);
 #ifdef USE_B_CONSTANT
-      addConstantB(rGlobal[0],rGlobal[1],rGlobal[2],B);
+      addConstantB(*sim,*simClasses,rGlobal[0],rGlobal[1],rGlobal[2],B);
 #endif
       // E = -Ue x B
       crossProduct(B,Ue,E);
@@ -198,16 +193,14 @@ template<class PARTICLE>
       //}
    }
 #endif
-   
    // move particle
-   particle.state[particle::X] += sim->dt*particle.state[particle::VX]; 
+   particle.state[particle::X] += sim->dt*particle.state[particle::VX];
    particle.state[particle::Y] += sim->dt*particle.state[particle::VY];
    particle.state[particle::Z] += sim->dt*particle.state[particle::VZ];
 }
 
 template<class PARTICLE>
-bool BorisBuneman<PARTICLE>::propagateCell(pargrid::CellID blockID,pargrid::DataID particleDataID,const double* const coordinates,
-					   unsigned int N_particles) {
+bool BorisBuneman<PARTICLE>::propagateCell(pargrid::CellID blockID,pargrid::DataID particleDataID,const double* const coordinates,unsigned int N_particles) {
    pargrid::DataWrapper<PARTICLE> wrapper = simClasses->pargrid.getUserDataDynamic<PARTICLE>(particleDataID);
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
@@ -220,8 +213,7 @@ bool BorisBuneman<PARTICLE>::propagateCell(pargrid::CellID blockID,pargrid::Data
 }
 
 template<class PARTICLE>
-bool BorisBuneman<PARTICLE>::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-					const std::string& regionName,const ParticleListBase* plist) {
+bool BorisBuneman<PARTICLE>::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist) {
    bool success = true;
    if (ParticlePropagatorBase::initialize(sim,simClasses,cr,regionName,plist) == false) success = false;
    species = reinterpret_cast<const Species*>(plist->getSpecies());
