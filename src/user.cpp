@@ -1341,186 +1341,191 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 
    // write log entry of output configs
-   simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
-   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
-      simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
-      for(unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
-         simClasses.logger << Hybrid::populationNames[Hybrid::outputPopVarIdVector[i][j]] << " ";
-      }
-      simClasses.logger << endl;
-   }
-   simClasses.logger << "-: ";
-   for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
-      if(Hybrid::outputPopVarId[i] < 0) {
-         simClasses.logger << Hybrid::populationNames[i] << " ";
-      }
-   }
-   simClasses.logger << endl;
-   simClasses.logger << "tot plasma (snapshot): ";
-   for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
-      simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
-   }
-   simClasses.logger << endl;
-   simClasses.logger << "tot plasma (average): ";
-   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
-      simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
-   }
-   simClasses.logger << endl << endl;
+     {
+	simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
+	for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+	   simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
+	   for(unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
+	      simClasses.logger << Hybrid::populationNames[Hybrid::outputPopVarIdVector[i][j]] << " ";
+	   }
+	   simClasses.logger << endl;
+	}
+	simClasses.logger << "-: ";
+	for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
+	   if(Hybrid::outputPopVarId[i] < 0) {
+	      simClasses.logger << Hybrid::populationNames[i] << " ";
+	   }
+	}
+	simClasses.logger << endl;
+	simClasses.logger << "tot plasma (snapshot): ";
+	for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
+	   simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
+	}
+	simClasses.logger << endl;
+	simClasses.logger << "tot plasma (average): ";
+	for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+	   simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
+	}
+	simClasses.logger << endl << endl;
+     }
 
-   // determine different plasma parameters 
-   Real rhoq=0.0,Ubulk=0.0,vA=0.0,vs=0.0,vms=0.0,Econv=0.0,vExB=0.0,vw=0.0; // undisturbed bulk parameters needed below
-   // calculate bulk parameters as average from all solar wind populations
-   diagnostics::PlasmaParametersBulk ppBulkSolarWind;
-   if(diagnostics::calcPlasmaParametersBulk(simClasses,"solarwind",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkSolarWind) == false) {
-      return false;
-   }
-   // calculate bulk parameters as average from all uniform populations
-   diagnostics::PlasmaParametersBulk ppBulkUniform;
-   if(diagnostics::calcPlasmaParametersBulk(simClasses,"uniform",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkUniform) == false) {
-      return false;
-   }
-   // no known initial bulk parameters if no solar wind or uniform populations present
-   if(N_solarWindPopulations < 1 && N_uniformPopulations < 1) {
-      simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind or uniform populations are present" << endl;
-   }
-   // calculate single particle parameters from all populations using bulk conditions of solar wind populations
-   diagnostics::PlasmaParametersSingleParticle ppSPSW;
-   if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkSolarWind.ne,ppBulkSolarWind.vExBtot,Hybrid::electronTemperature,ppSPSW) == false) {
-      return false;
-   }
-   // calculate single particle parameters from all populations bulk conditions of uniform populations
-   diagnostics::PlasmaParametersSingleParticle ppSPU;
-   if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkUniform.ne,ppBulkUniform.vExBtot,Hybrid::electronTemperature,ppSPU) == false) {
-      return false;
-   }
-   // if solar wind populations present (or no uniform populations), write undisturbed solar wind bulk parameters in the log
-   if(N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
-      simClasses.logger
-	<< "(UNDISTURBED BULK PARAMETERS: SOLAR WIND POPULATIONS)" << endl
-	<< "\t ne = " << ppBulkSolarWind.ne/1e6 << " cm^-3 = " << ppBulkSolarWind.ne*Hybrid::dV << " 1/dV" << endl
-	<< "\t rhoq = " << ppBulkSolarWind.rhoq << " C/m^3 = " << ppBulkSolarWind.rhoq*Hybrid::dV << " C/dV" << endl
-	<< "\t Ubulk = (" << ppBulkSolarWind.Ubulk[0]/1e3 << "," << ppBulkSolarWind.Ubulk[1]/1e3 << "," << ppBulkSolarWind.Ubulk[2]/1e3 << ") km/s" << endl
-	<< "\t |Ubulk| = " << ppBulkSolarWind.Ubulktot/1e3 << " km/s" << endl
-	<< "\t vA = " << ppBulkSolarWind.vA/1e3 << " km/s" << endl
-	<< "\t vs = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppBulkSolarWind.vs/1e3 << " km/s" << endl
-	<< "\t vms = " << ppBulkSolarWind.vms/1e3 << " km/s" << endl
-	<< "\t MA = " << ppBulkSolarWind.MA << endl
-	<< "\t Ms = " << ppBulkSolarWind.Ms << endl
-	<< "\t Mms = " << ppBulkSolarWind.Mms << endl
-	<< "\t Econv = -UxB = (" << ppBulkSolarWind.Ec[0]/1e-3 << "," << ppBulkSolarWind.Ec[1]/1e-3 << "," << ppBulkSolarWind.Ec[2]/1e-3 << ") mV/m" << endl
-	<< "\t |Econv| = " << ppBulkSolarWind.Ectot/1e-3 << " mV/m" << endl
-	<< "\t vExB = ExB/B^2 = (" << ppBulkSolarWind.vExB[0]/1e3 << "," << ppBulkSolarWind.vExB[1]/1e3 << "," << ppBulkSolarWind.vExB[2]/1e3 << ") km/s" << endl
-	<< "\t |vExB| = " << ppBulkSolarWind.vExBtot/1e3 << " km/s" << endl
-	<< "\t vMaxPU = 2*|vExB| = " << ppBulkSolarWind.vpui/1e3 << " km/s" << endl
-	<< "\t vMaxW = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkSolarWind.vw/1e3 << " km/s" << endl << endl;
-      rhoq = ppBulkSolarWind.rhoq;
-      Ubulk = ppBulkSolarWind.Ubulktot;
-      vA = ppBulkSolarWind.vA;
-      vs = ppBulkSolarWind.vs;
-      vms = ppBulkSolarWind.vms;
-      Econv = ppBulkSolarWind.Ectot;
-      vExB = ppBulkSolarWind.vExBtot;
-      vw = ppBulkSolarWind.vw;
-   }
-   // if uniform populations present, write undisturbed uniform plasma bulk parameters in the log
-   if(N_uniformPopulations > 0) {
-      simClasses.logger
-	<< "(UNDISTURBED BULK PARAMETERS: UNIFORM POPULATIONS)" << endl
-	<< "\t ne = " << ppBulkUniform.ne/1e6 << " cm^-3 = " << ppBulkUniform.ne*Hybrid::dV << " 1/dV" << endl
-	<< "\t rhoq = " << ppBulkUniform.rhoq << " C/m^3 = " << ppBulkUniform.rhoq*Hybrid::dV << " C/dV" << endl
-	<< "\t Ubulk = (" << ppBulkUniform.Ubulk[0]/1e3 << "," << ppBulkUniform.Ubulk[1]/1e3 << "," << ppBulkUniform.Ubulk[2]/1e3 << ") km/s" << endl
-	<< "\t |Ubulk| = " << ppBulkUniform.Ubulktot/1e3 << " km/s" << endl
-	<< "\t vA = " << ppBulkUniform.vA/1e3 << " km/s" << endl
-	<< "\t vs = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppBulkUniform.vs/1e3 << " km/s" << endl
-	<< "\t vms = " << ppBulkUniform.vms/1e3 << " km/s" << endl
-	<< "\t MA = " << ppBulkUniform.MA << endl
-	<< "\t Ms = " << ppBulkUniform.Ms << endl
-	<< "\t Mms = " << ppBulkUniform.Mms << endl
-	<< "\t Econv = -UxB = (" << ppBulkUniform.Ec[0]/1e-3 << "," << ppBulkUniform.Ec[1]/1e-3 << "," << ppBulkUniform.Ec[2]/1e-3 << ") mV/m" << endl
-	<< "\t |Econv| = " << ppBulkUniform.Ectot/1e-3 << " mV/m" << endl
-	<< "\t vExB = ExB/B^2 = (" << ppBulkUniform.vExB[0]/1e3 << "," << ppBulkUniform.vExB[1]/1e3 << "," << ppBulkUniform.vExB[2]/1e3 << ") km/s" << endl
-	<< "\t |vExB| = " << ppBulkUniform.vExBtot/1e3 << " km/s" << endl
-	<< "\t vMaxPU = 2*|vExB| = " << ppBulkUniform.vpui/1e3 << " km/s" << endl
-	<< "\t vMaxW = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkUniform.vw/1e3 << " km/s" << endl << endl;
-      if(N_solarWindPopulations < 1) {
-	 rhoq = ppBulkUniform.rhoq;
-	 Ubulk = ppBulkUniform.Ubulktot;
-	 vA = ppBulkUniform.vA;
-	 vs = ppBulkUniform.vs;
-	 vms = ppBulkUniform.vms;
-	 Econv = ppBulkUniform.Ectot;
-	 vExB = ppBulkUniform.vExBtot;
-	 vw = ppBulkUniform.vw;
-      }
-   }
-   // if solar wind populations present (or no uniform populations), write single particle parameters in undisturbed solar wind plasma in the log
-   if(N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
-      simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED SOLAR WIND)" << endl;
-      simClasses.logger
-	<< "\t TEMPORAL:" << endl
-	<< "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
-      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t tP(" << ppSPSW.populationName[s] << ") = " << ppSPSW.periodPlasma[s] << " s = " << ppSPSW.periodPlasma[s]/sim.dt << " dt" << endl;
-      }
-      simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
-      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t tL(" << ppSPSW.populationName[s] << ") = " << ppSPSW.periodLarmor[s] << " s = " << ppSPSW.periodLarmor[s]/sim.dt << " dt" << endl;
-      }
-      simClasses.logger
-	<< "\t SPATIAL:" << endl
-	<< "\t d = inertial length = c/wP = c**qrt( m*eps0/(ne*q^2) )" << endl;
-      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t d(" << ppSPSW.populationName[s] << ") = " << ppSPSW.lengthInertial[s]/1e3 << " km = " << ppSPSW.lengthInertial[s]/Hybrid::dx << " dx" << endl;
-      }
-      simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
-      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t rLth(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorThermal[s]/1e3 << " km = " << ppSPSW.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
-      }
-      simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
-      for(size_t s=0;s<ppSPSW.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t rLpu(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPSW.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
-      }
-      simClasses.logger << endl;
-   }
-   // if uniform populations present, write single particle parameters in undisturbed uniform plasma in the log
-   if(N_uniformPopulations > 0) {
-      simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED UNIFORM PLASMA)" << endl;
-      simClasses.logger
-	<< "\t TEMPORAL:" << endl
-	<< "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
-      for(size_t s=0;s<ppSPU.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t tP(" << ppSPU.populationName[s] << ") = " << ppSPU.periodPlasma[s] << " s = " << ppSPU.periodPlasma[s]/sim.dt << " dt" << endl;
-      }
-      simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
-      for(size_t s=0;s<ppSPU.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t tL(" << ppSPU.populationName[s] << ") = " << ppSPU.periodLarmor[s] << " s = " << ppSPU.periodLarmor[s]/sim.dt << " dt" << endl;
-      }
-      simClasses.logger
-	<< "\t SPATIAL:" << endl
-	<< "\t d = inertial length = c/wP = c**qrt( m*eps0/(ne*q^2) )" << endl;
-      for(size_t s=0;s<ppSPU.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t d(" << ppSPU.populationName[s] << ") = " << ppSPU.lengthInertial[s]/1e3 << " km = " << ppSPU.lengthInertial[s]/Hybrid::dx << " dx" << endl;
-      }
-      simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
-      for(size_t s=0;s<ppSPU.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t rLth(" << ppSPU.populationName[s] << ") = " << ppSPU.radiusLarmorThermal[s]/1e3 << " km = " << ppSPU.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
-      }
-      simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
-      for(size_t s=0;s<ppSPU.populationName.size();++s) {
-	 simClasses.logger
-	   << "\t rLpu(" << ppSPU.populationName[s] << ") = " << ppSPU.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPU.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
-      }
-      simClasses.logger << endl;
-   }
+   // undisturbed bulk parameters needed further below
+   Real rhoq=0.0,Ubulk=0.0,vA=0.0,vs=0.0,vms=0.0,Econv=0.0,vExB=0.0,vw=0.0;
+   // determine different plasma parameters write them in the main log
+     {
+	// calculate bulk parameters as average from all solar wind populations
+	diagnostics::PlasmaParametersBulk ppBulkSolarWind;
+	if(diagnostics::calcPlasmaParametersBulk(simClasses,"solarwind",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkSolarWind) == false) {
+	   return false;
+	}
+	// calculate bulk parameters as average from all uniform populations
+	diagnostics::PlasmaParametersBulk ppBulkUniform;
+	if(diagnostics::calcPlasmaParametersBulk(simClasses,"uniform",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkUniform) == false) {
+	   return false;
+	}
+	// no known initial bulk parameters if no solar wind or uniform populations present
+	if(N_solarWindPopulations < 1 && N_uniformPopulations < 1) {
+	   simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind or uniform populations are present" << endl;
+	}
+	// calculate single particle parameters from all populations using bulk conditions of solar wind populations
+	diagnostics::PlasmaParametersSingleParticle ppSPSW;
+	if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkSolarWind.ne,ppBulkSolarWind.vExBtot,Hybrid::electronTemperature,ppSPSW) == false) {
+	   return false;
+	}
+	// calculate single particle parameters from all populations bulk conditions of uniform populations
+	diagnostics::PlasmaParametersSingleParticle ppSPU;
+	if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkUniform.ne,ppBulkUniform.vExBtot,Hybrid::electronTemperature,ppSPU) == false) {
+	   return false;
+	}
+	// if solar wind populations present (or no uniform populations), write undisturbed solar wind bulk parameters in the log
+	if(N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
+	   simClasses.logger
+	     << "(UNDISTURBED BULK PARAMETERS: SOLAR WIND POPULATIONS)" << endl
+	     << "\t ne = " << ppBulkSolarWind.ne/1e6 << " cm^-3 = " << ppBulkSolarWind.ne*Hybrid::dV << " 1/dV" << endl
+	     << "\t rhoq = " << ppBulkSolarWind.rhoq << " C/m^3 = " << ppBulkSolarWind.rhoq*Hybrid::dV << " C/dV" << endl
+	     << "\t Ubulk = (" << ppBulkSolarWind.Ubulk[0]/1e3 << "," << ppBulkSolarWind.Ubulk[1]/1e3 << "," << ppBulkSolarWind.Ubulk[2]/1e3 << ") km/s" << endl
+	     << "\t |Ubulk| = " << ppBulkSolarWind.Ubulktot/1e3 << " km/s" << endl
+	     << "\t vA = " << ppBulkSolarWind.vA/1e3 << " km/s" << endl
+	     << "\t vs = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppBulkSolarWind.vs/1e3 << " km/s" << endl
+	     << "\t vms = " << ppBulkSolarWind.vms/1e3 << " km/s" << endl
+	     << "\t MA = " << ppBulkSolarWind.MA << endl
+	     << "\t Ms = " << ppBulkSolarWind.Ms << endl
+	     << "\t Mms = " << ppBulkSolarWind.Mms << endl
+	     << "\t Econv = -UxB = (" << ppBulkSolarWind.Ec[0]/1e-3 << "," << ppBulkSolarWind.Ec[1]/1e-3 << "," << ppBulkSolarWind.Ec[2]/1e-3 << ") mV/m" << endl
+	     << "\t |Econv| = " << ppBulkSolarWind.Ectot/1e-3 << " mV/m" << endl
+	     << "\t vExB = ExB/B^2 = (" << ppBulkSolarWind.vExB[0]/1e3 << "," << ppBulkSolarWind.vExB[1]/1e3 << "," << ppBulkSolarWind.vExB[2]/1e3 << ") km/s" << endl
+	     << "\t |vExB| = " << ppBulkSolarWind.vExBtot/1e3 << " km/s" << endl
+	     << "\t vpui_max = 2*|vExB| = " << ppBulkSolarWind.vpui/1e3 << " km/s" << endl
+	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkSolarWind.vw/1e3 << " km/s" << endl << endl;
+	   rhoq = ppBulkSolarWind.rhoq;
+	   Ubulk = ppBulkSolarWind.Ubulktot;
+	   vA = ppBulkSolarWind.vA;
+	   vs = ppBulkSolarWind.vs;
+	   vms = ppBulkSolarWind.vms;
+	   Econv = ppBulkSolarWind.Ectot;
+	   vExB = ppBulkSolarWind.vExBtot;
+	   vw = ppBulkSolarWind.vw;
+	}
+	// if uniform populations present, write undisturbed uniform plasma bulk parameters in the log
+	if(N_uniformPopulations > 0) {
+	   simClasses.logger
+	     << "(UNDISTURBED BULK PARAMETERS: UNIFORM POPULATIONS)" << endl
+	     << "\t ne = " << ppBulkUniform.ne/1e6 << " cm^-3 = " << ppBulkUniform.ne*Hybrid::dV << " 1/dV" << endl
+	     << "\t rhoq = " << ppBulkUniform.rhoq << " C/m^3 = " << ppBulkUniform.rhoq*Hybrid::dV << " C/dV" << endl
+	     << "\t Ubulk = (" << ppBulkUniform.Ubulk[0]/1e3 << "," << ppBulkUniform.Ubulk[1]/1e3 << "," << ppBulkUniform.Ubulk[2]/1e3 << ") km/s" << endl
+	     << "\t |Ubulk| = " << ppBulkUniform.Ubulktot/1e3 << " km/s" << endl
+	     << "\t vA = " << ppBulkUniform.vA/1e3 << " km/s" << endl
+	     << "\t vs = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppBulkUniform.vs/1e3 << " km/s" << endl
+	     << "\t vms = " << ppBulkUniform.vms/1e3 << " km/s" << endl
+	     << "\t MA = " << ppBulkUniform.MA << endl
+	     << "\t Ms = " << ppBulkUniform.Ms << endl
+	     << "\t Mms = " << ppBulkUniform.Mms << endl
+	     << "\t Econv = -UxB = (" << ppBulkUniform.Ec[0]/1e-3 << "," << ppBulkUniform.Ec[1]/1e-3 << "," << ppBulkUniform.Ec[2]/1e-3 << ") mV/m" << endl
+	     << "\t |Econv| = " << ppBulkUniform.Ectot/1e-3 << " mV/m" << endl
+	     << "\t vExB = ExB/B^2 = (" << ppBulkUniform.vExB[0]/1e3 << "," << ppBulkUniform.vExB[1]/1e3 << "," << ppBulkUniform.vExB[2]/1e3 << ") km/s" << endl
+	     << "\t |vExB| = " << ppBulkUniform.vExBtot/1e3 << " km/s" << endl
+	     << "\t vpui_max = 2*|vExB| = " << ppBulkUniform.vpui/1e3 << " km/s" << endl
+	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkUniform.vw/1e3 << " km/s" << endl << endl;
+	   if(N_solarWindPopulations < 1) {
+	      rhoq = ppBulkUniform.rhoq;
+	      Ubulk = ppBulkUniform.Ubulktot;
+	      vA = ppBulkUniform.vA;
+	      vs = ppBulkUniform.vs;
+	      vms = ppBulkUniform.vms;
+	      Econv = ppBulkUniform.Ectot;
+	      vExB = ppBulkUniform.vExBtot;
+	      vw = ppBulkUniform.vw;
+	   }
+	}
+	// if solar wind populations present (or no uniform populations), write single particle parameters in undisturbed solar wind plasma in the log
+	if(N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
+	   simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED SOLAR WIND)" << endl;
+	   simClasses.logger
+	     << "\t TEMPORAL:" << endl
+	     << "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
+	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t tP(" << ppSPSW.populationName[s] << ") = " << ppSPSW.periodPlasma[s] << " s = " << ppSPSW.periodPlasma[s]/sim.dt << " dt" << endl;
+	   }
+	   simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t tL(" << ppSPSW.populationName[s] << ") = " << ppSPSW.periodLarmor[s] << " s = " << ppSPSW.periodLarmor[s]/sim.dt << " dt" << endl;
+	   }
+	   simClasses.logger
+	     << "\t SPATIAL:" << endl
+	     << "\t d = inertial length = c/wP = c*sqrt( m*eps0/(ne*q^2) )" << endl;
+	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t d(" << ppSPSW.populationName[s] << ") = " << ppSPSW.lengthInertial[s]/1e3 << " km = " << ppSPSW.lengthInertial[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t rLth(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorThermal[s]/1e3 << " km = " << ppSPSW.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t rLpu(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPSW.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << endl;
+	}
+	// if uniform populations present, write single particle parameters in undisturbed uniform plasma in the log
+	if(N_uniformPopulations > 0) {
+	   simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED UNIFORM PLASMA)" << endl;
+	   simClasses.logger
+	     << "\t TEMPORAL:" << endl
+	     << "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
+	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t tP(" << ppSPU.populationName[s] << ") = " << ppSPU.periodPlasma[s] << " s = " << ppSPU.periodPlasma[s]/sim.dt << " dt" << endl;
+	   }
+	   simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t tL(" << ppSPU.populationName[s] << ") = " << ppSPU.periodLarmor[s] << " s = " << ppSPU.periodLarmor[s]/sim.dt << " dt" << endl;
+	   }
+	   simClasses.logger
+	     << "\t SPATIAL:" << endl
+	     << "\t d = inertial length = c/wP = c*sqrt( m*eps0/(ne*q^2) )" << endl;
+	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t d(" << ppSPU.populationName[s] << ") = " << ppSPU.lengthInertial[s]/1e3 << " km = " << ppSPU.lengthInertial[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t rLth(" << ppSPU.populationName[s] << ") = " << ppSPU.radiusLarmorThermal[s]/1e3 << " km = " << ppSPU.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t rLpu(" << ppSPU.populationName[s] << ") = " << ppSPU.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPU.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << endl;
+	}
+     } // close: determine different plasma parameters write them in the main log
 
    Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
    if(Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
