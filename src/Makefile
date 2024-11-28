@@ -12,12 +12,10 @@ USE_SHOCKTUBE_TEST_CONFIGURATION := false
 
 include ../../../Makefile.${ARCH}
 
-# Names of files that should be compiled and 
-# inserted to lib${SIM}.a:
+# Names of files that should be compiled and inserted to lib${SIM}.a:
+OBJS = detectors.o hybrid.o hybrid_propagator.o operator_userdata.o particle_accumulator.o particle_injector.o particle_species.o register_objects.o user.o
 
-OBJS = register_objects.o user.o hybrid_propagator.o hybrid.o\
-	particle_accumulator.o particle_injector.o\
-	operator_userdata.o particle_species.o detectors.o
+# Set RHybrid compilation options/macros
 
 ifeq ($(USE_NODE_UE),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_NODE_UE
@@ -63,8 +61,6 @@ ifeq ($(USE_SHOCKTUBE_TEST_CONFIGURATION),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_SHOCKTUBE_TEST_CONFIGURATION
 endif
 
-#override CXXFLAGS += -std=gnu++0x
-
 # Make targets
 
 default:
@@ -86,15 +82,6 @@ override INCS+=-I../../include
 INCS_REG=${INCS} -I../../particleinjector -I../../dataoperator
 INCS_REG+=-I../../particlepropagator -I../../gridbuilder
 
-DEPS_ACCUM=particle_definition.h particle_species.h hybrid.h particle_accumulator.h particle_accumulator.cpp
-DEPS_REG_OBJS=register_objects.cpp
-DEPS_SPECIES=particle_species.h particle_species.cpp
-DEPS_ADV_PROP=hybrid.h hybrid_propagator.h hybrid_propagator.cpp
-DEPS_EX_ADV=hybrid.h hybrid.cpp
-DEPS_OP_USER=operator_userdata.h operator_userdata.cpp
-DEPS_INJECTOR=particle_definition.h particle_species.h particle_injector.h particle_injector.cpp
-DEPS_USER=${DEPS_ACCUM} ${DEPS_SPECIES} ${DEPS_EX_ADV} ${DEPS_INJECTOR} particle_propagator_boris_buneman.h ../../include/user.h user.cpp particle_list_hybrid.h
-
 # Compile information passed to user.cpp
 COMPILEINFO := \""DATE: $(shell date --iso-8601=seconds)\nUSER: $(shell whoami)\nHOST: $(shell hostname)\nDIR: $(shell pwd)\nCMP: $(shell echo ${CMP})\nCXXFLAGS: $(shell echo ${CXXFLAGS})\nMATHFLAGS: $(shell echo ${MATHFLAGS})\nFLAGS: $(shell echo ${FLAGS})\nINCS: $(shell echo ${INCS})\nINCS_REG: $(shell echo ${INCS_REG})\""
 
@@ -103,29 +90,29 @@ COMPILEINFO := \""DATE: $(shell date --iso-8601=seconds)\nUSER: $(shell whoami)\
 .cpp.o:
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c $< ${INCS}
 
-register_objects.o: ${DEPS_REG_OBJS}
-	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c register_objects.cpp ${INCS_REG}
+detectors.o: detectors.cpp detectors.h hybrid.h
+	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c detectors.cpp ${INCS}
 
-user.o: ${DEPS_USER}
-	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -DCOMPILEINFO=${COMPILEINFO} -c user.cpp ${INCS} ${INCS_REG}
-
-hybrid_propagator.o: ${DEPS_ADV_PROP}
-	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c hybrid_propagator.cpp ${INCS}
-
-hybrid.o: ${DEPS_EX_ADV}
+hybrid.o: hybrid.cpp hybrid.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c hybrid.cpp ${INCS}
 
-operator_userdata.o: ${DEPS_OP_USER}
+hybrid_propagator.o: hybrid_propagator.cpp hybrid.h hybrid_propagator.h  particle_definition.h
+	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c hybrid_propagator.cpp ${INCS}
+
+operator_userdata.o: operator_userdata.cpp hybrid.h operator_userdata.h particle_species.h hybrid_propagator.h particle_definition.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c operator_userdata.cpp ${INCS_REG}
 
-particle_accumulator.o: ${DEPS_ACCUM}
+particle_accumulator.o: particle_accumulator.cpp hybrid.h particle_accumulator.h particle_definition.h particle_species.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c particle_accumulator.cpp ${INCS}
 
-particle_injector.o: ${DEPS_INJECTOR}
-	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c particle_injector.cpp ${INCS_REG}	
+particle_injector.o: particle_injector.cpp particle_injector.h particle_definition.h particle_species.h hybrid.h neutral_profiles.h
+	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c particle_injector.cpp ${INCS_REG}
 
-particle_species.o: ${DEPS_SPECIES}
+particle_species.o: particle_species.cpp particle_species.h hybrid.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c particle_species.cpp ${INCS_REG}
 
-detectors.o: detectors.h detectors.cpp
-	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c detectors.cpp ${INCS}
+register_objects.o: register_objects.cpp particle_boundary_cond_hybrid.h particle_definition.h particle_species.h operator_userdata.h
+	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c register_objects.cpp ${INCS_REG}
+
+user.o: user.cpp hybrid.h hybrid_propagator.h particle_definition.h particle_species.h particle_accumulator.h particle_propagator_boris_buneman.h particle_injector.h particle_list_hybrid.h operator_userdata.h diagnostics.h detectors.h
+	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -DCOMPILEINFO=${COMPILEINFO} -c user.cpp ${INCS} ${INCS_REG}
