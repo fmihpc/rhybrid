@@ -792,7 +792,7 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
 
    // determine the number of non-ghost cells in the plane perpendicular to undisturbed solar wind flow
    int N_perp_cells = 0;
-   int N_x_cells = sim.y_blocks;
+   int N_x_cells = sim.x_blocks;
    int N_y_cells = sim.y_blocks;
    int N_z_cells = sim.z_blocks;
    if(N_x_cells > 2 && sim.x_periodic == false) { N_x_cells -= 2; } // remove ghost cells
