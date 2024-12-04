@@ -152,6 +152,7 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       }
    }
 #endif
+   //Hybrid::IMFBy = 1.0e-9*(sin(20.0*sim.t/(sim.maximumTimesteps*sim.dt))); // RHBTESTS: convect sine wave in By with the solar wind from the front wall
    return rvalue;
 }
 
@@ -1826,11 +1827,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 	 for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
 	    const int n = (b*block::SIZE+block::index(i,j,k));
-	    //faceB[n*3+1] = simClasses.pargrid.getGlobalIDs()[b];//*x/1e6; // faceBy
 	    // inner boundary flags
 	    const Real xCellCenter = crd[b3+0] + (i+0.5)*Hybrid::dx;
 	    const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
 	    const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
+	    //faceB[n*3+1] = 1.0e-9*sin( 4.0*xCellCenter/(sim.x_max - sim.x_min) ); // RHBTESTS: init grid with sine wave in By (set USE_B_INITIAL as false in Makefile)
+	    //faceB[n*3+1] = simClasses.pargrid.getGlobalIDs()[b];//*x/1e6; // RHBTESTS: faceBy
             const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
 	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
@@ -1851,7 +1853,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    if(rp2 < Hybrid::R2_particleObstacle) { innerFlagParticle[b] = true; }
             if(rp2 < Hybrid::R2_cellEpObstacle) { innerFlagCellEp[b] = true; }
 	    const Real rNode2 = sqr(xNode) + sqr(yNode) + sqr(zNode);
-	    if(rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0;*/ }
+	    if(rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0; // RHBTESTS */ }
 	    else                                  { innerFlagNode[n] = false; }
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);

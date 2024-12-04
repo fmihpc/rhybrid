@@ -223,6 +223,7 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       const Real xCellGlobal = xBlock + xCell;
       if(xCellGlobal < xmin || xCellGlobal > xmax) { continue; }
       const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell);
+      //const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell*(1.5 + sin( 10.0*xCellGlobal/(sim->x_max - sim->x_min) ))); // RHBTESTS: init uniform population with sine wave in density
       if(N_injectCell <= 0) { continue; }
       for(int s = 0;s<N_injectCell;s++) {
 	 const Real eps = 1.0e-2;
@@ -716,6 +717,7 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
    getBlockSize(*simClasses,*sim,blockID,blockSize);
    // probround
    const int N_inject = probround(*simClasses,N_macroParticlesPerCellPerDt);
+   //const int N_inject = probround(*simClasses,N_macroParticlesPerCellPerDt*(1.5 + sin(20.0*sim->t/(sim->maximumTimesteps*sim->dt)))); // RHBTESTS: inject sine wave in the solar wind density from the front wall
    if(N_inject <= 0) { return true; }
    // Make room for new particles:
    const pargrid::ArraySizetype oldSize = wrapper.size()[blockID];
