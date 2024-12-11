@@ -339,9 +339,10 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    bool* innerFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       if(simClasses.pargrid.getNeighbourFlags(b) != pargrid::ALL_NEIGHBOURS_EXIST) { continue; }
-      const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-      Real allFaceB[size*3];
-      fetchData(faceB,allFaceB,simClasses,b,3);
+      const size_t vectorDim = 3;
+      const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
+      Real aa[s*vectorDim]; // temp array
+      fetchData(faceB,aa,simClasses,b,vectorDim);
       for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
@@ -350,14 +351,14 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	    if(innerFlag[n] == true) { continue; }
 	 }
 	 // divergence of B in a cell from face magnetic field
-	 Real divB = ((allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+0] - allFaceB[(block::arrayIndex(i+0,j+1,k+1))*3+0])
-		    + (allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+1] - allFaceB[(block::arrayIndex(i+1,j+0,k+1))*3+1])
-		    + (allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+2] - allFaceB[(block::arrayIndex(i+1,j+1,k+0))*3+2]))/Hybrid::dx;
+	 Real divB = ((aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0] - aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+0])
+		    + (aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1] - aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+1])
+		    + (aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2] - aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+2]))/Hybrid::dx;
 	 divB = fabs(divB);
 	 // B in a cell as an average face magnetic field
-	 const Real Bx = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+0] + allFaceB[(block::arrayIndex(i+0,j+1,k+1))*3+0]);
-	 const Real By = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+1] + allFaceB[(block::arrayIndex(i+1,j+0,k+1))*3+1]);
-	 const Real Bz = 0.5*(allFaceB[(block::arrayIndex(i+1,j+1,k+1))*3+2] + allFaceB[(block::arrayIndex(i+1,j+1,k+0))*3+2]);
+	 const Real Bx = 0.5*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0] + aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+0]);
+	 const Real By = 0.5*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1] + aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+1]);
+	 const Real Bz = 0.5*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2] + aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+2]);
 	 const Real B2 = sqr(Bx) + sqr(By) + sqr(Bz);
 	 const Real Btot = sqrt(B2);
 	 Real divBPerB = 0.0;

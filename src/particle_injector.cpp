@@ -424,9 +424,6 @@ bool InjectorAmbient::inject(pargrid::DataID speciesDataID,unsigned int* N_parti
 
 // wall: +x = 0 ,-x = 1, +y = 2, -y = 3, +z = 4,-z = 5
 bool InjectorAmbient::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper,unsigned int wall) {
-   const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
-   const size_t b3 = 3*blockID;
-   const Real xBlock = crd[b3+0];
    vector<Real> xinj,yinj,zinj;
    for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
       const Real xCell = (i+0.5)*Hybrid::dx;

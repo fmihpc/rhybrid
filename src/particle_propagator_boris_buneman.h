@@ -63,8 +63,7 @@ bool BorisBuneman<PARTICLE>::finalize() {return true;}
 template<class PARTICLE>
   void BorisBuneman<PARTICLE>::propagate(const Real xBlock,const Real yBlock,const Real zBlock,pargrid::CellID blockID,const Species& species,PARTICLE& particle,pargrid::CellID globalID) {
    bool accelerate = species.accelerate;
-   if(simClasses->pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST |
-      Hybrid::initialFlowThrough == true) {
+   if( (simClasses->pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) || (Hybrid::initialFlowThrough == true) ) {
       accelerate = false;
    }
 #ifdef USE_OUTER_BOUNDARY_ZONE

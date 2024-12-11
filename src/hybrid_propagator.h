@@ -25,14 +25,14 @@
 #include <simulationclasses.h>
 
 bool propagateB(Simulation& sim,SimulationClasses& simClasses,std::vector<ParticleListBase*>& particleLists);
-void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks,const int vectorDim);
+void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks,const size_t vectorDim);
 void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks);
 void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks);
 void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const std::vector<pargrid::CellID>& exteriorBlocks);
 void face2Cell(Real* faceData,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
-void cell2Node(Real* celldata,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim = 3);
+void cell2Node(Real* celldata,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const size_t vectorDim = 3);
 void node2Cell(Real* nodeData,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
-void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const int vectorDim = 3);
+void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const size_t vectorDim = 3);
 void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,
 #ifdef USE_OUTER_BOUNDARY_ZONE
@@ -71,6 +71,6 @@ void node2r(Real* r,Real* nodeData,Simulation& sim,SimulationClasses& simClasses
 void cell2r(Real* r,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result);
 void setupGetFields(Simulation& sim,SimulationClasses& simClasses);
 void getFields(Real* r,Real* B,Real* Ue,Real* Ep,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
-void fetchData(Real* data,Real* array,SimulationClasses& simClasses,pargrid::CellID blockID,int vectorDim);
+void fetchData(Real* D,Real* aa,SimulationClasses& simClasses,pargrid::CellID blockID,const size_t vectorDim);
 
 #endif

@@ -35,7 +35,7 @@ Accumulator::Accumulator(): ParticleAccumulatorBase() {
       particleAccumulation = -1;
    #endif
 }
-   
+
 Accumulator::~Accumulator() {
    finalize();
 }
@@ -48,11 +48,11 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
 void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,unsigned int N_particles,
 				 const Particle<Real>* particles,Real* cellRhoQi,Real* cellJi) {
 #endif
-   const int accBlockSize  = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-   Real acc1[accBlockSize];
-   Real acc2[accBlockSize*3];
-   for(int i=0;i<accBlockSize;++i)   { acc1[i] = 0.0; }
-   for(int i=0;i<accBlockSize*3;++i) { acc2[i] = 0.0; }
+   const size_t s  = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2); // accumulation block size
+   Real acc1[s]; // accumulation array 1 (scalar)
+   Real acc2[s*3]; // accumulation array 1 (vector)
+   for(size_t i=0;i<s;++i)   { acc1[i] = 0.0; }
+   for(size_t i=0;i<s*3;++i) { acc2[i] = 0.0; }
    const Real q = species.q;
 
 #ifdef USE_DETECTORS
@@ -70,7 +70,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
       const Real z = particles[p].state[particle::Z];
       const Real w = particles[p].state[particle::WEIGHT];
       const Real wq = w*q;
-      
+
       Real v[3];
       v[0] = particles[p].state[particle::VX];
       v[1] = particles[p].state[particle::VY];
@@ -88,7 +88,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
       const Real w_x = (x-x0)/Hybrid::dx;
       const Real w_y = (y-y0)/Hybrid::dx;
       const Real w_z = (z-z0)/Hybrid::dx;
-      
+
       // CIC weight factors
       const Real w000 = (1-w_x)*(1-w_y)*(1-w_z) * wq;
       const Real w100 =    w_x *(1-w_y)*(1-w_z) * wq;
@@ -98,7 +98,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
       const Real w101 =    w_x *(1-w_y)*   w_z  * wq;
       const Real w011 = (1-w_x)*   w_y *   w_z  * wq;
       const Real w111 =    w_x *  w_y  *   w_z  * wq;
-      
+
       // indices
       const int ind000 = block::arrayIndex(i+0,j+0,k+0);
       const int ind100 = block::arrayIndex(i+1,j+0,k+0);
@@ -108,7 +108,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
       const int ind101 = block::arrayIndex(i+1,j+0,k+1);
       const int ind011 = block::arrayIndex(i+0,j+1,k+1);
       const int ind111 = block::arrayIndex(i+1,j+1,k+1);
-      
+
       // rhoq
       acc1[ind000] += w000;
       acc1[ind100] += w100;
@@ -118,7 +118,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
       acc1[ind101] += w101;
       acc1[ind011] += w011;
       acc1[ind111] += w111;
-      
+
       // Ji
       for(int l=0;l<3;++l) {
 	 acc2[ind000*3+l] += w000*v[l];
@@ -136,12 +136,12 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
       }*/
 #endif
    }
-   
+
    #if PROFILE_LEVEL > 1
       profile::stop();
       profile::start("data copying",dataCopying);
    #endif
-   
+
    block::addValues3D(*simClasses,blockID,acc1,cellRhoQi,1);
    block::addValues3D(*simClasses,blockID,acc2,cellJi,3);
 
@@ -149,7 +149,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
    if(nAve != NULL) { block::addValues3D(*simClasses,blockID,acc1,nAve,1); }
    if(vAve != NULL) { block::addValues3D(*simClasses,blockID,acc2,vAve,3); }
 #endif
-   
+
    #if PROFILE_LEVEL > 1
       profile::stop();
    #endif
@@ -158,11 +158,11 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
 /* // NGP accumulator
 void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,unsigned int N_particles,
 				 const Particle<Real>* particles,Real* cellRhoQi,Real* cellJi) {
-   const int accBlockSize  = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-   Real acc1[accBlockSize];
-   Real acc2[accBlockSize*3];
-   for(int i=0;i<accBlockSize;++i)   { acc1[i] = 0.0; }
-   for(int i=0;i<accBlockSize*3;++i) { acc2[i] = 0.0; }
+   const size_t s  = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2); // accumulation block size
+   Real acc1[s]; // accumulation array 1 (scalar)
+   Real acc2[s*3]; // accumulation array 1 (vector)
+   for(size_t i=0;i<s;++i)   { acc1[i] = 0.0; }
+   for(size_t i=0;i<s*3;++i) { acc2[i] = 0.0; }
    const Real q = species.q;
    
    #if PROFILE_LEVEL > 1

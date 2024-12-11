@@ -164,7 +164,8 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
 
 bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,vector<ParticleListBase*>& particleLists) {
    simClasses.logger << "(RHYBRID) Starting early initialization." << endl;
-   Hybrid hybrid;
+   Hybrid hybrid; // initialized global variables
+   hybrid.R_object = 0; // to get rid of unused variable warning
 #if defined(USE_B_INITIAL) && defined(USE_B_CONSTANT)
 #error                  "(RHYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time"
    simClasses.logger << "(RHYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time" << endl << write;
@@ -209,29 +210,29 @@ bool checkOrbit(vector< vector<Real> > xyz) {
 
 // broadcast 2d vector from master to all PEs
 bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
-   int NN[2];
+   decltype(d.size()) NN[2];
    if(sim.mpiRank == sim.MASTER_RANK) {
       NN[0]=d.size();
       if(NN[0] > 0) { NN[1]=d[0].size(); }
       else { return false; }
       // check that all vector rows have same number of columns
-      for(unsigned int i = 0;i<NN[0];i++) {
+      for(decltype(d.size()) i=0;i<NN[0];i++) {
          if(d[i].size() != NN[1]) { return false; }
       }
    }
    // distribute orbit coordinates read by master to all processes
    MPI_Bcast(NN,2,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
    Real* buff = new Real[NN[1]];
-   for(int i=0;i<NN[0];i++) {
+   for(decltype(d.size()) i=0;i<NN[0];i++) {
       if(sim.mpiRank == sim.MASTER_RANK) {
-	 for(int j=0;j<NN[1];j++) {
+	 for(decltype(d.size()) j=0;j<NN[1];j++) {
 	    buff[j] = d[i][j];
 	 }
       }
       MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
       if(sim.mpiRank != sim.MASTER_RANK) {
 	 d.push_back(vector<Real>());
-	 for(int j=0;j<NN[1];j++)  {
+	 for(decltype(d.size()) j=0;j<NN[1];j++)  {
 	    d[i].push_back(buff[j]);
 	 }
       }

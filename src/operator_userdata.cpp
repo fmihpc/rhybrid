@@ -394,14 +394,15 @@ bool UserDataOP::writeCellDataVariableBool(const std::string& spatMeshName,pargr
 void UserDataOP::calcCellDiv(Real* faceData,vector<Real>& cellDiv) {
    for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       if(simClasses->pargrid.getNeighbourFlags(b) != pargrid::ALL_NEIGHBOURS_EXIST) { continue; }
-      const unsigned int size = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-      Real array[size*3];
-      fetchData(faceData,array,*simClasses,b,3);
+      const size_t vectorDim = 3;
+      const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
+      Real aa[s*vectorDim]; // temp array
+      fetchData(faceData,aa,*simClasses,b,vectorDim);
       for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
-	 cellDiv[n] = ((array[(block::arrayIndex(i+1,j+1,k+1))*3+0] - array[(block::arrayIndex(i+0,j+1,k+1))*3+0])
-	             + (array[(block::arrayIndex(i+1,j+1,k+1))*3+1] - array[(block::arrayIndex(i+1,j+0,k+1))*3+1])
-		     + (array[(block::arrayIndex(i+1,j+1,k+1))*3+2] - array[(block::arrayIndex(i+1,j+1,k+0))*3+2]))/Hybrid::dx;
+	 cellDiv[n] = ((aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0] - aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+0])
+	             + (aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1] - aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+1])
+		     + (aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2] - aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+2]))/Hybrid::dx;
       }
    }
 }
