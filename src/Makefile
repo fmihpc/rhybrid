@@ -96,10 +96,10 @@ detectors.o: detectors.cpp detectors.h hybrid.h
 hybrid.o: hybrid.cpp hybrid.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c hybrid.cpp ${INCS}
 
-hybrid_propagator.o: hybrid_propagator.cpp hybrid.h hybrid_propagator.h  particle_definition.h
+hybrid_propagator.o: hybrid_propagator.cpp hybrid.h hybrid_propagator.h  particle_definition.h magnetic_field.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c hybrid_propagator.cpp ${INCS}
 
-operator_userdata.o: operator_userdata.cpp hybrid.h operator_userdata.h particle_species.h hybrid_propagator.h particle_definition.h
+operator_userdata.o: operator_userdata.cpp hybrid.h operator_userdata.h particle_species.h hybrid_propagator.h particle_definition.h magnetic_field.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c operator_userdata.cpp ${INCS_REG}
 
 particle_accumulator.o: particle_accumulator.cpp hybrid.h particle_accumulator.h particle_definition.h particle_species.h
@@ -114,5 +114,5 @@ particle_species.o: particle_species.cpp particle_species.h hybrid.h
 register_objects.o: register_objects.cpp particle_boundary_cond_hybrid.h particle_definition.h particle_species.h operator_userdata.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -c register_objects.cpp ${INCS_REG}
 
-user.o: user.cpp hybrid.h hybrid_propagator.h particle_definition.h particle_species.h particle_accumulator.h particle_propagator_boris_buneman.h particle_injector.h particle_list_hybrid.h operator_userdata.h diagnostics.h detectors.h
+user.o: user.cpp hybrid.h hybrid_propagator.h particle_definition.h particle_species.h particle_accumulator.h particle_propagator_boris_buneman.h particle_injector.h particle_list_hybrid.h operator_userdata.h diagnostics.h detectors.h magnetic_field.h
 	${CMP} ${CXXFLAGS} ${MATHFLAGS} ${FLAGS} -DCOMPILEINFO=${COMPILEINFO} -c user.cpp ${INCS} ${INCS_REG}
