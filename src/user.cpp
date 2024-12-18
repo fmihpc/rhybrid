@@ -1381,7 +1381,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      }
 
    // undisturbed bulk parameters needed further below
-   Real rhoq=0.0,Ubulk=0.0,vA=0.0,vs=0.0,vms=0.0,Econv=0.0,vExB=0.0,vw=0.0;
+   Real ne=0.0,rhoq=0.0,Ubulk=0.0,vA=0.0,vs=0.0,vms=0.0,Econv=0.0,vExB=0.0,vw=0.0;
    // determine different plasma parameters write them in the main log
      {
 	// calculate bulk parameters as average from all solar wind populations
@@ -1428,6 +1428,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	     << "\t |vExB| = " << ppBulkSolarWind.vExBtot/1e3 << " km/s" << endl
 	     << "\t vpui_max = 2*|vExB| = " << ppBulkSolarWind.vpui/1e3 << " km/s" << endl
 	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkSolarWind.vw/1e3 << " km/s" << endl << endl;
+	   ne = ppBulkSolarWind.ne;
 	   rhoq = ppBulkSolarWind.rhoq;
 	   Ubulk = ppBulkSolarWind.Ubulktot;
 	   vA = ppBulkSolarWind.vA;
@@ -1458,6 +1459,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	     << "\t vpui_max = 2*|vExB| = " << ppBulkUniform.vpui/1e3 << " km/s" << endl
 	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkUniform.vw/1e3 << " km/s" << endl << endl;
 	   if(N_solarWindPopulations < 1) {
+	      ne = ppBulkUniform.ne;
 	      rhoq = ppBulkUniform.rhoq;
 	      Ubulk = ppBulkUniform.Ubulktot;
 	      vA = ppBulkUniform.vA;
@@ -1537,6 +1539,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   simClasses.logger << endl;
 	}
      } // close: determine different plasma parameters write them in the main log
+
+   // set adiabatic electron pressure coefficient with gamma = 2
+   if(Hybrid::useAdiabaticElectronPressure == true) {
+      if(ne > 0) {
+	 Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( ne * sqr(constants::CHARGE_ELEMENTARY) );
+      }
+      else {
+	 Hybrid::electronPressureCoeff = 0.0;
+      }
+   }
 
    Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
    if(Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
