@@ -1540,6 +1540,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	}
      } // close: determine different plasma parameters write them in the main log
 
+   // set initial flow through
+   if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
+      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
+      Hybrid::initialFlowThrough = true;
+   }
+   else {
+      Hybrid::initialFlowThroughPeriod = -100;
+      Hybrid::initialFlowThrough = false;
+   }
+
    // set adiabatic electron pressure coefficient with gamma = 2
    if(Hybrid::useAdiabaticElectronPressure == true) {
       if(ne > 0) {
