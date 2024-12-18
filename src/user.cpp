@@ -1540,6 +1540,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	}
      } // close: determine different plasma parameters write them in the main log
 
+   // set bulk speed
+   Hybrid::upstreamBulkU = Ubulk;
+
    // set initial flow through
    if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
       Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
