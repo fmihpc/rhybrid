@@ -161,6 +161,10 @@ bool getInjectorParameters(ParticleInjectorBase* injBasePtr,InjectorParameters& 
       InjectorSolarWind* injPtr = dynamic_cast<InjectorSolarWind*>(injBasePtr);
       injPtr->getParams(p);
    }
+   else if(injectorType.compare("flow") == 0) {
+      InjectorFlow* injPtr = dynamic_cast<InjectorFlow*>(injBasePtr);
+      injPtr->getParams(p);
+   }
    else if(injectorType.compare("ionosphere") == 0) {
       InjectorIonosphere* injPtr = dynamic_cast<InjectorIonosphere*>(injBasePtr);
       injPtr->getParams(p);
@@ -890,6 +894,137 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
 
 // get injector parameters
 void InjectorSolarWind::getParams(InjectorParameters& p) {
+   p.name = species->name;
+   p.m = species->m;
+   p.q = species->q;
+   p.w = w;
+   p.T = T;
+   p.vth = vth;
+   p.n = n;
+   p.U = U;
+   p.velocity[0] = velocity[0];
+   p.velocity[1] = velocity[1];
+   p.velocity[2] = velocity[2];
+}
+
+// FLOW INJECTOR
+
+InjectorFlow::InjectorFlow(): ParticleInjectorBase() {
+   initialized = false;
+   velocity[0] = velocity[1] = velocity[2] = U = T = vth = n = w = 0.0;
+   N_macroParticlesPerCell = -1.0;
+}
+
+InjectorFlow::~InjectorFlow() {finalize();}
+
+bool InjectorFlow::finalize() {
+   if(initialized == false) { return true; }
+   initialized = false;
+   return true;
+}
+
+bool InjectorFlow::inject(pargrid::DataID speciesDataID,unsigned int* N_particles) {
+   if(initialized == false) { return initialized; }
+   bool success = true;
+   if(sim->timestep <= 0) { return success; }
+   pargrid::DataWrapper<Particle<Real> > wrapper = simClasses->pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
+   for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+      if(((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_POS_EXISTS) == 0) ||
+	 ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::X_NEG_EXISTS) == 0) ||
+	 ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_POS_EXISTS) == 0) ||
+	 ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Y_NEG_EXISTS) == 0) ||
+	 ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_POS_EXISTS) == 0) ||
+	 ((simClasses->pargrid.getNeighbourFlags(b) & Hybrid::Z_NEG_EXISTS) == 0) == true) {
+	 if(injectParticles(b,*species,N_particles,wrapper) == false) { success = false; }
+      }
+   }
+   return success;
+}
+
+bool InjectorFlow::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper) {
+   Real blockSize[3];
+   getBlockSize(*simClasses,*sim,blockID,blockSize);
+   // probround
+   const int N_inject = probround(*simClasses,N_macroParticlesPerCell);
+   if(N_inject <= 0) { return true; }
+   // Make room for new particles:
+   const pargrid::ArraySizetype oldSize = wrapper.size()[blockID];
+   N_particles[blockID] += N_inject;
+   wrapper.resize(blockID,oldSize+N_inject);
+   Particle<Real>* particles = wrapper.data()[blockID];
+   for(size_t p=oldSize; p<oldSize+N_inject; ++p) {
+      // set coordinates and velocity components of a new particle
+      particles[p].state[particle::X] = simClasses->random.uniform()*blockSize[0];
+      particles[p].state[particle::Y] = simClasses->random.uniform()*blockSize[1];
+      particles[p].state[particle::Z] = simClasses->random.uniform()*blockSize[2];
+      particles[p].state[particle::VX] = velocity[0] + vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VY] = velocity[1] + vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VZ] = velocity[2] + vth*gaussrnd(*simClasses);
+      particles[p].state[particle::WEIGHT] = w;
+      // inject counter
+      Hybrid::logCounterParticleInject[species.popid-1] += w;
+      Hybrid::logCounterParticleInjectMacroparticles[species.popid-1] += 1;
+      Hybrid::logCounterParticleInjectKineticEnergy[species.popid-1] += w*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
+   }
+   return true;
+}
+
+bool InjectorFlow::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
+   cr.add(configRegionName+".velocity","Bulk velocity vector (Ux,Uy,Uz) [m/s] (float,float,float).",string(""));
+   cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
+   cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell in undisturbed solar wind [#] (Real).",(Real)-1.0);
+   return true;
+}
+
+bool InjectorFlow::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& configRegionName,const ParticleListBase* plist) {
+   initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
+   this->type = "flow";
+   this->species = reinterpret_cast<const Species*>(plist->getSpecies());
+   string velStr = "";
+   cr.parse();
+   cr.get(configRegionName+".velocity",velStr);
+   cr.get(configRegionName+".density",n);
+   cr.get(configRegionName+".temperature",T);
+   cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+
+   // bulk velocity vector
+     {
+	bool velStrOk = true;
+	vector<Real> vel;
+	velStrOk = convertConfigFileVariableVelocity(velStr,vel);
+	// if not correct format
+	if(velStrOk == false) {
+	   simClasses.logger << "(" << species->name << ") ERROR: bad format of bulk velocity vector (" << velStr << ")" << endl << write;
+	   initialized = false;
+	}
+	this->velocity[0] = vel[0];
+	this->velocity[1] = vel[1];
+	this->velocity[2] = vel[2];
+	U = normvec(vel);
+     }
+
+   if(N_macroParticlesPerCell > 0 && n > 0 && Hybrid::dx > 0) {
+      w = n*Hybrid::dV/N_macroParticlesPerCell;
+   }
+   else {
+      N_macroParticlesPerCell = n = w = 0.0;
+   }
+   if(T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
+   else { vth = 0.0; }
+   simClasses.logger
+     << "(" << species->name << ") velocity      = (" << velocity[0]/1e3 << "," << velocity[1]/1e3 << "," << velocity[2]/1e3 << ") km/s" << endl
+     << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
+     << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
+     << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
+     << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
+     << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
+     << "(" << species->name << ") macroparticle weight    = " << w << endl;
+   return initialized;
+}
+
+// get injector parameters
+void InjectorFlow::getParams(InjectorParameters& p) {
    p.name = species->name;
    p.m = species->m;
    p.q = species->q;

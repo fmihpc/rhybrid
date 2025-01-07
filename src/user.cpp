@@ -771,6 +771,23 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 }
       }
    } while (erased == true);
+   // read particle populations: flow
+   vector<string> flowPopulations;
+   cr.addComposed("Hybrid.particle.population.flow","Names of flow particle populations (string)");
+   cr.parse();
+   cr.get("Hybrid.particle.population.flow",flowPopulations);
+   // erase empty entries
+   erased = false;
+   do {
+      erased = false;
+      for (vector<string>::iterator it=flowPopulations.begin(); it!=flowPopulations.end(); ++it) {
+	 if ((*it).size() == 0) {
+	    flowPopulations.erase(it);
+	    erased = true;
+	    break;
+	 }
+      }
+   } while (erased == true);
    // read particle populations: ionosphere
    vector<string> ionospherePopulations;
    cr.addComposed("Hybrid.particle.population.ionosphere","Names of ionopsheric particle populations (string)");
@@ -806,9 +823,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
    } while (erased == true);
    // number of all, ionospheric and exospheric particle populations
-   Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + ambientPopulations.size() + solarwindPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
+   Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + ambientPopulations.size() + solarwindPopulations.size() + flowPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
    const size_t N_uniformPopulations = uniformPopulations.size();
    const size_t N_solarWindPopulations = solarwindPopulations.size();
+   const size_t N_flowPopulations = flowPopulations.size();
    Hybrid::N_ionospherePopulations = static_cast<unsigned int>( ionospherePopulations.size() );
    Hybrid::N_exospherePopulations = static_cast<unsigned int>( exospherePopulations.size() );
 
@@ -1291,6 +1309,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
    }
+   // initialize particle lists: flow
+   for (vector<string>::iterator it=flowPopulations.begin(); it!=flowPopulations.end(); ++it) {
+      simClasses.logger << endl << "(RHYBRID) Initializing a flow particle population: " << *it << endl;
+      if(checkInjectorName(simClasses,cr,*it,"FlowInjector") == false) { return false; }
+      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
+      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
+      Hybrid::populationNames.push_back(*it);
+   }
    // initialize particle lists: ionosphere
    for (vector<string>::iterator it=ionospherePopulations.begin(); it!=ionospherePopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl;
@@ -1389,18 +1415,28 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	if(diagnostics::calcPlasmaParametersBulk(simClasses,"solarwind",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkSolarWind) == false) {
 	   return false;
 	}
+	// calculate bulk parameters as average from all flow populations
+	diagnostics::PlasmaParametersBulk ppBulkFlow;
+	if(diagnostics::calcPlasmaParametersBulk(simClasses,"flow",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkFlow) == false) {
+	   return false;
+	}
 	// calculate bulk parameters as average from all uniform populations
 	diagnostics::PlasmaParametersBulk ppBulkUniform;
 	if(diagnostics::calcPlasmaParametersBulk(simClasses,"uniform",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkUniform) == false) {
 	   return false;
 	}
 	// no known initial bulk parameters if no solar wind or uniform populations present
-	if(N_solarWindPopulations < 1 && N_uniformPopulations < 1) {
-	   simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind or uniform populations are present" << endl;
+	if(N_solarWindPopulations < 1 && N_flowPopulations < 1 && N_uniformPopulations < 1) {
+	   simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind, flow or uniform populations are present" << endl;
 	}
 	// calculate single particle parameters from all populations using bulk conditions of solar wind populations
 	diagnostics::PlasmaParametersSingleParticle ppSPSW;
 	if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkSolarWind.ne,ppBulkSolarWind.vExBtot,Hybrid::electronTemperature,ppSPSW) == false) {
+	   return false;
+	}
+	// calculate single particle parameters from all populations using bulk conditions of flow populations
+	diagnostics::PlasmaParametersSingleParticle ppSPFlow;
+	if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkFlow.ne,ppBulkFlow.vExBtot,Hybrid::electronTemperature,ppSPFlow) == false) {
 	   return false;
 	}
 	// calculate single particle parameters from all populations bulk conditions of uniform populations
@@ -1438,6 +1474,38 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   vExB = ppBulkSolarWind.vExBtot;
 	   vw = ppBulkSolarWind.vw;
 	}
+	// if flow populations present, write undisturbed flow plasma bulk parameters in the log
+	if(N_flowPopulations > 0) {
+	   simClasses.logger
+	     << "(UNDISTURBED BULK PARAMETERS: FLOW POPULATIONS)" << endl
+	     << "\t ne = " << ppBulkFlow.ne/1e6 << " cm^-3 = " << ppBulkFlow.ne*Hybrid::dV << " 1/dV" << endl
+	     << "\t rhoq = " << ppBulkFlow.rhoq << " C/m^3 = " << ppBulkFlow.rhoq*Hybrid::dV << " C/dV" << endl
+	     << "\t Ubulk = (" << ppBulkFlow.Ubulk[0]/1e3 << "," << ppBulkFlow.Ubulk[1]/1e3 << "," << ppBulkFlow.Ubulk[2]/1e3 << ") km/s" << endl
+	     << "\t |Ubulk| = " << ppBulkFlow.Ubulktot/1e3 << " km/s" << endl
+	     << "\t vA = " << ppBulkFlow.vA/1e3 << " km/s" << endl
+	     << "\t vs = sqrt( ( 5/3*kB*sum_i(ni*Ti) )/sum_i(ni*mi) ) = " << ppBulkFlow.vs/1e3 << " km/s" << endl
+	     << "\t vms = " << ppBulkFlow.vms/1e3 << " km/s" << endl
+	     << "\t MA = " << ppBulkFlow.MA << endl
+	     << "\t Ms = " << ppBulkFlow.Ms << endl
+	     << "\t Mms = " << ppBulkFlow.Mms << endl
+	     << "\t Econv = -UxB = (" << ppBulkFlow.Ec[0]/1e-3 << "," << ppBulkFlow.Ec[1]/1e-3 << "," << ppBulkFlow.Ec[2]/1e-3 << ") mV/m" << endl
+	     << "\t |Econv| = " << ppBulkFlow.Ectot/1e-3 << " mV/m" << endl
+	     << "\t vExB = ExB/B^2 = (" << ppBulkFlow.vExB[0]/1e3 << "," << ppBulkFlow.vExB[1]/1e3 << "," << ppBulkFlow.vExB[2]/1e3 << ") km/s" << endl
+	     << "\t |vExB| = " << ppBulkFlow.vExBtot/1e3 << " km/s" << endl
+	     << "\t vpui_max = 2*|vExB| = " << ppBulkFlow.vpui/1e3 << " km/s" << endl
+	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkFlow.vw/1e3 << " km/s" << endl << endl;
+	   if(N_solarWindPopulations < 1) {
+	      ne = ppBulkFlow.ne;
+	      rhoq = ppBulkFlow.rhoq;
+	      Ubulk = ppBulkFlow.Ubulktot;
+	      vA = ppBulkFlow.vA;
+	      vs = ppBulkFlow.vs;
+	      vms = ppBulkFlow.vms;
+	      Econv = ppBulkFlow.Ectot;
+	      vExB = ppBulkFlow.vExBtot;
+	      vw = ppBulkFlow.vw;
+	   }
+	}
 	// if uniform populations present, write undisturbed uniform plasma bulk parameters in the log
 	if(N_uniformPopulations > 0) {
 	   simClasses.logger
@@ -1458,7 +1526,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	     << "\t |vExB| = " << ppBulkUniform.vExBtot/1e3 << " km/s" << endl
 	     << "\t vpui_max = 2*|vExB| = " << ppBulkUniform.vpui/1e3 << " km/s" << endl
 	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkUniform.vw/1e3 << " km/s" << endl << endl;
-	   if(N_solarWindPopulations < 1) {
+	   if(N_solarWindPopulations < 1 && N_flowPopulations < 1) {
 	      ne = ppBulkUniform.ne;
 	      rhoq = ppBulkUniform.rhoq;
 	      Ubulk = ppBulkUniform.Ubulktot;
@@ -1471,7 +1539,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   }
 	}
 	// if solar wind populations present (or no uniform populations), write single particle parameters in undisturbed solar wind plasma in the log
-	if(N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
+	if(N_solarWindPopulations > 0 || (N_uniformPopulations < 1 && N_flowPopulations < 1) ) {
 	   simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED SOLAR WIND)" << endl;
 	   simClasses.logger
 	     << "\t TEMPORAL:" << endl
@@ -1501,6 +1569,40 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t rLpu(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPSW.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << endl;
+	}
+	// if flow populations present, write single particle parameters in undisturbed flow plasma in the log
+	if(N_flowPopulations > 0) {
+	   simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED FLOW)" << endl;
+	   simClasses.logger
+	     << "\t TEMPORAL:" << endl
+	     << "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
+	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t tP(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.periodPlasma[s] << " s = " << ppSPFlow.periodPlasma[s]/sim.dt << " dt" << endl;
+	   }
+	   simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t tL(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.periodLarmor[s] << " s = " << ppSPFlow.periodLarmor[s]/sim.dt << " dt" << endl;
+	   }
+	   simClasses.logger
+	     << "\t SPATIAL:" << endl
+	     << "\t d = inertial length = c/wP = c*sqrt( m*eps0/(ne*q^2) )" << endl;
+	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t d(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.lengthInertial[s]/1e3 << " km = " << ppSPFlow.lengthInertial[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t rLth(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.radiusLarmorThermal[s]/1e3 << " km = " << ppSPFlow.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
+	   }
+	   simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
+	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	      simClasses.logger
+		<< "\t rLpu(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPFlow.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << endl;
 	}
