@@ -120,6 +120,7 @@ class InjectorFlow: public ParticleInjectorBase {
    void getParams(InjectorParameters& p);
  private:
    bool initialized;
+   uint32_t bitMaskInjectionCells;
    Real N_macroParticlesPerCell;
    const Species* species;
    Real velocity[3];
