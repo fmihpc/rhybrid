@@ -550,7 +550,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "cells per block (x y z) = " << block::WIDTH_X << " " << block::WIDTH_Y << " " << block::WIDTH_Z << endl
      << "cells (x y z) = " << nx << " " << ny << " " << nz << endl
      << "total cells = " << Ncells << " = " << Ncells/1e6 << " x 10^6" << endl
-     << "periodic (x y z) = " << sim.x_periodic << " " << sim.z_periodic << " " << sim.y_periodic << " " << endl << endl;
+     << "periodic (x y z) = " << sim.x_periodic << " " << sim.y_periodic << " " << sim.z_periodic << " " << endl << endl;
    
    simClasses.logger
      << "(SIMULATION DOMAIN)" << endl
