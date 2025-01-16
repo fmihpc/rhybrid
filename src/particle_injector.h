@@ -33,6 +33,7 @@
 
 struct InjectorParameters {
    std::string name,type;
+   int popid;
    Real m,q,w,T,vth,n,U,velocity[3];
 };
 

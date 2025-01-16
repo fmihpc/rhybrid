@@ -62,16 +62,6 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[2] = a[0]*b[1] - a[1]*b[0];
 }
 
-struct particlePopulationInfo {
-    Real w;
-    std::string name;
-};
-
-struct solarWindPopulationInfo {
-   Real m,q,U,n,vth,T;
-   std::string name;
-};
-
 #ifdef USE_OUTER_BOUNDARY_ZONE
 struct OuterBoundaryZone {
    int typeEta=0,typeMinRhoQi=0;
@@ -101,7 +91,7 @@ struct Hybrid {
    static pargrid::DataID dataCellEpID;
    static pargrid::DataID dataCellIonosphereID;
    static pargrid::DataID dataCellExosphereID;
-   
+
    // node data
    static pargrid::DataID dataNodeRhoQiID;
    static pargrid::DataID dataNodeEID;
@@ -124,8 +114,8 @@ struct Hybrid {
 #endif
 
    // stencils
-   static pargrid::StencilID accumulationStencilID; /**< ParGrid Stencil used to exchange accumulation array(s).*/
-   
+   static pargrid::StencilID accumulationStencilID; // ParGrid Stencil used to exchange accumulation array(s)
+
    // flags
    static pargrid::DataID dataInnerFlagFieldID;
    static pargrid::DataID dataInnerFlagNodeID;
@@ -157,7 +147,7 @@ struct Hybrid {
    static bool detBulkParamRecording;
    static std::vector<Real> detBulkParamOutput;
 #endif
-   
+
    // bit masks
    static uint32_t X_POS_EXISTS;
    static uint32_t X_NEG_EXISTS;
@@ -223,8 +213,6 @@ struct Hybrid {
    static unsigned int N_ionospherePopulations;
    static unsigned int N_exospherePopulations;
    static unsigned int N_outputPopVars;
-   static std::vector<particlePopulationInfo> allPopsInfo;
-   static std::vector<solarWindPopulationInfo> swPopsInfo;
    static std::vector<std::string> populationNames;
    static std::vector<std::string> outputPopVarStr;
    static std::vector<int> outputPopVarId;

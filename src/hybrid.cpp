@@ -100,8 +100,8 @@ vector<Real> Hybrid::detBulkParamOutput;
 #endif
 
 // bit masks to check the existence of +x, -x, +y, -y, +z, -z neighbour cell
-uint32_t Hybrid::X_POS_EXISTS;   
-uint32_t Hybrid::X_NEG_EXISTS;   
+uint32_t Hybrid::X_POS_EXISTS;
+uint32_t Hybrid::X_NEG_EXISTS;
 uint32_t Hybrid::Y_POS_EXISTS;
 uint32_t Hybrid::Y_NEG_EXISTS;
 uint32_t Hybrid::Z_POS_EXISTS;
@@ -184,10 +184,6 @@ unsigned int Hybrid::N_populations;
 unsigned int Hybrid::N_ionospherePopulations;
 // number of exospheric particle populations
 unsigned int Hybrid::N_exospherePopulations;
-// properties of all particle populations
-vector<particlePopulationInfo> Hybrid::allPopsInfo;
-// properties of all solar wind populations
-vector<solarWindPopulationInfo> Hybrid::swPopsInfo;
 // names of particle populations
 vector<string> Hybrid::populationNames;
 // number of output particle variables

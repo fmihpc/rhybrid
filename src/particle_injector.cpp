@@ -146,6 +146,7 @@ bool convertConfigFileVariableVelocity(string velStr,vector<Real>& vel) {
 bool getInjectorParameters(ParticleInjectorBase* injBasePtr,InjectorParameters& p) {
    p.name = "";
    p.type = "";
+   p.popid = -1;
    p.m = p.q = p.w = p.T = p.vth = p.n = p.U = p.velocity[0] = p.velocity[1] = p.velocity[2] = 0.0;
    string injectorType = injBasePtr->getType();
    p.type = string(injectorType);
@@ -335,16 +336,13 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
      << "(" << species->name << ") macroparticle weight    = " << w << endl
      << "(" << species->name << ") xmin = " << xmin/1e3 << " km" << endl
      << "(" << species->name << ") xmax = " << xmax/1e3 << " km" << endl;
-   particlePopulationInfo popInfo;
-   popInfo.w = w;
-   popInfo.name = species->name;
-   Hybrid::allPopsInfo.push_back(popInfo);
    return initialized;
 }
 
 // get injector parameters
 void InjectorUniform::getParams(InjectorParameters& p) {
    p.name = species->name;
+   p.popid = species->popid;
    p.m = species->m;
    p.q = species->q;
    p.w = w;
@@ -522,16 +520,13 @@ bool InjectorAmbient::initialize(Simulation& sim,SimulationClasses& simClasses,C
      << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per cell per dt  = " << N_macroParticlesPerCellPerDt << endl
      << "(" << species->name << ") macroparticle weight    = " << w << endl;
-   particlePopulationInfo popInfo;
-   popInfo.w = w;
-   popInfo.name = species->name;
-   Hybrid::allPopsInfo.push_back(popInfo);
    return initialized;
 }
 
 // get injector parameters
 void InjectorAmbient::getParams(InjectorParameters& p) {
    p.name = species->name;
+   p.popid = species->popid;
    p.m = species->m;
    p.q = species->q;
    p.w = w;
@@ -876,25 +871,13 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    if(swPopCnt == 1) {
       Hybrid::swMacroParticlesCellPerDt = N_macroParticlesPerCellPerDt*N_perp_cells/N_macroParticlesPerCell;
    }
-   particlePopulationInfo popInfo;
-   popInfo.w = w;
-   popInfo.name = species->name;
-   Hybrid::allPopsInfo.push_back(popInfo);
-   solarWindPopulationInfo swPopInfo;
-   swPopInfo.m = species->m;
-   swPopInfo.q = species->q;
-   swPopInfo.U = U;
-   swPopInfo.n = n;
-   swPopInfo.vth = vth;
-   swPopInfo.T = T;
-   swPopInfo.name = species->name;
-   Hybrid::swPopsInfo.push_back(swPopInfo);
    return initialized;
 }
 
 // get injector parameters
 void InjectorSolarWind::getParams(InjectorParameters& p) {
    p.name = species->name;
+   p.popid = species->popid;
    p.m = species->m;
    p.q = species->q;
    p.w = w;
@@ -1059,6 +1042,7 @@ bool InjectorFlow::initialize(Simulation& sim,SimulationClasses& simClasses,Conf
 // get injector parameters
 void InjectorFlow::getParams(InjectorParameters& p) {
    p.name = species->name;
+   p.popid = species->popid;
    p.m = species->m;
    p.q = species->q;
    p.w = w;
@@ -1354,16 +1338,13 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 	 }
       }
    }
-   particlePopulationInfo popInfo;
-   popInfo.w = w;
-   popInfo.name = species->name;
-   Hybrid::allPopsInfo.push_back(popInfo);
    return initialized;
 }
 
 // get injector parameters
 void InjectorIonosphere::getParams(InjectorParameters& p){
    p.name = species->name;
+   p.popid = species->popid;
    p.m = species->m;
    p.q = species->q;
    p.w = w;
@@ -1615,6 +1596,7 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
 // get injector parameters
 void InjectorChapmanIonosphere::getParams(InjectorParameters& p) {
    p.name = species->name;
+   p.popid = species->popid;
    p.m = species->m;
    p.q = species->q;
    p.w = w;
@@ -1841,16 +1823,13 @@ break_for:
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
      << "(" << species->name << ") macroparticle weight      = " << w << endl;
-   particlePopulationInfo popInfo;
-   popInfo.w = w;
-   popInfo.name = species->name;
-   Hybrid::allPopsInfo.push_back(popInfo);
    return initialized;
 }
 
 // get injector parameters
 void InjectorExosphere::getParams(InjectorParameters& p) {
    p.name = species->name;
+   p.popid = species->popid;
    p.m = species->m;
    p.q = species->q;
    p.w = w;

@@ -22,25 +22,24 @@
 
 #include <base_class_particle_boundary_condition.h>
 #include <hybrid.h>
+#include "particle_injector.h"
 
 template<class SPECIES,class PARTICLE>
 class ParticleBoundaryCondHybrid: public ParticleBoundaryCondBase {
  public:
    ParticleBoundaryCondHybrid();
    ~ParticleBoundaryCondHybrid();
-   
    bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
    bool apply(pargrid::DataID particleDataID,unsigned int* N_particles,const std::vector<pargrid::CellID>& exteriorBlocks);
    bool finalize();
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-		   const std::string& regionName,const ParticleListBase* plist);
-   
+   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist);
  private:
    SPECIES species;
+   Real weight;
 };
 
 template<class SPECIES,class PARTICLE> inline
-ParticleBoundaryCondBase* HybridBoundaryCondMaker() {return new ParticleBoundaryCondHybrid<SPECIES,PARTICLE>();}
+ParticleBoundaryCondBase* HybridBoundaryCondMaker() { return new ParticleBoundaryCondHybrid<SPECIES,PARTICLE>(); }
 
 template<class SPECIES,class PARTICLE> inline
 ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::ParticleBoundaryCondHybrid() { }
@@ -54,8 +53,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::addConfigFileItems(ConfigRead
 }
 
 template<class SPECIES,class PARTICLE> inline
-bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particleDataID,unsigned int* N_particles,
-							 const std::vector<pargrid::CellID>& exteriorBlocks) {
+bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particleDataID,unsigned int* N_particles,const std::vector<pargrid::CellID>& exteriorBlocks) {
    pargrid::DataWrapper<PARTICLE> wrapper = simClasses->pargrid.getUserDataDynamic<PARTICLE>(particleDataID);
 
    // filter corrupted particles after a restart
@@ -82,7 +80,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	       // check coordinates, velocities and weight: remove if the particle is corrupted
 	       if(x < 0 || y < 0 || z < 0 || x > bs[0] || y > bs[1] || z > bs[2] ||
 		  fabs(vx) > Hybrid::maxVi || fabs(vy) > Hybrid::maxVi || fabs(vz) > Hybrid::maxVi ||
-		  w != Hybrid::allPopsInfo[species.popid-1].w ||
+		  w != this->weight ||
 		  std::isnan(x) == true || std::isnan(y) == true || std::isnan(z) == true ||
 		  std::isnan(vx) == true || std::isnan(vy) == true || std::isnan(vz) == true ||
 		  std::isnan(w) == true) {
@@ -110,13 +108,12 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
        }
        return true;
    }
-   
+
    // Remove particles on exterior cells:
    Real t_propag = 0.0;
    for (pargrid::CellID b=0; b<exteriorBlocks.size(); ++b) {
       // Measure computation time if we are testing for repartitioning:
-      if (sim->countPropagTime == true) t_propag = MPI_Wtime();
-      
+      if (sim->countPropagTime == true) { t_propag = MPI_Wtime(); }
       const pargrid::CellID blockLID = exteriorBlocks[b];
       PARTICLE* particles = wrapper.data()[blockLID];
       for(size_t p=0; p<N_particles[blockLID]; ++p) {
@@ -126,7 +123,6 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
       }
       N_particles[blockLID] = 0;
       wrapper.resize(blockLID,0);
-      
       // Store block injection time:
       if (sim->countPropagTime == true) {
 	 t_propag = std::max(0.0,MPI_Wtime() - t_propag);
@@ -139,9 +135,8 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
    const double* crd = getBlockCoordinateArray(*sim,*simClasses);
    for (pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       if (innerFlagParticle[b] == false) { continue; }
-      
       // Measure computation time if we are testing for repartitioning:
-      if (sim->countPropagTime == true) t_propag = MPI_Wtime();
+      if (sim->countPropagTime == true) { t_propag = MPI_Wtime(); }
       PARTICLE* particles = wrapper.data()[b];
       const size_t b3 = 3*b;
       const Real xBlock = crd[b3+0];
@@ -172,7 +167,6 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	 simClasses->pargrid.getCellWeights()[b] += t_propag;
       }
    }
-
    return true;
 }
 
@@ -182,10 +176,12 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::finalize() {
 }
 
 template<class SPECIES,class PARTICLE> inline
-bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,
-							      const std::string& regionName,const ParticleListBase* plist) {
+bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist) {
    bool success = ParticleBoundaryCondBase::initialize(sim,simClasses,cr,regionName,plist);
    species = *reinterpret_cast<const SPECIES*>(plist->getSpecies());
+   InjectorParameters ip;
+   getInjectorParameters(plist->getInjector(),ip);
+   weight = ip.w;
    return success;
 }
 
