@@ -911,7 +911,7 @@ void InjectorSolarWind::getParams(InjectorParameters& p) {
 
 InjectorFlow::InjectorFlow(): ParticleInjectorBase() {
    initialized = false;
-   bitMaskInjectionCells = 0;
+   bitMaskInflowBoundaries = 0;
    velocity[0] = velocity[1] = velocity[2] = U = T = vth = n = w = 0.0;
    N_macroParticlesPerCell = -1.0;
 }
@@ -930,7 +930,8 @@ bool InjectorFlow::inject(pargrid::DataID speciesDataID,unsigned int* N_particle
    if(sim->timestep <= 0) { return success; }
    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses->pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
    for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
-      if(((simClasses->pargrid.getNeighbourFlags(b) & bitMaskInjectionCells) != bitMaskInjectionCells) == true) {
+      // check if in a ghost cell of user selected inflow boundaries and if yes, inject particles
+      if(((simClasses->pargrid.getNeighbourFlags(b) & bitMaskInflowBoundaries) != bitMaskInflowBoundaries) == true) {
 	 if(injectParticles(b,*species,N_particles,wrapper) == false) { success = false; }
       }
    }
@@ -970,7 +971,7 @@ bool InjectorFlow::addConfigFileItems(ConfigReader& cr,const std::string& config
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
    cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell in undisturbed solar wind [#] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".injection_boundaries","Outer boundaries (walls) from where the population is injected [+x/-x/+y/-y/+z/-z] (string).",string(""));
+   cr.add(configRegionName+".inflow_boundaries","Outer boundaries (walls) from where the population is injected [+x/-x/+y/-y/+z/-z] (string).",string(""));
    return true;
 }
 
@@ -985,9 +986,9 @@ bool InjectorFlow::initialize(Simulation& sim,SimulationClasses& simClasses,Conf
    cr.get(configRegionName+".density",n);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
-   cr.get(configRegionName+".injection_boundaries",injWalls);
+   cr.get(configRegionName+".inflow_boundaries",injWalls);
 
-   // check injection_boundaries string and prepare injection bit mask
+   // check injection boundaries string and prepare injection bit mask
      {
 	// remove repeated whitespaces
 	string::iterator new_end =unique(injWalls.begin(),injWalls.end(),[=](char lhs, char rhs){ return (lhs == rhs) && (lhs == ' '); });
@@ -1000,18 +1001,22 @@ bool InjectorFlow::initialize(Simulation& sim,SimulationClasses& simClasses,Conf
 	// check substrings are ok and create a bit mask to inject particles from selected outer boundaries
 	if(svtmp.size() > 0) {
 	   for (size_t i=0;i<svtmp.size();i++) {
-	      if      (svtmp[i] == "+x") { bitMaskInjectionCells = bitMaskInjectionCells | Hybrid::X_POS_EXISTS; } // +x ghost cells
-	      else if (svtmp[i] == "-x") { bitMaskInjectionCells = bitMaskInjectionCells | Hybrid::X_NEG_EXISTS; } // -x ghost cells
-	      else if (svtmp[i] == "+y") { bitMaskInjectionCells = bitMaskInjectionCells | Hybrid::Y_POS_EXISTS; } // +y ghost cells
-	      else if (svtmp[i] == "-y") { bitMaskInjectionCells = bitMaskInjectionCells | Hybrid::Y_NEG_EXISTS; } // -y ghost cells
-	      else if (svtmp[i] == "+z") { bitMaskInjectionCells = bitMaskInjectionCells | Hybrid::Z_POS_EXISTS; } // +z ghost cells
-	      else if (svtmp[i] == "-z") { bitMaskInjectionCells = bitMaskInjectionCells | Hybrid::Z_NEG_EXISTS; } // -z ghost cells
+	      if      (svtmp[i] == "+x") { bitMaskInflowBoundaries = bitMaskInflowBoundaries | Hybrid::X_POS_EXISTS; } // +x ghost cells
+	      else if (svtmp[i] == "-x") { bitMaskInflowBoundaries = bitMaskInflowBoundaries | Hybrid::X_NEG_EXISTS; } // -x ghost cells
+	      else if (svtmp[i] == "+y") { bitMaskInflowBoundaries = bitMaskInflowBoundaries | Hybrid::Y_POS_EXISTS; } // +y ghost cells
+	      else if (svtmp[i] == "-y") { bitMaskInflowBoundaries = bitMaskInflowBoundaries | Hybrid::Y_NEG_EXISTS; } // -y ghost cells
+	      else if (svtmp[i] == "+z") { bitMaskInflowBoundaries = bitMaskInflowBoundaries | Hybrid::Z_POS_EXISTS; } // +z ghost cells
+	      else if (svtmp[i] == "-z") { bitMaskInflowBoundaries = bitMaskInflowBoundaries | Hybrid::Z_NEG_EXISTS; } // -z ghost cells
 	      else {
-		 simClasses.logger << "(" << species->name << ") ERROR: bad format of injection_boundaries string, only substrings +x, -x, +y, -y, +z and -z allowed (" << injWalls << ")" << endl << write;
+		 simClasses.logger << "(" << species->name << ") ERROR: bad format of inflow_boundaries string, only substrings +x, -x, +y, -y, +z and -z allowed (" << injWalls << ")" << endl << write;
 		 initialized = false;
 		 break;
 	      }
 	   }
+	}
+	// print a warning message if no injection walls selected
+	if(bitMaskInflowBoundaries <= 0) {
+	   simClasses.logger << "(" << species->name << ") WARNING: flow injector initialized but no injection boundaries set (inflow_boundaries = " << injWalls << ")" << endl << write;
 	}
      }
 
@@ -1047,7 +1052,7 @@ bool InjectorFlow::initialize(Simulation& sim,SimulationClasses& simClasses,Conf
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticle weight    = " << w << endl
-     << "(" << species->name << ") injection walls         = " << injWalls << endl;
+     << "(" << species->name << ") inflow boundaries       = " << injWalls << endl;
    return initialized;
 }
 
