@@ -355,54 +355,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.Te","Temperature of isothermal electrons or upstream temperature of adiabatic electrons [K] (float)",defaultValue);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
-#ifdef USE_RESISTIVITY
-   cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)",string(""));
-   cr.add("Resistivity.value_unit","Unit and quantity used to define value of resistivity [SI/grid/td/Rm/URm] (string)",string(""));
-   cr.add("Resistivity.value","Parameter value used to define the value of resistivity [] (float)",defaultValue);
-   cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
-   cr.addComposed("Resistivity.value_spherical","Parameter values used to define the resistivity values of spherical shells [] (float vector)");
-   cr.addComposed("Resistivity.R_spherical","Radii of spherical resistivity shells [m] (float vector)");
-#endif
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   cr.add("OuterBoundaryZone.typeEta","Type of the outer boundary zone for resistivity: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-], 3 = -x wall and all edges except +x edges (int)",0);
-   cr.add("OuterBoundaryZone.typeMinRhoQi","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
-   cr.add("OuterBoundaryZone.sizeEta","Size of the outer boundary zone for resitivity [dx] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.sizeMinRhoQi","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.constUe","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
-#endif
-   cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
-   cr.add("IMF.By","IMF By [T] (float)",defaultValue);
-   cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
-   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
-   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
-#if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
-   cr.add("IntrinsicB.profile_name","Magnetic field profile name [-] (string)",string(""));
-   cr.add("IntrinsicB.dBx","Magnitude of Bx random fluctuations [T] (float)",defaultValue);
-   cr.add("IntrinsicB.dBy","Magnitude of By random  fluctuations [T] (float)",defaultValue);
-   cr.add("IntrinsicB.dBz","Magnitude of Bz random  fluctuations [T] (float)",defaultValue);
-   cr.add("IntrinsicB.laminarR","Laminar flow around sphere R [m] (float)",defaultValue);
-   cr.add("IntrinsicB.coeffDipole","Dipole coefficient [-] (float)",defaultValue);
-   cr.add("IntrinsicB.coeffQuadrupole","Quadrupole coefficient [-] (float)",defaultValue);
-   cr.add("IntrinsicB.dipoleSurfaceB","Dipole surface strength [T] (float)",defaultValue);
-   cr.add("IntrinsicB.dipoleSurfaceR","Dipole surface radius [m] (float)",defaultValue);
-   cr.add("IntrinsicB.minimumR","Minimum surface radius [m] (float)",defaultValue);
-   cr.add("IntrinsicB.x","X coordinate of the origin [m] (float)",defaultValue);
-   cr.add("IntrinsicB.y","Y coordinate of the origin [m] (float)",defaultValue);
-   cr.add("IntrinsicB.z","Z coordinate of the origin [m] (float)",defaultValue);
-   cr.addComposed("IntrinsicB.x_mirror","X coordinates of the mirror dipole origins [m] (float vector)");
-   cr.addComposed("IntrinsicB.y_mirror","Y coordinates of the mirror dipole origins [m] (float vector)");
-   cr.addComposed("IntrinsicB.z_mirror","Z coordinates of the mirror dipole origins [m] (float vector)");
-   cr.add("IntrinsicB.theta","theta angle of the field [deg] (float)",defaultValue);
-   cr.add("IntrinsicB.phi","phi angle of the field [deg] (float)",defaultValue);
-#endif
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   cr.add("BackgroundChargeDensity.profile_name","Background ion charge density profile name [-] (string)",string(""));
-   cr.add("BackgroundChargeDensity.R","Radius of the background ion charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.r0","r0 of the background ion charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.rhoQi0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
-#endif
+   simClasses.logger << "(RHYBRID) Configuring: general hybrid simulation settings" << endl << write;
    cr.parse();
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
@@ -458,6 +411,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
+
+   cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
+   cr.add("IMF.By","IMF By [T] (float)",defaultValue);
+   cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
+   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
+   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
+   simClasses.logger << "(RHYBRID) Configuring: IMF" << endl << write;
+   cr.parse();
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
@@ -496,6 +457,31 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::IMFBoundaryFaceB[4] = str2bool(simClasses,inputStr.substr(8,1));
    Hybrid::IMFBoundaryFaceB[5] = str2bool(simClasses,inputStr.substr(10,1));
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
+   cr.add("IntrinsicB.profile_name","Magnetic field profile name [-] (string)",string(""));
+   cr.add("IntrinsicB.dBx","Magnitude of Bx random fluctuations [T] (float)",defaultValue);
+   cr.add("IntrinsicB.dBy","Magnitude of By random  fluctuations [T] (float)",defaultValue);
+   cr.add("IntrinsicB.dBz","Magnitude of Bz random  fluctuations [T] (float)",defaultValue);
+   cr.add("IntrinsicB.laminarR","Laminar flow around sphere R [m] (float)",defaultValue);
+   cr.add("IntrinsicB.coeffDipole","Dipole coefficient [-] (float)",defaultValue);
+   cr.add("IntrinsicB.coeffQuadrupole","Quadrupole coefficient [-] (float)",defaultValue);
+   cr.add("IntrinsicB.dipoleSurfaceB","Dipole surface strength [T] (float)",defaultValue);
+   cr.add("IntrinsicB.dipoleSurfaceR","Dipole surface radius [m] (float)",defaultValue);
+   cr.add("IntrinsicB.minimumR","Minimum surface radius [m] (float)",defaultValue);
+   cr.add("IntrinsicB.x","X coordinate of the origin [m] (float)",defaultValue);
+   cr.add("IntrinsicB.y","Y coordinate of the origin [m] (float)",defaultValue);
+   cr.add("IntrinsicB.z","Z coordinate of the origin [m] (float)",defaultValue);
+   cr.addComposed("IntrinsicB.x_mirror","X coordinates of the mirror dipole origins [m] (float vector)");
+   cr.addComposed("IntrinsicB.y_mirror","Y coordinates of the mirror dipole origins [m] (float vector)");
+   cr.addComposed("IntrinsicB.z_mirror","Z coordinates of the mirror dipole origins [m] (float vector)");
+   cr.add("IntrinsicB.theta","theta angle of the field [deg] (float)",defaultValue);
+   cr.add("IntrinsicB.phi","phi angle of the field [deg] (float)",defaultValue);
+#if defined(USE_B_INITIAL)
+   simClasses.logger << "(RHYBRID) Configuring: initial magnetic field" << endl;
+#endif
+#if defined(USE_B_CONSTANT)
+   simClasses.logger << "(RHYBRID) Configuring: constant magnetic field" << endl;
+#endif
+   cr.parse();
    cr.get("IntrinsicB.profile_name",magneticFieldProfileName);
    cr.get("IntrinsicB.dBx",Hybrid::dBx);
    cr.get("IntrinsicB.dBy",Hybrid::dBy);
@@ -523,14 +509,22 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       exit(1);
    }
 #endif
+
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    BackgroundChargeDensityArgs bgChargeDensityArgs;
    string bgChargeDensityProfileName = "";
+   cr.add("BackgroundChargeDensity.profile_name","Background ion charge density profile name [-] (string)",string(""));
+   cr.add("BackgroundChargeDensity.R","Radius of the background ion charge density [m] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.r0","r0 of the background ion charge density [m] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.rhoQi0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
+   simClasses.logger << "(RHYBRID) Configuring: background charge density" << endl << write;
+   cr.parse();
    cr.get("BackgroundChargeDensity.profile_name",bgChargeDensityProfileName);
    cr.get("BackgroundChargeDensity.R",bgChargeDensityArgs.R);
    cr.get("BackgroundChargeDensity.r0",bgChargeDensityArgs.r0);
    cr.get("BackgroundChargeDensity.rhoQi0",bgChargeDensityArgs.rhoQi0);
 #endif
+
    if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
    if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if(Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
@@ -551,7 +545,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "cells (x y z) = " << nx << " " << ny << " " << nz << endl
      << "total cells = " << Ncells << " = " << Ncells/1e6 << " x 10^6" << endl
      << "periodic (x y z) = " << sim.x_periodic << " " << sim.y_periodic << " " << sim.z_periodic << " " << endl << endl;
-   
+
    simClasses.logger
      << "(SIMULATION DOMAIN)" << endl
      << "x [km] = " << sim.x_min/1e3 << " ... " << sim.x_max/1e3 << endl
@@ -718,7 +712,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger
      << "(LOGGING)" << endl
      << "Particle and field log file interval = " << Hybrid::logInterval*sim.dt << " s = " << Hybrid::logInterval << " dt" << endl
-     << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl;
+     << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl << endl;
+
+   simClasses.logger << "(RHYBRID) Configuring: particle populations" << endl << write;
 
    // read particle populations: uniform
    vector<string> uniformPopulations;
@@ -1196,6 +1192,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
 #ifdef USE_DETECTORS
    // detector: particles
+   simClasses.logger << "(RHYBRID) Configuring: detectors" << endl << write;
    bool* detPleFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
    Hybrid::detParticleFileLineCnt = 0;
    vector<string> detParticleOrbitFiles;
@@ -1674,6 +1671,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::maxVi = sqrt(Hybrid::maxVi2);
 
 #ifdef USE_OUTER_BOUNDARY_ZONE
+   cr.add("OuterBoundaryZone.typeEta","Type of the outer boundary zone for resistivity: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-], 3 = -x wall and all edges except +x edges (int)",0);
+   cr.add("OuterBoundaryZone.typeMinRhoQi","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
+   cr.add("OuterBoundaryZone.sizeEta","Size of the outer boundary zone for resitivity [dx] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.sizeMinRhoQi","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.etaC","Dimensionless resistivity constant in the outer boundary zone [-] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.constUe","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
+   simClasses.logger << "(RHYBRID) Configuring: outer boundary zone" << endl;
+   cr.parse();
    cr.get("OuterBoundaryZone.typeEta",Hybrid::outerBoundaryZone.typeEta);
    cr.get("OuterBoundaryZone.typeMinRhoQi",Hybrid::outerBoundaryZone.typeMinRhoQi);
    cr.get("OuterBoundaryZone.sizeEta",Hybrid::outerBoundaryZone.sizeEta);
@@ -1684,106 +1690,31 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
    Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
 #endif
+
 #ifdef USE_RESISTIVITY
    string resProfileName = "";
    string resValueUnit = "";
    Real resValue = 0.0;
    vector<Real> resSphericalValue;
+   cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)",string(""));
+   cr.add("Resistivity.value_unit","Unit and quantity used to define value of resistivity [SI/grid/td/Rm/URm] (string)",string(""));
+   cr.add("Resistivity.value","Parameter value used to define the value of resistivity [] (float)",defaultValue);
+   cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
+   cr.addComposed("Resistivity.value_spherical","Parameter values used to define the resistivity values of spherical shells [] (float vector)");
+   cr.addComposed("Resistivity.R_spherical","Radii of spherical resistivity shells [m] (float vector)");
+   simClasses.logger << "(RHYBRID) Configuring: resistivity" << endl << write;
+   cr.parse();
    cr.get("Resistivity.profile_name",resProfileName);
    cr.get("Resistivity.value_unit",resValueUnit);
    cr.get("Resistivity.value",resValue);
    cr.get("Resistivity.R",Hybrid::resistivityR2);
    cr.get("Resistivity.value_spherical",resSphericalValue);
    cr.get("Resistivity.R_spherical",Hybrid::resistivitySphericalR2);
-
-   // check and calculate resistivity radii parameters
-   Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
-   // spherical profile
-   if(resSphericalValue.size() != Hybrid::resistivitySphericalR2.size()) {
-      simClasses.logger << "(RHYBRID) ERROR: parameter arrays of the spherical shell resistivity model should be the same size (" << resSphericalValue.size() << ", " << Hybrid::resistivitySphericalR2.size() << ")" << endl << write;
-      exit(1);
-   }
-   for(size_t i=0;i<Hybrid::resistivitySphericalR2.size();i++) {
-      if(Hybrid::resistivitySphericalR2[i] < 0) {
-	 simClasses.logger << "(RHYBRID) ERROR: resistivity R_spherical < 0 (" << Hybrid::resistivitySphericalR2[i] << ")" << endl << write;
-	 exit(1);
-      }
-      Hybrid::resistivitySphericalR2[i] = sqr(Hybrid::resistivitySphericalR2[i]);
-      // check that the radii are given in monotonically growing order
-      if(i > 0) {
-	 if(Hybrid::resistivitySphericalR2[i-1] >= Hybrid::resistivitySphericalR2[i]) {
-	    simClasses.logger << "(RHYBRID) ERROR: radii parameters of the spherical shell resistivity model should be given in a monotonically growing order" << endl << write;
-	    exit(1);
-	 }
-      }
-   }
-
-   // convert eta from config file to SI units
    Real resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
-   if(resValueUnit.compare("SI") == 0) {
-      // resValue is already in SI units
-      Hybrid::resistivityEta = (resValue);
-      // spherical profile
-      for(size_t i=0;i<resSphericalValue.size();i++) {
-	 Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i]) );
-      }
-   }
-   else if(resValueUnit.compare("grid") == 0){
-      // resValue is in grid units, and eta_a = (resValue) * mu0*dx^2/dt, where resValue = eta_c = dimensionless constant
-      Hybrid::resistivityEta = (resValue)*resistivityGridUnit;
-      // spherical profile
-      for(size_t i=0;i<resSphericalValue.size();i++) {
-	 Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i])*resistivityGridUnit );
-      }
-   }
-   else if(resValueUnit.compare("td") == 0) {
-      if(resValue == 0) {
-	 simClasses.logger << "(RHYBRID) ERROR: value to define resistivity cannot be zero in units of td_per_dt (" << resValue << ")" << endl << write;
-	 exit(1);
-      }
-      // resValue is diffusion time divided by dt, and eta_a = (1/resValue) * mu0*dx^2/dt, where resValue = td/dt = dimensionless constant
-      Hybrid::resistivityEta = (1.0/resValue) * resistivityGridUnit;
-      // spherical profile
-      for(size_t i=0;i<resSphericalValue.size();i++) {
-	 if(resSphericalValue[i] == 0) {
-	    simClasses.logger << "(RHYBRID) ERROR: value_spherical to defined resistivity cannot be zero in units of td_per_dt" << endl << write;
-	    exit(1);
-	 }
-	 Hybrid::resistivitySphericalEta.push_back( (1.0/resSphericalValue[i]) * resistivityGridUnit );
-      }
-   }
-   else if(resValueUnit.compare("Rm") == 0) {
-      if(resValue == 0) {
-	 simClasses.logger << "(RHYBRID) ERROR: value to define resistivity cannot be zero in units of Rm" << endl << write;
-	 exit(1);
-      }
-      // resValue is minimum magnetic Reynolds number, and eta_a = (1/resValue) * mu0*dx*Ubulk, where resValue = Rm = dimensionless constant
-      Hybrid::resistivityEta = (1.0/resValue) * constants::PERMEABILITY*Hybrid::dx*Ubulk;
-      // spherical profile
-      for(size_t i=0;i<resSphericalValue.size();i++) {
-	 if(resSphericalValue[i] == 0) {
-	    simClasses.logger << "(RHYBRID) ERROR: value_spherical to defined resistivity cannot be zero in units of Rm" << endl << write;
-	    exit(1);
-	 }
-	 Hybrid::resistivitySphericalEta.push_back( (1.0/resSphericalValue[i]) * constants::PERMEABILITY*Hybrid::dx*Ubulk );
-      }
-   }
-   else if(resValueUnit.compare("URm") == 0) {
-      // resValue is velocity divided by minimum magnetic Reynolds number, and eta_a = (resValue) * mu0*dx, where resValue = U/Rm = [m/s]
-      Hybrid::resistivityEta = (resValue) * constants::PERMEABILITY*Hybrid::dx;
-      // spherical profile
-      for(size_t i=0;i<resSphericalValue.size();i++) {
-	 Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i]) * constants::PERMEABILITY*Hybrid::dx );
-      }
-   }
-   else {
-      simClasses.logger << "(RHYBRID) ERROR: unknown unit and quantity to define resistivity (" << resValueUnit << ")" << endl << write;
-      exit(1);
-   }
 
    // set resistivity profile after all its parameters are parsed
-   if(setResistivityProfile(resProfileName,simClasses) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: unknown name of a resistivity profile (" << resProfileName << ")" << endl << write;
+   if(setResistivityProfile(simClasses,resProfileName,resValueUnit,resValue,resSphericalValue,resistivityGridUnit,Ubulk) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: setting resistivity profile failed (" << resProfileName << ")" << endl << write;
       exit(1);
    }
 
@@ -1885,7 +1816,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoq" << endl << endl;
 
    // evaluate and log CFL conditions from individual signal speeds and all summed together
+#ifdef USE_RESISTIVITY
    const Real dx_per_td_min = Hybrid::dx/td_min_smallest;
+#else
+   const Real dx_per_td_min = 0.0;
+#endif
    const Real summedSignalSpeed = Ubulk + vms + 2*vExB + vw + dx_per_td_min;
    const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + sqrt(Hybrid::maxVi2) + Hybrid::maxVw + vms + dx_per_td_min;
    simClasses.logger
@@ -1899,7 +1834,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "vms = " << vms/1e3 << " km/s = " << vms/dx_per_dt << " dx/dt" << endl
      << "2*|vExB| = " << 2*vExB/1e3 << " km/s = " << 2*vExB/dx_per_dt << " dx/dt" << endl
      << "vw = " << vw/1e3 << " km/s = " << vw/dx_per_dt << " dx/dt" << endl
+#ifdef USE_RESISTIVITY
      << "dx/min(td_min) = " << dx_per_td_min/1e3 << " km/s = " << dx_per_td_min/dx_per_dt << " dx/dt" << endl
+#endif
      << "summedSignalSpeed = " << summedSignalSpeed/1e3 << " km/s = " << summedSignalSpeed/dx_per_dt << " dx/dt" << endl
      << "summedFullConstraintedSignalSpeed = " << summedFullConstraintedSignalSpeed/1e3 << " km/s = " << summedFullConstraintedSignalSpeed/dx_per_dt << " dx/dt" << endl
      << endl;

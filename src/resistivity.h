@@ -49,7 +49,7 @@ Real resistivitySphericalShells(Simulation& sim,SimulationClasses& simClasses,co
    // check if the point is inside or at the first radii: return resistivity of the first shell
    if(r2 <= Hybrid::resistivitySphericalR2[0]) { return Hybrid::resistivitySphericalEta[0]; }
    // loop thru from second to last shell
-   for(size_t i=1;i<Hybrid::resistivitySphericalR2.size();i++) {
+   for(size_t i=1;i<Nsize;i++) {
       // check if the point is between i-1 and i radii
       if(r2 > Hybrid::resistivitySphericalR2[i-1] && r2 <= Hybrid::resistivitySphericalR2[i]) {
 	 return Hybrid::resistivitySphericalEta[i];
@@ -62,12 +62,99 @@ Real resistivitySphericalShells(Simulation& sim,SimulationClasses& simClasses,co
    return 0.0;
 }
 
-inline bool setResistivityProfile(std::string name,SimulationClasses& simClasses) {
+inline bool setResistivityProfile(SimulationClasses& simClasses,std::string resProfileName,std::string resValueUnit,Real resValue,std::vector<Real> resSphericalValue,Real resistivityGridUnit,Real Ubulk) {
    Hybrid::resistivityProfilePtr = NULL;
-   if(name.compare("resistivityConstant") == 0) {
+
+   // convert eta from config file to SI units: resistivityConstant and resistivitySuperConductingSphere profiles
+   if(resProfileName.compare("resistivityConstant") == 0 || resProfileName.compare("resistivitySuperConductingSphere") == 0) {
+      if(resValueUnit.compare("SI") == 0) {
+	 // resValue is already in SI units
+	 Hybrid::resistivityEta = (resValue);
+      }
+      else if(resValueUnit.compare("grid") == 0){
+	 // resValue is in grid units, and eta_a = (resValue) * mu0*dx^2/dt, where resValue = eta_c = dimensionless constant
+	 Hybrid::resistivityEta = (resValue)*resistivityGridUnit;
+      }
+      else if(resValueUnit.compare("td") == 0) {
+	 if(resValue == 0) {
+	    simClasses.logger << "(RHYBRID) ERROR: value to define resistivity cannot be zero in units of td_per_dt (" << resValue << ")" << std::endl << write;
+	    return false;
+	 }
+	 // resValue is diffusion time divided by dt, and eta_a = (1/resValue) * mu0*dx^2/dt, where resValue = td/dt = dimensionless constant
+	 Hybrid::resistivityEta = (1.0/resValue) * resistivityGridUnit;
+      }
+      else if(resValueUnit.compare("Rm") == 0) {
+	 if(resValue == 0) {
+	    simClasses.logger << "(RHYBRID) ERROR: value to define resistivity cannot be zero in units of Rm" << std::endl << write;
+	    return false;
+	 }
+	 // resValue is minimum magnetic Reynolds number, and eta_a = (1/resValue) * mu0*dx*Ubulk, where resValue = Rm = dimensionless constant
+	 Hybrid::resistivityEta = (1.0/resValue) * constants::PERMEABILITY*Hybrid::dx*Ubulk;
+      }
+      else if(resValueUnit.compare("URm") == 0) {
+	 // resValue is velocity divided by minimum magnetic Reynolds number, and eta_a = (resValue) * mu0*dx, where resValue = U/Rm = [m/s]
+	 Hybrid::resistivityEta = (resValue) * constants::PERMEABILITY*Hybrid::dx;
+      }
+      else {
+	 simClasses.logger << "(RHYBRID) ERROR: unknown unit and quantity to define resistivity (" << resValueUnit << ")" << std::endl << write;
+	 return false;
+      }
+   }
+   // convert eta from config file to SI units: resistivitySphericalShells profile
+   else if(resProfileName.compare("resistivitySphericalShells") == 0) {
+      if(resValueUnit.compare("SI") == 0) {
+	 // resValue is already in SI units
+	 for(size_t i=0;i<resSphericalValue.size();i++) {
+	    Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i]) );
+	 }
+      }
+      else if(resValueUnit.compare("grid") == 0){
+	 // resValue is in grid units, and eta_a = (resValue) * mu0*dx^2/dt, where resValue = eta_c = dimensionless constant
+	 for(size_t i=0;i<resSphericalValue.size();i++) {
+	    Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i])*resistivityGridUnit );
+	 }
+      }
+      else if(resValueUnit.compare("td") == 0) {
+	 // resValue is diffusion time divided by dt, and eta_a = (1/resValue) * mu0*dx^2/dt, where resValue = td/dt = dimensionless constant
+	 for(size_t i=0;i<resSphericalValue.size();i++) {
+	    if(resSphericalValue[i] == 0) {
+	       simClasses.logger << "(RHYBRID) ERROR: value_spherical to defined resistivity cannot be zero in units of td_per_dt" << std::endl << write;
+	       return false;
+	    }
+	    Hybrid::resistivitySphericalEta.push_back( (1.0/resSphericalValue[i]) * resistivityGridUnit );
+	 }
+      }
+      else if(resValueUnit.compare("Rm") == 0) {
+	 // resValue is minimum magnetic Reynolds number, and eta_a = (1/resValue) * mu0*dx*Ubulk, where resValue = Rm = dimensionless constant
+	 for(size_t i=0;i<resSphericalValue.size();i++) {
+	    if(resSphericalValue[i] == 0) {
+	       simClasses.logger << "(RHYBRID) ERROR: value_spherical to defined resistivity cannot be zero in units of Rm" << std::endl << write;
+	       return false;
+	    }
+	    Hybrid::resistivitySphericalEta.push_back( (1.0/resSphericalValue[i]) * constants::PERMEABILITY*Hybrid::dx*Ubulk );
+	 }
+      }
+      else if(resValueUnit.compare("URm") == 0) {
+	 // resValue is velocity divided by minimum magnetic Reynolds number, and eta_a = (resValue) * mu0*dx, where resValue = U/Rm = [m/s]
+	 for(size_t i=0;i<resSphericalValue.size();i++) {
+	    Hybrid::resistivitySphericalEta.push_back( (resSphericalValue[i]) * constants::PERMEABILITY*Hybrid::dx );
+	 }
+      }
+      else {
+	 simClasses.logger << "(RHYBRID) ERROR: unknown unit and quantity to define resistivity (" << resValueUnit << ")" << std::endl << write;
+	 return false;
+      }
+   }
+   else {
+      simClasses.logger << "(setResistivityProfile) ERROR: unknown name of a resistivity profile (" << resProfileName << ")" << std::endl << write;
+      return false;
+   }
+
+   if(resProfileName.compare("resistivityConstant") == 0) {
       Hybrid::resistivityProfilePtr = &resistivityConstant;
+      // check if config file parameters given not used by this profile
       if(Hybrid::resistivitySphericalR2.size() > 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, parameters of resistivitySphericalShells are ignored" << std::endl;
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, parameters of resistivitySphericalShells (value_spherical, R_spherical) are ignored" << std::endl;
       }
       if(Hybrid::resistivityR2 > 0) {
 	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivityConstant profile is used, R parameter is ignored" << std::endl;
@@ -76,10 +163,11 @@ inline bool setResistivityProfile(std::string name,SimulationClasses& simClasses
 	 simClasses.logger << "(setResistivityProfile) WARNING: eta <= 0 in resistivityConstant" << std::endl;
       }
    }
-   else if(name.compare("resistivitySuperConductingSphere") == 0){
+   else if(resProfileName.compare("resistivitySuperConductingSphere") == 0){
       Hybrid::resistivityProfilePtr = &resistivitySuperConductingSphere;
+      // check if config file parameters given not used by this profile
       if(Hybrid::resistivitySphericalR2.size() > 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySuperConductingSphere profile is used, parameters of resistivitySphericalShells are ignored" << std::endl;
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySuperConductingSphere profile is used, parameters of resistivitySphericalShells (value_spherical, R_spherical) are ignored" << std::endl;
       }
       if(Hybrid::resistivityR2 <= 0) {
 	 simClasses.logger << "(setResistivityProfile) WARNING: R <= 0 in resistivitySuperConductingSphere" << std::endl;
@@ -87,15 +175,37 @@ inline bool setResistivityProfile(std::string name,SimulationClasses& simClasses
       if(Hybrid::resistivityEta <= 0) {
 	 simClasses.logger << "(setResistivityProfile) WARNING: eta <= 0 in resistivitySuperConductingSphere" << std::endl;
       }
+      // set squared radius of super conducting sphere
+      Hybrid::resistivityR2 = sqr(Hybrid::resistivityR2);
    }
-   else if(name.compare("resistivitySphericalShells") == 0){
+   else if(resProfileName.compare("resistivitySphericalShells") == 0){
       Hybrid::resistivityProfilePtr = &resistivitySphericalShells;
+      // check if config file parameters given not used by this profile
       if(Hybrid::resistivityR2 > 0 || Hybrid::resistivityEta > 0) {
-	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySphericalShells profile is used, eta and R parameters are ignored" << std::endl;
+	 simClasses.logger << "(setResistivityProfile) WARNING: when resistivitySphericalShells profile is used, value and R parameters are ignored" << std::endl;
+      }
+      // check and calculate resistivity radii parameters
+      if( ( resSphericalValue.size() != Hybrid::resistivitySphericalR2.size() ) || (resSphericalValue.size() < 1) || (Hybrid::resistivitySphericalR2.size() < 1) ) {
+	 simClasses.logger << "(RHYBRID) ERROR: parameter arrays of the spherical shell resistivity model (value_spherical, R_spherical) should be the same non-zero size (" << resSphericalValue.size() << ", " << Hybrid::resistivitySphericalR2.size() << ")" << std::endl << write;
+	 return false;;
+      }
+      for(size_t i=0;i<Hybrid::resistivitySphericalR2.size();i++) {
+	 if(Hybrid::resistivitySphericalR2[i] < 0) {
+	    simClasses.logger << "(RHYBRID) ERROR: resistivity R_spherical < 0 (" << Hybrid::resistivitySphericalR2[i] << ")" << std::endl << write;
+	    return false;
+	 }
+	 Hybrid::resistivitySphericalR2[i] = sqr(Hybrid::resistivitySphericalR2[i]);
+	 // check that the radii are given in monotonically growing order
+	 if(i > 0) {
+	    if(Hybrid::resistivitySphericalR2[i-1] >= Hybrid::resistivitySphericalR2[i]) {
+	       simClasses.logger << "(RHYBRID) ERROR: radii parameters of the spherical shell resistivity model should be given in a monotonically growing order" << std::endl << write;
+	       return false;
+	    }
+	 }
       }
    }
    else {
-      simClasses.logger << "(setResistivityProfile) ERROR: unknown name of a resistivity profile (" << name << ")" << std::endl << write;
+      simClasses.logger << "(setResistivityProfile) ERROR: unknown name of a resistivity profile (" << resProfileName << ")" << std::endl << write;
       return false;
    }
    return true;
