@@ -1360,7 +1360,9 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
       const int n3 = n*3;
       // inner boundary condition for Ue
       if(innerFlag[n] == true) {
-	 cellUe[n3+0] = cellUe[n3+1] = cellUe[n3+2] = 0.0;
+	 cellUe[n3+0] = Hybrid::fieldObstacleUe[0];
+	 cellUe[n3+1] = Hybrid::fieldObstacleUe[1];
+	 cellUe[n3+2] = Hybrid::fieldObstacleUe[2];
 	 continue;
       }
 #ifdef USE_OUTER_BOUNDARY_ZONE
@@ -1566,7 +1568,9 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
       const int n3 = n*3;
       // inner boundary condition for Ue
       if(innerFlag[n] == true) {
-	 nodeUe[n3+0] = nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
+	 nodeUe[n3+0] = Hybrid::fieldObstacleUe[0];
+	 nodeUe[n3+1] = Hybrid::fieldObstacleUe[1];
+	 nodeUe[n3+2] = Hybrid::fieldObstacleUe[2];
 	 continue;
       }
 #ifdef USE_OUTER_BOUNDARY_ZONE

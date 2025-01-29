@@ -327,6 +327,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dx=cellSize[0];
    Hybrid::dV=cube(Hybrid::dx);
    const Real defaultValue = 0.0;
+   string fieldObstacleUeStr = string("(0,0,0)");
    string outputParams = "";
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    string magneticFieldProfileName = "";
@@ -336,6 +337,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
+   cr.add("Hybrid.fieldObstacleUe","Ue velocity vector (Uex,Uey,Uez) inside the inner boundary [m/s] (float,float,float)",string("(0,0,0)"));
    cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
    cr.add("Hybrid.R_cellEpObstacle","Radius of inner boundary for zero electron pressure electric field [m] (float)",defaultValue);
    cr.add("Hybrid.gravity","Use gravitational acceleration [-] (bool)",false);
@@ -363,6 +365,21 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.R_object",Hybrid::R_object);
    cr.get("Hybrid.R_fieldObstacle",Hybrid::R2_fieldObstacle);
    cr.get("Hybrid.R_particleObstacle",Hybrid::R2_particleObstacle);
+   cr.get("Hybrid.fieldObstacleUe",fieldObstacleUeStr);
+   // check velocity vector format and set Hybrid::fieldObstacleUe
+     {
+	bool velStrOk = true;
+	vector<Real> vel;
+	velStrOk = convertConfigFileVariableVelocity(fieldObstacleUeStr,vel);
+	// if not correct format
+	if(velStrOk == false) {
+	   simClasses.logger << "(RHYBRID) ERROR: bad format of fieldObstacleUe vector (" << fieldObstacleUeStr << ")" << endl << write;
+	   exit(1);
+	}
+	Hybrid::fieldObstacleUe[0] = vel[0];
+	Hybrid::fieldObstacleUe[1] = vel[1];
+	Hybrid::fieldObstacleUe[2] = vel[2];
+     }
    cr.get("Hybrid.R_cellEpObstacle",Hybrid::R2_cellEpObstacle);
    cr.get("Hybrid.gravity",Hybrid::useGravity);
    cr.get("Hybrid.M_object",Hybrid::M_object);
@@ -571,6 +588,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< (sqrt(Hybrid::R2_fieldObstacle) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
    }
    else { simClasses.logger << Hybrid::R2_fieldObstacle << "" << endl; }
+   simClasses.logger << "Ue(r <= R_fieldObstacle) = (" << Hybrid::fieldObstacleUe[0]/1e3 << "," << Hybrid::fieldObstacleUe[1]/1e3 << "," << Hybrid::fieldObstacleUe[2]/1e3 << ") km/s" << endl;
    simClasses.logger << "R_particleObstacle = ";
    if(Hybrid::R2_particleObstacle > 0) {
       simClasses.logger

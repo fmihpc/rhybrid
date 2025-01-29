@@ -114,6 +114,7 @@ Real Hybrid::dx;
 Real Hybrid::dV;
 Real Hybrid::R_object;
 Real Hybrid::R2_fieldObstacle;
+Real Hybrid::fieldObstacleUe[3];
 Real Hybrid::R2_particleObstacle;
 Real Hybrid::R2_cellEpObstacle;
 Real Hybrid::upstreamBulkU;

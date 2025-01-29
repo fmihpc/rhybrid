@@ -115,33 +115,6 @@ string radiusToString(Real R) {
      to_string((R-Hybrid::R_object)/1e3) + " km + R_object";
 }
 
-// convert string velocity vector cfg variable to Real vector
-bool convertConfigFileVariableVelocity(string velStr,vector<Real>& vel) {
-   // check velocity format: (Ux,Uy,Uz)
-   bool velStrOk = true;
-   if(count(velStr.begin(),velStr.end(),'(') != 1 ||
-      count(velStr.begin(),velStr.end(),')') != 1 ||
-      count(velStr.begin(),velStr.end(),',') != 2 ||
-      velStr.find_first_not_of("(),+-0123456789.e ") != string::npos) {
-      velStrOk = false;
-   }
-   // remove non-numeral characters from string
-   string velStrEdit(velStr);
-   replace(velStrEdit.begin(),velStrEdit.end(),'(',' ');
-   replace(velStrEdit.begin(),velStrEdit.end(),')',' ');
-   replace(velStrEdit.begin(),velStrEdit.end(),',',' ');
-   // remove multiple whitespace: not needed
-   //velStrEdit.erase(unique(velStrEdit.begin(),velStrEdit.end(),[](char a,char b) { return isspace(a) && isspace(b); } ),velStrEdit.end() );
-   // convert string to Reals
-   vel.clear();
-   Real vtmp;
-   stringstream ss(velStrEdit);
-   while (ss >> vtmp) { vel.push_back(vtmp); }
-   // check velocity format: (Ux,Uy,Uz)
-   if(vel.size() != 3) { velStrOk = false; }
-   return velStrOk;
-}
-
 // get injector parameters
 bool getInjectorParameters(ParticleInjectorBase* injBasePtr,InjectorParameters& p) {
    p.name = "";

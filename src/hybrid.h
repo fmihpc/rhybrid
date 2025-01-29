@@ -32,6 +32,7 @@
 #define vecsqr(a) (sqr(a[0])+sqr(a[1])+sqr(a[2]))
 #define normvec(a) (sqrt(vecsqr(a)))
 
+// convert Real to string with given precicion
 inline std::string real2str(Real x,unsigned int prec) {
     std::stringstream ss;
     ss.precision(prec);
@@ -39,6 +40,7 @@ inline std::string real2str(Real x,unsigned int prec) {
     return ss.str();
 }
 
+// convert int to string with at least N digits and filled with leading zeros
 inline std::string int2str(int x,unsigned int N) {
     std::stringstream ss;
     ss.width(N);
@@ -47,15 +49,34 @@ inline std::string int2str(int x,unsigned int N) {
     return ss.str();
 }
 
-template<typename T>
-struct HybridVariable {
-   std::string name = "";
-   std::string type = "";
-   std::size_t vectorDim = 0;
-   pargrid::DataID id = pargrid::INVALID_DATAID;
-   T* ptr = NULL;
-};
+// convert string velocity vector cfg variable to Real vector
+inline bool convertConfigFileVariableVelocity(std::string velStr,std::vector<Real>& vel) {
+   // check velocity format: (Ux,Uy,Uz)
+   bool velStrOk = true;
+   if(count(velStr.begin(),velStr.end(),'(') != 1 ||
+      count(velStr.begin(),velStr.end(),')') != 1 ||
+      count(velStr.begin(),velStr.end(),',') != 2 ||
+      velStr.find_first_not_of("(),+-0123456789.e ") != std::string::npos) {
+      velStrOk = false;
+   }
+   // remove non-numeral characters from string
+   std::string velStrEdit(velStr);
+   replace(velStrEdit.begin(),velStrEdit.end(),'(',' ');
+   replace(velStrEdit.begin(),velStrEdit.end(),')',' ');
+   replace(velStrEdit.begin(),velStrEdit.end(),',',' ');
+   // remove multiple whitespace: not needed
+   //velStrEdit.erase(unique(velStrEdit.begin(),velStrEdit.end(),[](char a,char b) { return isspace(a) && isspace(b); } ),velStrEdit.end() );
+   // convert string to Reals
+   vel.clear();
+   Real vtmp;
+   std::stringstream ss(velStrEdit);
+   while (ss >> vtmp) { vel.push_back(vtmp); }
+   // check velocity format: (Ux,Uy,Uz)
+   if(vel.size() != 3) { velStrOk = false; }
+   return velStrOk;
+}
 
+// cross product of 3D vectors
 inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[0] = a[1]*b[2] - a[2]*b[1];
    result[1] = a[2]*b[0] - a[0]*b[2];
@@ -69,6 +90,16 @@ struct OuterBoundaryZone {
    bool constUe = false;
 };
 #endif
+
+// new variable handling TBD
+/*template<typename T>
+struct HybridVariable {
+   std::string name = "";
+   std::string type = "";
+   std::size_t vectorDim = 0;
+   pargrid::DataID id = pargrid::INVALID_DATAID;
+   T* ptr = NULL;
+};*/
 
 struct Hybrid {
    // new variable handling TBD
@@ -163,6 +194,7 @@ struct Hybrid {
    static Real dV;
    static Real R_object;
    static Real R2_fieldObstacle;
+   static Real fieldObstacleUe[3];
    static Real R2_particleObstacle;
    static Real R2_cellEpObstacle;
    static Real upstreamBulkU;
