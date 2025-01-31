@@ -1,0 +1,116 @@
+#!/bin/bash -l
+# Slurm batch job script for plotter_rhybrid_2d_slice.py
+# 1) Creates PNG frames using plotter_rhybrid_2d_slice.py on multiple nodes (one process per node, Python multiprocessesing within a node)
+# 2) Calls ffmpeg to create MP4 movies files from the frames for each parameter
+#SBATCH --job-name=rhba
+#SBATCH --account=your_project_here
+#SBATCH --time=01:00:00
+#SBATCH --partition=your_queue_here
+#SBATCH --hint=multithread
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=2
+#SBATCH --cpus-per-task=15
+#SBATCH --mem=185G
+#SBATCH --exclusive
+##ntasks=20cpus-per-task=28--mem-per-cpu=4G
+#export OMP_NUM_THREADS=80
+cd $SLURM_SUBMIT_DIR
+analysatorFolder=/path/to/analysator/
+
+runFolder=../
+runDescription="run"
+
+echo "PLOTTING SCRIPT: START"
+
+echo "Plotting run from: " $runFolder
+echo "Run description string: " $runDescription
+tstart=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |head -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |bc)
+tend=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |tail -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |sed 's/^0*//')
+#tstart=0
+#tend=20000
+echo "First state*.vlsv file time step: " $tstart
+echo "Last state*.vlsv file time step: " $tend
+Robject=$(grep "R_object  =" "$runFolder/"logfile.txt |cut -f 4 -d ' '|xargs)"e3"
+echo "Object radius: " $Robject "m"
+
+module load StdEnv
+module load gcc/11.3.0
+module load boost
+module load gnuplot/5.4.3
+module load texlive/texlive
+module load python-data/3.10-24.04
+
+mkdir -p png/
+
+export PYTHONPATH=$PYTHONPATH:$analysatorFolder
+
+if [ -z "$SLURM_JOB_NUM_NODES" ]
+then
+ Nnodes=1
+else
+ Nnodes=$SLURM_JOB_NUM_NODES
+fi
+
+if [ -z "$SLURM_CPUS_PER_TASK" ]
+then
+ Ncores=1
+else
+ Ncores=$SLURM_CPUS_PER_TASK
+fi
+
+pyscript="plotter_rhybrid_2d_slice.py $Ncores $runFolder $runDescription $Robject "
+exec="srun -N 1 -n 1"
+
+echo "Nnodes = " $Nnodes
+echo "Ncores = " $Ncores
+
+# create animation frames
+echo "Creating PNG frames"
+if [[ $Nnodes -eq 1 ]]
+then
+ echo $exec python $pyscript $tstart $tend
+ $exec python $pyscript $tstart $tend
+else
+  n=$(( ( $tend - $tstart ) / $Nnodes ))
+  #nodenames=$(scontrol show hostnames $SLURM_JOB_NODELIST)
+  #nodenames_minus_one=$(echo $nodenames |cut -f 1-$(( $Nnodes - 1 )) -d ' ')
+  #nodenames_last=$(echo $nodenames |cut -f $Nnodes -d ' ')
+  #ii=0
+  #for nname in $nodenames_minus_one
+  for ii in $( seq 0 $(( $Nnodes - 2 )) )
+  do
+   istart=$(( $tstart + $ii * $n ))
+   iend=$(( $tstart + ( $ii + 1 ) * $n - 1 ))
+   echo $exec python $pyscript $istart $iend
+   #$exec --nodelist=$nname python $pyscript $istart $iend &
+   $exec python $pyscript $istart $iend &
+   #srun -N 1 -n 1 hostname&
+   #ii=$(( $ii + 1 ))
+  done
+ #srun -N 1 -n 1 hostname&
+ echo $exec python $pyscript $(( $iend + 1 )) $tend
+ $exec python $pyscript $(( $iend + 1 )) $tend &
+fi
+wait
+
+echo "Compiling MP4 video files"
+
+# compile video files
+module load ffmpeg
+
+mkdir -p mp4/
+
+fns=$(find png/ -type f -name "*state*.vlsv.png" | sed 's/_state[0-9]*.vlsv.png//g' |sort |uniq)
+
+for f in $fns
+do
+fb=$(basename $f)
+echo "Compiling: " $fb.mp4
+$exec ffmpeg -framerate 20 -y -an -pattern_type glob -i ${f}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$fb.mp4 &
+done
+
+wait
+
+echo "PLOTTING SCRIPT: FINISHED"
+
+
