@@ -31,10 +31,17 @@ import scipy as sp
 import operator as oper
 import socket
 import itertools
+from multiprocessing import Pool,Value
 from matplotlib.patches import Wedge
 plt.switch_backend("agg")
 
 useMultiProcessing = 1
+mpParamCnt = Value('i',1) # parameter counter for multiprocesses
+mpFileOpenCnt = Value('i',0) # file opening counter for multiprocesses
+Nfiles = -1
+NfileOpens = -1
+Nparams = -1
+runDim = -1
 matplotlib.rcParams.update({"font.size": 14})
 matplotlib.rcParams["lines.linewidth"] = 2
 figDpi = 100
@@ -204,7 +211,9 @@ def chooseNcol(rPlane,rmin,rmax,nr,rstr,Rp,Rp_str):
 
 # plotting individual subplot in a figure
 def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
- print("opening: " + str(vlsvFileName))
+ # counter
+ global mpFileOpenCnt
+ print("opening: " + str(vlsvFileName) + " (" + str(mpFileOpenCnt.value) + "/" + str(NfileOpens) + ")")
  # read file
  vr = pt.vlsvfile.VlsvReader(runFolder + vlsvFileName)
  # simulation box dimensions
@@ -283,27 +292,33 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
   print("ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
   quit()
 
- # function can be called with fig = -1 to get header information
+ # function can be called with fig = -1 to get header information and the run dimensionality
+ # print header only once
+ with mpFileOpenCnt.get_lock():
+  if mpFileOpenCnt.value == 0:
+   print("\nHEADER INFORMATION (FROM THE FIRST FILE):")
+   print("Rp = " + str(Rp/1e3) + " km")
+   print("run dimensions: " + str(runDim) + "D, " + runDimAxes)
+   print("x = " + str(xmin/Rp) + " ... " + str(xmax/Rp) + " Rp")
+   print("y = " + str(ymin/Rp) + " ... " + str(ymax/Rp) + " Rp")
+   print("z = " + str(zmin/Rp) + " ... " + str(zmax/Rp) + " Rp")
+   print("grid (nx,ny,nz) = (" + str(nx) + "," + str(ny) + "," + str(nz) + ")")
+   if runDim == 3:
+    print("Plotting a 3D run with:")
+    print("xPlane = " + str(xPlane) + " Rp, YZ_Ncol = " + str(YZ_Ncol))
+    print("yPlane = " + str(yPlane) + " Rp, XZ_Ncol = " + str(XZ_Ncol))
+    print("zPlane = " + str(zPlane) + " Rp, XY_Ncol = " + str(XY_Ncol))
+   elif runDim == 2:
+    print("Plotting a 2D run: " + runDimAxes)
+   else:
+    print("ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
+    quit()
+   print("")
+  mpFileOpenCnt.value += 1
+
+ # return the number of run dimensions
  if fig == -1:
-  print("\nHEADER INFORMATION (FROM THE FIRST FILE):")
-  print("Rp = " + str(Rp/1e3) + " km")
-  print("run dimensions: " + str(runDim) + "D, " + runDimAxes)
-  print("x = " + str(xmin/Rp) + " ... " + str(xmax/Rp) + " Rp")
-  print("y = " + str(ymin/Rp) + " ... " + str(ymax/Rp) + " Rp")
-  print("z = " + str(zmin/Rp) + " ... " + str(zmax/Rp) + " Rp")
-  print("grid (nx,ny,nz) = (" + str(nx) + "," + str(ny) + "," + str(nz) + ")")
-  if runDim == 3:
-   print("Plotting a 3D run with:")
-   print("xPlane = " + str(xPlane) + " Rp, YZ_Ncol = " + str(YZ_Ncol))
-   print("yPlane = " + str(yPlane) + " Rp, XZ_Ncol = " + str(XZ_Ncol))
-   print("zPlane = " + str(zPlane) + " Rp, XY_Ncol = " + str(XY_Ncol))
-  elif runDim == 2:
-   print("Plotting a 2D run: " + runDimAxes)
-  else:
-   print("ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
-   quit()
-  print("")
-  return nx,ny,nz,runDim,runDimAxes
+  return runDim
 
  # read and sort variable
  if(P_ii["type"] == "magnitude"):
@@ -458,14 +473,21 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
 
 # plot a figure
 def plotFigure(vlsvFileNameFullPath):
- # read header information from the first file of the first run
- nx,ny,nz,runDim,runDimAxes = plotPanel(-1,-1,-1,-1,simRuns[0][0],os.path.basename(vlsvFileNameFullPath),-1,simRuns[0][2],-1)
  # number of figure columns
- NFigCols = 3
- if runDim < 3:
+ NFigCols = -1
+ if runDim == 3:
+  NFigCols = 3
+ elif runDim == 2:
   NFigCols = 1
+ else:
+  print("(plotFigure) ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
+  quit()
  for ii in range(len(P)):
-  print("plotting: " + P[ii]["param"] + ", " + P[ii]["type"])
+  # counter
+  global mpParamCnt
+  with mpParamCnt.get_lock():
+   print("parameter: " + P[ii]["param"] + ", " + P[ii]["type"] + " (" + str(mpParamCnt.value) + "/" + str(Nparams) + ")")
+   mpParamCnt.value += 1
   fig,axes = plt.subplots(nrows=Nrows,ncols=NFigCols,figsize=figureSize,frameon=True,squeeze=False)
   jj = 0
   for s in simRuns:
@@ -496,8 +518,10 @@ if "runFiles" not in locals():
     continue
    if (t >= tstart) and (t <= tend):
     runFiles.append(runFolder1 + f)
-Ntimes = len(runFiles)
-print("Files found: " + str(Ntimes))
+
+# total number of files (savesteps) found to be plotted
+Nfiles = len(runFiles)
+print("Files found: " + str(Nfiles))
 
 # find all variable from the first vlsv file
 vr = pt.vlsvfile.VlsvReader(runFiles[0])
@@ -550,14 +574,21 @@ for var_ in all_vars:
     P.append({"param":var_,"type":"scalar","str":P_settings[ii]["str"],"log":P_settings[ii]["log"],"lims":P_settings[ii]["lims"],"unit":P_settings[ii]["unit"],"colormap":P_settings[ii]["colormap"],"filename":P_settings[ii]["filename"],"sigma":P_settings[ii]["sigma"]})
     break
 
+# total number of parameters to be plotted (scalar + 3*vector)
+Nparams = len(P)
+NfileOpens = Nfiles*Nparams
+
 print("Vector and scalar variables found: " + str(len(all_vars)))
 print("Vector variables found: " + str(N_vector_vars_found))
 print("Scalar variables found: " + str(N_scalar_vars_found))
-print("Plotting fields found: " + str(len(P)))
+print("Plotting fields found: " + str(Nparams))
+print("Total file openings expected: " + str(NfileOpens))
+
+# read header information from the first file of the first run
+runDim = plotPanel(-1,-1,-1,-1,simRuns[0][0],os.path.basename(runFiles[0]),-1,simRuns[0][2],-1)
 
 # run plotting with multiple processes
 if useMultiProcessing > 0:
- from multiprocessing import Pool
  if __name__ == "__main__":
   pool = Pool(Ncores)
   pool.map(plotFigure,runFiles)
