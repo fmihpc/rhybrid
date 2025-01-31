@@ -408,19 +408,23 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
 
  # plot one column for a 2D run
  elif runDim == 2:
+  meshD = -1
   if runDimAxes == "yz":
+   meshD = D[:,:,0]
    axisExtend = [axisLims[2],axisLims[3],axisLims[4],axisLims[5]]
    axisLimsZoomX = axisLimsZoom[2:4]
    axisLimsZoomY = axisLimsZoom[4:6]
    xlabelStr = "$y$"
    ylabelStr = "$z$"
   elif runDimAxes == "xz":
+   meshD = D[:,0,:]
    axisExtend = [axisLims[0],axisLims[1],axisLims[4],axisLims[5]]
    axisLimsZoomX = axisLimsZoom[0:2]
    axisLimsZoomY = axisLimsZoom[4:6]
    xlabelStr = "$x$"
    ylabelStr = "$z$"
   elif runDimAxes == "xy":
+   meshD = D[0,:,:]
    axisExtend = [axisLims[0],axisLims[1],axisLims[2],axisLims[3]]
    axisLimsZoomX = axisLimsZoom[0:2]
    axisLimsZoomY = axisLimsZoom[2:4]
@@ -429,7 +433,6 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
   else:
    print("ERROR: unknown run dimensionality (runDimAxes = " + runDimAxes + ")")
    quit()
-  meshD = D[0,:,:]
   #plt.subplot(1,3,2)
   a = axes[ii_row][0].imshow(meshD/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=axisExtend,aspect="equal",origin="lower",interpolation="nearest")
   if ii_row == 0:
