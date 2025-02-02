@@ -18,6 +18,7 @@
 #  tend = VLSV file end time step [int]
 #
 # This script version is for multiple runs and has the looping order: 1) parameters, 2) VLSV files
+# Multi-run plots need manual editing of the script (see source below)
 
 import sys
 import os
@@ -39,9 +40,13 @@ useMultiProcessing = 1
 mpParamCnt = Value('i',1) # parameter counter for multiprocesses
 mpFileOpenCnt = Value('i',0) # file opening counter for multiprocesses
 Nfiles = -1
+Nruns = -1
 NfileOpens = -1
 Nparams = -1
+NfigCols = -1
+NfigRows = -1
 runDim = -1
+runDimAxes = ""
 matplotlib.rcParams.update({"font.size": 14})
 matplotlib.rcParams["lines.linewidth"] = 2
 figDpi = 100
@@ -170,7 +175,16 @@ print("running on " + str(Ncores) + " cores")
 
 # create simRuns list of tuples
 simRuns=[(runFolder,runDescr,Robject,"$R_p$")]
-Nrows = len(simRuns)
+
+# multi-run: add manually further runs (first run comes always from the command line)
+#runFolder2 = "/path/to/run02/"; runDescr2="run02"
+#runFolder3 = "/path/to/run03/"; runDescr3="run03"
+#runFolder2 = os.getenv("HOME") + "/run02/"; runDescr2="run02"
+#runFolder3 = os.getenv("HOME") + "/run03/"; runDescr3="run03"
+#simRuns.append((runFolder2,runDescr2,Robject,"$R_p$"))
+#simRuns.append((runFolder3,runDescr3,Robject,"$R_p$"))
+
+Nruns = len(simRuns) # number of runs
 
 def round2str(x):
  return str(round(x*10)/10)
@@ -210,10 +224,13 @@ def chooseNcol(rPlane,rmin,rmax,nr,rstr,Rp,Rp_str):
  return Ncol,rPlane/Rp
 
 # plotting individual subplot in a figure
-def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
+def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
  # counter
  global mpFileOpenCnt
- print("opening: " + str(vlsvFileName) + " (" + str(mpFileOpenCnt.value) + "/" + str(NfileOpens) + ")")
+ with mpFileOpenCnt.get_lock():
+  if fig != -1:
+   print("opening: " + runStr + " / " + str(vlsvFileName) + " / " + P_ii["param"] + " / " + P_ii["type"] + " (" + str(mpFileOpenCnt.value) + "/" + str(NfileOpens) + ")")
+  mpFileOpenCnt.value += 1
  # read file
  vr = pt.vlsvfile.VlsvReader(runFolder + vlsvFileName)
  # simulation box dimensions
@@ -229,6 +246,7 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
 
  # find out dimensionality of the run
  runDimAxes = ""
+ runDim = -1
  if nx > 1:
   runDimAxes = "x"
  if ny > 1:
@@ -238,6 +256,19 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
  runDim = len(runDimAxes)
  if nx < 1 | ny < 1 | nz < 1:
   print("ERROR: bad run dimensions, all coordinate axes should have at least one cell")
+
+ # column and row indices
+ ii_col = -1
+ ii_row = -1
+ if runDim == 3:
+  ii_col = 0
+  ii_row = ii_run
+ elif runDim == 2:
+  ii_col = ii_run
+  ii_row = 0
+ else:
+  print("ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
+  quit()
 
  # zoomed domain
  global axisLimsZoom
@@ -295,7 +326,7 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
  # function can be called with fig = -1 to get header information and the run dimensionality
  # print header only once
  with mpFileOpenCnt.get_lock():
-  if mpFileOpenCnt.value == 0:
+  if mpFileOpenCnt.value == 1:
    print("\nHEADER INFORMATION (FROM THE FIRST FILE):")
    print("Rp = " + str(Rp/1e3) + " km")
    print("run dimensions: " + str(runDim) + "D, " + runDimAxes)
@@ -314,11 +345,10 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
     print("ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
     quit()
    print("")
-  mpFileOpenCnt.value += 1
 
  # return the number of run dimensions
  if fig == -1:
-  return runDim
+  return runDim,runDimAxes
 
  # read and sort variable
  if(P_ii["type"] == "magnitude"):
@@ -350,7 +380,7 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
 
  #plt.figure(figsize=figureSize,frameon=False)
 
- # plot three columns for a 3D run
+ # plot three columns per 3D run
  if runDim == 3:
   # get 2D slices to plot
   meshD_yz = D[:,:,YZ_Ncol]
@@ -362,57 +392,60 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
    meshD_xz = sp.ndimage.filters.gaussian_filter(D[:,XZ_Ncol,:],sigma=P_ii["sigma"],mode="constant")
    meshD_xy = sp.ndimage.filters.gaussian_filter(D[XY_Ncol,:,:],sigma=P_ii["sigma"],mode="constant")
   #plt.subplot(1,3,1)
-  a = axes[ii_row][0].imshow(meshD_xz/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[0],axisLims[1],axisLims[4],axisLims[5]],aspect="equal",origin="lower",interpolation="nearest")
+  a = axes[ii_row][ii_col].imshow(meshD_xz/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[0],axisLims[1],axisLims[4],axisLims[5]],aspect="equal",origin="lower",interpolation="nearest")
   if ii_row == 0:
-   axes[ii_row][0].title.set_text("3D: $xz$ ($y=$" + round2str_xyzplane(yPlane,Rp_str) + ")")
-  if ii_row == (Nrows-1):
-   axes[ii_row][0].set_xlabel("$x$ [" + Rp_str + "]")
-  #axes[ii_row][0].set_ylabel(runStr + "\n\n$z$ [" + Rp_str + "]")
-  axes[ii_row][0].set_ylabel("$z$ [" + Rp_str + "]")
-  axes[ii_row][0].set_xticks(crdTicks)
-  axes[ii_row][0].tick_params("x",labelrotation=xTickAngle)
-  axes[ii_row][0].set_yticks(crdTicks)
-  axes[ii_row][0].axis("scaled")
-  axes[ii_row][0].set_xlim(axisLimsZoom[0:2])
-  axes[ii_row][0].set_ylim(axisLimsZoom[4:6])
-  configurePanel(P_ii,a,axes[ii_row][0],showPlanet[0],0)
+   axes[ii_row][ii_col].title.set_text("3D: $xz$ ($y=$" + round2str_xyzplane(yPlane,Rp_str) + ")")
+  if ii_row == (NfigRows-1):
+   axes[ii_row][ii_col].set_xlabel("$x$ [" + Rp_str + "]")
+  #axes[ii_row][ii_col].set_ylabel(runStr + "\n\n$z$ [" + Rp_str + "]")
+  axes[ii_row][ii_col].set_ylabel("$z$ [" + Rp_str + "]")
+  axes[ii_row][ii_col].set_xticks(crdTicks)
+  axes[ii_row][ii_col].tick_params("x",labelrotation=xTickAngle)
+  axes[ii_row][ii_col].set_yticks(crdTicks)
+  axes[ii_row][ii_col].axis("scaled")
+  axes[ii_row][ii_col].set_xlim(axisLimsZoom[0:2])
+  axes[ii_row][ii_col].set_ylim(axisLimsZoom[4:6])
+  configurePanel(P_ii,a,axes[ii_row][ii_col],showPlanet[0],0) 
+  ii_col += 1
 
   #plt.subplot(1,3,2)
-  a = axes[ii_row][1].imshow(meshD_xy/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[0],axisLims[1],axisLims[2],axisLims[3]],aspect="equal",origin="lower",interpolation="nearest")
+  a = axes[ii_row][ii_col].imshow(meshD_xy/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[0],axisLims[1],axisLims[2],axisLims[3]],aspect="equal",origin="lower",interpolation="nearest")
   if ii_row == 0:
-   axes[ii_row][1].title.set_text("$t=$" + round2str(fileTime) + " s\n" "3D: $xy$ ($z=$" + round2str_xyzplane(zPlane,Rp_str) + ")")
-  if ii_row == (Nrows-1):
-   axes[ii_row][1].set_xlabel("$x$ [" + Rp_str + "]")
-  axes[ii_row][1].set_ylabel("$y$ [" + Rp_str + "]")
-  axes[ii_row][1].set_xticks(crdTicks)
-  axes[ii_row][1].tick_params("x",labelrotation=xTickAngle)
-  axes[ii_row][1].set_yticks(crdTicks)
-  axes[ii_row][1].axis("scaled")
-  axes[ii_row][1].set_xlim(axisLimsZoom[0:2])
-  axes[ii_row][1].set_ylim(axisLimsZoom[2:4])
-  configurePanel(P_ii,a,axes[ii_row][1],showPlanet[1],0)
+   axes[ii_row][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s\n" "3D: $xy$ ($z=$" + round2str_xyzplane(zPlane,Rp_str) + ")")
+  if ii_row == (NfigRows-1):
+   axes[ii_row][ii_col].set_xlabel("$x$ [" + Rp_str + "]")
+  axes[ii_row][ii_col].set_ylabel("$y$ [" + Rp_str + "]")
+  axes[ii_row][ii_col].set_xticks(crdTicks)
+  axes[ii_row][ii_col].tick_params("x",labelrotation=xTickAngle)
+  axes[ii_row][ii_col].set_yticks(crdTicks)
+  axes[ii_row][ii_col].axis("scaled")
+  axes[ii_row][ii_col].set_xlim(axisLimsZoom[0:2])
+  axes[ii_row][ii_col].set_ylim(axisLimsZoom[2:4])
+  configurePanel(P_ii,a,axes[ii_row][ii_col],showPlanet[1],0)
+  ii_col += 1
 
   #plt.subplot(1,3,3)
-  a = axes[ii_row][2].imshow(meshD_yz/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[2],axisLims[3],axisLims[4],axisLims[5]],aspect="equal",origin="lower",interpolation="nearest")
- # first row
+  a = axes[ii_row][ii_col].imshow(meshD_yz/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[2],axisLims[3],axisLims[4],axisLims[5]],aspect="equal",origin="lower",interpolation="nearest")
+  # first row
   if ii_row == 0:
-   axes[ii_row][2].title.set_text("3D: $yz$ ($x=$" + round2str_xyzplane(xPlane,Rp_str) + ")")
+   axes[ii_row][ii_col].title.set_text("3D: $yz$ ($x=$" + round2str_xyzplane(xPlane,Rp_str) + ")")
   # the bottom row
-  if ii_row == (Nrows-1):
-   axes[ii_row][2].set_xlabel("$y$ [" + Rp_str + "]")
-  axes[ii_row][2].set_ylabel("$z$ [" + Rp_str + "]")
-  axes[ii_row][2].set_xticks(crdTicks)
-  axes[ii_row][2].tick_params("x",labelrotation=xTickAngle)
-  axes[ii_row][2].set_yticks(crdTicks)
-  axes[ii_row][2].axis("scaled")
-  axes[ii_row][2].set_xlim(axisLimsZoom[2:4])
-  axes[ii_row][2].set_ylim(axisLimsZoom[4:6])
-  configurePanel(P_ii,a,axes[ii_row][2],showPlanet[2],0)
+  if ii_row == (NfigRows-1):
+   axes[ii_row][ii_col].set_xlabel("$y$ [" + Rp_str + "]")
+  axes[ii_row][ii_col].set_ylabel("$z$ [" + Rp_str + "]")
+  axes[ii_row][ii_col].set_xticks(crdTicks)
+  axes[ii_row][ii_col].tick_params("x",labelrotation=xTickAngle)
+  axes[ii_row][ii_col].set_yticks(crdTicks)
+  axes[ii_row][ii_col].axis("scaled")
+  axes[ii_row][ii_col].set_xlim(axisLimsZoom[2:4])
+  axes[ii_row][ii_col].set_ylim(axisLimsZoom[4:6])
+  configurePanel(P_ii,a,axes[ii_row][ii_col],showPlanet[2],0)
+  ii_col += 1
 
   # the bottom row
-  if ii_row == (Nrows-1):
+  if ii_row == (NfigRows-1):
    fig.tight_layout()
-   if Nrows == 1:
+   if NfigRows == 1:
     clb = fig.colorbar(a,ax=axes.flatten(),shrink=0.5)
    else:
     clb = fig.colorbar(a,ax=axes.flatten())
@@ -421,7 +454,7 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
    #plt.close()
    #plt.clf()
 
- # plot one column for a 2D run
+ # plot one column per 2D run
  elif runDim == 2:
   meshD = -1
   if runDimAxes == "yz":
@@ -449,46 +482,38 @@ def plotPanel(fig,axes,ii_row,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str):
    print("ERROR: unknown run dimensionality (runDimAxes = " + runDimAxes + ")")
    quit()
   #plt.subplot(1,3,2)
-  a = axes[ii_row][0].imshow(meshD/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=axisExtend,aspect="equal",origin="lower",interpolation="nearest")
-  if ii_row == 0:
-   axes[ii_row][0].title.set_text("$t=$" + round2str(fileTime) + " s\n" + str(runDim) + "D: " + runDimAxes)
-  if ii_row == (Nrows-1):
-   axes[ii_row][0].set_xlabel(xlabelStr + " [" + Rp_str + "]")
-  axes[ii_row][0].set_ylabel(ylabelStr + " [" + Rp_str + "]")
-  axes[ii_row][0].set_xticks(crdTicks)
-  axes[ii_row][0].tick_params("x",labelrotation=xTickAngle)
-  axes[ii_row][0].set_yticks(crdTicks)
-  axes[ii_row][0].axis("scaled")
-  axes[ii_row][0].set_xlim(axisLimsZoomX)
-  axes[ii_row][0].set_ylim(axisLimsZoomY)
-  configurePanel(P_ii,a,axes[ii_row][0],showPlanet[1],0)
-  # the bottom row
-  if ii_row == (Nrows-1):
+  a = axes[0][ii_col].imshow(meshD/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=axisExtend,aspect="equal",origin="lower",interpolation="nearest")
+  if ii_col == 0:
+   axes[0][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s\n" + str(runDim) + "D: " + runDimAxes + "\n" + runStr)
+   axes[0][ii_col].set_ylabel(ylabelStr + " [" + Rp_str + "]")
+  else:
+   axes[0][ii_col].title.set_text(runStr)
+  axes[0][ii_col].set_xlabel(xlabelStr + " [" + Rp_str + "]")
+  axes[0][ii_col].set_xticks(crdTicks)
+  axes[0][ii_col].tick_params("x",labelrotation=xTickAngle)
+  axes[0][ii_col].set_yticks(crdTicks)
+  axes[0][ii_col].axis("scaled")
+  axes[0][ii_col].set_xlim(axisLimsZoomX)
+  axes[0][ii_col].set_ylim(axisLimsZoomY)
+  configurePanel(P_ii,a,axes[0][ii_col],showPlanet[1],0)
+  # the last column
+  if ii_col == (NfigCols-1):
    fig.tight_layout()
-   if Nrows == 1:
-    clb = fig.colorbar(a,ax=axes.flatten(),shrink=1.0)
-   else:
-    clb = fig.colorbar(a,ax=axes.flatten())
+   clb = fig.colorbar(a,ax=axes.flatten(),shrink=1.0)
    clb.ax.set_title(P_ii["str"])
 
 # plot a figure
 def plotFigure(vlsvFileNameFullPath):
- # number of figure columns
- NFigCols = -1
- if runDim == 3:
-  NFigCols = 3
- elif runDim == 2:
-  NFigCols = 1
- else:
-  print("(plotFigure) ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
-  quit()
  for ii in range(len(P)):
   # counter
   global mpParamCnt
   with mpParamCnt.get_lock():
-   print("parameter: " + P[ii]["param"] + ", " + P[ii]["type"] + " (" + str(mpParamCnt.value) + "/" + str(Nparams) + ")")
+   if mpParamCnt.value == 1:
+    print("FIGURE")
+    print("columns x rows: " + str(NfigCols) + " x " + str(NfigRows) + "\n")
+   print("parameter: " + P[ii]["param"] + ", " + P[ii]["type"] + " (" + str(ii+1) + "/" + str(Nparams) + ")")
    mpParamCnt.value += 1
-  fig,axes = plt.subplots(nrows=Nrows,ncols=NFigCols,figsize=figureSize,frameon=True,squeeze=False)
+  fig,axes = plt.subplots(nrows=NfigRows,ncols=NfigCols,figsize=figureSize,frameon=True,squeeze=False)
   jj = 0
   for s in simRuns:
    runFolder = s[0]
@@ -576,16 +601,28 @@ for var_ in all_vars:
 
 # total number of parameters to be plotted (scalar + 3*vector)
 Nparams = len(P)
-NfileOpens = Nfiles*Nparams
+NfileOpens = Nruns*Nfiles*Nparams
 
 print("Vector and scalar variables found: " + str(len(all_vars)))
 print("Vector variables found: " + str(N_vector_vars_found))
 print("Scalar variables found: " + str(N_scalar_vars_found))
 print("Plotting fields found: " + str(Nparams))
+print("Runs found: " + str(Nruns))
 print("Total file openings expected: " + str(NfileOpens))
 
 # read header information from the first file of the first run
-runDim = plotPanel(-1,-1,-1,-1,simRuns[0][0],os.path.basename(runFiles[0]),-1,simRuns[0][2],-1)
+runDim,runDimAxes = plotPanel(-1,-1,-1,-1,simRuns[0][0],os.path.basename(runFiles[0]),-1,simRuns[0][2],-1)
+
+# number of figure columns and rows
+if runDim == 3:
+ NfigCols = 3
+ NfigRows = Nruns
+elif runDim == 2:
+ NfigCols = Nruns
+ NfigRows = 1
+else:
+ print("(plotFigure) ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
+ quit()
 
 # run plotting with multiple processes
 if useMultiProcessing > 0:
