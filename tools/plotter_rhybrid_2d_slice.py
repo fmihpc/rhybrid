@@ -173,7 +173,7 @@ if (Ncores == -1):
 elif (Ncores < 1) or (Ncores > 100):
  print(HN + "ERROR: negative or otherwise bad number of cores")
  quit()
-if (tstart < 9) or (tend < 0) or (tstart > tend):
+if (tstart < 0) or (tend < 0) or (tstart > tend):
  print(HN + "ERROR: negative or otherwise bad start or end times")
  quit()
 
