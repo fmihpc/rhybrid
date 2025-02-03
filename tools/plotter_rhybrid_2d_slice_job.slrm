@@ -19,9 +19,12 @@ analysatorFolder=/path/to/analysator/
 
 runFolder=../
 runDescription="run"
+cmd_exec="srun -N 1 -n 1"
 
-echo "PLOTTING SCRIPT: START"
+echo "(SLRM) PLOTTING SCRIPT: START"
+echo ""
 
+echo "Current folder: " $(pwd)
 echo "Plotting run from: " $runFolder
 echo "Run description string: " $runDescription
 tstart=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |head -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |bc)
@@ -58,18 +61,26 @@ else
  Ncores=$SLURM_CPUS_PER_TASK
 fi
 
-pyscript="plotter_rhybrid_2d_slice.py $Ncores $runFolder $runDescription $Robject "
-exec="srun -N 1 -n 1"
-
 echo "Nnodes = " $Nnodes
 echo "Ncores = " $Ncores
+echo ""
+
+# get header information with Ncores = -1
+cmd_py_script="plotter_rhybrid_2d_slice.py -1 $runFolder $runDescription $Robject "
+echo "(SLRM) HEADER INFORMATION"
+echo ""
+echo $cmd_exec python $cmd_py_script $tstart $tend
+$cmd_exec python $cmd_py_script $tstart $tend
+wait
 
 # create animation frames
-echo "Creating PNG frames"
+cmd_py_script="plotter_rhybrid_2d_slice.py $Ncores $runFolder $runDescription $Robject "
+echo "(SLRM) CREATING FIGURE FRAMES"
+echo ""
 if [[ $Nnodes -eq 1 ]]
 then
- echo $exec python $pyscript $tstart $tend
- $exec python $pyscript $tstart $tend
+ echo $cmd_exec python $cmd_py_script $tstart $tend
+ $cmd_exec python $cmd_py_script $tstart $tend
 else
   n=$(( ( $tend - $tstart ) / $Nnodes ))
   #nodenames=$(scontrol show hostnames $SLURM_JOB_NODELIST)
@@ -81,19 +92,21 @@ else
   do
    istart=$(( $tstart + $ii * $n ))
    iend=$(( $tstart + ( $ii + 1 ) * $n - 1 ))
-   echo $exec python $pyscript $istart $iend
-   #$exec --nodelist=$nname python $pyscript $istart $iend &
-   $exec python $pyscript $istart $iend &
+   echo $cmd_exec python $cmd_py_script $istart $iend
+   #$cmd_exec --nodelist=$nname python $cmd_py_script $istart $iend &
+   $cmd_exec python $cmd_py_script $istart $iend &
    #srun -N 1 -n 1 hostname&
    #ii=$(( $ii + 1 ))
   done
  #srun -N 1 -n 1 hostname&
- echo $exec python $pyscript $(( $iend + 1 )) $tend
- $exec python $pyscript $(( $iend + 1 )) $tend &
+ echo $cmd_exec python $cmd_py_script $(( $iend + 1 )) $tend
+ $cmd_exec python $cmd_py_script $(( $iend + 1 )) $tend &
 fi
 wait
 
-echo "Compiling MP4 video files"
+echo ""
+echo "(SLRM) COMPILING VIDEO FILES"
+echo ""
 
 # compile video files
 module load ffmpeg
@@ -106,11 +119,12 @@ for f in $fns
 do
 fb=$(basename $f)
 echo "Compiling: " $fb.mp4
-$exec ffmpeg -framerate 20 -y -an -pattern_type glob -i ${f}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$fb.mp4 &
+$cmd_exec ffmpeg -framerate 20 -y -an -pattern_type glob -i ${f}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$fb.mp4 &
 done
 
 wait
-
-echo "PLOTTING SCRIPT: FINISHED"
+echo ""
+echo "(SLRM) PLOTTING SCRIPT: FINISHED"
+echo ""
 
 
