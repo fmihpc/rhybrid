@@ -27,10 +27,10 @@
 #include <simulationclasses.h>
 #include <detectors.h>
 
-#define sqr(x) ((x)*(x))
-#define cube(x) (x)*(x)*(x)
-#define vecsqr(a) (sqr(a[0])+sqr(a[1])+sqr(a[2]))
-#define normvec(a) (sqrt(vecsqr(a)))
+auto sqr(constexpr auto& x) { return x*x; }
+auto cube(constexpr auto& x) { return x*x*x; }
+auto vecsqr(constexpr auto& x) { return sqr(x[0])+sqr(x[1])+sqr(x[2]); }
+auto normvec(constexpr auto& x) { using std::sqrt; return sqrt(vecsqr(x)); }
 
 // convert Real to string with given precicion
 inline std::string real2str(Real x,unsigned int prec) {
