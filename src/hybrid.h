@@ -22,6 +22,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <utility>
 #include <vector>
 #include <map>
 #include <sstream>
@@ -31,8 +32,8 @@
 
 template<class T> T sqr(const T& x) { return x*x; }
 template<class T> T cube(const T& x) { return x*x*x; }
-template<class T> typename std::remove_reference<decltype(T()[0])>::type vecsqr(const T& x) { return sqr(x[0])+sqr(x[1])+sqr(x[2]); }
-template<class T> typename std::remove_reference<decltype(T()[0])>::type normvec(const T& x) { using std::sqrt; return sqrt(vecsqr(x)); }
+template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type vecsqr(const T& x) { return sqr(x[0])+sqr(x[1])+sqr(x[2]); }
+template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type normvec(const T& x) { using std::sqrt; return sqrt(vecsqr(x)); }
 
 // convert Real to string with given precicion
 inline std::string real2str(Real x,unsigned int prec) {
