@@ -237,7 +237,7 @@ bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
 	 }
       }
    }
-   delete buff;
+   delete[] buff;
    return true;
 }
 
