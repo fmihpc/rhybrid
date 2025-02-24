@@ -53,6 +53,30 @@ inline void laminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClas
    B[2] += coeff*z;
 }
 
+inline void laminarFlowAroundCylinderBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   const Real r2 = sqr(x) + sqr(y);
+   if(r2 < Hybrid::laminarR2) { return; }
+   const Real r4 = sqr(r2);
+   B[0] += Hybrid::IMFBx*( 1 - Hybrid::laminarR2 * (sqr(x) - sqr(y))/r4 );
+   B[1] += -2*Hybrid::laminarR2*Hybrid::IMFBx*x*y/r4;
+}
+
+inline void laminarFlowAroundCylinderB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   const Real r2 = sqr(x) + sqr(y);
+   if(r2 < Hybrid::laminarR2) { return; }
+   const Real r4 = sqr(r2);
+   const Real Bmag = sqrt(sqr(Hybrid::IMFBx) + sqr(Hybrid::IMFBy));
+   const Real theta = atan2(Hybrid::IMFBy,Hybrid::IMFBx);
+   const Real c = cos(theta);
+   const Real s = sin(theta);
+   const Real xrot = x*c + y*s;
+   const Real yrot = -x*s + y*c;
+   const Real Bxrot = Bmag*( 1 - Hybrid::laminarR2 * (sqr(xrot) - sqr(yrot))/r4 );
+   const Real Byrot = -2*Hybrid::laminarR2*Bmag*xrot*yrot/r4;
+   B[0] += Bxrot*c - Byrot*s;
+   B[1] += Bxrot*s + Byrot*c;
+}
+
 inline void hemisphericDipoleB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    // translation
    const Real x1 = x - Hybrid::xDip;
@@ -173,15 +197,52 @@ inline void lineDipoleB(Simulation& sim,SimulationClasses& simClasses,Real x,Rea
    const Real z1 = z - Hybrid::zDip;
    const Real r2 = sqr(x1) + sqr(y1) + sqr(z1);
    if(r2 < Hybrid::dipMinR2) { return; }
-   const Real D = -Hybrid::coeffDip;
+   const Real D = -Hybrid::dipMomCoeff/(3.0*Hybrid::dipSurfR);
    B[0] += D*2*x*z/(sqr(r2));
    B[1] += 0.0;
    B[2] += D*( sqr(z) - sqr(x) )/( sqr(r2) );
 }
 
+inline void lineDipoleBxy(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   const Real x1 = x - Hybrid::xDip;
+   const Real y1 = y - Hybrid::yDip;
+   const Real z1 = z - Hybrid::zDip;
+   const Real r2 = sqr(x1) + sqr(y1) + sqr(z1);
+   if(r2 < Hybrid::dipMinR2) { return; }
+   const Real D = -Hybrid::dipMomCoeff/(3.0*Hybrid::dipSurfR);
+   B[0] += D*2*x*y/(sqr(r2));
+   B[1] += D*( sqr(y) - sqr(x) )/( sqr(r2) );
+   B[2] += 0.0;
+}
+
 inline void translateDipoleBAndLaminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    translateDipoleB(sim,simClasses,x,y,z,B);
    laminarFlowAroundSphereBx(sim,simClasses,x,y,z,B);
+}
+
+inline void lineDipoleBAndLaminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   lineDipoleB(sim,simClasses,x,y,z,B);
+   laminarFlowAroundSphereBx(sim,simClasses,x,y,z,B);
+}
+
+inline void lineDipoleBAndLaminarFlowAroundCylinderBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   lineDipoleB(sim,simClasses,x,y,z,B);
+   laminarFlowAroundCylinderBx(sim,simClasses,x,y,z,B);
+}
+
+inline void lineDipoleBAndLaminarFlowAroundCylinderB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   lineDipoleB(sim,simClasses,x,y,z,B);
+   laminarFlowAroundCylinderB(sim,simClasses,x,y,z,B);
+}
+
+inline void lineDipoleBxyAndLaminarFlowAroundCylinderBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   lineDipoleBxy(sim,simClasses,x,y,z,B);
+   laminarFlowAroundCylinderBx(sim,simClasses,x,y,z,B);
+}
+
+inline void lineDipoleBxyAndLaminarFlowAroundCylinderB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   lineDipoleBxy(sim,simClasses,x,y,z,B);
+   laminarFlowAroundCylinderB(sim,simClasses,x,y,z,B);
 }
 
 inline void translateDipoleBWithMirrorAndLaminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
@@ -220,12 +281,17 @@ inline bool setMagneticFieldProfile(std::string name) {
    else if(name.compare("laminarFlowAroundSphereBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &laminarFlowAroundSphereBx;
    }
+   else if(name.compare("laminarFlowAroundCylinderBx") == 0) {
+      Hybrid::magneticFieldProfilePtr = &laminarFlowAroundCylinderBx;
+   }
+   else if(name.compare("laminarFlowAroundCylinderB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &laminarFlowAroundCylinderB;
+   }
    else if(name.compare("hemisphericDipoleB") == 0) {
       Hybrid::magneticFieldProfilePtr = &hemisphericDipoleB;
    }
    else if(name.compare("translateDipoleB") == 0) {
       Hybrid::magneticFieldProfilePtr = &translateDipoleB;
-
    }
    else if(name.compare("generalDipoleB") == 0) {
       Hybrid::magneticFieldProfilePtr = &generalDipoleB;
@@ -235,6 +301,21 @@ inline bool setMagneticFieldProfile(std::string name) {
    }
    else if(name.compare("translateDipoleBAndLaminarFlowAroundSphereBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &translateDipoleBAndLaminarFlowAroundSphereBx;
+   }
+   else if(name.compare("lineDipoleBAndLaminarFlowAroundSphereBx") == 0) {
+      Hybrid::magneticFieldProfilePtr = &lineDipoleBAndLaminarFlowAroundSphereBx;
+   }
+   else if(name.compare("lineDipoleBAndLaminarFlowAroundCylinderBx") == 0) {
+      Hybrid::magneticFieldProfilePtr = &lineDipoleBAndLaminarFlowAroundCylinderBx;
+   }
+   else if(name.compare("lineDipoleBAndLaminarFlowAroundCylinderB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &lineDipoleBAndLaminarFlowAroundCylinderB;
+   }
+   else if(name.compare("lineDipoleBxyAndLaminarFlowAroundCylinderBx") == 0) {
+      Hybrid::magneticFieldProfilePtr = &lineDipoleBxyAndLaminarFlowAroundCylinderBx;
+   }
+   else if(name.compare("lineDipoleBxyAndLaminarFlowAroundCylinderB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &lineDipoleBxyAndLaminarFlowAroundCylinderB;
    }
    else if(name.compare("translateDipoleBWithMirrorAndLaminarFlowAroundSphereBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &translateDipoleBWithMirrorAndLaminarFlowAroundSphereBx;
