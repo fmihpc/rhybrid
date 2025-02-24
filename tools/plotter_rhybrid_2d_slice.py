@@ -181,7 +181,9 @@ if printHeaderOnly == 1:
  print("running on " + str(Ncores) + " cores")
 
 # multi-run: add manually description
+#runFolder = "../run001/"
 #runDescr = "run01"
+#Robject = 1
 
 # create simRuns list of tuples
 simRuns=[(runFolder,runDescr,Robject,"$R_p$")]
@@ -193,6 +195,12 @@ simRuns=[(runFolder,runDescr,Robject,"$R_p$")]
 #runFolder3 = os.getenv("HOME") + "/run03/"; runDescr3="run03"
 #simRuns.append((runFolder2,runDescr2,Robject,"$R_p$"))
 #simRuns.append((runFolder3,runDescr3,Robject,"$R_p$"))
+
+#multi-run: get folders automatically
+#listRunFolders = sorted([a for a in os.listdir("../") if os.path.isdir(os.path.abspath("../" + a)) and a.startswith("run0")])
+#for ii in range(len(listRunFolders)):
+# if ii > 0:
+#  simRuns.append(("../" + listRunFolders[ii] + "/",os.path.basename(listRunFolders[ii]),Robject,"$R_p$"))
 
 # number of runs
 Nruns = len(simRuns)
@@ -277,6 +285,9 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
  elif runDim == 2:
   ii_col = ii_run
   ii_row = 0
+  # 2D: multi-run, use several rows
+  #ii_col = ii_run%NfigCols
+  #ii_row = np.floor(ii_run/NfigCols).astype(int)
  else:
   print(HN + "ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
   quit()
@@ -415,7 +426,7 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   axes[ii_row][ii_col].axis("scaled")
   axes[ii_row][ii_col].set_xlim(axisLimsZoom[0:2])
   axes[ii_row][ii_col].set_ylim(axisLimsZoom[4:6])
-  configurePanel(P_ii,a,axes[ii_row][ii_col],showPlanet[0],0) 
+  configurePanel(P_ii,a,axes[ii_row][ii_col],showPlanet[0],0)
   ii_col += 1
 
   #plt.subplot(1,3,2)
@@ -492,20 +503,25 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
    print(HN + "ERROR: unknown run dimensionality (runDimAxes = " + runDimAxes + ")")
    quit()
   #plt.subplot(1,3,2)
-  a = axes[0][ii_col].imshow(meshD/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=axisExtend,aspect="equal",origin="lower",interpolation="nearest")
+  a = axes[ii_row][ii_col].imshow(meshD/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=axisExtend,aspect="equal",origin="lower",interpolation="nearest")
   if ii_col == 0:
-   axes[0][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s\n" + str(runDim) + "D: " + runDimAxes + "\n" + runStr)
-   axes[0][ii_col].set_ylabel(ylabelStr + " [" + Rp_str + "]")
+   axes[ii_row][ii_col].set_ylabel(ylabelStr + " [" + Rp_str + "]")
+   #if ii_col == 0 and ii_row == 0:
+   axes[ii_row][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s\n" + str(runDim) + "D: " + runDimAxes + "\n" + runStr)
   else:
-   axes[0][ii_col].title.set_text(runStr)
-  axes[0][ii_col].set_xlabel(xlabelStr + " [" + Rp_str + "]")
-  axes[0][ii_col].set_xticks(crdTicks)
-  axes[0][ii_col].tick_params("x",labelrotation=xTickAngle)
-  axes[0][ii_col].set_yticks(crdTicks)
-  axes[0][ii_col].axis("scaled")
-  axes[0][ii_col].set_xlim(axisLimsZoomX)
-  axes[0][ii_col].set_ylim(axisLimsZoomY)
-  configurePanel(P_ii,a,axes[0][ii_col],showPlanet[1],0)
+   axes[ii_row][ii_col].title.set_text(runStr)
+  # 2D: multi-run, use several rows
+  #if ii_row == (NfigRows-1):
+  axes[ii_row][ii_col].set_xlabel(xlabelStr + " [" + Rp_str + "]")
+  axes[ii_row][ii_col].set_xticks(crdTicks)
+  axes[ii_row][ii_col].tick_params("x",labelrotation=xTickAngle)
+  axes[ii_row][ii_col].set_yticks(crdTicks)
+  axes[ii_row][ii_col].axis("scaled")
+  axes[ii_row][ii_col].set_xlim(axisLimsZoomX)
+  axes[ii_row][ii_col].set_ylim(axisLimsZoomY)
+  configurePanel(P_ii,a,axes[ii_row][ii_col],showPlanet[1],0)
+  # 2D: multi-run, use several rows
+  #if ii_col == (NfigCols-1) and ii_row == (NfigRows-1):
   # the last column
   if ii_col == (NfigCols-1):
    fig.tight_layout()
@@ -624,6 +640,9 @@ if runDim == 3:
  NfigCols = 3
  NfigRows = Nruns
 elif runDim == 2:
+ # 2D: multi-run, use several rows
+ #NfigCols = 6
+ #NfigRows = 3
  NfigCols = Nruns
  NfigRows = 1
 else:
