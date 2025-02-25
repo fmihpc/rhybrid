@@ -223,18 +223,6 @@ inline void lineDipoleB(Simulation& sim,SimulationClasses& simClasses,Real x,Rea
    B[2] += D*( sqr(z) - sqr(x) )/( sqr(r2) );
 }
 
-inline void lineDipoleBxy(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
-   const Real x1 = x - Hybrid::xDip;
-   const Real y1 = y - Hybrid::yDip;
-   const Real z1 = z - Hybrid::zDip;
-   const Real r2 = sqr(x1) + sqr(y1) + sqr(z1);
-   if(r2 < Hybrid::dipMinR2) { return; }
-   const Real D = -Hybrid::dipMomCoeff/(3.0*Hybrid::dipSurfR);
-   B[0] += D*2*x*y/(sqr(r2));
-   B[1] += D*( sqr(y) - sqr(x) )/( sqr(r2) );
-   B[2] += 0.0;
-}
-
 inline void translateDipoleBAndLaminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    translateDipoleB(sim,simClasses,x,y,z,B);
    laminarFlowAroundSphereBx(sim,simClasses,x,y,z,B);
@@ -252,16 +240,6 @@ inline void lineDipoleBAndLaminarFlowAroundCylinderBx(Simulation& sim,Simulation
 
 inline void lineDipoleBAndLaminarFlowAroundCylinderB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    lineDipoleB(sim,simClasses,x,y,z,B);
-   laminarFlowAroundCylinderB(sim,simClasses,x,y,z,B);
-}
-
-inline void lineDipoleBxyAndLaminarFlowAroundCylinderBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
-   lineDipoleBxy(sim,simClasses,x,y,z,B);
-   laminarFlowAroundCylinderBx(sim,simClasses,x,y,z,B);
-}
-
-inline void lineDipoleBxyAndLaminarFlowAroundCylinderB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
-   lineDipoleBxy(sim,simClasses,x,y,z,B);
    laminarFlowAroundCylinderB(sim,simClasses,x,y,z,B);
 }
 
@@ -336,12 +314,6 @@ inline bool setMagneticFieldProfile(std::string name) {
    }
    else if(name.compare("lineDipoleBAndLaminarFlowAroundCylinderB") == 0) {
       Hybrid::magneticFieldProfilePtr = &lineDipoleBAndLaminarFlowAroundCylinderB;
-   }
-   else if(name.compare("lineDipoleBxyAndLaminarFlowAroundCylinderBx") == 0) {
-      Hybrid::magneticFieldProfilePtr = &lineDipoleBxyAndLaminarFlowAroundCylinderBx;
-   }
-   else if(name.compare("lineDipoleBxyAndLaminarFlowAroundCylinderB") == 0) {
-      Hybrid::magneticFieldProfilePtr = &lineDipoleBxyAndLaminarFlowAroundCylinderB;
    }
    else if(name.compare("translateDipoleBWithMirrorAndLaminarFlowAroundSphereBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &translateDipoleBWithMirrorAndLaminarFlowAroundSphereBx;
