@@ -35,6 +35,18 @@ inline void constantB(Simulation& sim,SimulationClasses& simClasses,Real x,Real 
    B[2] += Hybrid::IMFBz;
 }
 
+inline void discontinuityB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+  if (x<5e4){
+   B[0] += Hybrid::IMFBx;
+   B[1] += Hybrid::IMFBy;
+   B[2] += Hybrid::IMFBz;
+  } else {
+    B[0] += Hybrid::dBx;
+    B[1] += Hybrid::dBy;
+    B[2] += Hybrid::dBz;
+  }
+}
+
 inline void randomB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    B[0] += Hybrid::IMFBx + ( Hybrid::dBx*simClasses.random.uniformPM() );
    B[1] += Hybrid::IMFBy + ( Hybrid::dBy*simClasses.random.uniformPM() );
@@ -274,6 +286,9 @@ inline bool setMagneticFieldProfile(std::string name) {
    }
    else if(name.compare("constantB") == 0) {
       Hybrid::magneticFieldProfilePtr = &constantB;
+   }
+   else if(name.compare("discontinuityB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &discontinuityB;
    }
    else if(name.compare("randomB") == 0) {
       Hybrid::magneticFieldProfilePtr = &randomB;
