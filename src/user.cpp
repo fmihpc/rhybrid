@@ -333,6 +333,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    string magneticFieldProfileName = "";
 #endif
    cr.add("Hybrid.log_interval","Log interval in units of timestep [-] (int)",0);
+   cr.add("Hybrid.log_precision","Precision of floating point numbers in log file [-] (int)",10);
    cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
@@ -359,7 +360,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
    simClasses.logger << "(RHYBRID) Configuring: general hybrid simulation settings" << endl << write;
    cr.parse();
+   unsigned int logPrecision = 10;
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
+   cr.get("Hybrid.log_precision",logPrecision);
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
    cr.get("Hybrid.R_object",Hybrid::R_object);
@@ -543,6 +546,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 
    if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
+   if(logPrecision < 1) { logPrecision = 1; }
    if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if(Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
    else { Hybrid::R2_fieldObstacle = -1; }
@@ -729,7 +733,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    simClasses.logger
      << "(LOGGING)" << endl
-     << "Particle and field log file interval = " << Hybrid::logInterval*sim.dt << " s = " << Hybrid::logInterval << " dt" << endl
+     << "Particle and field logs" << endl
+     << " interval  = " << Hybrid::logInterval*sim.dt << " s = " << Hybrid::logInterval << " dt" << endl
+     << " precision = " << logPrecision << endl
      << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl << endl;
 
    simClasses.logger << "(RHYBRID) Configuring: particle populations" << endl << write;
@@ -2222,7 +2228,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 ss << "pop" << zeroStr << s+1 << "_" << species->name << ".log";
 	 Hybrid::logParticle[s]->open(ss.str().c_str(),ios_base::out);
 	 //Hybrid::logParticle[s]->open("pop" + zeroStr + to_string(s+1) + "_" + species->name + ".log",ios_base::out);
-	 Hybrid::logParticle[s]->precision(10);
+	 Hybrid::logParticle[s]->precision(logPrecision);
 	 (*Hybrid::logParticle[s]) << scientific << showpos;
 	 (*Hybrid::logParticle[s])
 	   << "% " << species->name << endl
@@ -2248,7 +2254,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "% 17. Constraint maxVi rate [#/dt]" << endl;
       }
       Hybrid::logField.open("field.log",ios_base::out);
-      Hybrid::logField.precision(10);
+      Hybrid::logField.precision(logPrecision);
       Hybrid::logField << scientific << showpos;
       Hybrid::logField
 	<< "% field" << endl
