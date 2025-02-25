@@ -1375,12 +1375,12 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
       // calc Ue = (J - Ji)/rhoqi
       for(int l=0;l<3;++l) {
 	 if(fabs(cellRhoQi[n]) > 0) {
-            if(Hybrid::useHallElectricField == true) {
-               cellUe[n3+l] = -(cellJ[n3+l] - cellJi[n3+l])/cellRhoQi[n];
-            }
-            else {
-               cellUe[n3+l] = cellJi[n3+l]/cellRhoQi[n];
-            }
+      // if(Hybrid::useHallElectricField == true) {
+      cellUe[n3+l] = -(cellJ[n3+l] - cellJi[n3+l])/cellRhoQi[n];
+      // }
+      // else {
+      //    cellUe[n3+l] = cellJi[n3+l]/cellRhoQi[n];
+      // }
 	 }
 	 else {
 	    cellUe[n3+l] = 0.0;
