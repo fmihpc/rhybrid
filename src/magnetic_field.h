@@ -35,6 +35,14 @@ inline void constantB(Simulation& sim,SimulationClasses& simClasses,Real x,Real 
    B[2] += Hybrid::IMFBz;
 }
 
+inline void circPolB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+  const Real wavNum { 2*M_PI/Hybrid::dx };
+  const Real theta { x*Hybrid::dBx*wavNum };
+  B[0] += Hybrid::IMFBx;
+  B[1] += Hybrid::IMFBy + Hybrid::dBy*cos(theta);
+  B[2] += Hybrid::IMFBz + Hybrid::dBz*sin(theta);
+}
+
 inline void discontinuityB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
   if (x<5e4){
    B[0] += Hybrid::IMFBx;
@@ -286,6 +294,9 @@ inline bool setMagneticFieldProfile(std::string name) {
    }
    else if(name.compare("constantB") == 0) {
       Hybrid::magneticFieldProfilePtr = &constantB;
+   }
+   else if(name.compare("circPolB") == 0) {
+      Hybrid::magneticFieldProfilePtr = &circPolB;
    }
    else if(name.compare("discontinuityB") == 0) {
       Hybrid::magneticFieldProfilePtr = &discontinuityB;
