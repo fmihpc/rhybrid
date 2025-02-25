@@ -41,11 +41,13 @@ if ! [[ "$1" =~ ^("lin"|"log")$ ]]; then
  exit 1
 fi
 
+SCRIPT_DIR="$(dirname "$0")"
+
 for i in $(/bin/ls ${firstdir}pop*.log)
 do
  i=$(basename $i)
  echo "plotting $i"
- rhb_log2pdf.sh $i $1 $sdirs
+ $SCRIPT_DIR/rhb_log2pdf.sh $i $1 $sdirs
 done
 echo "plotting field.log"
-rhb_log2pdf.sh field.log $1 $sdirs
+$SCRIPT_DIR/rhb_log2pdf.sh field.log $1 $sdirs
