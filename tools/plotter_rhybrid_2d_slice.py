@@ -32,6 +32,7 @@ import scipy as sp
 import operator as oper
 import socket
 import itertools
+import subprocess
 from multiprocessing import Pool,Value
 from matplotlib.patches import Wedge
 plt.switch_backend("agg")
@@ -205,8 +206,21 @@ simRuns=[(runFolder,runDescr,Robject,"$R_p$")]
 # number of runs
 Nruns = len(simRuns)
 
-def round2str(x):
- return str(round(x*10)/10)
+# parse parameters from log file
+def parseParameter(logFileName,paramGetCmd,paramUnit):
+ res = subprocess.run(paramGetCmd,shell=True,capture_output=True,text=True)
+ if res.returncode == 1:
+  print("ERROR not found: " + paramGetCmd)
+  quit()
+ value = float(res.stdout.split()[0])*paramUnit
+ #print(value)
+ return value
+
+def round2str(x,Ndec=10):
+ if Ndec == 1:
+  return str(int(round(x*Ndec)/Ndec))
+ else:
+  return str(round(x*Ndec)/Ndec)
 
 def round2str_xyzplane(x,unitStr):
  if abs(x) > 0:
@@ -262,6 +276,31 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
  dx = (xmax-xmin)/nx # should be dx = dy = dz in rhybrid
  # full domain
  axisLims = np.divide([xmin,xmax,ymin,ymax,zmin,zmax],Rp)
+
+ # plot title string
+ titleStr = runStr
+
+ # check logfile.txt exists in run folder
+ if 0:
+  logFileName = runFolder + "logfile.txt"
+  Ueobs = Bx = By = Bz = Usw = nsw = Tsw = 0.0;
+  if os.path.isfile(logFileName) == False:
+   print("WARNING " + logFileName + " not found in " + runFolder)
+  else:
+   # parse obstacle Uex, IMF components and speed, density and temperature of the first (sw?) population from the run log file
+   Ueobs = parseParameter(logFileName,["grep \"Ue(r <= R_fieldObstacle) = (\" " + logFileName + " | cut -f 3 -d '=' |cut -f 2 -d '(' |cut -f 1 -d ','"],1e3)
+   Bx = parseParameter(logFileName,["grep -A 3 \"(UPSTREAM IMF)\" " + logFileName + " |grep \"Bx  = \" |cut -f 2 -d '=' |cut -f 2 -d ' '"],1e-9)
+   By = parseParameter(logFileName,["grep -A 3 \"(UPSTREAM IMF)\" " + logFileName + " |grep \"By  = \" |cut -f 2 -d '=' |cut -f 2 -d ' '"],1e-9)
+   Bz = parseParameter(logFileName,["grep -A 3 \"(UPSTREAM IMF)\" " + logFileName + " |grep \"Bz  = \" |cut -f 2 -d '=' |cut -f 2 -d ' '"],1e-9)
+   Usw = parseParameter(logFileName,["grep \") speed\" " + logFileName + " |cut -f 2 -d '=' |cut -f 2 -d ' '"],1e3)
+   nsw = parseParameter(logFileName,["grep \") density\" " + logFileName + " |cut -f 2 -d '=' |cut -f 2 -d ' '"],1e6)
+   Tsw = parseParameter(logFileName,["grep \") temperature\" " + logFileName + " |cut -f 2 -d '=' |cut -f 2 -d ' '"],1)
+   Btot = np.sqrt(Bx*Bx + By*By + Bz*Bz)
+   phi = 180 - np.rad2deg(np.arctan2(np.sqrt(By*By + Bz*Bz),Bx)) # IMF cone angle
+   titleStr += "\n"
+   titleStr += "$B = ($" + round2str(Bx/1e-9,1) + "," + round2str(By/1e-9,1) + "," + round2str(Bz/1e-9,1) + ") nT, "
+   titleStr += "$|B|$ = " + round2str(Btot/1e-9,1) + " nT, $\phi$ = " + round2str(phi,1) + "$^\circ$" + "\n"
+   titleStr += "$n,U,T$ = " + round2str(nsw/1e6,1) + " cm-3, " + round2str(Usw/1e3,1) + " km/s, " + round2str(Tsw/1e3,1) + " kK"
 
  # find out dimensionality of the run
  runDimAxes = ""
@@ -418,7 +457,7 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
    axes[ii_row][ii_col].title.set_text("3D: $xz$ ($y=$" + round2str_xyzplane(yPlane,Rp_str) + ")")
   if ii_row == (NfigRows-1):
    axes[ii_row][ii_col].set_xlabel("$x$ [" + Rp_str + "]")
-  #axes[ii_row][ii_col].set_ylabel(runStr + "\n\n$z$ [" + Rp_str + "]")
+  #axes[ii_row][ii_col].set_ylabel(titleStr + "\n\n$z$ [" + Rp_str + "]")
   axes[ii_row][ii_col].set_ylabel("$z$ [" + Rp_str + "]")
   axes[ii_row][ii_col].set_xticks(crdTicks)
   axes[ii_row][ii_col].tick_params("x",labelrotation=xTickAngle)
@@ -507,15 +546,20 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   if ii_col == 0:
    axes[ii_row][ii_col].set_ylabel(ylabelStr + " [" + Rp_str + "]")
    #if ii_col == 0 and ii_row == 0:
-   axes[ii_row][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s\n" + str(runDim) + "D: " + runDimAxes + "\n" + runStr)
+   axes[ii_row][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s, " + str(runDim) + "D: " + runDimAxes + "\n" + titleStr)
   else:
-   axes[ii_row][ii_col].title.set_text(runStr)
+   axes[ii_row][ii_col].title.set_text(titleStr)
   # 2D: multi-run, use several rows
   #if ii_row == (NfigRows-1):
   axes[ii_row][ii_col].set_xlabel(xlabelStr + " [" + Rp_str + "]")
   axes[ii_row][ii_col].set_xticks(crdTicks)
+  #else:
+  axes[ii_row][ii_col].set_yticks(crdTicks) #,labels=""
   axes[ii_row][ii_col].tick_params("x",labelrotation=xTickAngle)
-  axes[ii_row][ii_col].set_yticks(crdTicks)
+  #if ii_col == 0:
+  # axes[ii_row][ii_col].set_yticks(crdTicks)
+  #else:
+  # axes[ii_row][ii_col].set_yticks(crdTicks,labels="")
   axes[ii_row][ii_col].axis("scaled")
   axes[ii_row][ii_col].set_xlim(axisLimsZoomX)
   axes[ii_row][ii_col].set_ylim(axisLimsZoomY)
