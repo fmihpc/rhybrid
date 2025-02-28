@@ -75,11 +75,11 @@ echo "Ncores = " $Ncores
 echo ""
 
 # get header information from the first VLSV file with Ncores = -1 argument
-cmdPyScript="plotter_rhybrid_2d_slice.py -1 $runFolder $runDescription $Robject "
+cmdPyScript="plotter_rhybrid_2d_slice.py -1 $runFolder "
 echo "(SLRM) HEADER INFORMATION"
 echo ""
-echo $cmdExec python $cmdPyScript $tStartGlobal $tEndGlobal $tStartGlobal $tEndGlobal
-$cmdExec python $cmdPyScript $tStartGlobal $tEndGlobal $tStartGlobal $tEndGlobal
+echo $cmdExec python $cmdPyScript
+$cmdExec python $cmdPyScript
 wait
 
 # create animation frames using one or multiple nodes

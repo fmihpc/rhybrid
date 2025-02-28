@@ -772,6 +772,9 @@ Nparams = len(P)
 NfileOpens = Nruns*Nfiles*Nparams
 
 if printHeaderOnly == 1:
+ print("Plotting variables:")
+ for Pii_ in P:
+  print(Pii_)
  print("Vector and scalar variables found: " + str(len(all_vars)))
  print("Vector variables found: " + str(N_vector_vars_found))
  print("Scalar variables found: " + str(N_scalar_vars_found))
