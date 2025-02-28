@@ -6,16 +6,34 @@
 # -2D runs (one column per figure)
 # Uses multiple cores to loop through files (savesteps)
 #
-# Usage:
-#  python plotter_rhybrid_2d_slice.py Ncores runFolder runDescr Robject tstart tend
+# Usage (all 8 arguments given):
+#  python plotter_rhybrid_2d_slice.py Ncores runFolder runDescr Robject tStartThisProcess tEndThisProcess tStartGlobal tEndGlobal
 #
 # Arguments:
 #  Ncores = number of CPU cores used (Ncores = -1: print only header information)
 #  runFolder = simulation run folder
 #  runDescr = run description string
 #  Robject = object radius in [m]
-#  tstart = VSLV file starting time step [int]
-#  tend = VLSV file end time step [int]
+#  tStartThisProcess = VSLV file starting time step to be plotted by this process [int]
+#  tEndThisProcess = VLSV file end time step to be plotted by this process [int]
+#  tStartGlobal = VSLV file starting time step (whole run) [int]
+#  tSendGlobal = VLSV file end time step (whole run) [int]
+#
+# Usage (6 arguments given):
+#  python plotter_rhybrid_2d_slice.py Ncores runFolder runDescr Robject tStartThisProcess tEndThisProcess
+#  -Assumes:
+#  --tStartGlobal = tStartThisProcess
+#  --tEndGlobal = tEndThisProcess
+#
+# Usage (2 arguments given):
+#  python plotter_rhybrid_2d_slice.py Ncores runFolder
+#  -Assumes:
+#  --runDescr = "run"
+#  --Robject = 1
+#  --tStartThisProcess = 0
+#  --tEndThisProcess = 1000000
+#  --tStartGlobal = tStartThisProcess
+#  --tEndGlobal = tEndThisProcess
 #
 # This script version is for multiple runs and has the looping order: 1) parameters, 2) VLSV files
 # Multi-run plots need manual editing of the script (see source below)
@@ -92,73 +110,114 @@ P_settings = list()
 # sigma: smoothing parameter (Standard deviation for Gaussian kernel) for the sp.ndimage.filters.gaussian_filter [e.g. -1 (not used) or 0.9 (some smoothing)]
 
 P_settings.append({"param":"cellB","type":"magnitude","str":"$|B|$ [nT]","log":1,"lims":(1e-9,1000e-9),"unit":1e-9,"colormap":colormap1,"filename":"B","sigma":-1})
-P_settings.append({"param":"cellB","type":"xcomp","str":"$B_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bx","sigma":-1})
-P_settings.append({"param":"cellB","type":"ycomp","str":"$B_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"By","sigma":-1})
+#P_settings.append({"param":"cellB","type":"xcomp","str":"$B_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bx","sigma":-1})
+#P_settings.append({"param":"cellB","type":"ycomp","str":"$B_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"By","sigma":-1})
 P_settings.append({"param":"cellB","type":"zcomp","str":"$B_z$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bz","sigma":-1})
 
 P_settings.append({"param":"cellBAverage","type":"magnitude","str":"$|B|$ [nT]","log":1,"lims":(1e-9,1000e-9),"unit":1e-9,"colormap":colormap1,"filename":"B","sigma":-1})
-P_settings.append({"param":"cellBAverage","type":"xcomp","str":"$B_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bx","sigma":-1})
-P_settings.append({"param":"cellBAverage","type":"ycomp","str":"$B_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"By","sigma":-1})
+#P_settings.append({"param":"cellBAverage","type":"xcomp","str":"$B_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bx","sigma":-1})
+#P_settings.append({"param":"cellBAverage","type":"ycomp","str":"$B_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"By","sigma":-1})
 P_settings.append({"param":"cellBAverage","type":"zcomp","str":"$B_z$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bz","sigma":-1})
 
 P_settings.append({"param":"n_H+sw_ave","type":"scalar","str":"$n$(H$^+_\mathrm{sw}$) [m$^{-3}$]","log":1,"lims":(1e4,1e9),"unit":1,"colormap":colormap1,"filename":"Hsw_n","sigma":-1})
-P_settings.append({"param":"n_He++sw_ave","type":"scalar","str":"$n$(He$^{++}_\mathrm{sw}$) [m$^{-3}$]","log":1,"lims":(0.04*1e4,0.04*1e9),"unit":1,"colormap":colormap1,"filename":"Hesw_n","sigma":-1})
+#P_settings.append({"param":"n_He++sw_ave","type":"scalar","str":"$n$(He$^{++}_\mathrm{sw}$) [m$^{-3}$]","log":1,"lims":(0.04*1e4,0.04*1e9),"unit":1,"colormap":colormap1,"filename":"Hesw_n","sigma":-1})
 
-P_settings.append({"param":"nodeE","type":"magnitude","str":"$|E|$ [V/m]","log":1,"lims":(0.0001,0.1),"unit":1,"colormap":colormap1,"filename":"E","sigma":-1})
-P_settings.append({"param":"nodeE","type":"xcomp","str":"$E_x$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ex","sigma":-1})
-P_settings.append({"param":"nodeE","type":"ycomp","str":"$E_y$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ey","sigma":-1})
-P_settings.append({"param":"nodeE","type":"zcomp","str":"$E_z$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ez","sigma":-1})
+#P_settings.append({"param":"nodeE","type":"magnitude","str":"$|E|$ [V/m]","log":1,"lims":(0.0001,0.1),"unit":1,"colormap":colormap1,"filename":"E","sigma":-1})
+#P_settings.append({"param":"nodeE","type":"xcomp","str":"$E_x$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ex","sigma":-1})
+#P_settings.append({"param":"nodeE","type":"ycomp","str":"$E_y$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ey","sigma":-1})
+#P_settings.append({"param":"nodeE","type":"zcomp","str":"$E_z$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ez","sigma":-1})
 
-P_settings.append({"param":"cellEp","type":"magnitude","str":"$|E_p|$ [V/m]","log":1,"lims":(1e-6,1e-3),"unit":1,"colormap":colormap1,"filename":"Ep","sigma":-1})
-P_settings.append({"param":"cellEp","type":"xcomp","str":"$E_{p,x}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epx","sigma":-1})
-P_settings.append({"param":"cellEp","type":"ycomp","str":"$E_{p,y}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epy","sigma":-1})
-P_settings.append({"param":"cellEp","type":"zcomp","str":"$E_{p,z}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epz","sigma":-1})
+#P_settings.append({"param":"cellEp","type":"magnitude","str":"$|E_p|$ [V/m]","log":1,"lims":(1e-6,1e-3),"unit":1,"colormap":colormap1,"filename":"Ep","sigma":-1})
+#P_settings.append({"param":"cellEp","type":"xcomp","str":"$E_{p,x}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epx","sigma":-1})
+#P_settings.append({"param":"cellEp","type":"ycomp","str":"$E_{p,y}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epy","sigma":-1})
+#P_settings.append({"param":"cellEp","type":"zcomp","str":"$E_{p,z}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epz","sigma":-1})
 
-P_settings.append({"param":"nodeJ","type":"magnitude","str":"$|J|$ [A/m$^2$]","log":1,"lims":(1e-9,1e-6),"unit":1,"colormap":colormap1,"filename":"J","sigma":-1})
-P_settings.append({"param":"nodeJ","type":"xcomp","str":"$J_x$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jx","sigma":-1})
-P_settings.append({"param":"nodeJ","type":"ycomp","str":"$J_y$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jy","sigma":-1})
-P_settings.append({"param":"nodeJ","type":"zcomp","str":"$J_z$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jz","sigma":-1})
+#P_settings.append({"param":"nodeJ","type":"magnitude","str":"$|J|$ [A/m$^2$]","log":1,"lims":(1e-9,1e-6),"unit":1,"colormap":colormap1,"filename":"J","sigma":-1})
+#P_settings.append({"param":"nodeJ","type":"xcomp","str":"$J_x$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jx","sigma":-1})
+#P_settings.append({"param":"nodeJ","type":"ycomp","str":"$J_y$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jy","sigma":-1})
+#P_settings.append({"param":"nodeJ","type":"zcomp","str":"$J_z$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jz","sigma":-1})
 
-P_settings.append({"param":"cellUe","type":"magnitude","str":"$|U|(e^-)$ [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"e_U","sigma":-1})
-P_settings.append({"param":"cellUe","type":"xcomp","str":"$U_x(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Ux","sigma":-1})
-P_settings.append({"param":"cellUe","type":"ycomp","str":"$U_y(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Uy","sigma":-1})
-P_settings.append({"param":"cellUe","type":"zcomp","str":"$U_z(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Uz","sigma":-1})
+#P_settings.append({"param":"cellUe","type":"magnitude","str":"$|U|(e^-)$ [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"e_U","sigma":-1})
+#P_settings.append({"param":"cellUe","type":"xcomp","str":"$U_x(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Ux","sigma":-1})
+#P_settings.append({"param":"cellUe","type":"ycomp","str":"$U_y(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Uy","sigma":-1})
+#P_settings.append({"param":"cellUe","type":"zcomp","str":"$U_z(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Uz","sigma":-1})
 
-P_settings.append({"param":"v_H+sw_ave","type":"magnitude","str":"$|U|$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hsw_U","sigma":-1})
-P_settings.append({"param":"v_H+sw_ave","type":"xcomp","str":"$U_x$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Ux","sigma":-1})
-P_settings.append({"param":"v_H+sw_ave","type":"ycomp","str":"$U_y$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Uy","sigma":-1})
-P_settings.append({"param":"v_H+sw_ave","type":"zcomp","str":"$U_z$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Uz","sigma":-1})
+#P_settings.append({"param":"v_H+sw_ave","type":"magnitude","str":"$|U|$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hsw_U","sigma":-1})
+#P_settings.append({"param":"v_H+sw_ave","type":"xcomp","str":"$U_x$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Ux","sigma":-1})
+#P_settings.append({"param":"v_H+sw_ave","type":"ycomp","str":"$U_y$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Uy","sigma":-1})
+#P_settings.append({"param":"v_H+sw_ave","type":"zcomp","str":"$U_z$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Uz","sigma":-1})
 
-P_settings.append({"param":"v_He++sw_ave","type":"magnitude","str":"$|U|$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hesw_U","sigma":-1})
-P_settings.append({"param":"v_He++sw_ave","type":"xcomp","str":"$U_x$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Ux","sigma":-1})
-P_settings.append({"param":"v_He++sw_ave","type":"ycomp","str":"$U_y$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Uy","sigma":-1})
-P_settings.append({"param":"v_He++sw_ave","type":"zcomp","str":"$U_z$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Uz","sigma":-1})
+#P_settings.append({"param":"v_He++sw_ave","type":"magnitude","str":"$|U|$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hesw_U","sigma":-1})
+#P_settings.append({"param":"v_He++sw_ave","type":"xcomp","str":"$U_x$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Ux","sigma":-1})
+#P_settings.append({"param":"v_He++sw_ave","type":"ycomp","str":"$U_y$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Uy","sigma":-1})
+#P_settings.append({"param":"v_He++sw_ave","type":"zcomp","str":"$U_z$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Uz","sigma":-1})
 
 P_settings.append({"param":"T_H+sw","type":"scalar","str":"$T$(H$^+_\mathrm{sw}$) [K]","log":1,"lims":(1e5,1e8),"unit":1,"colormap":colormap1,"filename":"Hsw_T","sigma":-1})
-P_settings.append({"param":"T_He++sw","type":"scalar","str":"$T$(He$^{++}_\mathrm{sw}$) [K]","log":1,"lims":(3.5*1e5,3.5*1e8),"unit":1,"colormap":colormap1,"filename":"Hesw_T","sigma":-1})
+#P_settings.append({"param":"T_He++sw","type":"scalar","str":"$T$(He$^{++}_\mathrm{sw}$) [K]","log":1,"lims":(3.5*1e5,3.5*1e8),"unit":1,"colormap":colormap1,"filename":"Hesw_T","sigma":-1})
 
 # check and convert command line arguments
-if not (len(sys.argv) == 7):
- print(HN + "Seven command line arguments required")
- quit()
 Ncores = -100
 runFolder = ""
 runDescr = ""
 Robject = 1
-tstart = -100
-tend = -100
-try:
- Ncores = int(sys.argv[1])
- runFolder = str(sys.argv[2])
- runDescr = str(sys.argv[3])
- Robject = float(sys.argv[4])
- tstart = int(sys.argv[5])
- tend = int(sys.argv[6])
-except ValueError:
- print(HN + "ERROR: bad argument:")
- for ii in range(len(sys.argv)):
+tStartThisProcess = -100
+tEndThisProcess = -100
+tStartGlobal = -100
+tEndGlobal = -100
+Nargs = len(sys.argv)
+if (Nargs == 9):
+ try:
+  Ncores = int(sys.argv[1])
+  runFolder = str(sys.argv[2])
+  runDescr = str(sys.argv[3])
+  Robject = float(sys.argv[4])
+  tStartThisProcess = int(sys.argv[5])
+  tEndThisProcess = int(sys.argv[6])
+  tStartGlobal = int(sys.argv[7])
+  tEndGlobal = int(sys.argv[8])
+ except ValueError:
+  print(HN + "ERROR: bad argument:")
+  for ii in range(Nargs):
+   print(HN + "arg" + str(ii) + " = " + str(sys.argv[ii]))
+  quit()
+elif (Nargs == 7):
+ try:
+  Ncores = int(sys.argv[1])
+  runFolder = str(sys.argv[2])
+  runDescr = str(sys.argv[3])
+  Robject = float(sys.argv[4])
+  tStartThisProcess = int(sys.argv[5])
+  tEndThisProcess = int(sys.argv[6])
+  tStartGlobal = tStartThisProcess
+  tEndGlobal = tEndThisProcess
+ except ValueError:
+  print(HN + "ERROR: bad argument:")
+  for ii in range(Nargs):
+   print(HN + "arg" + str(ii) + " = " + str(sys.argv[ii]))
+  quit()
+elif (Nargs == 3):
+ try:
+  Ncores = Ncores = int(sys.argv[1])
+  runFolder = str(sys.argv[2])
+ except ValueError:
+  print(HN + "ERROR: bad argument:")
+  for ii in range(Nargs):
+   print(HN + "arg" + str(ii) + " = " + str(sys.argv[ii]))
+  quit()
+ runDescr = "run"
+ Robject = 1
+ tStartThisProcess = 0
+ tEndThisProcess = 1000000
+ tStartGlobal = tStartThisProcess
+ tEndGlobal = tEndThisProcess
+else:
+ print(HN + "ERROR: 2, 6 or 8 command line arguments required")
+ for ii in range(Nargs):
   print(HN + "arg" + str(ii) + " = " + str(sys.argv[ii]))
- quit
+ quit()
+
+# add path separator if not already there
+runFolder = os.path.join(runFolder,"")
 
 # do check and print information
 if os.path.isdir(runFolder) == False:
@@ -174,34 +233,37 @@ if (Ncores == -1):
 elif (Ncores < 1) or (Ncores > 100):
  print(HN + "ERROR: negative or otherwise bad number of cores")
  quit()
-if (tstart < 0) or (tend < 0) or (tstart > tend):
- print(HN + "ERROR: negative or otherwise bad start or end times")
+if (tStartThisProcess < 0) or (tEndThisProcess < 0) or (tStartThisProcess > tEndThisProcess):
+ print(HN + "ERROR: negative or otherwise bad start or end times (this process)")
+ quit()
+if (tStartGlobal < 0) or (tEndGlobal < 0) or (tStartGlobal > tEndGlobal):
+ print(HN + "ERROR: negative or otherwise bad start or end times (whole run)")
  quit()
 
-if printHeaderOnly == 1:
+if printHeaderOnly == 0:
  print("running on " + str(Ncores) + " cores")
 
-# multi-run: add manually description
-#runFolder = "../run001/"
-#runDescr = "run01"
+# 2D multi-run: add manually description
+#runDescr = "run001"
 #Robject = 1
+#runFolder = "../run001/"
 
 # create simRuns list of tuples
 simRuns=[(runFolder,runDescr,Robject,"$R_p$")]
 
-# multi-run: add manually further runs
+# 2D multi-run: add manually further runs
 #runFolder2 = "/path/to/run02/"; runDescr2="run02"
 #runFolder3 = "/path/to/run03/"; runDescr3="run03"
 #runFolder2 = os.getenv("HOME") + "/run02/"; runDescr2="run02"
 #runFolder3 = os.getenv("HOME") + "/run03/"; runDescr3="run03"
-#simRuns.append((runFolder2,runDescr2,Robject,"$R_p$"))
-#simRuns.append((runFolder3,runDescr3,Robject,"$R_p$"))
+#simRuns.append((os.path.join(runFolder2,""),runDescr2,Robject,"$R_p$"))
+#simRuns.append((os.path.join(runFolder3,""),runDescr3,Robject,"$R_p$"))
 
-#multi-run: get folders automatically
+# 2D multi-run: add automatically further runs
 #listRunFolders = sorted([a for a in os.listdir("../") if os.path.isdir(os.path.abspath("../" + a)) and a.startswith("run0")])
 #for ii in range(len(listRunFolders)):
 # if ii > 0:
-#  simRuns.append(("../" + listRunFolders[ii] + "/",os.path.basename(listRunFolders[ii]),Robject,"$R_p$"))
+#  simRuns.append((os.path.join("../" + listRunFolders[ii],""),os.path.basename(listRunFolders[ii]),Robject,"$R_p$"))
 
 # number of runs
 Nruns = len(simRuns)
@@ -216,13 +278,15 @@ def parseParameter(logFileName,paramGetCmd,paramUnit):
  #print(value)
  return value
 
+# round number to string
 def round2str(x,Ndec=10):
  if Ndec == 1:
   return str(int(round(x*Ndec)/Ndec))
  else:
   return str(round(x*Ndec)/Ndec)
 
-def round2str_xyzplane(x,unitStr):
+# round number to string with unitstr
+def round2strWithUnit(x,unitStr):
  if abs(x) > 0:
   return str(round(x*10)/10) + unitStr
  else:
@@ -256,6 +320,29 @@ def chooseNcol(rPlane,rmin,rmax,nr,rstr,Rp,Rp_str):
   Ncol = 0
  return Ncol,rPlane/Rp
 
+# 2D multi-run: check if the file exists, if not choose another file with largest time step from the folder
+def checkVlsvFileExists(folder__,fileName__):
+ if os.path.isfile(folder__ + fileName__) == False:
+  tLatest = -1
+  fileNameLastTimestep = ""
+  for f in sorted(os.listdir(folder__)):
+   if (f.startswith("state") and f.endswith(".vlsv")):
+    try:
+     t = int(f[5:13])
+    except ValueError:
+     print(HN + "ERROR: could not parse int from file name" + f)
+     continue
+    if (t >= tStartGlobal) and (t<= tEndGlobal):
+     if t > tLatest:
+      tLatest = t
+      fileNameLastTimestep = f
+  if tLatest > -1:
+   return (False,True,fileNameLastTimestep)
+  else:
+   return (False,False,"")
+ else:
+  return (True,False,"")
+
 # plotting individual subplot in a figure
 def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,printHeader=0):
  # counter
@@ -264,6 +351,15 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   if (fig != -1) & (printHeader == 0):
    print(HN + "opening: " + runFolder + " | " + str(vlsvFileName) + " | " + P_ii["param"] + " | " + P_ii["type"] + " (" + str(mpFileOpenCnt.value) + "/" + str(NfileOpens) + ")")
   mpFileOpenCnt.value += 1
+ # 2D multi-run: check vlsv file exists, if not try to replace with another file
+ if 0:
+  fileFound,newFileFound,newFileName = checkVlsvFileExists(runFolder,vlsvFileName)
+  if fileFound == False:
+   if newFileFound == True:
+    vlsvFileName = newFileName
+   else:
+    print(HN + "ERROR: did not find file from " + runFolder)
+    return
  # read file
  vr = pt.vlsvfile.VlsvReader(runFolder + vlsvFileName)
  # simulation box dimensions
@@ -277,10 +373,18 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
  # full domain
  axisLims = np.divide([xmin,xmax,ymin,ymax,zmin,zmax],Rp)
 
+ # simulation time
+ fileTime = vr.read_parameter("t")
+ if fileTime is None:
+  fileTime = vr.read_parameter("time")
+
  # plot title string
  titleStr = runStr
+ # 2D multi-run: include time string if vlsv file changed from expected one
+ #if newFileFound == True:
+ # titleStr += " ($t=$" + round2str(fileTime) + " s)"
 
- # check logfile.txt exists in run folder
+ # 2D multi-run: check logfile.txt exists in run folder
  if 0:
   logFileName = runFolder + "logfile.txt"
   Ueobs = Bx = By = Bz = Usw = nsw = Tsw = 0.0;
@@ -324,7 +428,7 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
  elif runDim == 2:
   ii_col = ii_run
   ii_row = 0
-  # 2D: multi-run, use several rows
+  # 2D multi-run: use several rows
   #ii_col = ii_run%NfigCols
   #ii_row = np.floor(ii_run/NfigCols).astype(int)
  else:
@@ -362,11 +466,6 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   print(HN + "WARNING: no good tick step found: NticksMax = " + str(NticksMax) + ", tickStep = " + str(tickStep))
  # tick marks
  crdTicks = np.arange(-maxCrdTen,+maxCrdTen,step=tickStep)
-
- # simulation time
- fileTime = vr.read_parameter("t")
- if fileTime is None:
-  fileTime = vr.read_parameter("time")
 
  # read and sort cell ids
  cellids_sorted = vr.read_variable("CellID").argsort()
@@ -454,7 +553,7 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   #plt.subplot(1,3,1)
   a = axes[ii_row][ii_col].imshow(meshD_xz/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[0],axisLims[1],axisLims[4],axisLims[5]],aspect="equal",origin="lower",interpolation="nearest")
   if ii_row == 0:
-   axes[ii_row][ii_col].title.set_text("3D: $xz$ ($y=$" + round2str_xyzplane(yPlane,Rp_str) + ")")
+   axes[ii_row][ii_col].title.set_text("3D: $xz$ ($y=$" + round2strWithUnit(yPlane,Rp_str) + ")")
   if ii_row == (NfigRows-1):
    axes[ii_row][ii_col].set_xlabel("$x$ [" + Rp_str + "]")
   #axes[ii_row][ii_col].set_ylabel(titleStr + "\n\n$z$ [" + Rp_str + "]")
@@ -471,7 +570,7 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   #plt.subplot(1,3,2)
   a = axes[ii_row][ii_col].imshow(meshD_xy/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[0],axisLims[1],axisLims[2],axisLims[3]],aspect="equal",origin="lower",interpolation="nearest")
   if ii_row == 0:
-   axes[ii_row][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s\n" "3D: $xy$ ($z=$" + round2str_xyzplane(zPlane,Rp_str) + ")")
+   axes[ii_row][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s\n" "3D: $xy$ ($z=$" + round2strWithUnit(zPlane,Rp_str) + ")")
   if ii_row == (NfigRows-1):
    axes[ii_row][ii_col].set_xlabel("$x$ [" + Rp_str + "]")
   axes[ii_row][ii_col].set_ylabel("$y$ [" + Rp_str + "]")
@@ -488,7 +587,7 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   a = axes[ii_row][ii_col].imshow(meshD_yz/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=[axisLims[2],axisLims[3],axisLims[4],axisLims[5]],aspect="equal",origin="lower",interpolation="nearest")
   # first row
   if ii_row == 0:
-   axes[ii_row][ii_col].title.set_text("3D: $yz$ ($x=$" + round2str_xyzplane(xPlane,Rp_str) + ")")
+   axes[ii_row][ii_col].title.set_text("3D: $yz$ ($x=$" + round2strWithUnit(xPlane,Rp_str) + ")")
   # the bottom row
   if ii_row == (NfigRows-1):
    axes[ii_row][ii_col].set_xlabel("$y$ [" + Rp_str + "]")
@@ -545,17 +644,18 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   a = axes[ii_row][ii_col].imshow(meshD/P_ii["unit"],vmin=P_ii["lims"][0]/P_ii["unit"],vmax=P_ii["lims"][1]/P_ii["unit"],cmap=P_ii["colormap"],extent=axisExtend,aspect="equal",origin="lower",interpolation="nearest")
   if ii_col == 0:
    axes[ii_row][ii_col].set_ylabel(ylabelStr + " [" + Rp_str + "]")
-   #if ii_col == 0 and ii_row == 0:
+  if ii_col == 0 and ii_row == 0:
    axes[ii_row][ii_col].title.set_text("$t=$" + round2str(fileTime) + " s, " + str(runDim) + "D: " + runDimAxes + "\n" + titleStr)
   else:
    axes[ii_row][ii_col].title.set_text(titleStr)
-  # 2D: multi-run, use several rows
+  # 2D multi-run: use several row
   #if ii_row == (NfigRows-1):
   axes[ii_row][ii_col].set_xlabel(xlabelStr + " [" + Rp_str + "]")
   axes[ii_row][ii_col].set_xticks(crdTicks)
   #else:
-  axes[ii_row][ii_col].set_yticks(crdTicks) #,labels=""
+  axes[ii_row][ii_col].set_xticks(crdTicks) #,labels=""
   axes[ii_row][ii_col].tick_params("x",labelrotation=xTickAngle)
+  # 2D multi-run:
   #if ii_col == 0:
   # axes[ii_row][ii_col].set_yticks(crdTicks)
   #else:
@@ -564,7 +664,7 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
   axes[ii_row][ii_col].set_xlim(axisLimsZoomX)
   axes[ii_row][ii_col].set_ylim(axisLimsZoomY)
   configurePanel(P_ii,a,axes[ii_row][ii_col],showPlanet[1],0)
-  # 2D: multi-run, use several rows
+  # 2D multi-run: use several rows
   #if ii_col == (NfigCols-1) and ii_row == (NfigRows-1):
   # the last column
   if ii_col == (NfigCols-1):
@@ -597,21 +697,24 @@ def plotFigure(vlsvFileNameFullPath,printHeader=0):
 # find run files
 if "runFiles" not in locals():
  runFolder1 = simRuns[0][0]
- print(HN + "processing from: folder = " + runFolder1 + ", time step = " + str(tstart) + " ... " + str(tend))
+ print(HN + "processing from: folder = " + runFolder1 + ", time step = " + str(tStartThisProcess) + " ... " + str(tEndThisProcess) + " (this process), whole run = " + str(tStartGlobal) + " ... " + str(tEndGlobal))
  runFiles = []
  for f in sorted(os.listdir(runFolder1)):
   if (f.startswith("state") and f.endswith(".vlsv")):
    try:
     t = int(f[5:13])
    except ValueError:
-    print(HN + "error: " + f)
+    print(HN + "ERROR: could not parse int from file name" + f)
     continue
-   if (t >= tstart) and (t <= tend):
+   if (t >= tStartThisProcess) and (t <= tEndThisProcess):
     runFiles.append(runFolder1 + f)
 
-# total number of files (savesteps) found to be plotted
+# total number of files (save steps) found to be plotted
 Nfiles = len(runFiles)
 print(HN + "files found: " + str(Nfiles))
+if Nfiles <= 0:
+ print(HN + "ERROR: no VLSV files found")
+ quit()
 
 # find all variable from the first vlsv file
 vr = pt.vlsvfile.VlsvReader(runFiles[0])
@@ -677,18 +780,18 @@ if printHeaderOnly == 1:
  print("Total file openings expected: " + str(NfileOpens))
 
 # read header information from the first file of the first run
-runDim,runDimAxes = plotPanel(-1,-1,-1,-1,simRuns[0][0],os.path.basename(runFiles[0]),-1,simRuns[0][2],-1)
+runDim,runDimAxes = plotPanel(-1,-1,-1,-1,simRuns[0][0],os.path.basename(runFiles[0]),"run0",simRuns[0][2],-1)
 
 # number of figure columns and rows
 if runDim == 3:
  NfigCols = 3
  NfigRows = Nruns
 elif runDim == 2:
- # 2D: multi-run, use several rows
- #NfigCols = 6
- #NfigRows = 3
  NfigCols = Nruns
  NfigRows = 1
+ # 2D multi-run: use several rows
+ #NfigCols = 6
+ #NfigRows = 3
 else:
  print(HN + "(plotFigure) ERROR: unsupported run dimensionality (runDim = " + str(runDim) + ")")
  quit()

@@ -12,14 +12,14 @@
 #SBATCH --cpus-per-task=15
 #SBATCH --mem=185G
 #SBATCH --exclusive
-##ntasks=20cpus-per-task=28--mem-per-cpu=4G
-#export OMP_NUM_THREADS=80
 cd $SLURM_SUBMIT_DIR
 analysatorFolder=/path/to/analysator/
 
+#export OMP_NUM_THREADS=80
+
 runFolder=../
 runDescription="run"
-cmd_exec="srun -N 1 -n 1"
+cmdExec="srun -N 1 -n 1"
 
 echo "(SLRM) PLOTTING SCRIPT: START"
 echo ""
@@ -27,12 +27,19 @@ echo ""
 echo "Current folder: " $(pwd)
 echo "Plotting run from: " $runFolder
 echo "Run description string: " $runDescription
-tstart=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |head -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |bc)
-tend=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |tail -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |sed 's/^0*//')
-#tstart=0
-#tend=20000
-echo "First state*.vlsv file time step: " $tstart
-echo "Last state*.vlsv file time step: " $tend
+
+# find first and last saved time step of VLSV files in run folder
+tStartGlobal=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |head -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |bc)
+tEndGlobal=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |tail -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |sed 's/^0*//')
+
+# force first and last saved time step
+#tStartGlobal=25000
+#tEndGlobal=30000
+
+echo "First state*.vlsv file time step: " $tStartGlobal
+echo "Last state*.vlsv file time step: " $tEndGlobal
+
+# parse object radius from logfile.txt
 Robject=$(grep "R_object  =" "$runFolder/"logfile.txt |cut -f 4 -d ' '|xargs)"e3"
 echo "Object radius: " $Robject "m"
 
@@ -47,6 +54,7 @@ mkdir -p png/
 
 export PYTHONPATH=$PYTHONPATH:$analysatorFolder
 
+# number of nodes
 if [ -z "$SLURM_JOB_NUM_NODES" ]
 then
  Nnodes=1
@@ -54,6 +62,7 @@ else
  Nnodes=$SLURM_JOB_NUM_NODES
 fi
 
+# number of cores per node
 if [ -z "$SLURM_CPUS_PER_TASK" ]
 then
  Ncores=1
@@ -65,42 +74,43 @@ echo "Nnodes = " $Nnodes
 echo "Ncores = " $Ncores
 echo ""
 
-# get header information with Ncores = -1
-cmd_py_script="plotter_rhybrid_2d_slice.py -1 $runFolder $runDescription $Robject "
+# get header information from the first VLSV file with Ncores = -1 argument
+cmdPyScript="plotter_rhybrid_2d_slice.py -1 $runFolder $runDescription $Robject "
 echo "(SLRM) HEADER INFORMATION"
 echo ""
-echo $cmd_exec python $cmd_py_script $tstart $tend
-$cmd_exec python $cmd_py_script $tstart $tend
+echo $cmdExec python $cmdPyScript $tStartGlobal $tEndGlobal $tStartGlobal $tEndGlobal
+$cmdExec python $cmdPyScript $tStartGlobal $tEndGlobal $tStartGlobal $tEndGlobal
 wait
 
-# create animation frames
-cmd_py_script="plotter_rhybrid_2d_slice.py $Ncores $runFolder $runDescription $Robject "
+# create animation frames using one or multiple nodes
+cmdPyScript="plotter_rhybrid_2d_slice.py $Ncores $runFolder $runDescription $Robject "
 echo "(SLRM) CREATING FIGURE FRAMES"
 echo ""
 if [[ $Nnodes -eq 1 ]]
 then
- echo $cmd_exec python $cmd_py_script $tstart $tend
- $cmd_exec python $cmd_py_script $tstart $tend
+ echo $cmdExec python $cmdPyScript $tStartGlobal $tEndGlobal $tStartGlobal $tEndGlobal
+ $cmdExec python $cmdPyScript $tStartGlobal $tEndGlobal $tStartGlobal $tEndGlobal
 else
-  n=$(( ( $tend - $tstart ) / $Nnodes ))
-  #nodenames=$(scontrol show hostnames $SLURM_JOB_NODELIST)
-  #nodenames_minus_one=$(echo $nodenames |cut -f 1-$(( $Nnodes - 1 )) -d ' ')
-  #nodenames_last=$(echo $nodenames |cut -f $Nnodes -d ' ')
+  nn=$(( ( $tEndGlobal - $tStartGlobal ) / $Nnodes ))
+  #nodeNames=$(scontrol show hostnames $SLURM_JOB_NODELIST)
+  #nodeNamesMinusOne=$(echo $nodeNames |cut -f 1-$(( $Nnodes - 1 )) -d ' ')
+  #nodeNamesLast=$(echo $nodeNames |cut -f $Nnodes -d ' ')
   #ii=0
-  #for nname in $nodenames_minus_one
+  #for nname in $nodeNamesMinusOne
   for ii in $( seq 0 $(( $Nnodes - 2 )) )
   do
-   istart=$(( $tstart + $ii * $n ))
-   iend=$(( $tstart + ( $ii + 1 ) * $n - 1 ))
-   echo $cmd_exec python $cmd_py_script $istart $iend
-   #$cmd_exec --nodelist=$nname python $cmd_py_script $istart $iend &
-   $cmd_exec python $cmd_py_script $istart $iend &
+   # first and last saved time step for this process
+   tStartProcess=$(( $tStartGlobal + $ii * $nn ))
+   tEndProcess=$(( $tStartGlobal + ( $ii + 1 ) * $nn - 1 ))
+   echo $cmdExec python $cmdPyScript $tStartProcess $tEndProcess $tStartGlobal $tEndGlobal
+   #$cmdExec --nodelist=$nname python $cmdPyScript $tStartProcess $tEndProcess $tStartGlobal $tEndGlobal &
+   $cmdExec python $cmdPyScript $tStartProcess $tEndProcess $tStartGlobal $tEndGlobal &
    #srun -N 1 -n 1 hostname&
    #ii=$(( $ii + 1 ))
   done
  #srun -N 1 -n 1 hostname&
- echo $cmd_exec python $cmd_py_script $(( $iend + 1 )) $tend
- $cmd_exec python $cmd_py_script $(( $iend + 1 )) $tend &
+ echo $cmdExec python $cmdPyScript $(( $tEndProcess + 1 )) $tEndGlobal $tStartGlobal $tEndGlobal
+ $cmdExec python $cmdPyScript $(( $tEndProcess + 1 )) $tEndGlobal $tStartGlobal $tEndGlobal &
 fi
 wait
 
@@ -113,13 +123,14 @@ module load ffmpeg
 
 mkdir -p mp4/
 
-fns=$(find png/ -type f -name "*state*.vlsv.png" | sed 's/_state[0-9]*.vlsv.png//g' |sort |uniq)
+# find parameter names from PNG file names
+paramNames=$(find png/ -type f -name "*state*.vlsv.png" | sed 's/_state[0-9]*.vlsv.png//g' |sort |uniq)
 
-for f in $fns
+for param in $paramNames
 do
-fb=$(basename $f)
-echo "Compiling: " $fb.mp4
-$cmd_exec ffmpeg -framerate 20 -y -an -pattern_type glob -i ${f}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$fb.mp4 &
+paramBaseName=$(basename $param)
+echo "Compiling: " $paramBaseName.mp4
+$cmdExec ffmpeg -framerate 20 -y -an -pattern_type glob -i ${param}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$paramBaseName.mp4 &
 done
 
 wait
