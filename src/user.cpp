@@ -21,6 +21,7 @@
 #include <iostream>
 #include <iterator>
 #include <istream>
+#include <vector>
 #include <user.h>
 #include <particle_list_skeleton.h>
 #include <gridbuilder.h>
@@ -222,14 +223,14 @@ bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
    }
    // distribute orbit coordinates read by master to all processes
    MPI_Bcast(NN,2,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
-   Real* buff = new Real[NN[1]];
+   std::vector<Real> buff(NN[1]);
    for(decltype(d.size()) i=0;i<NN[0];i++) {
       if(sim.mpiRank == sim.MASTER_RANK) {
 	 for(decltype(d.size()) j=0;j<NN[1];j++) {
 	    buff[j] = d[i][j];
 	 }
       }
-      MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
+      MPI_Bcast(buff.data(),NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
       if(sim.mpiRank != sim.MASTER_RANK) {
 	 d.push_back(vector<Real>());
 	 for(decltype(d.size()) j=0;j<NN[1];j++)  {
@@ -237,7 +238,6 @@ bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
 	 }
       }
    }
-   delete[] buff;
    return true;
 }
 

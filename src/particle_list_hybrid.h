@@ -20,6 +20,7 @@
 #ifndef PARTICLE_LIST_HYBRID_H
 #define PARTICLE_LIST_HYBRID_H
 
+#include <vector>
 #include <particle_list_skeleton.h>
 #include <hybrid.h>
 
@@ -72,7 +73,7 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    #endif
 
    const size_t sum_particles = this->size();
-   Real* buffer = new Real[sum_particles*hybsave::SIZE];
+   std::vector<Real> buffer(sum_particles*hybsave::SIZE);
    const double* crd = getBlockCoordinateArray(*this->sim,*this->simClasses);
    pargrid::DataWrapper<PARTICLE> wrapper = this->simClasses->pargrid.template getUserDataDynamic<PARTICLE>(this->particleDataID);
 
@@ -102,11 +103,10 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    std::map<std::string,std::string> attribs;
    attribs["name"] = this->speciesName;
    attribs["type"] = vlsv::mesh::STRING_POINT;
-   if (this->simClasses->vlsv.writeArray("MESH",attribs,sum_particles,hybsave::SIZE,buffer) == false) {
+   if (this->simClasses->vlsv.writeArray("MESH",attribs,sum_particles,hybsave::SIZE,buffer.data()) == false) {
       this->simClasses->logger << "\t ERROR failed to write particle species!" << std::endl;
       success = false;
    }
-   delete [] buffer; buffer = NULL;
    
    #if PROFILE_LEVEL > 0
       profile::stop();
