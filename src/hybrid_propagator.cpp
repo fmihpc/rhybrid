@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 #include "hybrid.h"
 #include "hybrid_propagator.h"
@@ -403,13 +404,10 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       const size_t N = simClasses.pargrid.getNumberOfAllCells()*simClasses.pargrid.getUserDataStaticElements(Hybrid::dataNodeEID);
-      Real* nodeEOld = new Real[N];
-      *nodeEOld = *nodeE;
+      std::vector<Real> nodeEOld(N);
       for(size_t i=0;i<N;++i) { nodeEOld[i] = nodeE[i]; }
-      for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { nodeAvg(nodeEOld,nodeE,sim,simClasses,innerBlocks[b]); }
-      for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { nodeAvg(nodeEOld,nodeE,sim,simClasses,boundaryBlocks[b]); }
-      delete [] nodeEOld;
-      nodeEOld = NULL;
+      for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { nodeAvg(nodeEOld.data(),nodeE,sim,simClasses,innerBlocks[b]); }
+      for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { nodeAvg(nodeEOld.data(),nodeE,sim,simClasses,boundaryBlocks[b]); }
    }
 
    // propagate faceB by Faraday's law using nodeE
@@ -450,12 +448,12 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,const vector<pargrid::CellID>& exteriorBlocks,const size_t vectorDim)
 {
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-   Real* aa = new Real[s*vectorDim]; // temp array
+   vector<Real> aa(s*vectorDim); // temp array
    const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
 
    for(pargrid::CellID eb=0;eb<exteriorBlocks.size();++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
-      fetchData(cellData,aa,simClasses,b,vectorDim);
+      fetchData(cellData,aa.data(),simClasses,b,vectorDim);
       int di=0; if(block::WIDTH_X > 1) { di=block::WIDTH_X-1; }
       int dj=0; if(block::WIDTH_Y > 1) { dj=block::WIDTH_Y-1; }
       int dk=0; if(block::WIDTH_Z > 1) { dk=block::WIDTH_Z-1; }
@@ -658,7 +656,6 @@ void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,co
 	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
    }
-   delete [] aa; aa = NULL;
 }
 
 
@@ -667,12 +664,12 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 {
    const size_t vectorDim = 3;
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-   Real* aa = new Real[s*vectorDim]; // temp array
+   std::vector<Real> aa(s*vectorDim); // temp array
    const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
 
    for(pargrid::CellID eb=0;eb<exteriorBlocks.size();++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
-      fetchData(faceData,aa,simClasses,b,vectorDim);
+      fetchData(faceData,aa.data(),simClasses,b,vectorDim);
       int di=0; if(block::WIDTH_X > 1) { di=block::WIDTH_X-1; }
       int dj=0; if(block::WIDTH_Y > 1) { dj=block::WIDTH_Y-1; }
       int dk=0; if(block::WIDTH_Z > 1) { dk=block::WIDTH_Z-1; }
@@ -911,7 +908,6 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
       // all ghost outer faces
       //}
    }
-   delete [] aa; aa = NULL;
 }
 
 void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const vector<pargrid::CellID>& exteriorBlocks)
@@ -1077,8 +1073,8 @@ void cell2Node(Real* cellData,Real* nodeData,Simulation& sim,SimulationClasses& 
       if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
-   Real* aa = new Real[s*vectorDim]; // temp array
-   fetchData(cellData,aa,simClasses,blockID,vectorDim);
+   std::vector<Real> aa(s*vectorDim); // temp array
+   fetchData(cellData,aa.data(),simClasses,blockID,vectorDim);
    for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
       for(size_t l=0;l<vectorDim;++l) {
@@ -1092,7 +1088,6 @@ void cell2Node(Real* cellData,Real* nodeData,Simulation& sim,SimulationClasses& 
 				aa[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l]);
       }
    }
-   delete [] aa; aa = NULL;
 }
 
 // interpolation from nodes to cells
@@ -1134,8 +1129,8 @@ void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses&
    }
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    const Real initVal = numeric_limits<Real>::max();
-   Real* aa = new Real[s*vectorDim] {initVal}; // temp array
-   fetchData(nodeDataOld,aa,simClasses,blockID,vectorDim);
+   std::vector<Real> aa(s*vectorDim, initVal); // temp array
+   fetchData(nodeDataOld,aa.data(),simClasses,blockID,vectorDim);
    // coefficients
    const Real C1 = Hybrid::EfilterNodeGaussCoeffs[0]; // node itself
    const Real C2 = Hybrid::EfilterNodeGaussCoeffs[1]; // direct neighbors (distance = dx)
@@ -1268,7 +1263,6 @@ void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses&
            C220*nodeEl220;
       }
    }
-   delete [] aa; aa = NULL;
 }
 
 // upwind nodeB using cellData and nodeUe
