@@ -63,6 +63,19 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    // block coordinates
    const double* crd = getBlockCoordinateArray(*this->sim,*this->simClasses);
 
+   std::string particleMeshName = "ParticlePointMesh_" + this->speciesName;
+
+   // write parameters of this particle population
+   /*std::map<std::string,std::string> attribsParams;
+   if (this->simClasses->pargrid.getRank() == this->sim->MASTER_RANK) {
+      attribsParams["mesh"] = particleMeshName;
+      attribsParams["name"] = "q";
+      if(this->simClasses->vlsv.writeArray("PARAMETER",attribsParams,1,1,&this->species.q) == false) { success = false; }
+   }
+   else {
+      if (this->simClasses->vlsv.writeArray("PARAMETER",attribsParams,0,0,&this->species.q) == false) { success = false; }
+   }*/
+
    // write particle coordinates of this population as a point mesh
    uint64_t vectorSize = 3;
    Real* bufferMeshCrd = new Real[Nparticles*vectorSize];
@@ -82,7 +95,6 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
       }
    }
    std::map<std::string,std::string> attribs;
-   std::string particleMeshName = "ParticlePointMesh_" + this->speciesName;
    attribs["name"] = particleMeshName;
    attribs["type"] = vlsv::mesh::STRING_POINT;
    if (this->simClasses->vlsv.writeArray("MESH",attribs,Nparticles,vectorSize,bufferMeshCrd) == false) {
@@ -92,21 +104,21 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    delete [] bufferMeshCrd; bufferMeshCrd = NULL;
 
    // write particle properties of this population as variables on the point mesh
-   vectorSize = 1;
+   vectorSize = 3;
    Real* bufferVar = new Real[Nparticles*vectorSize];
    cnt = 0;
    for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       for (unsigned int p=0; p<wrapper.size()[b]; ++p) {
 	 bufferVar[cnt+0] = particleLists[b][p].state[particle::VX];
-	 /*buffer[cnt+1] = particleLists[b][p].state[particle::VY];
-	 buffer[cnt+2] = particleLists[b][p].state[particle::VZ];
-	 buffer[cnt+3] = particleLists[b][p].state[particle::WEIGHT];
-	 buffer[cnt+4] = this->species.popid;
-	 buffer[cnt+5] = static_cast<double>(this->simClasses->pargrid.getGlobalIDs()[b]);*/
+	 bufferVar[cnt+1] = particleLists[b][p].state[particle::VY];
+	 bufferVar[cnt+2] = particleLists[b][p].state[particle::VZ];
+	 /*bufferVar[cnt+3] = particleLists[b][p].state[particle::WEIGHT];
+	 bufferVar[cnt+4] = this->species.popid;
+	 bufferVar[cnt+5] = static_cast<double>(this->simClasses->pargrid.getGlobalIDs()[b]);*/
 	 cnt += vectorSize;
       }
    }
-   attribs["name"] = "vx";
+   attribs["name"] = "v_" + this->speciesName;
    attribs["mesh"] = particleMeshName;
    attribs["type"] = "pointdata";
    if (this->simClasses->vlsv.writeArray("VARIABLE",attribs,Nparticles,vectorSize,bufferVar) == false) {
@@ -114,6 +126,27 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
       success = false;
    }
    delete [] bufferVar; bufferVar = NULL;
+
+   // cell ids of particles
+   /*vectorSize = 1;
+   std::vector<pargrid::CellID> cellIDs; // Note: we assume here block size = 1 (i.e. blocks == cells)
+   //bufferVar = new Real[Nparticles*vectorSize];
+   //cnt = 0;
+   for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+      for (unsigned int p=0; p<wrapper.size()[b]; ++p) {
+	 cellIDs.push_back(this->simClasses->pargrid.getGlobalIDs()[b]);
+	 //bufferVar[cnt+0] = static_cast<double>(this->simClasses->pargrid.getGlobalIDs()[b]);
+	 //cnt += vectorSize;
+      }
+   }
+   attribs["name"] = "CellID_" + this->speciesName;
+   attribs["mesh"] = particleMeshName;
+   attribs["type"] = "pointdata";
+   if (this->simClasses->vlsv.writeArray("VARIABLE",attribs,Nparticles,vectorSize,&(cellIDs[0])) == false) {
+      this->simClasses->logger << "\t ERROR failed to write particle species!" << std::endl;
+      success = false;
+   }
+   //delete [] bufferVar; bufferVar = NULL;*/
 
    #if PROFILE_LEVEL > 0
       profile::stop();
