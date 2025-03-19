@@ -2,7 +2,7 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import pytools as pt
+import analysator as pt
 import numpy as np
 matplotlib.rcParams.update({'font.size': 14})
 matplotlib.rcParams['lines.linewidth'] = 2

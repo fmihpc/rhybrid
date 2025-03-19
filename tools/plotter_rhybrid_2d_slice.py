@@ -44,7 +44,7 @@ import matplotlib
 matplotlib.use("Agg") # this is needed for offline saving of graphics
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import pytools as pt
+import analysator as pt
 import numpy as np
 import scipy as sp
 import operator as oper

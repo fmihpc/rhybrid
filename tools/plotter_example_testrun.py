@@ -1,6 +1,6 @@
 import matplotlib
 import matplotlib.pyplot as plt
-import pytools as pt
+import analysator as pt
 import numpy as np
 
 vr = pt.vlsvfile.VlsvReader("state00004000.vlsv")
