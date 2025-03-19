@@ -162,7 +162,7 @@ class VlsvParticles(object):
               datatype = child.attrib["datatype"]
               offset = ast.literal_eval(child.text)
               fptr.seek(offset)
-              res = np.fromfile(fptr, dtype=self.get_numpy_data_type(datatype,element_size), count=vector_size*array_size)
+              res = np.fromfile(fptr, dtype=get_numpy_data_type(datatype,element_size), count=vector_size*array_size)
               res = res.reshape(array_size, vector_size)
               return res
       if self.__fptr.closed:
