@@ -336,6 +336,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.log_precision","Precision of floating point numbers in log file [-] (int)",10);
    cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
+   cr.add("Hybrid.save_particles","Write particles or not (bool)",false);
+   cr.add("Hybrid.save_particles_Nstride","Write particles in every Nstride'th cell (unsigned int)",10);
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
    cr.add("Hybrid.fieldObstacleUe","Ue velocity vector (Uex,Uey,Uez) inside the inner boundary [m/s] (float,float,float)",string("(0,0,0)"));
@@ -365,6 +367,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.log_precision",logPrecision);
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
+   cr.get("Hybrid.save_particles",Hybrid::saveParticles);
+   cr.get("Hybrid.save_particles_Nstride",Hybrid::saveParticlesNstride);
    cr.get("Hybrid.R_object",Hybrid::R_object);
    cr.get("Hybrid.R_fieldObstacle",Hybrid::R2_fieldObstacle);
    cr.get("Hybrid.R_particleObstacle",Hybrid::R2_particleObstacle);
@@ -547,6 +551,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
    if(logPrecision < 1) { logPrecision = 1; }
+   if(Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
+      simClasses.logger << "(RHYBRID) WARNING Hybrid.save_particles_Nstride should be > 0, setting as 10" << endl;
+      Hybrid::saveParticlesNstride = 10;
+   }
    if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if(Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
    else { Hybrid::R2_fieldObstacle = -1; }
@@ -2489,6 +2497,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 return false;
       }
    }
+   simClasses.logger << "Save particles = " << Hybrid::saveParticles << " (in every Nth cell, where N = " << Hybrid::saveParticlesNstride << ")" << endl << endl;
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // initial values
    if(sim.restarted == false) {
