@@ -63,6 +63,7 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    // block coordinates
    const double* crd = getBlockCoordinateArray(*this->sim,*this->simClasses);
 
+   // name of the point mesh of this particle population
    std::string particleMeshName = "ParticlePointMesh_" + this->speciesName;
 
    // write parameters of this particle population
@@ -77,9 +78,8 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    }*/
 
    // write particle coordinates of this population as a point mesh
-   uint64_t vectorSize = 3;
-   Real* bufferMeshCrd = new Real[Nparticles*vectorSize];
-   size_t cnt = 0;
+   uint64_t vectorSize = 3; // mesh has three coordinates: x, y, z
+   std::vector<Real> bufferMeshCrd; // buffer variable of data to be written
    for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       const size_t bv = vectorSize*b;
       // global coordinates of the block
@@ -88,55 +88,44 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
       const Real zBlock = crd[bv+2];
       for (unsigned int p=0; p<wrapper.size()[b]; ++p) {
 	 // global particle coordinates: local particle coordinates in the block + global coordinates of the block
-	 bufferMeshCrd[cnt+0] = particleLists[b][p].state[particle::X] + xBlock;
-	 bufferMeshCrd[cnt+1] = particleLists[b][p].state[particle::Y] + yBlock;
-	 bufferMeshCrd[cnt+2] = particleLists[b][p].state[particle::Z] + zBlock;
-	 cnt += vectorSize;
+	 bufferMeshCrd.push_back(particleLists[b][p].state[particle::X] + xBlock);
+	 bufferMeshCrd.push_back(particleLists[b][p].state[particle::Y] + yBlock);
+	 bufferMeshCrd.push_back(particleLists[b][p].state[particle::Z] + zBlock);
       }
    }
    std::map<std::string,std::string> attribs;
    attribs["name"] = particleMeshName;
    attribs["type"] = vlsv::mesh::STRING_POINT;
-   if (this->simClasses->vlsv.writeArray("MESH",attribs,Nparticles,vectorSize,bufferMeshCrd) == false) {
+   if (this->simClasses->vlsv.writeArray("MESH",attribs,Nparticles,vectorSize,&(bufferMeshCrd[0])) == false) {
       this->simClasses->logger << "\t ERROR failed to write particle species!" << std::endl;
       success = false;
    }
-   delete [] bufferMeshCrd; bufferMeshCrd = NULL;
 
-   // write particle properties of this population as variables on the point mesh
-   vectorSize = 3;
-   Real* bufferVar = new Real[Nparticles*vectorSize];
-   cnt = 0;
+   // write particle velocities of this population
+   vectorSize = 3; // velocity has three components: vx, vy, vz
+   std::vector<Real> bufferVar;
    for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       for (unsigned int p=0; p<wrapper.size()[b]; ++p) {
-	 bufferVar[cnt+0] = particleLists[b][p].state[particle::VX];
-	 bufferVar[cnt+1] = particleLists[b][p].state[particle::VY];
-	 bufferVar[cnt+2] = particleLists[b][p].state[particle::VZ];
-	 /*bufferVar[cnt+3] = particleLists[b][p].state[particle::WEIGHT];
-	 bufferVar[cnt+4] = this->species.popid;
-	 bufferVar[cnt+5] = static_cast<double>(this->simClasses->pargrid.getGlobalIDs()[b]);*/
-	 cnt += vectorSize;
+	 bufferVar.push_back(particleLists[b][p].state[particle::VX]);
+	 bufferVar.push_back(particleLists[b][p].state[particle::VY]);
+	 bufferVar.push_back(particleLists[b][p].state[particle::VZ]);
       }
    }
    attribs["name"] = "v_" + this->speciesName;
    attribs["mesh"] = particleMeshName;
    attribs["type"] = "pointdata";
-   if (this->simClasses->vlsv.writeArray("VARIABLE",attribs,Nparticles,vectorSize,bufferVar) == false) {
+   if (this->simClasses->vlsv.writeArray("VARIABLE",attribs,Nparticles,vectorSize,&(bufferVar[0])) == false) {
       this->simClasses->logger << "\t ERROR failed to write particle species!" << std::endl;
       success = false;
    }
-   delete [] bufferVar; bufferVar = NULL;
 
-   // cell ids of particles
-   /*vectorSize = 1;
+   // write ids of spatial cells where each particle belongs to
+   vectorSize = 1; // id is a scalar variable of type pargrid::CellID (unsigned int)
+   const std::vector<pargrid::CellID>& globalIDs = this->simClasses->pargrid.getGlobalIDs();
    std::vector<pargrid::CellID> cellIDs; // Note: we assume here block size = 1 (i.e. blocks == cells)
-   //bufferVar = new Real[Nparticles*vectorSize];
-   //cnt = 0;
    for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       for (unsigned int p=0; p<wrapper.size()[b]; ++p) {
-	 cellIDs.push_back(this->simClasses->pargrid.getGlobalIDs()[b]);
-	 //bufferVar[cnt+0] = static_cast<double>(this->simClasses->pargrid.getGlobalIDs()[b]);
-	 //cnt += vectorSize;
+	 cellIDs.push_back(globalIDs[b]);
       }
    }
    attribs["name"] = "CellID_" + this->speciesName;
@@ -146,7 +135,6 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
       this->simClasses->logger << "\t ERROR failed to write particle species!" << std::endl;
       success = false;
    }
-   //delete [] bufferVar; bufferVar = NULL;*/
 
    #if PROFILE_LEVEL > 0
       profile::stop();
