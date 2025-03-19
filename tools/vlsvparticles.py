@@ -31,6 +31,19 @@ from reduction import datareducers,data_operators
 from vlsvwriter import VlsvWriter
 from variable import get_data
 
+def get_numpy_data_type(dataType,dataSize):
+   ''' Get numpy data type corresponding to datatype and datasize of
+       a VLSV file variable
+   '''
+   if dataType == "float" and dataSize == 8:
+      return np.float64
+   elif dataType == "float" and dataSize == 4:
+      return np.float32
+   elif dataType == "uint" and dataSize == 4:
+      return np.uint32
+   elif dataType == "uint" and dataSize == 8:
+      return np.uint64
+
 class VlsvParticles(object):
    ''' Class for reading point mesh based particle outputs from RHybrid
    '''
@@ -149,7 +162,7 @@ class VlsvParticles(object):
               datatype = child.attrib["datatype"]
               offset = ast.literal_eval(child.text)
               fptr.seek(offset)
-              res = np.fromfile(fptr, dtype=np.float64, count=vector_size*array_size)
+              res = np.fromfile(fptr, dtype=self.get_numpy_data_type(datatype,element_size), count=vector_size*array_size)
               res = res.reshape(array_size, vector_size)
               return res
       if self.__fptr.closed:
@@ -183,7 +196,7 @@ class VlsvParticles(object):
               datatype = child.attrib["datatype"]
               offset = ast.literal_eval(child.text)
               fptr.seek(offset)
-              res = np.fromfile(fptr, dtype=np.float64, count=vector_size*array_size)
+              res = np.fromfile(fptr, dtype=get_numpy_data_type(datatype,element_size), count=vector_size*array_size)
               res = res.reshape(array_size, vector_size)
               return res
       if self.__fptr.closed:
