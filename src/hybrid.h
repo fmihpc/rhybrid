@@ -193,6 +193,8 @@ struct Hybrid {
    static int logInterval;
    static bool includeInnerCellsInFieldLog;
    static bool writeMainLogEntriesAfterSaveStep;
+   static bool saveParticles;
+   static unsigned int saveParticlesNstride;
    static Real dx;
    static Real dV;
    static Real R_object;

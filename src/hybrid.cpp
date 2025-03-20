@@ -110,6 +110,8 @@ uint32_t Hybrid::Z_NEG_EXISTS;
 int Hybrid::logInterval;
 bool Hybrid::includeInnerCellsInFieldLog;
 bool Hybrid::writeMainLogEntriesAfterSaveStep = true;
+bool Hybrid::saveParticles = false;
+unsigned int Hybrid::saveParticlesNstride = 10;
 Real Hybrid::dx;
 Real Hybrid::dV;
 Real Hybrid::R_object;
