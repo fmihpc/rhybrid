@@ -59,6 +59,11 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    // block coordinates
    const double* crd = getBlockCoordinateArray(*this->sim,*this->simClasses);
 
+   // domain dimensions
+   const long nx = this->sim->x_blocks*block::WIDTH_X;
+   const long ny = this->sim->y_blocks*block::WIDTH_Y;
+   // z-dimension not needed
+
    // name of the point mesh of this particle population
    std::string particleMeshName = "ParticlePointMesh_" + this->speciesName;
 
@@ -81,7 +86,9 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    std::vector<Real> bufferMeshCrd; // buffer variable of data to be written
    for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       pargrid::CellID cid = globalIDs[b];
-      if (cid % Hybrid::saveParticlesNstride != 0) { continue; }
+      if (cid % Hybrid::saveParticlesNstride != 0 ||
+          cid % (Hybrid::saveParticlesNstride*nx) >= nx ||
+          cid % (Hybrid::saveParticlesNstride*nx*ny) >= nx*ny) { continue; }
       const size_t bv = vectorSize*b;
       // global coordinates of the block
       const Real xBlock = crd[bv+0];
@@ -108,7 +115,9 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    std::vector<Real> bufferVar;
    for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       pargrid::CellID cid = globalIDs[b];
-      if (cid % Hybrid::saveParticlesNstride != 0) { continue; }
+      if (cid % Hybrid::saveParticlesNstride != 0 ||
+          cid % (Hybrid::saveParticlesNstride*nx) >= nx ||
+          cid % (Hybrid::saveParticlesNstride*nx*ny) >= nx*ny) { continue; }
       for (unsigned int p=0; p<wrapper.size()[b]; ++p) {
 	 bufferVar.push_back(particleLists[b][p].state[particle::VX]);
 	 bufferVar.push_back(particleLists[b][p].state[particle::VY]);
@@ -128,7 +137,9 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    std::vector<pargrid::CellID> cellIDs; // Note: we assume here block size = 1 (i.e. blocks == cells)
    for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       pargrid::CellID cid = globalIDs[b];
-      if (cid % Hybrid::saveParticlesNstride != 0) { continue; }
+      if (cid % Hybrid::saveParticlesNstride != 0 ||
+          cid % (Hybrid::saveParticlesNstride*nx) >= nx ||
+          cid % (Hybrid::saveParticlesNstride*nx*ny) >= nx*ny) { continue; }
       for (unsigned int p=0; p<wrapper.size()[b]; ++p) {
 	 cellIDs.push_back(globalIDs[b]);
       }
