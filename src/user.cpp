@@ -166,6 +166,10 @@ bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,Confi
    simClasses.logger << "(RHYBRID) Starting early initialization." << endl;
    Hybrid hybrid; // initialized global variables
    hybrid.R_object = 0; // to get rid of unused variable warning
+   if(block::WIDTH_X != 1 || block::WIDTH_Y != 1 || block::WIDTH_Z != 1) {
+      simClasses.logger << "(RHYBRID) ERROR: only Corsair block size 1x1x1 supported currently by RHybrid (" << block::WIDTH_X << "x" << block::WIDTH_Y << "x" << block::WIDTH_Z << ")" << endl << write;
+      return false;
+   }
 #if defined(USE_B_INITIAL) && defined(USE_B_CONSTANT)
 #error                  "(RHYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time"
    simClasses.logger << "(RHYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time" << endl << write;
