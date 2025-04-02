@@ -52,7 +52,7 @@
 using namespace std;
 
 bool str2bool(SimulationClasses& simClasses,const string & v) {
-   if(v.compare("0") != 0 && v.compare("1") != 0) {
+   if (v.compare("0") != 0 && v.compare("1") != 0) {
       simClasses.logger << "(RHYBRID) ERROR: boolean should be 0 or 1 (" << v  << ")" << endl << write;
       exit(1);
    }
@@ -63,58 +63,58 @@ bool str2bool(SimulationClasses& simClasses,const string & v) {
 
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool rvalue = true;
-   if(Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::initialFlowThrough == true) {
+   if (Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::initialFlowThrough == true) {
       static bool switchOffDone = false;
-      if(switchOffDone == false) {
+      if (switchOffDone == false) {
          simClasses.logger << "(RHYBRID) initialFlowThroughPeriod reached, switching initial flow through off..." << endl;
          Hybrid::initialFlowThrough = false;
          switchOffDone = true;
       }
    }
    // Apply boundary conditions: remove illegal macroparticles after a restart
-   if(sim.restarted == true && Hybrid::filterParticlesAfterRestartDone == false) {
-       for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
+   if (sim.restarted == true && Hybrid::filterParticlesAfterRestartDone == false) {
+       for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
        Hybrid::filterParticlesAfterRestartDone = true;
    }
    // logging: main, field, particles
-   if(sim.atDataSaveStep == true) {
+   if (sim.atDataSaveStep == true) {
       Hybrid::writeMainLogEntriesAfterSaveStep = true;
       diagnostics::logWriteMainMacroparticles(sim,simClasses,particleLists);
    }
-   if(Hybrid::logInterval > 0) {
-      if((sim.timestep)%(Hybrid::logInterval) == 0.0) {
+   if (Hybrid::logInterval > 0) {
+      if ((sim.timestep)%(Hybrid::logInterval) == 0.0) {
          int masterFailed = 0; // check for failure of the master PE for run termination
-         if(diagnostics::logWriteParticleField(sim,simClasses,particleLists) == false) {
+         if (diagnostics::logWriteParticleField(sim,simClasses,particleLists) == false) {
             rvalue = false;
-            if(sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
+            if (sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
          }
          // broadcast failed flag from master to all PEs (note: this should be handled on a higher level like corsair / int main)
          MPI_Bcast(&masterFailed,1,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
-         if(masterFailed > 0) {
+         if (masterFailed > 0) {
             rvalue = false;
          }
       }
    }
 #ifdef USE_DETECTORS
-   if(sim.t >= Hybrid::detParticleStartTime && sim.t <= Hybrid::detParticleEndTime && Hybrid::detParticleFileLineCnt < Hybrid::N_detParticleMaxFileLines) {
+   if (sim.t >= Hybrid::detParticleStartTime && sim.t <= Hybrid::detParticleEndTime && Hybrid::detParticleFileLineCnt < Hybrid::N_detParticleMaxFileLines) {
       Hybrid::detParticleRecording = true;
       Hybrid::detParticleTimestepCnt++;
    }
    else { Hybrid::detParticleRecording = false; }
-   if(sim.t >= Hybrid::detBulkParamStartTime && sim.t <= Hybrid::detBulkParamEndTime && Hybrid::detBulkParamFileLineCnt < Hybrid::N_detBulkParamMaxFileLines) {
+   if (sim.t >= Hybrid::detBulkParamStartTime && sim.t <= Hybrid::detBulkParamEndTime && Hybrid::detBulkParamFileLineCnt < Hybrid::N_detBulkParamMaxFileLines) {
       Hybrid::detBulkParamRecording = true;
       Hybrid::detBulkParamTimestepCnt++;
    }
    else { Hybrid::detBulkParamRecording = false; }
    // set repartitioning off if detectors are recording
-   if(Hybrid::detParticleRecording == true || Hybrid::detBulkParamRecording == true) {
-      if(sim.repartitionCheckInterval > 0) {
+   if (Hybrid::detParticleRecording == true || Hybrid::detBulkParamRecording == true) {
+      if (sim.repartitionCheckInterval > 0) {
 	 simClasses.logger << "(RHYBRID) DETECTORS: detectors recording, setting repartitioning off" << endl;
       }
       sim.repartitionCheckInterval = -100;
    }
    else {
-      if(sim.repartitionCheckInterval < 0 && Hybrid::repartitionCheckIntervalTmp > 0) {
+      if (sim.repartitionCheckInterval < 0 && Hybrid::repartitionCheckIntervalTmp > 0) {
 	 simClasses.logger << "(RHYBRID) DETECTORS: detectors not recording anymore, setting repartitioning back on" << endl;
       }
       sim.repartitionCheckInterval = Hybrid::repartitionCheckIntervalTmp;
@@ -122,31 +122,31 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
 #endif
    setupGetFields(sim,simClasses);
    // Propagate all particles:
-   for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->propagateBoundaryCellParticles() == false) { rvalue = false; }  }
-   for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->propagateInnerCellParticles() == false) { rvalue = false; } }
-   for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->clearAccumulationArrays() == false) { rvalue = false; } }
-   for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->waitParticleSends() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->propagateBoundaryCellParticles() == false) { rvalue = false; }  }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->propagateInnerCellParticles() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->clearAccumulationArrays() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->waitParticleSends() == false) { rvalue = false; } }
    // Accumulate particle quantities to simulation mesh:
-   for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->accumulateBoundaryCells() == false) { rvalue = false; } }
-   for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->accumulateInnerCells() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->accumulateBoundaryCells() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->accumulateInnerCells() == false) { rvalue = false; } }
    // Apply boundary conditions:
-   for(size_t p=0;p<particleLists.size();++p) { if(particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
    // Inject new particles:
-   for(size_t p=0;p<particleLists.size();++p) {
-      if(particleLists[p]->injectParticles() == false) { rvalue = false; } 
+   for (size_t p=0;p<particleLists.size();++p) {
+      if (particleLists[p]->injectParticles() == false) { rvalue = false; } 
    }
    // propagate magnetic field
-   if(propagateB(sim,simClasses,particleLists) == false) { rvalue = false; }
+   if (propagateB(sim,simClasses,particleLists) == false) { rvalue = false; }
 #ifdef USE_DETECTORS
-   if(Hybrid::detParticleRecording == true) {
-      if(Hybrid::detParticleTimestepCnt >= Hybrid::detParticleWriteInterval) {
+   if (Hybrid::detParticleRecording == true) {
+      if (Hybrid::detParticleTimestepCnt >= Hybrid::detParticleWriteInterval) {
 	 bool ok = writeDetectorParticle(sim,simClasses);
 	 Hybrid::detParticleTimestepCnt = 0;
       }
    }
-   if(Hybrid::detBulkParamRecording == true) {
+   if (Hybrid::detBulkParamRecording == true) {
       bool ok = recordDetectorBulkParam(sim,simClasses);
-      if(Hybrid::detBulkParamTimestepCnt >= Hybrid::detBulkParamWriteInterval) {
+      if (Hybrid::detBulkParamTimestepCnt >= Hybrid::detBulkParamWriteInterval) {
 	 bool ok2 = writeDetectorBulkParam(sim,simClasses);
 	 Hybrid::detBulkParamTimestepCnt = 0;
       }
@@ -166,7 +166,7 @@ bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,Confi
    simClasses.logger << "(RHYBRID) Starting early initialization." << endl;
    Hybrid hybrid; // initialized global variables
    hybrid.R_object = 0; // to get rid of unused variable warning
-   if(block::WIDTH_X != 1 || block::WIDTH_Y != 1 || block::WIDTH_Z != 1) {
+   if (block::WIDTH_X != 1 || block::WIDTH_Y != 1 || block::WIDTH_Z != 1) {
       simClasses.logger << "(RHYBRID) ERROR: only Corsair block size 1x1x1 supported currently by RHybrid (" << block::WIDTH_X << "x" << block::WIDTH_Y << "x" << block::WIDTH_Z << ")" << endl << write;
       return false;
    }
@@ -194,7 +194,7 @@ vector< vector<Real> > readRealsFromFile(string fn) {
    vector< vector<Real> > result;
    string tmpstr;
    ifstream in(fn);
-   while( getline(in,tmpstr) ) {
+   while ( getline(in,tmpstr) ) {
       istringstream buff(tmpstr);
       vector<Real> line((istream_iterator<Real>(buff)),istream_iterator<Real>());
       result.push_back(line);
@@ -205,9 +205,9 @@ vector< vector<Real> > readRealsFromFile(string fn) {
 
 // check orbit read from a file
 bool checkOrbit(vector< vector<Real> > xyz) {
-   if(xyz.size() <= 0) { return false; }
+   if (xyz.size() <= 0) { return false; }
    for (unsigned int i = 0; i < xyz.size(); ++i) {
-      if(xyz[i].size() != 3) { return false; }
+      if (xyz[i].size() != 3) { return false; }
    }
    return true;
 }
@@ -215,28 +215,28 @@ bool checkOrbit(vector< vector<Real> > xyz) {
 // broadcast 2d vector from master to all PEs
 bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
    decltype(d.size()) NN[2];
-   if(sim.mpiRank == sim.MASTER_RANK) {
+   if (sim.mpiRank == sim.MASTER_RANK) {
       NN[0]=d.size();
-      if(NN[0] > 0) { NN[1]=d[0].size(); }
+      if (NN[0] > 0) { NN[1]=d[0].size(); }
       else { return false; }
       // check that all vector rows have same number of columns
-      for(decltype(d.size()) i=0;i<NN[0];i++) {
-         if(d[i].size() != NN[1]) { return false; }
+      for (decltype(d.size()) i=0;i<NN[0];i++) {
+         if (d[i].size() != NN[1]) { return false; }
       }
    }
    // distribute orbit coordinates read by master to all processes
    MPI_Bcast(NN,2,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
    Real* buff = new Real[NN[1]];
-   for(decltype(d.size()) i=0;i<NN[0];i++) {
-      if(sim.mpiRank == sim.MASTER_RANK) {
-	 for(decltype(d.size()) j=0;j<NN[1];j++) {
+   for (decltype(d.size()) i=0;i<NN[0];i++) {
+      if (sim.mpiRank == sim.MASTER_RANK) {
+	 for (decltype(d.size()) j=0;j<NN[1];j++) {
 	    buff[j] = d[i][j];
 	 }
       }
       MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-      if(sim.mpiRank != sim.MASTER_RANK) {
+      if (sim.mpiRank != sim.MASTER_RANK) {
 	 d.push_back(vector<Real>());
-	 for(decltype(d.size()) j=0;j<NN[1];j++)  {
+	 for (decltype(d.size()) j=0;j<NN[1];j++)  {
 	    d[i].push_back(buff[j]);
 	 }
       }
@@ -247,7 +247,7 @@ bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
 
 // gaussian distribution
 Real getGaussianDistr(Real x,Real sigma) {
-   if(sigma > 0) {
+   if (sigma > 0) {
       return exp( -0.5*sqr(x/sigma) );
    }
    else {
@@ -257,32 +257,32 @@ Real getGaussianDistr(Real x,Real sigma) {
 
 // new variable handling TBD
 /*bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
-   if(vectorDim <= 0) { return true; }
+   if (vectorDim <= 0) { return true; }
    // create pargrid array struct
    HybridVariable <Real>d;
    d.vectorDim = vectorDim;
    d.id = simClasses.pargrid.invalidDataID();
    d.id = simClasses.pargrid.addUserData<Real>(name,block::SIZE*vectorDim);
-   if(d.id == simClasses.pargrid.invalidCellID()) {
+   if (d.id == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid user data array: " << name << endl << write;
       return false;
    }
    // add data transfers
-   for(auto p : stencilID) {
-      if(simClasses.pargrid.addDataTransfer(d.id,p) == false) {
+   for (auto p : stencilID) {
+      if (simClasses.pargrid.addDataTransfer(d.id,p) == false) {
 	 simClasses.logger << "(USER) ERROR: failed to create ParGrid data transfer: " << name  << endl << write;
 	 return false;
       }
    }
    // create pointer
    d.ptr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.id));
-   if(d.ptr == NULL) {
+   if (d.ptr == NULL) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid data pointer: " << name  << endl << write;
       return false;
    }
-   if(sim.restarted == false) {
+   if (sim.restarted == false) {
       const size_t arraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*vectorDim;
-      for(size_t i=0; i<arraySize; ++i) { d.ptr[i] = 0.0; }
+      for (size_t i=0; i<arraySize; ++i) { d.ptr[i] = 0.0; }
    }
    // add variable to global map
    Hybrid::varReal[name] = d;
@@ -297,7 +297,7 @@ bool checkInjectorName(SimulationClasses& simClasses,ConfigReader& cr,string spe
    cr.add(injectorNameRegion,"",string(""));
    cr.parse();
    cr.get(injectorNameRegion,injectorNameB);
-   if(injectorNameB.compare(injectorNameA) == 0) { return true; }
+   if (injectorNameB.compare(injectorNameA) == 0) { return true; }
    else {
       simClasses.logger
 	<< "ERROR: " << speciesName << " population should have injector.name = "
@@ -323,7 +323,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	for (int i=0; i<3; ++i) { cellSize[i] = recvBuffer[i]; }
 	MPI_Bcast(cellSize,3,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
      }
-   if( (cellSize[0] != cellSize[1]) || (cellSize[0] != cellSize[2]) || (cellSize[1] != cellSize[2]) ) {
+   if ( (cellSize[0] != cellSize[1]) || (cellSize[0] != cellSize[2]) || (cellSize[1] != cellSize[2]) ) {
       simClasses.logger << "(RHYBRID) ERROR: Only cube shaped cells allowed (dx = " << cellSize[0]/1e3 << " km, dy = " << cellSize[1]/1e3 << " km, dz = " << cellSize[2]/1e3 << " km)" << endl << write;
       exit(1);
       return false;
@@ -383,7 +383,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	vector<Real> vel;
 	velStrOk = convertConfigFileVariableVelocity(fieldObstacleUeStr,vel);
 	// if not correct format
-	if(velStrOk == false) {
+	if (velStrOk == false) {
 	   simClasses.logger << "(RHYBRID) ERROR: bad format of fieldObstacleUe vector (" << fieldObstacleUeStr << ")" << endl << write;
 	   exit(1);
 	}
@@ -401,7 +401,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
    cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
    cr.get("Hybrid.maxE",Hybrid::maxE2);
-   if(Hybrid::maxE2 > 0) { Hybrid::maxE2 = sqr(Hybrid::maxE2); }
+   if (Hybrid::maxE2 > 0) { Hybrid::maxE2 = sqr(Hybrid::maxE2); }
    else { Hybrid::maxE2 = 0; }
    cr.get("Hybrid.maxVw",Hybrid::maxVw);
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
@@ -411,15 +411,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    int useElectronPressureInput = 0;
    cr.get("Hybrid.electron_pressure",useElectronPressureInput);
    cr.get("Hybrid.Te",Hybrid::electronTemperature);
-   if(useElectronPressureInput == 0) {
+   if (useElectronPressureInput == 0) {
       Hybrid::useElectronPressureElectricField = false;
       Hybrid::useAdiabaticElectronPressure = false;
    }
-   else if(useElectronPressureInput == 1) {
+   else if (useElectronPressureInput == 1) {
       Hybrid::useElectronPressureElectricField = true;
       Hybrid::useAdiabaticElectronPressure = false;
    }
-   else if(useElectronPressureInput == 2) {
+   else if (useElectronPressureInput == 2) {
       Hybrid::useElectronPressureElectricField = true;
       Hybrid::useAdiabaticElectronPressure = true;
    }
@@ -427,12 +427,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(RHYBRID) ERROR: Bad Hybrid.electron_pressure input value (" << useElectronPressureInput << ")" << endl << write;
       exit(1);
    }
-   if(Hybrid::useElectronPressureElectricField == false) {
+   if (Hybrid::useElectronPressureElectricField == false) {
       Hybrid::electronTemperature = 0.0;
       Hybrid::electronPressureCoeff = 0.0;
    }
    else {
-      if(Hybrid::useAdiabaticElectronPressure == false) {
+      if (Hybrid::useAdiabaticElectronPressure == false) {
          // isothermal electrons
          Hybrid::electronPressureCoeff = constants::BOLTZMANN*Hybrid::electronTemperature/constants::CHARGE_ELEMENTARY;
       }
@@ -452,7 +452,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IMF.Bz",Hybrid::IMFBz);
    string inputStr;
    cr.get("IMF.BoundaryCellB",inputStr);
-   if(inputStr.size() != 11 ||
+   if (inputStr.size() != 11 ||
       inputStr.substr(1,1).compare(" ") != 0 ||
       inputStr.substr(3,1).compare(" ") != 0 ||
       inputStr.substr(5,1).compare(" ") != 0 ||
@@ -469,7 +469,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::IMFBoundaryCellB[5] = str2bool(simClasses,inputStr.substr(10,1));
    inputStr = "";
    cr.get("IMF.BoundaryFaceB",inputStr);
-   if(inputStr.size() != 11 ||
+   if (inputStr.size() != 11 ||
       inputStr.substr(1,1).compare(" ") != 0 ||
       inputStr.substr(3,1).compare(" ") != 0 ||
       inputStr.substr(5,1).compare(" ") != 0 ||
@@ -532,7 +532,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::laminarR2 =  sqr(Hybrid::laminarR2);
    Hybrid::dipMomCoeff = 3.0*Hybrid::dipSurfB*cube(Hybrid::dipSurfR);
    Hybrid::dipMinR2 = sqr(Hybrid::dipMinR2);
-   if(setMagneticFieldProfile(magneticFieldProfileName) == false) {
+   if (setMagneticFieldProfile(magneticFieldProfileName) == false) {
       simClasses.logger << "(RHYBRID) ERROR: unknown name of a magnetic field profile (" << magneticFieldProfileName << ")" << endl << write;
       exit(1);
    }
@@ -553,18 +553,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("BackgroundChargeDensity.rhoQi0",bgChargeDensityArgs.rhoQi0);
 #endif
 
-   if(Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
-   if(logPrecision < 1) { logPrecision = 1; }
-   if(Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
+   if (Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
+   if (logPrecision < 1) { logPrecision = 1; }
+   if (Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
       simClasses.logger << "(RHYBRID) WARNING Hybrid.save_particles_Nstride should be > 0, setting as 10" << endl;
       Hybrid::saveParticlesNstride = 10;
    }
-   if(Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
-   if(Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
+   if (Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
+   if (Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
    else { Hybrid::R2_fieldObstacle = -1; }
-   if(Hybrid::R2_particleObstacle > 0) { Hybrid::R2_particleObstacle = sqr(Hybrid::R2_particleObstacle); }
+   if (Hybrid::R2_particleObstacle > 0) { Hybrid::R2_particleObstacle = sqr(Hybrid::R2_particleObstacle); }
    else { Hybrid::R2_particleObstacle = -1; }
-   if(Hybrid::R2_cellEpObstacle > 0) { Hybrid::R2_cellEpObstacle = sqr(Hybrid::R2_cellEpObstacle); }
+   if (Hybrid::R2_cellEpObstacle > 0) { Hybrid::R2_cellEpObstacle = sqr(Hybrid::R2_cellEpObstacle); }
    else { Hybrid::R2_cellEpObstacle = -1; }
    const long nx = sim.x_blocks*block::WIDTH_X;
    const long ny = sim.y_blocks*block::WIDTH_Y;
@@ -596,7 +596,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "R_object  = " << Hybrid::R_object/1e3 << " km = " << Hybrid::R_object/Hybrid::dx << " dx" << endl
      << "Using spherical inner boundary" << endl
      << "R_fieldObstacle = ";
-   if(Hybrid::R2_fieldObstacle > 0) {
+   if (Hybrid::R2_fieldObstacle > 0) {
       simClasses.logger
 	<< sqrt(Hybrid::R2_fieldObstacle)/1e3 << " km = "
 	<< sqrt(Hybrid::R2_fieldObstacle)/Hybrid::R_object << " R_object = "
@@ -606,7 +606,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    else { simClasses.logger << Hybrid::R2_fieldObstacle << "" << endl; }
    simClasses.logger << "Ue(r <= R_fieldObstacle) = (" << Hybrid::fieldObstacleUe[0]/1e3 << "," << Hybrid::fieldObstacleUe[1]/1e3 << "," << Hybrid::fieldObstacleUe[2]/1e3 << ") km/s" << endl;
    simClasses.logger << "R_particleObstacle = ";
-   if(Hybrid::R2_particleObstacle > 0) {
+   if (Hybrid::R2_particleObstacle > 0) {
       simClasses.logger
 	<< sqrt(Hybrid::R2_particleObstacle)/1e3 << " km = "
 	<< sqrt(Hybrid::R2_particleObstacle)/Hybrid::R_object << " R_object = "
@@ -614,7 +614,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< (sqrt(Hybrid::R2_particleObstacle) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
    }
    simClasses.logger << "R_cellEpObstacle = ";
-   if(Hybrid::R2_cellEpObstacle > 0) {
+   if (Hybrid::R2_cellEpObstacle > 0) {
       simClasses.logger
 	<< sqrt(Hybrid::R2_cellEpObstacle)/1e3 << " km = "
 	<< sqrt(Hybrid::R2_cellEpObstacle)/Hybrid::R_object << " R_object = "
@@ -631,11 +631,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
      simClasses.logger
      << "Electron pressure term = ";
-   if(Hybrid::useElectronPressureElectricField == false) {
+   if (Hybrid::useElectronPressureElectricField == false) {
       simClasses.logger << "none" << endl;
    }
    else {
-      if(Hybrid::useAdiabaticElectronPressure == true) {
+      if (Hybrid::useAdiabaticElectronPressure == true) {
          simClasses.logger << "adiabatic (gamma = 2)" << endl;
       }
       else {
@@ -656,19 +656,19 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger
      << "(IMF BOUNDARY CONDITIONS)" << endl
      << "cellB (+x,-x,+y,-y,+z,-z) = ";
-   for(size_t i = 0;i<6;++i) {
+   for (size_t i = 0;i<6;++i) {
       simClasses.logger << Hybrid::IMFBoundaryCellB[i] << " ";
    }
    simClasses.logger
      << endl
      << "faceB (+x,-x,+y,-y,+z,-z) = ";
-   for(size_t i = 0;i<6;++i) {
+   for (size_t i = 0;i<6;++i) {
       simClasses.logger << Hybrid::IMFBoundaryFaceB[i] << " ";
    }
    simClasses.logger << endl << endl;
-   
-   if(Hybrid::Efilter < 0) { Hybrid::Efilter = 0; }
-   if(Hybrid::EfilterNodeGaussSigma <= 0) { Hybrid::EfilterNodeGaussSigma = 0; }
+
+   if (Hybrid::Efilter < 0) { Hybrid::Efilter = 0; }
+   if (Hybrid::EfilterNodeGaussSigma <= 0) { Hybrid::EfilterNodeGaussSigma = 0; }
    else {
       // determined gaussian smoothing coefficients
       const Real C1 = getGaussianDistr(0.0,Hybrid::EfilterNodeGaussSigma); // 1 node itself to be filtered
@@ -685,7 +685,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "(FILTERING)" << endl
      << "Number of E intpol smoothings = " << Hybrid::Efilter << " (node2cell2node interpolation technique)" << endl
      << "Sigma of E gaussian smoothing = " << Hybrid::EfilterNodeGaussSigma << " dx (gaussian average technique)" << endl;
-   if(Hybrid::EfilterNodeGaussSigma > 0) {
+   if (Hybrid::EfilterNodeGaussSigma > 0) {
       simClasses.logger
         //<< "Number of E gaussian smoothings = " << Hybrid::EfilterNodeGaussN << " (gaussian average technique)" << endl;
         << "Kernel coefficients: " << endl
@@ -720,12 +720,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "theta = " << Hybrid::thetaDip << " deg" << endl
      << "phi   = " << Hybrid::phiDip << " deg" << endl;
    // check that equal number of mirror dipole coordinates is given
-   if(Hybrid::xDipMirror.size() != Hybrid::yDipMirror.size() || Hybrid::xDipMirror.size() != Hybrid::zDipMirror.size() || Hybrid::yDipMirror.size() != Hybrid::zDipMirror.size()) {
+   if (Hybrid::xDipMirror.size() != Hybrid::yDipMirror.size() || Hybrid::xDipMirror.size() != Hybrid::zDipMirror.size() || Hybrid::yDipMirror.size() != Hybrid::zDipMirror.size()) {
       simClasses.logger << "(RHYBRID) ERROR: mirror dipole coordinate arrays should be the same size (" << Hybrid::xDipMirror.size() << ", " << Hybrid::yDipMirror.size() << "," << Hybrid::zDipMirror.size() << ")" << endl << write;
       exit(1);
    }
    simClasses.logger << "Mirror dipole coordinates: " << endl;
-   for(size_t i=0;i<Hybrid::xDipMirror.size();i++) {
+   for (size_t i=0;i<Hybrid::xDipMirror.size();i++) {
       simClasses.logger
 	<< "x_mirror_" << i << " = " << Hybrid::xDipMirror[i]/1e3 << " km = " << Hybrid::xDipMirror[i]/Hybrid::dx << " dx" << endl
 	<< "y_mirror_" << i << " = " << Hybrid::yDipMirror[i]/1e3 << " km = " << Hybrid::yDipMirror[i]/Hybrid::dx << " dx" << endl
@@ -951,126 +951,126 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 
    Hybrid::dataFaceBID = simClasses.pargrid.addUserData<Real>("faceB",block::SIZE*3);
-   if(Hybrid::dataFaceBID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataFaceBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add faceB array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataFaceJID = simClasses.pargrid.addUserData<Real>("faceJ",block::SIZE*3);
-   if(Hybrid::dataFaceJID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataFaceJID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add faceJ array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataCellRhoQiID = simClasses.pargrid.addUserData<Real>("cellRhoQi",block::SIZE*1);
-   if(Hybrid::dataCellRhoQiID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataCellRhoQiID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQi array to ParGrid!" << endl << write;
       return false;
    }
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    Hybrid::dataCellRhoQiBgID = simClasses.pargrid.addUserData<Real>("cellRhoQiBg",block::SIZE*1);
-   if(Hybrid::dataCellRhoQiBgID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataCellRhoQiBgID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQiBg array to ParGrid!" << endl << write;
       return false;
    }
 #endif
    Hybrid::dataCellBID = simClasses.pargrid.addUserData<Real>("cellB",block::SIZE*3);
-   if(Hybrid::dataCellBID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataCellBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellB array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataCellJID = simClasses.pargrid.addUserData<Real>("cellJ",block::SIZE*3);
-   if(Hybrid::dataCellJID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataCellJID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellJ array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataCellUeID = simClasses.pargrid.addUserData<Real>("cellUe",block::SIZE*3);
-   if(Hybrid::dataCellUeID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataCellUeID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellUe array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataCellJiID = simClasses.pargrid.addUserData<Real>("cellJi",block::SIZE*3);
-   if(Hybrid::dataCellJiID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataCellJiID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellJi array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataCellEpID = simClasses.pargrid.addUserData<Real>("cellEp",block::SIZE*3);
-   if(Hybrid::dataCellEpID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataCellEpID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellEp array to ParGrid!" << endl << write;
       return false;
    }
-   if(Hybrid::N_ionospherePopulations > 0) {
+   if (Hybrid::N_ionospherePopulations > 0) {
       Hybrid::dataCellIonosphereID = simClasses.pargrid.addUserData<Real>("cellIonosphere",block::SIZE*Hybrid::N_ionospherePopulations);
-      if(Hybrid::dataCellIonosphereID == simClasses.pargrid.invalidCellID()) {
+      if (Hybrid::dataCellIonosphereID == simClasses.pargrid.invalidCellID()) {
 	 simClasses.logger << "(USER) ERROR: Failed to add cellIonosphere array to ParGrid!" << endl << write;
 	 return false;
       }
    }
-   if(Hybrid::N_exospherePopulations > 0) {
+   if (Hybrid::N_exospherePopulations > 0) {
       Hybrid::dataCellExosphereID = simClasses.pargrid.addUserData<Real>("cellExosphere",block::SIZE*Hybrid::N_exospherePopulations);
-      if(Hybrid::dataCellExosphereID == simClasses.pargrid.invalidCellID()) {
+      if (Hybrid::dataCellExosphereID == simClasses.pargrid.invalidCellID()) {
 	 simClasses.logger << "(USER) ERROR: Failed to add cellExosphere array to ParGrid!" << endl << write;
 	 return false;
       }
    }
    Hybrid::dataNodeRhoQiID = simClasses.pargrid.addUserData<Real>("nodeRhoQi",block::SIZE*1);
-   if(Hybrid::dataNodeRhoQiID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataNodeRhoQiID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeRhoQi array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataNodeEID = simClasses.pargrid.addUserData<Real>("nodeE",block::SIZE*3);
-   if(Hybrid::dataNodeEID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataNodeEID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeE array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataNodeBID = simClasses.pargrid.addUserData<Real>("nodeB",block::SIZE*3);
-   if(Hybrid::dataNodeBID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataNodeBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeB array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataNodeJID = simClasses.pargrid.addUserData<Real>("nodeJ",block::SIZE*3);
-   if(Hybrid::dataNodeJID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataNodeJID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeJ array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataNodeUeID = simClasses.pargrid.addUserData<Real>("nodeUe",block::SIZE*3);
-   if(Hybrid::dataNodeUeID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataNodeUeID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeUe array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataNodeJiID = simClasses.pargrid.addUserData<Real>("nodeJi",block::SIZE*3);
-   if(Hybrid::dataNodeJiID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataNodeJiID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeJi array to ParGrid!" << endl << write;
       return false;
    }
 #ifdef USE_RESISTIVITY
    Hybrid::dataNodeEtaID = simClasses.pargrid.addUserData<Real>("nodeEta",block::SIZE*1);
-   if(Hybrid::dataNodeEtaID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataNodeEtaID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeEta array to ParGrid!" << endl << write;
       return false;
    }
 #endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
    Hybrid::dataGridCounterCellMaxUeID = simClasses.pargrid.addUserData<Real>("gridCounterCellMaxUe",block::SIZE*1);
-   if(Hybrid::dataGridCounterCellMaxUeID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataGridCounterCellMaxUeID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMaxUe array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataGridCounterCellMaxViID = simClasses.pargrid.addUserData<Real>("gridCounterCellMaxVi",block::SIZE*1);
-   if(Hybrid::dataGridCounterCellMaxViID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataGridCounterCellMaxViID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMaxVi array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataGridCounterCellMinRhoQiID = simClasses.pargrid.addUserData<Real>("gridCounterCellMinRhoQi",block::SIZE*1);
-   if(Hybrid::dataGridCounterCellMinRhoQiID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataGridCounterCellMinRhoQiID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add gridCounterCellMinRhoQi array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataGridCounterNodeMaxEID = simClasses.pargrid.addUserData<Real>("gridCounterNodeMaxE",block::SIZE*1);
-   if(Hybrid::dataGridCounterNodeMaxEID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataGridCounterNodeMaxEID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add gridCounterNodeMaxE array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataGridCounterNodeMaxVwID = simClasses.pargrid.addUserData<Real>("gridCounterNodeMaxVw",block::SIZE*1);
-   if(Hybrid::dataGridCounterNodeMaxVwID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataGridCounterNodeMaxVwID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add gridCounterNodeMaxVw array to ParGrid!" << endl << write;
       return false;
    }
@@ -1078,45 +1078,45 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // flags
    Hybrid::dataInnerFlagFieldID = simClasses.pargrid.addUserData<bool>("innerFlagField",block::SIZE*1);
-   if(Hybrid::dataInnerFlagFieldID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataInnerFlagFieldID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add innerFlagField array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataInnerFlagNodeID = simClasses.pargrid.addUserData<bool>("innerFlagNode",block::SIZE*1);
-   if(Hybrid::dataInnerFlagNodeID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataInnerFlagNodeID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add innerFlagNode array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataInnerFlagParticleID = simClasses.pargrid.addUserData<bool>("innerFlagParticle",1);
-   if(Hybrid::dataInnerFlagParticleID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataInnerFlagParticleID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add innerFlagParticle array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataInnerFlagCellEpID = simClasses.pargrid.addUserData<bool>("innerFlagCellEp",1);
-   if(Hybrid::dataInnerFlagCellEpID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataInnerFlagCellEpID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add innerFlagCellEp array to ParGrid!" << endl << write;
       return false;
    }
 #ifdef USE_OUTER_BOUNDARY_ZONE
    Hybrid::dataOuterBoundaryFlagID = simClasses.pargrid.addUserData<bool>("outerBoundaryFlag",1);
-   if(Hybrid::dataOuterBoundaryFlagID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataOuterBoundaryFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlag array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataOuterBoundaryFlagNodeID = simClasses.pargrid.addUserData<bool>("outerBoundaryFlagNode",1);
-   if(Hybrid::dataOuterBoundaryFlagNodeID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataOuterBoundaryFlagNodeID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlagNode array to ParGrid!" << endl << write;
       return false;
    }
 #endif
 #ifdef USE_DETECTORS
    Hybrid::dataDetectorParticleFlagID = simClasses.pargrid.addUserData<bool>("detPleFlag",1);
-   if(Hybrid::dataDetectorParticleFlagID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataDetectorParticleFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add detPleFlag array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataDetectorBulkParamFlagID = simClasses.pargrid.addUserData<bool>("detBlkFlag",1);
-   if(Hybrid::dataDetectorBulkParamFlagID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataDetectorBulkParamFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add detBlkFlag array to ParGrid!" << endl << write;
       return false;
    }
@@ -1124,67 +1124,67 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // Create data transfers
 
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataFaceBID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataFaceBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add faceB data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataFaceJID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataFaceJID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add faceJ data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQi data transfer 1!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiID,Hybrid::accumulationStencilID) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiID,Hybrid::accumulationStencilID) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQi data transfer 2!" << endl << write; return false;
    }
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiBgID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiBgID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQiBg data transfer!" << endl << write; return false;
    }
 #endif
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellBID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellB data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellJID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellJID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellJ data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellUeID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellUeID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellUe data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellJiID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellJiID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellJi data transfer 1!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellJiID,Hybrid::accumulationStencilID) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellJiID,Hybrid::accumulationStencilID) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellJi data transfer 2!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellEpID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellEpID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellEp data transfer!" << endl << write; return false;
    }
-   if(Hybrid::N_ionospherePopulations > 0) {
-      if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellIonosphereID,pargrid::DEFAULT_STENCIL) == false) {
+   if (Hybrid::N_ionospherePopulations > 0) {
+      if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellIonosphereID,pargrid::DEFAULT_STENCIL) == false) {
 	 simClasses.logger << "(USER) ERROR: Failed to add cellIonosphere data transfer!" << endl << write; return false;
       }
    }
-   if(Hybrid::N_exospherePopulations > 0) {
-      if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellExosphereID,pargrid::DEFAULT_STENCIL) == false) {
+   if (Hybrid::N_exospherePopulations > 0) {
+      if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellExosphereID,pargrid::DEFAULT_STENCIL) == false) {
 	 simClasses.logger << "(USER) ERROR: Failed to add cellExosphere data transfer!" << endl << write; return false;
       }
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeRhoQiID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeRhoQiID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeRhoQi data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeEID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeEID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeE data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeBID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeB data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeJID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeJID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeJ data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeUeID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeUeID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeUe data transfer!" << endl << write; return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataNodeJiID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeJiID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeJi data transfer!" << endl << write; return false;
    }
 
@@ -1249,13 +1249,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "(RHYBRID) DETECTORS: writing interval of particle detector: " << Hybrid::detParticleWriteInterval << " timesteps" << endl;
    vector< vector<Real> > detParticleOrbitCoordinates;
    // only master reads orbit coordinates from files
-   if(sim.mpiRank==sim.MASTER_RANK) {
+   if (sim.mpiRank==sim.MASTER_RANK) {
       simClasses.logger << "(RHYBRID) DETECTORS: reading spacecraft orbit file(s) for particle detector: " << endl;
       for (vector<string>::iterator it=detParticleOrbitFiles.begin(); it!=detParticleOrbitFiles.end(); ++it) {
          simClasses.logger << *it << endl;
          vector< vector<Real> > tmpCrd;
          tmpCrd = readRealsFromFile(*it);
-         if(checkOrbit(tmpCrd) == false) {
+         if (checkOrbit(tmpCrd) == false) {
             simClasses.logger << "(RHYBRID) DETECTORS: ERROR: bad orbit file (" << *it << ")" << endl << write;
             return false;
          }
@@ -1263,7 +1263,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
       simClasses.logger << "(RHYBRID) DETECTORS: Total of " << detParticleOrbitCoordinates.size() << " orbit points read for particle detector" << endl;
    }
-   if(MPI_BcastFromMaster2DVector(sim,detParticleOrbitCoordinates) == false) {
+   if (MPI_BcastFromMaster2DVector(sim,detParticleOrbitCoordinates) == false) {
       simClasses.logger << "(RHYBRID) DETECTORS: ERROR: failed to distribute orbit coordinates to all MPI PEs (particle detector)" << endl << write;
       return false;
    }
@@ -1289,13 +1289,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "(RHYBRID) DETECTORS: writing interval of bulk parameter detector: " << Hybrid::detBulkParamWriteInterval << " timesteps" << endl;
    vector< vector<Real> > detBulkParamOrbitCoordinates;
    // only master reads orbit coordinates from files
-   if(sim.mpiRank==sim.MASTER_RANK) {
+   if (sim.mpiRank==sim.MASTER_RANK) {
       simClasses.logger << "(RHYBRID) DETECTORS: reading spacecraft orbit file(s) for bulk parameter detector:" << endl;
       for (vector<string>::iterator it=detBulkParamOrbitFiles.begin(); it!=detBulkParamOrbitFiles.end(); ++it) {
 	 simClasses.logger << *it << endl;
          vector< vector<Real> > tmpCrd;
          tmpCrd = readRealsFromFile(*it);
-         if(checkOrbit(tmpCrd) == false) {
+         if (checkOrbit(tmpCrd) == false) {
             simClasses.logger << "(RHYBRID) DETECTORS: ERROR: bad orbit file (" << *it << ")" << endl << write;
             return false;
          }
@@ -1303,7 +1303,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
       simClasses.logger << "(RHYBRID) DETECTORS: Total of " << detBulkParamOrbitCoordinates.size() << " orbit points read for bulk parameter detector" << endl;
    }
-   if(MPI_BcastFromMaster2DVector(sim,detBulkParamOrbitCoordinates) == false) {
+   if (MPI_BcastFromMaster2DVector(sim,detBulkParamOrbitCoordinates) == false) {
       simClasses.logger << "(RHYBRID) DETECTORS: ERROR: failed to distribute orbit coordinates to all MPI PEs (bulk parameter detector)" << endl << write;
       return false;
    }
@@ -1314,14 +1314,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (sim.restarted == false) {
       const size_t ionoArraySize   = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*Hybrid::N_ionospherePopulations;
       const size_t exoArraySize    = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*Hybrid::N_exospherePopulations;
-      for(size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
-      for(size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
+      for (size_t i=0; i<ionoArraySize;   ++i) { cellIonosphere[i] = 0.0; }
+      for (size_t i=0; i<exoArraySize;    ++i) { cellExosphere[i] = 0.0; }
    }
 
    // initialize particle lists: uniform
    for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing a uniform particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
+      if (checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1329,7 +1329,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: ambient
    for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing an ambient particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
+      if (checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1337,7 +1337,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: solar wind
    for (vector<string>::iterator it=solarwindPopulations.begin(); it!=solarwindPopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing a solar wind particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"SolarWindInjector") == false) { return false; }
+      if (checkInjectorName(simClasses,cr,*it,"SolarWindInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1345,7 +1345,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: flow
    for (vector<string>::iterator it=flowPopulations.begin(); it!=flowPopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing a flow particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"FlowInjector") == false) { return false; }
+      if (checkInjectorName(simClasses,cr,*it,"FlowInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1353,7 +1353,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: ionosphere
    for (vector<string>::iterator it=ionospherePopulations.begin(); it!=ionospherePopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing an ionospheric particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"IonosphereInjector") == false) { return false; }
+      if (checkInjectorName(simClasses,cr,*it,"IonosphereInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1361,35 +1361,35 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize particle lists: exosphere
    for (vector<string>::iterator it=exospherePopulations.begin(); it!=exospherePopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing an exospheric particle population: " << *it << endl;
-      if(checkInjectorName(simClasses,cr,*it,"ExosphereInjector") == false) { return false; }
+      if (checkInjectorName(simClasses,cr,*it,"ExosphereInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
    }
    simClasses.logger << endl;
    // population output configurations
-   for(unsigned int i=0;i<particleLists.size();++i) {
+   for (unsigned int i=0;i<particleLists.size();++i) {
       const Species* species = reinterpret_cast<const Species*>(particleLists[i]->getSpecies());
-      if(species->outIncludeInPlasma == true) {
+      if (species->outIncludeInPlasma == true) {
          Hybrid::outputPlasmaPopId.push_back(i);
       }
-      if(species->outStr == string("tot")) {
+      if (species->outStr == string("tot")) {
          simClasses.logger << "(USER) ERROR: Particle species cannot have output_str = tot (" << species->name << ")" << endl << write;
          return false;
       }
-      if(species->outStr == string("-")) {
+      if (species->outStr == string("-")) {
          Hybrid::outputPopVarId.push_back(-1);
          continue;
       }
       bool strFound = false;
-      for(unsigned int j=0;j<Hybrid::outputPopVarStr.size();++j) {
-         if(species->outStr == Hybrid::outputPopVarStr[j]) {
+      for (unsigned int j=0;j<Hybrid::outputPopVarStr.size();++j) {
+         if (species->outStr == Hybrid::outputPopVarStr[j]) {
             Hybrid::outputPopVarId.push_back(j);
             Hybrid::outputPopVarIdVector[j].push_back(i);
             strFound = true;
          }
       }
-      if(strFound == false) {
+      if (strFound == false) {
          const int newOutputId = static_cast<int>( Hybrid::outputPopVarStr.size() );
          Hybrid::outputPopVarId.push_back(newOutputId);
          Hybrid::outputPopVarStr.push_back(species->outStr);
@@ -1400,7 +1400,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    Hybrid::N_outputPopVars =  Hybrid::outputPopVarStr.size();
    // check number of particle lists and populations
-   if( (Hybrid::N_populations   != particleLists.size()) ||
+   if ( (Hybrid::N_populations   != particleLists.size()) ||
        (Hybrid::N_populations   != Hybrid::populationNames.size()) ||
        (Hybrid::N_populations   != Hybrid::outputPopVarId.size()) ||
        (Hybrid::N_populations    < Hybrid::N_outputPopVars) ||
@@ -1413,27 +1413,27 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // write log entry of output configs
      {
 	simClasses.logger << "(RHYBRID) Particle population output configurations" << endl;
-	for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+	for (unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
 	   simClasses.logger << Hybrid::outputPopVarStr[i] << ": ";
-	   for(unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
+	   for (unsigned int j=0;j<Hybrid::outputPopVarIdVector[i].size();++j) {
 	      simClasses.logger << Hybrid::populationNames[Hybrid::outputPopVarIdVector[i][j]] << " ";
 	   }
 	   simClasses.logger << endl;
 	}
 	simClasses.logger << "-: ";
-	for(unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
-	   if(Hybrid::outputPopVarId[i] < 0) {
+	for (unsigned int i=0;i<Hybrid::outputPopVarId.size();++i) {
+	   if (Hybrid::outputPopVarId[i] < 0) {
 	      simClasses.logger << Hybrid::populationNames[i] << " ";
 	   }
 	}
 	simClasses.logger << endl;
 	simClasses.logger << "tot plasma (snapshot): ";
-	for(unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
+	for (unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
 	   simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
 	}
 	simClasses.logger << endl;
 	simClasses.logger << "tot plasma (average): ";
-	for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+	for (unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
 	   simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
 	}
 	simClasses.logger << endl << endl;
@@ -1445,40 +1445,40 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      {
 	// calculate bulk parameters as average from all solar wind populations
 	diagnostics::PlasmaParametersBulk ppBulkSolarWind;
-	if(diagnostics::calcPlasmaParametersBulk(simClasses,"solarwind",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkSolarWind) == false) {
+	if (diagnostics::calcPlasmaParametersBulk(simClasses,"solarwind",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkSolarWind) == false) {
 	   return false;
 	}
 	// calculate bulk parameters as average from all flow populations
 	diagnostics::PlasmaParametersBulk ppBulkFlow;
-	if(diagnostics::calcPlasmaParametersBulk(simClasses,"flow",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkFlow) == false) {
+	if (diagnostics::calcPlasmaParametersBulk(simClasses,"flow",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkFlow) == false) {
 	   return false;
 	}
 	// calculate bulk parameters as average from all uniform populations
 	diagnostics::PlasmaParametersBulk ppBulkUniform;
-	if(diagnostics::calcPlasmaParametersBulk(simClasses,"uniform",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkUniform) == false) {
+	if (diagnostics::calcPlasmaParametersBulk(simClasses,"uniform",particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,Hybrid::dx,ppBulkUniform) == false) {
 	   return false;
 	}
 	// no known initial bulk parameters if no solar wind or uniform populations present
-	if(N_solarWindPopulations < 1 && N_flowPopulations < 1 && N_uniformPopulations < 1) {
+	if (N_solarWindPopulations < 1 && N_flowPopulations < 1 && N_uniformPopulations < 1) {
 	   simClasses.logger << "(RHYBRID) WARNING: cannot calculate plasma bulk parameters since no solar wind, flow or uniform populations are present" << endl;
 	}
 	// calculate single particle parameters from all populations using bulk conditions of solar wind populations
 	diagnostics::PlasmaParametersSingleParticle ppSPSW;
-	if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkSolarWind.ne,ppBulkSolarWind.vExBtot,Hybrid::electronTemperature,ppSPSW) == false) {
+	if (diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkSolarWind.ne,ppBulkSolarWind.vExBtot,Hybrid::electronTemperature,ppSPSW) == false) {
 	   return false;
 	}
 	// calculate single particle parameters from all populations using bulk conditions of flow populations
 	diagnostics::PlasmaParametersSingleParticle ppSPFlow;
-	if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkFlow.ne,ppBulkFlow.vExBtot,Hybrid::electronTemperature,ppSPFlow) == false) {
+	if (diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkFlow.ne,ppBulkFlow.vExBtot,Hybrid::electronTemperature,ppSPFlow) == false) {
 	   return false;
 	}
 	// calculate single particle parameters from all populations bulk conditions of uniform populations
 	diagnostics::PlasmaParametersSingleParticle ppSPU;
-	if(diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkUniform.ne,ppBulkUniform.vExBtot,Hybrid::electronTemperature,ppSPU) == false) {
+	if (diagnostics::calcPlasmaParametersSingleParticle(simClasses,particleLists,Hybrid::IMFBx,Hybrid::IMFBy,Hybrid::IMFBz,ppBulkUniform.ne,ppBulkUniform.vExBtot,Hybrid::electronTemperature,ppSPU) == false) {
 	   return false;
 	}
 	// if solar wind populations present (or no uniform populations), write undisturbed solar wind bulk parameters in the log
-	if(N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
+	if (N_solarWindPopulations > 0 || N_uniformPopulations < 1) {
 	   simClasses.logger
 	     << "(UNDISTURBED BULK PARAMETERS: SOLAR WIND POPULATIONS)" << endl
 	     << "\t ne = " << ppBulkSolarWind.ne/1e6 << " cm^-3 = " << ppBulkSolarWind.ne*Hybrid::dV << " 1/dV" << endl
@@ -1508,7 +1508,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   vw = ppBulkSolarWind.vw;
 	}
 	// if flow populations present, write undisturbed flow plasma bulk parameters in the log
-	if(N_flowPopulations > 0) {
+	if (N_flowPopulations > 0) {
 	   simClasses.logger
 	     << "(UNDISTURBED BULK PARAMETERS: FLOW POPULATIONS)" << endl
 	     << "\t ne = " << ppBulkFlow.ne/1e6 << " cm^-3 = " << ppBulkFlow.ne*Hybrid::dV << " 1/dV" << endl
@@ -1527,7 +1527,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	     << "\t |vExB| = " << ppBulkFlow.vExBtot/1e3 << " km/s" << endl
 	     << "\t vpui_max = 2*|vExB| = " << ppBulkFlow.vpui/1e3 << " km/s" << endl
 	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkFlow.vw/1e3 << " km/s" << endl << endl;
-	   if(N_solarWindPopulations < 1) {
+	   if (N_solarWindPopulations < 1) {
 	      ne = ppBulkFlow.ne;
 	      rhoq = ppBulkFlow.rhoq;
 	      Ubulk = ppBulkFlow.Ubulktot;
@@ -1540,7 +1540,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   }
 	}
 	// if uniform populations present, write undisturbed uniform plasma bulk parameters in the log
-	if(N_uniformPopulations > 0) {
+	if (N_uniformPopulations > 0) {
 	   simClasses.logger
 	     << "(UNDISTURBED BULK PARAMETERS: UNIFORM POPULATIONS)" << endl
 	     << "\t ne = " << ppBulkUniform.ne/1e6 << " cm^-3 = " << ppBulkUniform.ne*Hybrid::dV << " 1/dV" << endl
@@ -1559,7 +1559,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	     << "\t |vExB| = " << ppBulkUniform.vExBtot/1e3 << " km/s" << endl
 	     << "\t vpui_max = 2*|vExB| = " << ppBulkUniform.vpui/1e3 << " km/s" << endl
 	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkUniform.vw/1e3 << " km/s" << endl << endl;
-	   if(N_solarWindPopulations < 1 && N_flowPopulations < 1) {
+	   if (N_solarWindPopulations < 1 && N_flowPopulations < 1) {
 	      ne = ppBulkUniform.ne;
 	      rhoq = ppBulkUniform.rhoq;
 	      Ubulk = ppBulkUniform.Ubulktot;
@@ -1572,102 +1572,102 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   }
 	}
 	// if solar wind populations present (or no uniform populations), write single particle parameters in undisturbed solar wind plasma in the log
-	if(N_solarWindPopulations > 0 || (N_uniformPopulations < 1 && N_flowPopulations < 1) ) {
+	if (N_solarWindPopulations > 0 || (N_uniformPopulations < 1 && N_flowPopulations < 1) ) {
 	   simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED SOLAR WIND)" << endl;
 	   simClasses.logger
 	     << "\t TEMPORAL:" << endl
 	     << "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
-	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPSW.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t tP(" << ppSPSW.populationName[s] << ") = " << ppSPSW.periodPlasma[s] << " s = " << ppSPSW.periodPlasma[s]/sim.dt << " dt" << endl;
 	   }
 	   simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPSW.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t tL(" << ppSPSW.populationName[s] << ") = " << ppSPSW.periodLarmor[s] << " s = " << ppSPSW.periodLarmor[s]/sim.dt << " dt" << endl;
 	   }
 	   simClasses.logger
 	     << "\t SPATIAL:" << endl
 	     << "\t d = inertial length = c/wP = c*sqrt( m*eps0/(ne*q^2) )" << endl;
-	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPSW.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t d(" << ppSPSW.populationName[s] << ") = " << ppSPSW.lengthInertial[s]/1e3 << " km = " << ppSPSW.lengthInertial[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPSW.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t rLth(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorThermal[s]/1e3 << " km = " << ppSPSW.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPSW.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPSW.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t rLpu(" << ppSPSW.populationName[s] << ") = " << ppSPSW.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPSW.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << endl;
 	}
 	// if flow populations present, write single particle parameters in undisturbed flow plasma in the log
-	if(N_flowPopulations > 0) {
+	if (N_flowPopulations > 0) {
 	   simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED FLOW)" << endl;
 	   simClasses.logger
 	     << "\t TEMPORAL:" << endl
 	     << "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
-	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPFlow.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t tP(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.periodPlasma[s] << " s = " << ppSPFlow.periodPlasma[s]/sim.dt << " dt" << endl;
 	   }
 	   simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPFlow.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t tL(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.periodLarmor[s] << " s = " << ppSPFlow.periodLarmor[s]/sim.dt << " dt" << endl;
 	   }
 	   simClasses.logger
 	     << "\t SPATIAL:" << endl
 	     << "\t d = inertial length = c/wP = c*sqrt( m*eps0/(ne*q^2) )" << endl;
-	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPFlow.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t d(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.lengthInertial[s]/1e3 << " km = " << ppSPFlow.lengthInertial[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPFlow.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t rLth(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.radiusLarmorThermal[s]/1e3 << " km = " << ppSPFlow.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPFlow.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPFlow.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t rLpu(" << ppSPFlow.populationName[s] << ") = " << ppSPFlow.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPFlow.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << endl;
 	}
 	// if uniform populations present, write single particle parameters in undisturbed uniform plasma in the log
-	if(N_uniformPopulations > 0) {
+	if (N_uniformPopulations > 0) {
 	   simClasses.logger << "(SINGLE PARTICLE PARAMETERS: UNDISTURBED UNIFORM PLASMA)" << endl;
 	   simClasses.logger
 	     << "\t TEMPORAL:" << endl
 	     << "\t tP = plasma period = 2*pi/wP = 2*pi*sqrt( m*eps0/(ne*q^2) )" << endl;
-	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPU.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t tP(" << ppSPU.populationName[s] << ") = " << ppSPU.periodPlasma[s] << " s = " << ppSPU.periodPlasma[s]/sim.dt << " dt" << endl;
 	   }
 	   simClasses.logger << "\t tL = Larmor period = 2*pi*m/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPU.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t tL(" << ppSPU.populationName[s] << ") = " << ppSPU.periodLarmor[s] << " s = " << ppSPU.periodLarmor[s]/sim.dt << " dt" << endl;
 	   }
 	   simClasses.logger
 	     << "\t SPATIAL:" << endl
 	     << "\t d = inertial length = c/wP = c*sqrt( m*eps0/(ne*q^2) )" << endl;
-	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPU.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t d(" << ppSPU.populationName[s] << ") = " << ppSPU.lengthInertial[s]/1e3 << " km = " << ppSPU.lengthInertial[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << "\t rLth = thermal Larmor radius = m*vth/(q*B) = sqrt(kB*T/m) * m/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPU.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t rLth(" << ppSPU.populationName[s] << ") = " << ppSPU.radiusLarmorThermal[s]/1e3 << " km = " << ppSPU.radiusLarmorThermal[s]/Hybrid::dx << " dx" << endl;
 	   }
 	   simClasses.logger << "\t rLpu = pickup Larmor radius = m*|vExB|/(q*B)" << endl;
-	   for(size_t s=0;s<ppSPU.populationName.size();++s) {
+	   for (size_t s=0;s<ppSPU.populationName.size();++s) {
 	      simClasses.logger
 		<< "\t rLpu(" << ppSPU.populationName[s] << ") = " << ppSPU.radiusLarmorPickUp[s]/1e3 << " km = " << ppSPU.radiusLarmorPickUp[s]/Hybrid::dx << " dx" << endl;
 	   }
@@ -1679,7 +1679,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::upstreamBulkU = Ubulk;
 
    // set initial flow through
-   if(Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
+   if (Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
       Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
       Hybrid::initialFlowThrough = true;
    }
@@ -1689,8 +1689,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 
    // set adiabatic electron pressure coefficient with gamma = 2
-   if(Hybrid::useAdiabaticElectronPressure == true) {
-      if(ne > 0) {
+   if (Hybrid::useAdiabaticElectronPressure == true) {
+      if (ne > 0) {
 	 Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( ne * sqr(constants::CHARGE_ELEMENTARY) );
       }
       else {
@@ -1699,7 +1699,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 
    Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
-   if(Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
+   if (Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
       simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi2/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt" << endl;
       Hybrid::maxVi2 = 0.9*Hybrid::dx/sim.dt;
    }
@@ -1749,7 +1749,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
 
    // set resistivity profile after all its parameters are parsed
-   if(setResistivityProfile(simClasses,resProfileName,resValueUnit,resValue,resSphericalValue,resistivityGridUnit,Ubulk) == false) {
+   if (setResistivityProfile(simClasses,resProfileName,resValueUnit,resValue,resSphericalValue,resistivityGridUnit,Ubulk) == false) {
       simClasses.logger << "(RHYBRID) ERROR: setting resistivity profile failed (" << resProfileName << ")" << endl << write;
       exit(1);
    }
@@ -1761,9 +1761,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "(RESISTIVITY)" << endl
      << "Resistivity profile = " << resProfileName << endl
      << "eta = " << Hybrid::resistivityEta << " Ohm m = " << Hybrid::resistivityEta/resistivityGridUnit << " mu0*dx^2/dt" << endl;
-   if(Hybrid::resistivityEta != 0) {
+   if (Hybrid::resistivityEta != 0) {
       const Real td_min = constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta;
-      if(td_min_smallest > td_min) { td_min_smallest = td_min; }
+      if (td_min_smallest > td_min) { td_min_smallest = td_min; }
       simClasses.logger
 	<< "td_min = mu0*dx^2/eta = " << td_min << " s = " << td_min/sim.dt << " dt" << endl
 	<< "dx/td_min = " << Hybrid::dx/td_min/1e3 << " km/s" << endl
@@ -1781,12 +1781,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << sqrt(Hybrid::resistivityR2)/Hybrid::dx << " dx = "
      << (sqrt(Hybrid::resistivityR2) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
    simClasses.logger << "Parameters of spherical resistivity shells:" << endl;
-   if(Hybrid::resistivitySphericalEta.size() > 0) {
-      for(size_t i=0;i<Hybrid::resistivitySphericalEta.size();i++) {
+   if (Hybrid::resistivitySphericalEta.size() > 0) {
+      for (size_t i=0;i<Hybrid::resistivitySphericalEta.size();i++) {
 	 simClasses.logger
 	   << "===== resistive shell " << i << endl
 	   << "\t Rmin = ";
-	 if(i == 0) { simClasses.logger << "0" << endl; }
+	 if (i == 0) { simClasses.logger << "0" << endl; }
 	 else {
 	    simClasses.logger
 	      << sqrt(Hybrid::resistivitySphericalR2[i-1])/1e3 << " km = "
@@ -1801,9 +1801,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 simClasses.logger
 	   << endl
 	   << "\t eta = " << Hybrid::resistivitySphericalEta[i] << " Ohm m = " << Hybrid::resistivitySphericalEta[i]/resistivityGridUnit << " mu0*dx^2/dt" << endl;
-	 if(Hybrid::resistivitySphericalEta[i] != 0) {
+	 if (Hybrid::resistivitySphericalEta[i] != 0) {
 	    const Real td_min_shell = constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i];
-	    if(td_min_smallest > td_min_shell) { td_min_smallest = td_min_shell; }
+	    if (td_min_smallest > td_min_shell) { td_min_smallest = td_min_shell; }
 	    simClasses.logger
 	      << "\t td_min = mu0*dx^2/eta = " << td_min_shell << " s = " << td_min_shell/sim.dt << " dt" << endl
 	      << "\t dx/td_min = " << Hybrid::dx/td_min_shell/1e3 << " km/s" << endl
@@ -1883,32 +1883,32 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // initialize cell arrays with an initial state if simulation was not restarted
    if (sim.restarted == false) {
-      for(size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { faceJ[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { cellB[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { cellJ[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { cellUe[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { cellJi[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { cellEp[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { nodeE[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { nodeB[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { nodeJ[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { nodeUe[i] = 0.0; }
-      for(size_t i=0; i<vectorArraySize; ++i) { nodeJi[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { faceJ[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { cellB[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { cellJ[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { cellUe[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { cellJi[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { cellEp[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { nodeE[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { nodeB[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { nodeJ[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { nodeUe[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { nodeJi[i] = 0.0; }
 #ifdef USE_RESISTIVITY
-      for(size_t i=0; i<scalarArraySize; ++i) { nodeEta[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { nodeEta[i] = 0.0; }
 #endif
-      for(size_t i=0; i<scalarArraySize; ++i) { nodeRhoQi[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { cellRhoQi[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { nodeRhoQi[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { cellRhoQi[i] = 0.0; }
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
-      for(size_t i=0; i<scalarArraySize; ++i) { cellRhoQiBg[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { cellRhoQiBg[i] = 0.0; }
 #endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxUe[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxVi[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMinRhoQi[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterNodeMaxE[i] = 0.0; }
-      for(size_t i=0; i<scalarArraySize; ++i) { gridCounterNodeMaxVw[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxUe[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxVi[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMinRhoQi[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { gridCounterNodeMaxE[i] = 0.0; }
+      for (size_t i=0; i<scalarArraySize; ++i) { gridCounterNodeMaxVw[i] = 0.0; }
 #endif
 
 #ifdef USE_DETECTORS
@@ -1926,7 +1926,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          detPleFlag[b] = false;
 	 detBlkFlag[b] = false;
 #endif
-	 for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+	 for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	    const int n = (b*block::SIZE+block::index(i,j,k));
 	    // inner boundary flags
 	    const Real xCellCenter = crd[b3+0] + (i+0.5)*Hybrid::dx;
@@ -1939,7 +1939,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
 #ifdef USE_SHOCKTUBE_TEST_CONFIGURATION
 	    // initial shocktube setup
-	    if(xCellCenter >= 0.5e5) {
+	    if (xCellCenter >= 0.5e5) {
 	       faceB[n*3+1] = 1e-9;
 	    }
 	    else {
@@ -1948,13 +1948,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    faceB[n*3+0] = 1.5e-9;
 #endif
 	    const Real r2 = sqr(xCellCenter) + sqr(yCellCenter) + sqr(zCellCenter);
-	    if(r2 < Hybrid::R2_fieldObstacle) { innerFlagField[n] = true; }
+	    if (r2 < Hybrid::R2_fieldObstacle) { innerFlagField[n] = true; }
 	    else                              { innerFlagField[n] = false; }
 	    const Real rp2 = sqr(sqrt(r2) - 0.5*sqrt(3)*Hybrid::dx);
-	    if(rp2 < Hybrid::R2_particleObstacle) { innerFlagParticle[b] = true; }
-            if(rp2 < Hybrid::R2_cellEpObstacle) { innerFlagCellEp[b] = true; }
+	    if (rp2 < Hybrid::R2_particleObstacle) { innerFlagParticle[b] = true; }
+            if (rp2 < Hybrid::R2_cellEpObstacle) { innerFlagCellEp[b] = true; }
 	    const Real rNode2 = sqr(xNode) + sqr(yNode) + sqr(zNode);
-	    if(rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0; // RHBTESTS */ }
+	    if (rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0; // RHBTESTS */ }
 	    else                                  { innerFlagNode[n] = false; }
 #ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
@@ -1965,91 +1965,91 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             //nodeRhoQi[n] = exp(-sqrt(rNode2)/Hybrid::R_object);
 #ifdef USE_OUTER_BOUNDARY_ZONE
             const Real bZone = Hybrid::outerBoundaryZone.sizeMinRhoQi; // boundary zone
-            if(Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
+            if (Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
                outerBoundaryFlag[n] = false;
 	       outerBoundaryFlagNode[n] = false;
             }
-            else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 1) {
+            else if (Hybrid::outerBoundaryZone.typeMinRhoQi == 1) {
                // all walls
-               if(xCellCenter < (sim.x_min + bZone) || xCellCenter > (sim.x_max - bZone) ||
+               if (xCellCenter < (sim.x_min + bZone) || xCellCenter > (sim.x_max - bZone) ||
                   yCellCenter < (sim.y_min + bZone) || yCellCenter > (sim.y_max - bZone) ||
                   zCellCenter < (sim.z_min + bZone) || zCellCenter > (sim.z_max - bZone)) {
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
-	       if(xNode < (sim.x_min + bZone) || xNode > (sim.x_max - bZone) ||
+	       if (xNode < (sim.x_min + bZone) || xNode > (sim.x_max - bZone) ||
                   yNode < (sim.y_min + bZone) || yNode > (sim.y_max - bZone) ||
                   zNode < (sim.z_min + bZone) || zNode > (sim.z_max - bZone)) {
                   outerBoundaryFlagNode[n] = true;
                }
                else { outerBoundaryFlagNode[n] = false; }
             }
-            else if(Hybrid::outerBoundaryZone.typeMinRhoQi == 2) {
+            else if (Hybrid::outerBoundaryZone.typeMinRhoQi == 2) {
                // all edges except +x
-               if( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter < (sim.y_min + bZone)) ) {
+               if ( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter < (sim.y_min + bZone)) ) {
                   // (-x,-y) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter > (sim.y_max - bZone)) ) {
+               else if ( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter > (sim.y_max - bZone)) ) {
                   // (-x,+y) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
+               else if ( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (-x,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
+               else if ( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (-x,+z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
+               else if ( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (-y,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
+               else if ( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (-y,+z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
+               else if ( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
                   // (+y,-z) edge
                   outerBoundaryFlag[n] = true;
                }
-               else if( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
+               else if ( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
                   // (+y,+z) edge
                   outerBoundaryFlag[n] = true;
                }
                else { outerBoundaryFlag[n] = false; }
 	       // node
                // all edges except +x
-               if( (xNode < (sim.x_min + bZone)) && (yNode < (sim.y_min + bZone)) ) {
+               if ( (xNode < (sim.x_min + bZone)) && (yNode < (sim.y_min + bZone)) ) {
                   // (-x,-y) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (xNode < (sim.x_min + bZone)) && (yNode > (sim.y_max - bZone)) ) {
+               else if ( (xNode < (sim.x_min + bZone)) && (yNode > (sim.y_max - bZone)) ) {
                   // (-x,+y) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (xNode < (sim.x_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
+               else if ( (xNode < (sim.x_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
                   // (-x,-z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (xNode < (sim.x_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
+               else if ( (xNode < (sim.x_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
                   // (-x,+z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (yNode < (sim.y_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
+               else if ( (yNode < (sim.y_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
                   // (-y,-z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (yNode < (sim.y_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
+               else if ( (yNode < (sim.y_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
                   // (-y,+z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (yNode > (sim.y_max - bZone)) && (zNode < (sim.z_min + bZone)) ) {
+               else if ( (yNode > (sim.y_max - bZone)) && (zNode < (sim.z_min + bZone)) ) {
                   // (+y,-z) edge
                   outerBoundaryFlagNode[n] = true;
                }
-               else if( (yNode > (sim.y_max - bZone)) && (zNode > (sim.z_max - bZone)) ) {
+               else if ( (yNode > (sim.y_max - bZone)) && (zNode > (sim.z_max - bZone)) ) {
                   // (+y,+z) edge
                   outerBoundaryFlagNode[n] = true;
                }
@@ -2068,11 +2068,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real zmin = zCellCenter - 0.5*Hybrid::dx;
             const Real zmax = zCellCenter + 0.5*Hybrid::dx;
 	    // detector: particles
-            for(unsigned int i=0;i<detParticleOrbitCoordinates.size();++i) {
+            for (unsigned int i=0;i<detParticleOrbitCoordinates.size();++i) {
                const Real xi = detParticleOrbitCoordinates[i][0];
                const Real yi = detParticleOrbitCoordinates[i][1];
                const Real zi = detParticleOrbitCoordinates[i][2];
-               if( (xi >= xmin && xi <= xmax) && (yi >= ymin && yi <= ymax) && (zi >= zmin && zi <= zmax) ) {
+               if ( (xi >= xmin && xi <= xmax) && (yi >= ymin && yi <= ymax) && (zi >= zmin && zi <= zmax) ) {
                   detPleFlag[b] = true;
                   N_detParticleCells += 1;
                   vector<Real> tmp1 = {simClasses.pargrid.getGlobalIDs()[b],xCellCenter,yCellCenter,zCellCenter};
@@ -2081,11 +2081,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                }
             }
 	    // detector: bulk parameters
-            for(unsigned int i=0;i<detBulkParamOrbitCoordinates.size();++i) {
+            for (unsigned int i=0;i<detBulkParamOrbitCoordinates.size();++i) {
                const Real xi = detBulkParamOrbitCoordinates[i][0];
                const Real yi = detBulkParamOrbitCoordinates[i][1];
                const Real zi = detBulkParamOrbitCoordinates[i][2];
-               if( (xi >= xmin && xi <= xmax) && (yi >= ymin && yi <= ymax) && (zi >= zmin && zi <= zmax) ) {
+               if ( (xi >= xmin && xi <= xmax) && (yi >= ymin && yi <= ymax) && (zi >= zmin && zi <= zmax) ) {
                   detBlkFlag[b] = true;
                   N_detBulkParamCells += 1;
                   vector<Real> tmp1 = {simClasses.pargrid.getGlobalIDs()[b],xCellCenter,yCellCenter,zCellCenter};
@@ -2102,18 +2102,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       MPI_Reduce(&N_detParticleCells,&N_detParticleCellsGlobalSum,1,MPI_Type<int>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       // send (cellid,x,y,z) rows from PEs to master (this could be optimized using MPI_Gatherv)
       MPI_Barrier(sim.comm);
-      if(sim.mpiRank != sim.MASTER_RANK) {
-         for(unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
-            if(detParticleCellIDXYZ[i].size() != 4) {
+      if (sim.mpiRank != sim.MASTER_RANK) {
+         for (unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
+            if (detParticleCellIDXYZ[i].size() != 4) {
                simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error with cell indices and coordinates row" << endl << write;
                return false;
             }
             MPI_Send(&detParticleCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
          }
       }
-      if(sim.mpiRank == sim.MASTER_RANK) {
+      if (sim.mpiRank == sim.MASTER_RANK) {
          int N_rowsToReceive = N_detParticleCellsGlobalSum - N_detParticleCells;
-         for(unsigned int i = 0;i<N_rowsToReceive;++i) {
+         for (unsigned int i = 0;i<N_rowsToReceive;++i) {
             vector<Real> tmpRecv;
             tmpRecv.resize(4);
             MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
@@ -2121,7 +2121,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          }
       }
       MPI_Barrier(sim.comm);
-      if(sim.mpiRank == sim.MASTER_RANK) {
+      if (sim.mpiRank == sim.MASTER_RANK) {
          simClasses.logger << "(RHYBRID) DETECTORS: recording particles in " << N_detParticleCellsGlobalSum << " cells" << endl;
          // write detector cell indices in a file
          ofstream detParticleCellIndicesFile;
@@ -2130,8 +2130,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          detParticleCellIndicesFile << scientific;
          detParticleCellIndicesFile << "% cellid x y z" << endl;
 	 sort(detParticleCellIDXYZ.begin(), detParticleCellIDXYZ.end(), [](const vector<Real>& a, const vector<Real>& b) { return a[0] < b[0]; });
-         for(unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
-            if(detParticleCellIDXYZ[i].size() != 4) {
+         for (unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
+            if (detParticleCellIDXYZ[i].size() != 4) {
                simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
                return false;
             }
@@ -2146,18 +2146,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       MPI_Reduce(&N_detBulkParamCells,&N_detBulkParamCellsGlobalSum,1,MPI_Type<int>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       // send (cellid,x,y,z) rows from PEs to master (this could be optimized using MPI_Gatherv)
       MPI_Barrier(sim.comm);
-      if(sim.mpiRank != sim.MASTER_RANK) {
-         for(unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
-            if(detBulkParamCellIDXYZ[i].size() != 4) {
+      if (sim.mpiRank != sim.MASTER_RANK) {
+         for (unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
+            if (detBulkParamCellIDXYZ[i].size() != 4) {
                simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error with cell indices and coordinates row" << endl << write;
                return false;
             }
             MPI_Send(&detBulkParamCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
          }
       }
-      if(sim.mpiRank == sim.MASTER_RANK) {
+      if (sim.mpiRank == sim.MASTER_RANK) {
          int N_rowsToReceive = N_detBulkParamCellsGlobalSum - N_detBulkParamCells;
-         for(unsigned int i = 0;i<N_rowsToReceive;++i) {
+         for (unsigned int i = 0;i<N_rowsToReceive;++i) {
             vector<Real> tmpRecv;
             tmpRecv.resize(4);
             MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
@@ -2165,7 +2165,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          }
       }
       MPI_Barrier(sim.comm);
-      if(sim.mpiRank == sim.MASTER_RANK) {
+      if (sim.mpiRank == sim.MASTER_RANK) {
          simClasses.logger << "(RHYBRID) DETECTORS: recording bulk parameters in " << N_detBulkParamCellsGlobalSum << " cells" << endl;
          // write detector cell indices in a file
          ofstream detBulkParamCellIndicesFile;
@@ -2174,8 +2174,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          detBulkParamCellIndicesFile << scientific;
          detBulkParamCellIndicesFile << "% cellid x y z" << endl;
 	 sort(detBulkParamCellIDXYZ.begin(), detBulkParamCellIDXYZ.end(), [](const vector<Real>& a, const vector<Real>& b) { return a[0] < b[0]; });
-         for(unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
-            if(detBulkParamCellIDXYZ[i].size() != 4) {
+         for (unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
+            if (detBulkParamCellIDXYZ[i].size() != 4) {
                simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
                return false;
             }
@@ -2190,7 +2190,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       // set initial B
       for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
          const size_t b3 = 3*b;
-         for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+         for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
             const int n = (b*block::SIZE+block::index(i,j,k));
             const Real xFaceXCenter = crd[b3+0] + (i+1.0)*Hybrid::dx;
             const Real yFaceXCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
@@ -2228,11 +2228,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 
    // open particle population and field log files
-   if(sim.mpiRank==sim.MASTER_RANK) {
-      for(size_t s=0;s<particleLists.size();++s) {
+   if (sim.mpiRank==sim.MASTER_RANK) {
+      for (size_t s=0;s<particleLists.size();++s) {
 	 string zeroStr = "";
-	 if(s < 10) { zeroStr = "00"; }
-	 else if(s < 100) { zeroStr = "0"; }
+	 if (s < 10) { zeroStr = "00"; }
+	 else if (s < 100) { zeroStr = "0"; }
 	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
 	 Hybrid::logParticle.push_back(new ofstream());
 	 //string fileName = "pop" + zeroStr + "_" + species->name + ".log";
@@ -2315,7 +2315,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 
    // initialize particle counters
-   for(size_t s=0;s<particleLists.size();++s) {
+   for (size_t s=0;s<particleLists.size();++s) {
       Hybrid::logCounterParticleEscape.push_back(0.0);
       Hybrid::logCounterParticleImpact.push_back(0.0);
       Hybrid::logCounterParticleInject.push_back(0.0);
@@ -2341,40 +2341,40 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // magnetic field
    Hybrid::dataCellAverageBID  = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellAverageBID = simClasses.pargrid.addUserData<Real>("cellAverageB",block::SIZE*3);
-   if(Hybrid::dataCellAverageBID == simClasses.pargrid.invalidCellID()) {
+   if (Hybrid::dataCellAverageBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellAverageB array to ParGrid!" << endl << write;
       return false;
    }
-   if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageBID,pargrid::DEFAULT_STENCIL) == false) {
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellAverageB data transfer!" << endl << write; return false;
    }
    Real* cellAverageB = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellAverageBID));
    // particle populations
    vector<Real*> nAve;
    vector<Real*> vAve;
-   for(unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+   for (unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
       Hybrid::dataCellAverageDensityID.push_back(simClasses.pargrid.invalidDataID());
       Hybrid::dataCellAverageVelocityID.push_back(simClasses.pargrid.invalidDataID());
       Hybrid::dataCellAverageDensityID[i] = simClasses.pargrid.addUserData<Real>("cellDensityAverage_pop" + to_string(i),block::SIZE);
-      if(Hybrid::dataCellAverageDensityID[i] == simClasses.pargrid.invalidCellID()) {
+      if (Hybrid::dataCellAverageDensityID[i] == simClasses.pargrid.invalidCellID()) {
          simClasses.logger << "(USER) ERROR: Failed to add cellDensityAverage_pop" + to_string(i) + " array to ParGrid!" << endl << write;
          return false;
       }
       Hybrid::dataCellAverageVelocityID[i] = simClasses.pargrid.addUserData<Real>("cellVelocityAverage_pop" + to_string(i),block::SIZE*3);
-      if(Hybrid::dataCellAverageVelocityID[i] == simClasses.pargrid.invalidCellID()) {
+      if (Hybrid::dataCellAverageVelocityID[i] == simClasses.pargrid.invalidCellID()) {
          simClasses.logger << "(USER) ERROR: Failed to add cellVelocityAverage_pop" + to_string(i) + " array to ParGrid!" << endl << write;
          return false;
       }
-      if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageDensityID[i],pargrid::DEFAULT_STENCIL) == false) {
+      if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageDensityID[i],pargrid::DEFAULT_STENCIL) == false) {
          simClasses.logger << "(USER) ERROR: Failed to add cellDensityAverage_pop" + to_string(i) + " data transfer 1!" << endl << write; return false;
       }
-      if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageDensityID[i],Hybrid::accumulationStencilID) == false) {
+      if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageDensityID[i],Hybrid::accumulationStencilID) == false) {
          simClasses.logger << "(USER) ERROR: Failed to add cellDensityAverage_pop" + to_string(i) + " data transfer 2!" << endl << write; return false;
       }
-      if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageVelocityID[i],pargrid::DEFAULT_STENCIL) == false) {
+      if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageVelocityID[i],pargrid::DEFAULT_STENCIL) == false) {
          simClasses.logger << "(USER) ERROR: Failed to add cellVelocityAverage_pop" + to_string(i) + " data transfer 1!" << endl << write; return false;
       }
-      if(simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageVelocityID[i],Hybrid::accumulationStencilID) == false) {
+      if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellAverageVelocityID[i],Hybrid::accumulationStencilID) == false) {
          simClasses.logger << "(USER) ERROR: Failed to add cellVelocityAverage_pop" + to_string(i) + " data transfer 2!" << endl << write; return false;
       }
       nAve.push_back(reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellAverageDensityID[i])));
@@ -2437,8 +2437,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"MPI_rank",false},
       {"Load",false}
    };
-   /*for(auto p : Hybrid::varReal) {
-      if(Hybrid::outputCellParams.count(p.first) < 1) {
+   /*for (auto p : Hybrid::varReal) {
+      if (Hybrid::outputCellParams.count(p.first) < 1) {
 	 Hybrid::outputCellParams[p.first] = false;
       }
       else {
@@ -2446,17 +2446,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
    }*/
    // process output parameter selection
-   if(Hybrid::outputCellParams.size() > 0 && outputParams.length() > 0) {
+   if (Hybrid::outputCellParams.size() > 0 && outputParams.length() > 0) {
       istringstream iss(outputParams);
-      while(iss) {
+      while (iss) {
 	 string p;
 	 iss >> p;
 	 const auto strBegin = p.find_first_not_of(" \t");
-	 if(strBegin != string::npos) {
+	 if (strBegin != string::npos) {
 	    const auto strEnd = p.find_last_not_of(" \t");
 	    const auto strRange = strEnd - strBegin + 1;
 	    p = p.substr(strBegin,strRange);
-	    if(Hybrid::outputCellParams.count(p) > 0) {
+	    if (Hybrid::outputCellParams.count(p) > 0) {
 	       Hybrid::outputCellParams[p] = true;
 	    }
 	    else {
@@ -2469,34 +2469,34 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(RHYBRID) WARNING: no output parameters" << endl;
    }
    simClasses.logger << "(RHYBRID) selected output parameters:" << endl;
-   for(auto p: Hybrid::outputCellParams) {
-      if(p.second == true) { simClasses.logger << p.first << endl; }
+   for (auto p: Hybrid::outputCellParams) {
+      if (p.second == true) { simClasses.logger << p.first << endl; }
    }
    simClasses.logger << endl << "(RHYBRID) not-selected available output parameters:" << endl;
-   for(auto p: Hybrid::outputCellParams) {
-      if(p.second == false) { simClasses.logger << p.first << endl; }
+   for (auto p: Hybrid::outputCellParams) {
+      if (p.second == false) { simClasses.logger << p.first << endl; }
    }
    simClasses.logger << endl;
 #ifndef WRITE_GRID_TEMPORAL_AVERAGES
-   if(Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true || Hybrid::outputCellParams["n_tot_ave"] == true || Hybrid::outputCellParams["v_tot_ave"] == true) {
+   if (Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true || Hybrid::outputCellParams["n_tot_ave"] == true || Hybrid::outputCellParams["v_tot_ave"] == true) {
       simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_GRID_TEMPORAL_AVERAGES not defined in Makefile" << endl;
    }
 #endif
 #ifndef USE_B_CONSTANT
-   if(Hybrid::outputCellParams["cellB0"] == true) {
+   if (Hybrid::outputCellParams["cellB0"] == true) {
       simClasses.logger << "(RHYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
    }
 #endif
-   if(Hybrid::outputCellParams["MPI_rank"] == true) {
+   if (Hybrid::outputCellParams["MPI_rank"] == true) {
       DataOperatorContainer& doc = corsair::getObjectWrapper().dataOperatorContainer;
-      if(doc.registerOperator(new MPIRank) == false) {
+      if (doc.registerOperator(new MPIRank) == false) {
 	 simClasses.logger << "(RHYBRID) ERROR: failed to add MPIRank output operator" << endl;
 	 return false;
       }
    }
-   if(Hybrid::outputCellParams["Load"] == true) {
+   if (Hybrid::outputCellParams["Load"] == true) {
       DataOperatorContainer& doc = corsair::getObjectWrapper().dataOperatorContainer;
-      if(doc.registerOperator(new LoadOP) == false) {
+      if (doc.registerOperator(new LoadOP) == false) {
 	 simClasses.logger << "(RHYBRID) ERROR: failed to add LoadOP output operator" << endl;
 	 return false;
       }
@@ -2504,16 +2504,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger << "Save particles = " << Hybrid::saveParticles << " (in every Nth cell, where N = " << Hybrid::saveParticlesNstride << ")" << endl << endl;
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // initial values
-   if(sim.restarted == false) {
-      for(size_t i=0; i<vectorArraySize;   ++i) { cellAverageB[i] = 0.0; }
-      for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
-         for(size_t j=0; j<scalarArraySize;++j) { nAve[i][j] = 0.0; }
-         for(size_t j=0; j<vectorArraySize;++j) { vAve[i][j] = 0.0; }
+   if (sim.restarted == false) {
+      for (size_t i=0; i<vectorArraySize;   ++i) { cellAverageB[i] = 0.0; }
+      for (size_t i=0;i<Hybrid::N_outputPopVars;++i) {
+         for (size_t j=0; j<scalarArraySize;++j) { nAve[i][j] = 0.0; }
+         for (size_t j=0; j<vectorArraySize;++j) { vAve[i][j] = 0.0; }
       }
       Hybrid::gridTemporalAverageCounter = 0;
    }
 #endif
-   if(sim.restarted == true) {
+   if (sim.restarted == true) {
       Hybrid::filterParticlesAfterRestartDone = false;
    }
    Hybrid::repartitionCheckIntervalTmp = sim.repartitionCheckInterval;
@@ -2528,63 +2528,63 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    simClasses.logger << "(RHYBRID) Starting finalization." << endl;
    bool success = true;
    // new variable handling TBD
-   /*for(const auto &p : Hybrid::varReal) {
+   /*for (const auto &p : Hybrid::varReal) {
       simClasses.logger << "(USER) removed ParGrid array: " << p.first << endl;
    }*/
-   if(simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiBgID)         == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiBgID)         == false) { success = false; }
 #endif
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellBID)               == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellJID)               == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellUeID)              == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellJiID)              == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellEpID)              == false) { success = false; }
-   if(Hybrid::N_ionospherePopulations > 0) {
-      if(simClasses.pargrid.removeUserData(Hybrid::dataCellIonosphereID)   == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellBID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellJID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellUeID)              == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellJiID)              == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellEpID)              == false) { success = false; }
+   if (Hybrid::N_ionospherePopulations > 0) {
+      if (simClasses.pargrid.removeUserData(Hybrid::dataCellIonosphereID)   == false) { success = false; }
    }
-   if(Hybrid::N_exospherePopulations > 0) {
-      if(simClasses.pargrid.removeUserData(Hybrid::dataCellExosphereID)    == false) { success = false; }
+   if (Hybrid::N_exospherePopulations > 0) {
+      if (simClasses.pargrid.removeUserData(Hybrid::dataCellExosphereID)    == false) { success = false; }
    }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeRhoQiID)           == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEID)               == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeBID)               == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeJID)               == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeUeID)              == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeJiID)              == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataNodeRhoQiID)           == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataNodeEID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataNodeBID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataNodeJID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataNodeUeID)              == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataNodeJiID)              == false) { success = false; }
 #ifdef USE_RESISTIVITY
-   if(simClasses.pargrid.removeUserData(Hybrid::dataNodeEtaID)             == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataNodeEtaID)             == false) { success = false; }
 #endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxUeID)    == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxViID)    == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMinRhoQiID) == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterNodeMaxEID)     == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataGridCounterNodeMaxVwID)    == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxUeID)    == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxViID)    == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMinRhoQiID) == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataGridCounterNodeMaxEID)     == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataGridCounterNodeMaxVwID)    == false) { success = false; }
 #endif
-   if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)      == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID)   == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagCellEpID)     == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)      == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID)   == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagCellEpID)     == false) { success = false; }
 #ifdef USE_OUTER_BOUNDARY_ZONE
-   if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagID)   == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagNodeID) == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagID)   == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagNodeID) == false) { success = false; }
 #endif
 #ifdef USE_DETECTORS
-   if(simClasses.pargrid.removeUserData(Hybrid::dataDetectorParticleFlagID)  == false) { success = false; }
-   if(simClasses.pargrid.removeUserData(Hybrid::dataDetectorBulkParamFlagID) == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorParticleFlagID)  == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorBulkParamFlagID) == false) { success = false; }
 #endif
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
-   if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)        == false) { success = false; }
-   for(size_t i=0;i<Hybrid::N_outputPopVars;++i) {
-      if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageDensityID[i])  == false) { success = false; }
-      if(simClasses.pargrid.removeUserData(Hybrid::dataCellAverageVelocityID[i]) == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)        == false) { success = false; }
+   for (size_t i=0;i<Hybrid::N_outputPopVars;++i) {
+      if (simClasses.pargrid.removeUserData(Hybrid::dataCellAverageDensityID[i])  == false) { success = false; }
+      if (simClasses.pargrid.removeUserData(Hybrid::dataCellAverageVelocityID[i]) == false) { success = false; }
    }
 #endif
    // close particle population and field log files
-   if(sim.mpiRank==sim.MASTER_RANK) {
-      for(size_t i=0;i<Hybrid::logParticle.size();++i) {
+   if (sim.mpiRank==sim.MASTER_RANK) {
+      for (size_t i=0;i<Hybrid::logParticle.size();++i) {
 	 Hybrid::logParticle[i]->flush();
 	 Hybrid::logParticle[i]->close();
 	 delete Hybrid::logParticle[i];
@@ -2593,7 +2593,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
       Hybrid::logField.flush();
       Hybrid::logField.close();
    }
-   if(success == true) {simClasses.logger << "(RHYBRID) Finalization successful." << endl; }
+   if (success == true) {simClasses.logger << "(RHYBRID) Finalization successful." << endl; }
    return success;
 }
 

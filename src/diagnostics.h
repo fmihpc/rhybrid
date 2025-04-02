@@ -78,29 +78,29 @@ bool calcPlasmaParametersBulk(SimulationClasses& simClasses,std::string injector
    Real Btot = normvec(B);
    // plasma bulk properties
      {
-	for(size_t s=0;s<particleLists.size();++s) {
+	for (size_t s=0;s<particleLists.size();++s) {
 	   // read parameters of this particle population from species and injector
 	   InjectorParameters ip;
-	   if(getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
+	   if (getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
 	      simClasses.logger << "(RHYBRID) ERROR: failed to get injector and species parameters (" << ip.name << ")" << std::endl;
 	      return false;
 	   }
-	   if(ip.type.compare(injectorType) != 0) { continue; } // include only chosen type populations
+	   if (ip.type.compare(injectorType) != 0) { continue; } // include only chosen type populations
 	   ppB.rhoq += ip.n*ip.q; // ion charge density
 	   ppB.rhom += ip.n*ip.m; // ion mass density
-	   for(size_t ii=0;ii<3;++ii) {
+	   for (size_t ii=0;ii<3;++ii) {
 	      ppB.Ubulk[ii] += ip.n*ip.m*ip.velocity[ii]; // bulk velocity (mass density weighted average)
 	   }
 	   ppB.vs += ip.n*ip.T; // sound velocity
 	}
 	ppB.ne = ppB.rhoq/constants::CHARGE_ELEMENTARY; // electron number density
-	if(ppB.rhom != 0) {
-	   for(size_t ii=0;ii<3;++ii) { ppB.Ubulk[ii] /= ppB.rhom; }
+	if (ppB.rhom != 0) {
+	   for (size_t ii=0;ii<3;++ii) { ppB.Ubulk[ii] /= ppB.rhom; }
 	   ppB.vA = Btot/( sqrt(constants::PERMEABILITY*ppB.rhom) ); // alfven velocity
 	   ppB.vs = sqrt(5.0/3.0 * constants::BOLTZMANN*ppB.vs/ppB.rhom);
 	}
 	else {
-	   for(size_t ii=0;ii<3;++ii) { ppB.Ubulk[ii] = 0.0; }
+	   for (size_t ii=0;ii<3;++ii) { ppB.Ubulk[ii] = 0.0; }
 	   ppB.vA = 0.0;
 	   ppB.vs = 0.0;
 	}
@@ -112,14 +112,14 @@ bool calcPlasmaParametersBulk(SimulationClasses& simClasses,std::string injector
 	cross(B,ppB.Ubulk,ppB.Ec); // convection electric field Ec = -Ubulk x B
 	ppB.Ectot = normvec(ppB.Ec);
 	// vExB = E x B/B^2
-	if(Btot != 0) {
+	if (Btot != 0) {
 	   cross(ppB.Ec,B,ppB.vExB);
-	   for(size_t ii=0;ii<3;++ii) { ppB.vExB[ii] /= sqr(Btot); }
+	   for (size_t ii=0;ii<3;++ii) { ppB.vExB[ii] /= sqr(Btot); }
 	}
 	ppB.vExBtot = normvec(ppB.vExB);
 	ppB.vpui = 2*ppB.vExBtot; // fastest pickup ion velocity
 	// fastest whistler signal p. 28 Alho (2016)
-	if(ppB.ne != 0 && dx != 0) {
+	if (ppB.ne != 0 && dx != 0) {
 	   ppB.vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ppB.ne*constants::CHARGE_ELEMENTARY*dx );
 	}
      }
@@ -148,10 +148,10 @@ bool calcPlasmaParametersSingleParticle(SimulationClasses& simClasses,std::vecto
      }
 
    // simulation particle populations
-   for(size_t s=0;s<particleLists.size();++s) {
+   for (size_t s=0;s<particleLists.size();++s) {
       // read parameters of this particle population from species and injector
       InjectorParameters ip;
-      if(getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
+      if (getInjectorParameters(particleLists[s]->getInjector(),ip) == false) {
 	 simClasses.logger << "(RHYBRID) ERROR: failed to get injector and species parameters (" << ip.name << ")" << std::endl;
 	 return false;
       }
@@ -171,7 +171,7 @@ bool calcPlasmaParametersSingleParticle(SimulationClasses& simClasses,std::vecto
    }
 
    // sanity check just in case
-   if(ppSP.populationName.size() != ppSP.periodPlasma.size() ||
+   if (ppSP.populationName.size() != ppSP.periodPlasma.size() ||
       ppSP.populationName.size() != ppSP.periodLarmor.size() ||
       ppSP.populationName.size() != ppSP.lengthInertial.size() ||
       ppSP.populationName.size() != ppSP.radiusLarmorThermal.size() ||
@@ -186,13 +186,13 @@ bool calcPlasmaParametersSingleParticle(SimulationClasses& simClasses,std::vecto
 // log amounts of macroparticles
 void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
     simClasses.logger << "(RHYBRID) Number of macroparticles per population (time step = " << sim.timestep << ", time = " << sim.t << "):" << std::endl;
-    for(size_t s=0;s<particleLists.size();++s) {
+    for (size_t s=0;s<particleLists.size();++s) {
 	Real N_macroParticles = 0.0;
 	// For now skip particles with invalid data id:
 	pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
-	if(particleLists[s]->getParticles(speciesDataID) == true) {
+	if (particleLists[s]->getParticles(speciesDataID) == true) {
 	    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses.pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
-	    for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+	    for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
 		pargrid::ArraySizetype N_particles = wrapper.size(b);
 		N_macroParticles += N_particles;
 	    }
@@ -209,7 +209,7 @@ void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,co
 void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<LogDataParticle>& logDataParticle,const std::vector<ParticleListBase*>& particleLists,std::vector<Real>& cellRhoM)
 {
    logDataParticle.clear();
-   for(size_t s=0;s<particleLists.size();++s) {
+   for (size_t s=0;s<particleLists.size();++s) {
       logDataParticle.push_back(LogDataParticle());
       logDataParticle[s].N_macroParticles = 0.0;
       logDataParticle[s].N_realParticles = 0.0;
@@ -220,17 +220,17 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
       logDataParticle[s].sumWV2 = 0.0;
       logDataParticle[s].maxVi = 0.0;
    }
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
-      for(size_t s=0;s<particleLists.size();++s) {
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      for (size_t s=0;s<particleLists.size();++s) {
 	 pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
-	 if(particleLists[s]->getParticles(speciesDataID) == false) { continue; }
+	 if (particleLists[s]->getParticles(speciesDataID) == false) { continue; }
 	 pargrid::DataWrapper<Particle<Real> > wrapper = simClasses.pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
 	 Particle<Real>** particleList = wrapper.data();
 	 Particle<Real>* particles = particleList[b];
 	 pargrid::ArraySizetype N_particles = wrapper.size(b);
 	 logDataParticle[s].N_macroParticles += N_particles;
 	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-	 for(size_t p=0; p<N_particles; ++p) {
+	 for (size_t p=0; p<N_particles; ++p) {
 	    logDataParticle[s].N_realParticles += particles[p].state[particle::WEIGHT];
 	    logDataParticle[s].sumVx += particles[p].state[particle::WEIGHT]*particles[p].state[particle::VX];
 	    logDataParticle[s].sumVy += particles[p].state[particle::WEIGHT]*particles[p].state[particle::VY];
@@ -239,7 +239,7 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
 	    const Real vtot = sqrt(v2);
 	    logDataParticle[s].sumV += particles[p].state[particle::WEIGHT]*vtot;
 	    logDataParticle[s].sumWV2 += particles[p].state[particle::WEIGHT]*v2;
-	    if(vtot > logDataParticle[s].maxVi) { logDataParticle[s].maxVi = vtot; }
+	    if (vtot > logDataParticle[s].maxVi) { logDataParticle[s].maxVi = vtot; }
 	    // determined alfven speed in each cell
 	    const int i = static_cast<int>(floor(particles[p].state[particle::X]/Hybrid::dx));
 	    const int j = static_cast<int>(floor(particles[p].state[particle::Y]/Hybrid::dx));
@@ -250,7 +250,7 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
 	 }
       }
    }
-   for(size_t i=0; i<cellRhoM.size(); ++i) { cellRhoM[i] /= Hybrid::dV; }
+   for (size_t i=0; i<cellRhoM.size(); ++i) { cellRhoM[i] /= Hybrid::dV; }
    // add background density and implement minimum densities in total mass density
    const Real minRhoMGlobal = Hybrid::minRhoQi*constants::MASS_PROTON/constants::CHARGE_ELEMENTARY; // assume global density minimum is protons
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
@@ -260,8 +260,8 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
    bool* outerBoundaryFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
    const Real minRhoMOuterBoundaryZone = Hybrid::outerBoundaryZone.minRhoQi*constants::MASS_PROTON/constants::CHARGE_ELEMENTARY; // assume outer boundary density minimum is protons
 #endif
-   for(pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+   for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
 	 // add background density in total mass density
@@ -269,14 +269,14 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
 #endif
 	 // implement minimum densities in total mass density
 #ifdef USE_OUTER_BOUNDARY_ZONE
-	 if(outerBoundaryFlag[n] == true) {
-	    if(cellRhoM[n] < minRhoMOuterBoundaryZone) { cellRhoM[n] = minRhoMOuterBoundaryZone; }
+	 if (outerBoundaryFlag[n] == true) {
+	    if (cellRhoM[n] < minRhoMOuterBoundaryZone) { cellRhoM[n] = minRhoMOuterBoundaryZone; }
 	 }
 	 else {
-	    if(cellRhoM[n] < minRhoMGlobal) { cellRhoM[n] = minRhoMGlobal; }
+	    if (cellRhoM[n] < minRhoMGlobal) { cellRhoM[n] = minRhoMGlobal; }
 	 }
 #else
-	 if(cellRhoM[n] < minRhoMGlobal) { cellRhoM[n] = minRhoMGlobal; }
+	 if (cellRhoM[n] < minRhoMGlobal) { cellRhoM[n] = minRhoMGlobal; }
 #endif
       }
    }
@@ -337,18 +337,18 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    Real* cellEp = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellEpID);
    Real* nodeE  = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    bool* innerFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
-      if(simClasses.pargrid.getNeighbourFlags(b) != pargrid::ALL_NEIGHBOURS_EXIST) { continue; }
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      if (simClasses.pargrid.getNeighbourFlags(b) != pargrid::ALL_NEIGHBOURS_EXIST) { continue; }
       const size_t vectorDim = 3;
       const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
       Real aa[s*vectorDim]; // temp array
       fetchData(faceB,aa,simClasses,b,vectorDim);
-      for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
 	 // do not include cells inside the inner boundary
-	 if(Hybrid::includeInnerCellsInFieldLog == false) {
-	    if(innerFlag[n] == true) { continue; }
+	 if (Hybrid::includeInnerCellsInFieldLog == false) {
+	    if (innerFlag[n] == true) { continue; }
 	 }
 	 // divergence of B in a cell from face magnetic field
 	 Real divB = ((aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0] - aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+0])
@@ -362,16 +362,16 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	 const Real B2 = sqr(Bx) + sqr(By) + sqr(Bz);
 	 const Real Btot = sqrt(B2);
 	 Real divBPerB = 0.0;
-	 if(Btot > 0.0) { divBPerB = divB/Btot; }
+	 if (Btot > 0.0) { divBPerB = divB/Btot; }
 	 logDataField.sumBx += Bx;
 	 logDataField.sumBy += By;
 	 logDataField.sumBz += Bz;
 	 logDataField.sumB += Btot;
 	 logDataField.sumDivB += divB;
 	 logDataField.sumB2 += B2;
-	 if(Btot > logDataField.maxB) { logDataField.maxB = Btot; }
-	 if(fabs(divB) > fabs(logDataField.maxDivB)) { logDataField.maxDivB = divB; }
-	 if(fabs(divBPerB) > fabs(logDataField.maxDivBPerB)) { logDataField.maxDivBPerB = divBPerB; }
+	 if (Btot > logDataField.maxB) { logDataField.maxB = Btot; }
+	 if (fabs(divB) > fabs(logDataField.maxDivB)) { logDataField.maxDivB = divB; }
+	 if (fabs(divBPerB) > fabs(logDataField.maxDivBPerB)) { logDataField.maxDivBPerB = divBPerB; }
 
 	 // cell ion current density
 	 const Real cellJitot = sqrt( sqr(cellJi[n3+0]) + sqr(cellJi[n3+1]) + sqr(cellJi[n3+2]) );
@@ -379,7 +379,7 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	 logDataField.sumCellJiy += cellJi[n3+1];
 	 logDataField.sumCellJiz += cellJi[n3+2];
 	 logDataField.sumCellJi += cellJitot;
-	 if(cellJitot > logDataField.maxCellJi) { logDataField.maxCellJi = cellJitot; }
+	 if (cellJitot > logDataField.maxCellJi) { logDataField.maxCellJi = cellJitot; }
 
 	 // cell electron pressure electric field
 	 const Real cellEp2 = sqr(cellEp[n3+0]) + sqr(cellEp[n3+1]) + sqr(cellEp[n3+2]);
@@ -389,7 +389,7 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	 logDataField.sumCellEpz += cellEp[n3+2];
 	 logDataField.sumCellEp += cellEptot;
 	 logDataField.sumCellEp2 += cellEp2;
-	 if(cellEptot > logDataField.maxCellEp) { logDataField.maxCellEp = cellEptot; }
+	 if (cellEptot > logDataField.maxCellEp) { logDataField.maxCellEp = cellEptot; }
 
 	 // node electric field -Ue x B + eta*J
 	 const Real nodeE2 = sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]);
@@ -399,7 +399,7 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 	 logDataField.sumNodeEz += nodeE[n3+2];
 	 logDataField.sumNodeE += nodeEtot;
 	 logDataField.sumNodeE2 += nodeE2;
-	 if(nodeEtot > logDataField.maxNodeE) { logDataField.maxNodeE = nodeEtot; }
+	 if (nodeEtot > logDataField.maxNodeE) { logDataField.maxNodeE = nodeEtot; }
 
 	 // cell electric field -Ue x B
 	 const Real cellUex = cellUe[n3+0];
@@ -413,26 +413,26 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 
 	 // spatial, temporal and velocity scales
 	 const Real cellUetot = sqrt(sqr(cellUex) + sqr(cellUey) + sqr(cellUez));
-	 if(cellRhoQi[n] > 0.0) {
+	 if (cellRhoQi[n] > 0.0) {
 	    // electron inertial length: sqrt(m_e/(mu0*q_e^2*n_e)) = sqrt(m_e/(mu0*q_e^2*rho_q/q_e)) =  = sqrt(m_e/(mu0*q_e*rho_q))
 	    const Real de = sqrt(constants::MASS_ELECTRON/(constants::PERMEABILITY*constants::CHARGE_ELEMENTARY*cellRhoQi[n]));
-	    if(de > logDataField.maxInerLengthElectron) { logDataField.maxInerLengthElectron = de; }
-	    if(de < logDataField.minInerLengthElectron) { logDataField.minInerLengthElectron = de; }
+	    if (de > logDataField.maxInerLengthElectron) { logDataField.maxInerLengthElectron = de; }
+	    if (de < logDataField.minInerLengthElectron) { logDataField.minInerLengthElectron = de; }
 	 }
-	 if(Btot > 0.0) {
+	 if (Btot > 0.0) {
 	    // Minimum ion (=proton) Larmor period
 	    const Real tL = 2.0*M_PI*constants::MASS_PROTON/(constants::CHARGE_ELEMENTARY*Btot);
-	    if(tL < logDataField.minTLarmor) { logDataField.minTLarmor = tL; }
+	    if (tL < logDataField.minTLarmor) { logDataField.minTLarmor = tL; }
 	 }
-	 if(cellRhoM[n] > 0.0) {
+	 if (cellRhoM[n] > 0.0) {
 	    // ion inertial length assuming that all particles in total mass density are protons: sqrt(m_p/(mu0*q_e^2*n_i)) = sqrt(m_p/(mu0*q_e^2*(rho_m/m_p))) = sqrt(m_p^2/(mu0*q_e^2*rho_m))
 	    const Real di = sqrt(sqr(constants::MASS_PROTON)/(constants::PERMEABILITY*sqr(constants::CHARGE_ELEMENTARY)*cellRhoM[n]));
 	    const Real vA = Btot/sqrt(constants::PERMEABILITY*cellRhoM[n]);
-	    if(di > logDataField.maxInerLengthProton) { logDataField.maxInerLengthProton = di; }
-	    if(di < logDataField.minInerLengthProton) { logDataField.minInerLengthProton = di; }
-	    if(vA > logDataField.maxVAlfven) { logDataField.maxVAlfven = vA; }
+	    if (di > logDataField.maxInerLengthProton) { logDataField.maxInerLengthProton = di; }
+	    if (di < logDataField.minInerLengthProton) { logDataField.minInerLengthProton = di; }
+	    if (vA > logDataField.maxVAlfven) { logDataField.maxVAlfven = vA; }
 	 }
-	 if(cellUetot > logDataField.maxUe) { logDataField.maxUe = cellUetot; }
+	 if (cellUetot > logDataField.maxUe) { logDataField.maxUe = cellUetot; }
 
 	 // update field log cell counter
 	 logDataField.N_cells++;
@@ -444,19 +444,19 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
    bool success = true;
    static int profWriteLogsID = -1;
-   //if(getInitialized() == false) { return false; }
+   //if (getInitialized() == false) { return false; }
    profile::start("logWriteParticleField",profWriteLogsID);
    std::vector<LogDataParticle> logDataParticle;
    LogDataField logDataField;
    // total mass density for Alfven speed
    std::vector<Real> cellRhoM;
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
       cellRhoM.push_back(0.0);
    }
    logCalcParticle(sim,simClasses,logDataParticle,particleLists,cellRhoM);
    logCalcField(sim,simClasses,logDataField,cellRhoM);
-   if(sim.mpiRank==sim.MASTER_RANK) {
-      for(size_t i=0;i<Hybrid::logParticle.size();++i) {
+   if (sim.mpiRank==sim.MASTER_RANK) {
+      for (size_t i=0;i<Hybrid::logParticle.size();++i) {
 	 (*Hybrid::logParticle[i]) << sim.t << " ";
       }
       Hybrid::logField << sim.t << " ";
@@ -464,7 +464,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    Real maxViAllPopulations = 0.0;
    const Real Dt = sim.t - Hybrid::logCounterTimeStart;
    // go thru populations and sum particle counters
-   for(size_t s=0;s<particleLists.size();++s) {
+   for (size_t s=0;s<particleLists.size();++s) {
       Real N_macroParticlesThisProcess = logDataParticle[s].N_macroParticles;
       Real N_macroParticlesGlobal = 0.0;
       Real N_realParticlesThisProcess = logDataParticle[s].N_realParticles;
@@ -513,9 +513,9 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       MPI_Reduce(&sumImpactKineticEnergyThisProcess,&sumImpactKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumInjectKineticEnergyThisProcess,&sumInjectKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumMaxViThisProcess,&sumMaxViGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-      if(sim.mpiRank==sim.MASTER_RANK) {
+      if (sim.mpiRank==sim.MASTER_RANK) {
 	 (*Hybrid::logParticle[s]) << N_realParticlesGlobal << " " << N_macroParticlesGlobal << " ";
-	 if(N_realParticlesGlobal > 0.0) {
+	 if (N_realParticlesGlobal > 0.0) {
 	    (*Hybrid::logParticle[s])
 	      << sumVxGlobal/N_realParticlesGlobal << " "
 	      << sumVyGlobal/N_realParticlesGlobal << " "
@@ -527,8 +527,8 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	 }
 	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
 	 (*Hybrid::logParticle[s]) << 0.5*species->m*sumWV2Global << " " << maxViGlobal << " ";
-	 if(maxViAllPopulations < maxViGlobal) { maxViAllPopulations = maxViGlobal; }
-	 if(Dt > 0) {
+	 if (maxViAllPopulations < maxViGlobal) { maxViAllPopulations = maxViGlobal; }
+	 if (Dt > 0) {
 	    (*Hybrid::logParticle[s])
 	      << sumEscapeGlobal/Dt << " "
 	      << sumImpactGlobal/Dt << " "
@@ -564,7 +564,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    MPI_Reduce(&sumMaxEThisProcess,&sumMaxEGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumMinCellRhoQiThisProcess,&sumMinCellRhoQiGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
    MPI_Reduce(&sumMinNodeRhoQiThisProcess,&sumMinNodeRhoQiGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-   
+
    // field log values from logCalcField
    Real N_cellsThisProcess = logDataField.N_cells;
    Real N_cellsGlobal = 0.0;
@@ -682,9 +682,9 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    MPI_Reduce(&maxUeThisProcess,&maxUeGlobal,1,MPI_Type<Real>(),MPI_MAX,sim.MASTER_RANK,sim.comm);
 
    // write field log
-   if(sim.mpiRank==sim.MASTER_RANK) {
+   if (sim.mpiRank==sim.MASTER_RANK) {
       // face magnetic field
-      if(N_cellsGlobal > 0) {
+      if (N_cellsGlobal > 0) {
 	 Hybrid::logField
 	   << sumBxGlobal/N_cellsGlobal << " "
 	   << sumByGlobal/N_cellsGlobal << " "
@@ -695,12 +695,12 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	 Hybrid::logField << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
       }
       Hybrid::logField << maxBGlobal << " ";
-      if(N_cellsGlobal > 0) { Hybrid::logField << sumDivBGlobal/N_cellsGlobal << " "; }
+      if (N_cellsGlobal > 0) { Hybrid::logField << sumDivBGlobal/N_cellsGlobal << " "; }
       else { Hybrid::logField << 0.0 << " "; }
       Hybrid::logField << maxDivBGlobal << " " << Hybrid::dx*maxDivPerBGlobal << " " << sumB2Global*Hybrid::dV/(2.0*constants::PERMEABILITY) << " ";
 
       // cell ion current density
-      if(N_cellsGlobal > 0) {
+      if (N_cellsGlobal > 0) {
 	 Hybrid::logField
 	   << sumCellJixGlobal/N_cellsGlobal << " "
 	   << sumCellJiyGlobal/N_cellsGlobal << " "
@@ -713,7 +713,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       Hybrid::logField << maxCellJiGlobal << " ";
 
       // cell electron pressure electric field
-      if(N_cellsGlobal > 0) {
+      if (N_cellsGlobal > 0) {
 	 Hybrid::logField
 	   << sumCellEpxGlobal/N_cellsGlobal << " "
 	   << sumCellEpyGlobal/N_cellsGlobal << " "
@@ -726,7 +726,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       Hybrid::logField << maxCellEpGlobal << " " << sumCellEp2Global*Hybrid::dV*constants::PERMITTIVITY/(2.0) << " ";
 
       // node electric field
-      if(N_cellsGlobal > 0) {
+      if (N_cellsGlobal > 0) {
 	 Hybrid::logField
 	   << sumNodeExGlobal/N_cellsGlobal << " "
 	   << sumNodeEyGlobal/N_cellsGlobal << " "
@@ -739,7 +739,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       Hybrid::logField << " " << maxNodeEGlobal << " " << sumNodeE2Global*Hybrid::dV*constants::PERMITTIVITY/(2.0)  << " " << sumCellE2Global*Hybrid::dV*constants::PERMITTIVITY/(2.0)  << " ";
 
       // global field counters
-      if(Dt > 0) {
+      if (Dt > 0) {
 	 Hybrid::logField
 	   << sumMaxCellUeGlobal/Dt*sim.dt << " "
 	   << sumMaxNodeUeGlobal/Dt*sim.dt << " "
@@ -763,7 +763,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	<< maxUeGlobal << " ";
 
       // line endings particle logs
-      for(size_t i=0;i<Hybrid::logParticle.size();++i) {
+      for (size_t i=0;i<Hybrid::logParticle.size();++i) {
 	 (*Hybrid::logParticle[i]) << std::endl;
       }
       // line ending field log
@@ -776,7 +776,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       const Real maxUe_dxdt = maxUeGlobal/(Hybrid::dx/sim.dt);
 
       // write if on a save step or save step already happened after previous entry
-      if(Hybrid::writeMainLogEntriesAfterSaveStep == true && sim.mpiRank == sim.MASTER_RANK) {
+      if (Hybrid::writeMainLogEntriesAfterSaveStep == true && sim.mpiRank == sim.MASTER_RANK) {
 	 simClasses.logger
 	   << "(RHYBRID) Diagnostics (time step = " << sim.timestep << ", time = " << sim.t << "):" << std::endl
 	   << "\t Max. |Vion|             : Vi_max  = " << maxViAllPopulations/1e3 << " km/s = " << maxVi_dxdt << " dx/dt" << std::endl
@@ -793,20 +793,20 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	   << "\t Max. H+ inertial length : di_max  = " << maxInerLengthProtonGlobal/1e3 << " km = " << maxInerLengthProtonGlobal/Hybrid::dx << " dx" << std::endl << write;
 	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
       }
-      if(sim.mpiRank == sim.MASTER_RANK) {
-	 if(tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
-	 if(maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
-	 if(maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
-	 if(maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
+      if (sim.mpiRank == sim.MASTER_RANK) {
+	 if (tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
+	 if (maxVi_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Vi_max/(dx/dt) > 0.9 ("    << maxVi_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
+	 if (maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
+	 if (maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
       }
-      if(maxBGlobal > Hybrid::terminateLimitMaxB) {
+      if (maxBGlobal > Hybrid::terminateLimitMaxB) {
          success = false;
-	 if(sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT) (time step = " << sim.timestep << ", time = " << sim.t << "), exiting." << std::endl << write; }
+	 if (sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT) (time step = " << sim.timestep << ", time = " << sim.t << "), exiting." << std::endl << write; }
       }
    }
 
    // zero particle population counters
-   for(size_t s=0;s<particleLists.size();++s) {
+   for (size_t s=0;s<particleLists.size();++s) {
       Hybrid::logCounterParticleEscape[s] = 0.0;
       Hybrid::logCounterParticleImpact[s] = 0.0;
       Hybrid::logCounterParticleInject[s] = 0.0;
@@ -830,15 +830,15 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 
    // silo time series (curves.silo)
    /*Real cnt=0;
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b){ cnt+=1.0; }
-   
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b){ cnt+=1.0; }
+
    map<std::string,std::string> attribs;
    attribs["name"] = "blah";
    attribs["xlabel"] = "time";
    attribs["ylabel"] = "y laabeli";
    attribs["xunit"] = "s";
    attribs["yunit"] = "y unitti";   
-   
+
    simClasses.vlsv.writeWithReduction("TIMESERIES",attribs,1,&cnt,MPI_SUM);*/
 
    profile::stop();

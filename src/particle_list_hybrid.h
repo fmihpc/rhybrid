@@ -43,7 +43,7 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    if (this->initialized == false) { return false; }
 
    // check if particles are to be written
-   if(Hybrid::saveParticles == false) { return success; }
+   if (Hybrid::saveParticles == false) { return success; }
 
    #if PROFILE_LEVEL > 0
       profile::start(this->speciesName+" writing",this->particleWriteID);
@@ -75,7 +75,7 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
    if (this->simClasses->pargrid.getRank() == this->sim->MASTER_RANK) {
       attribsParams["mesh"] = particleMeshName;
       attribsParams["name"] = "q";
-      if(this->simClasses->vlsv.writeArray("PARAMETER",attribsParams,1,1,&this->species.q) == false) { success = false; }
+      if (this->simClasses->vlsv.writeArray("PARAMETER",attribsParams,1,1,&this->species.q) == false) { success = false; }
    }
    else {
       if (this->simClasses->vlsv.writeArray("PARAMETER",attribsParams,0,0,&this->species.q) == false) { success = false; }

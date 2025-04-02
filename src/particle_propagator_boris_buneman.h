@@ -63,14 +63,14 @@ bool BorisBuneman<PARTICLE>::finalize() {return true;}
 template<class PARTICLE>
   void BorisBuneman<PARTICLE>::propagate(const Real xBlock,const Real yBlock,const Real zBlock,pargrid::CellID blockID,const Species& species,PARTICLE& particle,pargrid::CellID globalID) {
    bool accelerate = species.accelerate;
-   if( (simClasses->pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) || (Hybrid::initialFlowThrough == true) ) {
+   if ( (simClasses->pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) || (Hybrid::initialFlowThrough == true) ) {
       accelerate = false;
    }
 #ifdef USE_OUTER_BOUNDARY_ZONE
      // experimental back wall outflow
      /*bool* outerBoundaryFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
-     if(outerBoundaryFlag[blockID] == true) {
-        if( (particle.state[particle::X]+xBlock) < (sim->.x_min + Hybrid::outerBoundaryZone.sizeEta + Hybrid::dx)) {
+     if (outerBoundaryFlag[blockID] == true) {
+        if ( (particle.state[particle::X]+xBlock) < (sim->.x_min + Hybrid::outerBoundaryZone.sizeEta + Hybrid::dx)) {
            accelerate = false;
            particle.state[particle::VX] = -Hybrid::upstreamBulkU;
            particle.state[particle::VY] = 0.0;
@@ -78,7 +78,7 @@ template<class PARTICLE>
         }
      }*/
 #endif
-   /*if(accelerate == true) {
+   /*if (accelerate == true) {
       Real dU[3] = { particle.state[particle::VX]-Ue[0], particle.state[particle::VY]-Ue[1], particle.state[particle::VZ]-Ue[2] };
       const Real half_alpha = 0.5*species.q*sim->dt/species.m;
       Real b[3] = {half_alpha*B[0], half_alpha*B[1], half_alpha*B[2]};
@@ -90,9 +90,9 @@ template<class PARTICLE>
       particle.state[particle::VX] += beta*( dUxb[0] + dUxbxb[0] );
       particle.state[particle::VY] += beta*( dUxb[1] + dUxbxb[1] );
       particle.state[particle::VZ] += beta*( dUxb[2] + dUxbxb[2] );
-      
+
       const Real v2 = sqr(particle.state[particle::VX]) + sqr(particle.state[particle::VY]) + sqr(particle.state[particle::VZ]);
-      if(v2 > Hybrid::maxVi2) {
+      if (v2 > Hybrid::maxVi2) {
 	 const Real norm = sqrt(Hybrid::maxVi2/v2);
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
@@ -104,9 +104,9 @@ template<class PARTICLE>
          Hybrid::logCounterParticleMaxVi[species.popid-1]++;
       }
    }*/
-   
+
    // accelerate particle
-   if(accelerate == true) {
+   if (accelerate == true) {
       Real E[3],B[3],Ue[3],Ep[3];
       Real r[3] = {particle.state[particle::X],particle.state[particle::Y],particle.state[particle::Z]};
       const Real rGlobal[3] = {r[0]+xBlock,r[1]+yBlock,r[2]+zBlock};
@@ -117,7 +117,7 @@ template<class PARTICLE>
       // E = -Ue x B
       crossProduct(B,Ue,E);
       // E = -Ue x B - grad(pe)/(qe*ne)
-      if(Hybrid::useElectronPressureElectricField == true) {
+      if (Hybrid::useElectronPressureElectricField == true) {
          for (unsigned int i=0;i<3;++i) { E[i] += Ep[i]; }
       }
       Real tx,ty,tz,sx,sy,sz,dvx,dvy,dvz,vmx,vmy,vmz,v0x,v0y,v0z,vpx,vpy,vpz,qmideltT2,t2,b2;
@@ -146,9 +146,9 @@ template<class PARTICLE>
       particle.state[particle::VY]=vpy+dvy;
       particle.state[particle::VZ]=vpz+dvz;
       // gravitational acceleration
-      if(Hybrid::useGravity == true) {
+      if (Hybrid::useGravity == true) {
 	 Real r3 = cube( sqrt( sqr(rGlobal[0]) + sqr(rGlobal[1]) + sqr(rGlobal[2]) ) );
-	 if(r3 > 0) {
+	 if (r3 > 0) {
 	    const Real s = -Hybrid::GMdt/r3;
 	    particle.state[particle::VX] += s*rGlobal[0];
 	    particle.state[particle::VY] += s*rGlobal[1];
@@ -156,7 +156,7 @@ template<class PARTICLE>
 	 }
       }
       const Real v2 = sqr(particle.state[particle::VX]) + sqr(particle.state[particle::VY]) + sqr(particle.state[particle::VZ]);
-      if(v2 > Hybrid::maxVi2) {
+      if (v2 > Hybrid::maxVi2) {
 	 const Real norm = sqrt(Hybrid::maxVi2/v2);
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
@@ -171,8 +171,8 @@ template<class PARTICLE>
 
 #ifdef USE_DETECTORS
    bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
-     if(detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
-      //if(particle.state[particle::INI_TIME] >= 0.0) {
+     if (detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
+      //if (particle.state[particle::INI_TIME] >= 0.0) {
          Hybrid::detParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
          Hybrid::detParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
          //Hybrid::detParticleOutput.push_back( particle.state[particle::WEIGHT] );                        //
@@ -207,7 +207,7 @@ bool BorisBuneman<PARTICLE>::propagateCell(pargrid::CellID blockID,pargrid::Data
    const Real yBlock = crd[b3+1];
    const Real zBlock = crd[b3+2];
    const pargrid::CellID globalID = simClasses->pargrid.getGlobalIDs()[blockID];
-   for(size_t p=0;p<N_particles;++p) { propagate(xBlock,yBlock,zBlock,blockID,*species,wrapper.data()[blockID][p],globalID); }
+   for (size_t p=0;p<N_particles;++p) { propagate(xBlock,yBlock,zBlock,blockID,*species,wrapper.data()[blockID][p],globalID); }
    return true;
 }
 

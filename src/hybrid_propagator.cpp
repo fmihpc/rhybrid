@@ -42,7 +42,7 @@ static bool saveStepHappened=false;
 bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool success = true;
    profile::start("propagateB",totalID);   
-   
+
    // get data array pointers
    //Real* faceB_ = Hybrid::varReal["faceB_"].ptr;
    Real* faceB               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
@@ -77,38 +77,38 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    bool* outerBoundaryFlag   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
    bool* outerBoundaryFlagNode   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagNodeID);
 #endif
-   
-   if(faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; exit(1);}
-   if(faceJ               == NULL) {cerr << "ERROR: obtained NULL faceJ array!"        << endl; exit(1);}
-   if(cellRhoQi           == NULL) {cerr << "ERROR: obtained NULL cellRhoQi array!"    << endl; exit(1);}
-   if(cellB               == NULL) {cerr << "ERROR: obtained NULL cellB array!"        << endl; exit(1);}
-   if(cellJ               == NULL) {cerr << "ERROR: obtained NULL cellJ array!"        << endl; exit(1);}
-   if(cellUe              == NULL) {cerr << "ERROR: obtained NULL cellUe array!"       << endl; exit(1);}
-   if(cellJi              == NULL) {cerr << "ERROR: obtained NULL cellJi array!"       << endl; exit(1);}
-   if(cellEp              == NULL) {cerr << "ERROR: obtained NULL cellEp array!"       << endl; exit(1);}
-   if(nodeRhoQi           == NULL) {cerr << "ERROR: obtained NULL nodeRhoQi array!"    << endl; exit(1);}
-   if(nodeE               == NULL) {cerr << "ERROR: obtained NULL nodeE array!"        << endl; exit(1);}
-   if(nodeB               == NULL) {cerr << "ERROR: obtained NULL nodeB array!"        << endl; exit(1);}
-   if(nodeJ               == NULL) {cerr << "ERROR: obtained NULL nodeJ array!"        << endl; exit(1);}
-   if(nodeUe              == NULL) {cerr << "ERROR: obtained NULL nodeUe array!"       << endl; exit(1);}
-   if(nodeJi              == NULL) {cerr << "ERROR: obtained NULL nodeJi array!"       << endl; exit(1);}
+
+   if (faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; exit(1);}
+   if (faceJ               == NULL) {cerr << "ERROR: obtained NULL faceJ array!"        << endl; exit(1);}
+   if (cellRhoQi           == NULL) {cerr << "ERROR: obtained NULL cellRhoQi array!"    << endl; exit(1);}
+   if (cellB               == NULL) {cerr << "ERROR: obtained NULL cellB array!"        << endl; exit(1);}
+   if (cellJ               == NULL) {cerr << "ERROR: obtained NULL cellJ array!"        << endl; exit(1);}
+   if (cellUe              == NULL) {cerr << "ERROR: obtained NULL cellUe array!"       << endl; exit(1);}
+   if (cellJi              == NULL) {cerr << "ERROR: obtained NULL cellJi array!"       << endl; exit(1);}
+   if (cellEp              == NULL) {cerr << "ERROR: obtained NULL cellEp array!"       << endl; exit(1);}
+   if (nodeRhoQi           == NULL) {cerr << "ERROR: obtained NULL nodeRhoQi array!"    << endl; exit(1);}
+   if (nodeE               == NULL) {cerr << "ERROR: obtained NULL nodeE array!"        << endl; exit(1);}
+   if (nodeB               == NULL) {cerr << "ERROR: obtained NULL nodeB array!"        << endl; exit(1);}
+   if (nodeJ               == NULL) {cerr << "ERROR: obtained NULL nodeJ array!"        << endl; exit(1);}
+   if (nodeUe              == NULL) {cerr << "ERROR: obtained NULL nodeUe array!"       << endl; exit(1);}
+   if (nodeJi              == NULL) {cerr << "ERROR: obtained NULL nodeJi array!"       << endl; exit(1);}
 #ifdef USE_RESISTIVITY
-   if(nodeEta             == NULL) {cerr << "ERROR: obtained NULL nodeEta array!"      << endl; exit(1);}
+   if (nodeEta             == NULL) {cerr << "ERROR: obtained NULL nodeEta array!"      << endl; exit(1);}
 #endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-   if(gridCounterCellMaxUe    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxUe array!"    << endl; exit(1);}
-   if(gridCounterCellMaxVi    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxVi array!"    << endl; exit(1);}
-   if(gridCounterCellMinRhoQi == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMinRhoQi array!" << endl; exit(1);}
-   if(gridCounterNodeMaxE     == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxE array!"     << endl; exit(1);}
-   if(gridCounterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxVw array!"    << endl; exit(1);}
+   if (gridCounterCellMaxUe    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxUe array!"    << endl; exit(1);}
+   if (gridCounterCellMaxVi    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxVi array!"    << endl; exit(1);}
+   if (gridCounterCellMinRhoQi == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMinRhoQi array!" << endl; exit(1);}
+   if (gridCounterNodeMaxE     == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxE array!"     << endl; exit(1);}
+   if (gridCounterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxVw array!"    << endl; exit(1);}
 #endif
-   if(innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
-   if(innerFlagParticle   == NULL) {cerr << "ERROR: obtained NULL innerFlagParticle array!" << endl; exit(1);}
-   if(innerFlagCellEp     == NULL) {cerr << "ERROR: obtained NULL innerFlagCellEp array!" << endl; exit(1);}
-   if(innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
+   if (innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
+   if (innerFlagParticle   == NULL) {cerr << "ERROR: obtained NULL innerFlagParticle array!" << endl; exit(1);}
+   if (innerFlagCellEp     == NULL) {cerr << "ERROR: obtained NULL innerFlagCellEp array!" << endl; exit(1);}
+   if (innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
 #ifdef USE_OUTER_BOUNDARY_ZONE
-   if(outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; exit(1);}
-   if(outerBoundaryFlagNode == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlagNode array!"<< endl; exit(1);}
+   if (outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; exit(1);}
+   if (outerBoundaryFlagNode == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlagNode array!"<< endl; exit(1);}
 #endif
    // get block vectors
    const vector<pargrid::CellID>& innerBlocks = simClasses.pargrid.getInnerCells(pargrid::DEFAULT_STENCIL);
@@ -116,9 +116,9 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    const vector<pargrid::CellID>& exteriorBlocks = simClasses.pargrid.getExteriorCells();
 
    // zero diagnostic variables
-   if(saveStepHappened == true) {
+   if (saveStepHappened == true) {
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-      for(pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+      for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 gridCounterCellMaxUe[n]=0.0;
 	 gridCounterCellMaxVi[n]=0.0;
@@ -133,13 +133,13 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // face->cell B
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { face2Cell(faceB,cellB,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { face2Cell(faceB,cellB,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::stop();
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { face2Cell(faceB,cellB,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { face2Cell(faceB,cellB,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
 
    // SET FIELD BOUNDARY CONDITIONS
@@ -159,22 +159,22 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    neumannCell(cellRhoQi,sim,simClasses,exteriorBlocks,1);
    setIMFCell(cellB,sim,simClasses,exteriorBlocks);
    profile::stop();
-   
+
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // add cellB to cellAverageB and increase average counter
    Real* cellAverageB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageBID);
-   if(cellAverageB == NULL) { cerr << "ERROR: obtained NULL cellAverageB array!" << endl; exit(1); }
-   for(pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+   if (cellAverageB == NULL) { cerr << "ERROR: obtained NULL cellAverageB array!" << endl; exit(1); }
+   for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
       const int n = (b*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
-      for(int l=0;l<3;++l) { cellAverageB[n3+l] += cellB[n3+l]; }
+      for (int l=0;l<3;++l) { cellAverageB[n3+l] += cellB[n3+l]; }
    }
    Hybrid::gridTemporalAverageCounter++;
 #endif
-   
+
    // cell->node B
    profile::start("intpol",profIntpolID);   
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { cell2Node(cellB,nodeB,sim,simClasses,b); }
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { cell2Node(cellB,nodeB,sim,simClasses,b); }
    profile::stop();
 
 #ifdef USE_NODE_UE
@@ -182,19 +182,19 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,innerBlocks[b],1); }
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,innerBlocks[b],1); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);   
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
    profile::stop();
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,boundaryBlocks[b],1); }
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,boundaryBlocks[b],1); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
 #endif
-   
+
    // calculate J
 #ifdef USE_EDGE_J
    neumannFace(faceB,sim,simClasses,exteriorBlocks);
@@ -202,7 +202,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // nodeJ = avg(edgeJ) = avg(curl(faceB)/mu0)
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) {
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) {
       calcNodeJ(faceB,nodeB,nodeRhoQi,nodeJ,
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
                 gridCounterNodeMaxVw,
@@ -214,7 +214,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::stop();
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) {
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) {
       calcNodeJ(faceB,nodeB,nodeRhoQi,nodeJ,
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
                 gridCounterNodeMaxVw,
@@ -225,59 +225,59 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // node->cell J
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeJID);
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { node2Cell(nodeJ,cellJ,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { node2Cell(nodeJ,cellJ,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeJID);
    profile::stop();
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { node2Cell(nodeJ,cellJ,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { node2Cell(nodeJ,cellJ,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
 #else
    // Ampere: faceJ = curl(nodeB)/mu0
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeBID);
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { faceCurl(nodeB,faceJ,false,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { faceCurl(nodeB,faceJ,false,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeBID);
    profile::stop();
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { faceCurl(nodeB,faceJ,false,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { faceCurl(nodeB,faceJ,false,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
-   
+
    // face->cell J
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceJID);
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { face2Cell(faceJ,cellJ,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { face2Cell(faceJ,cellJ,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceJID);
    profile::stop();
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { face2Cell(faceJ,cellJ,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { face2Cell(faceJ,cellJ,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
 
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
    neumannCell(cellJ,sim,simClasses,exteriorBlocks,3);
-   
+
    // cell->node J
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJ,nodeJ,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJ,nodeJ,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
    profile::stop();
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJ,nodeJ,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJ,nodeJ,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
 #endif
 
    // calculate cellUe
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       calcCellUe(cellJ,cellJi,cellRhoQi,cellUe,innerFlag,
 #ifdef USE_OUTER_BOUNDARY_ZONE
 		 outerBoundaryFlag,
@@ -288,7 +288,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 		 sim,simClasses,b);
    }
    profile::stop();
-   
+
    // loop thru ghost cells
    profile::start("BoundaryConds",profBoundCondsID);
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellUeID);
@@ -304,19 +304,19 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    /*simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,innerBlocks[b],1); }
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,innerBlocks[b],1); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);   
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
    profile::stop();
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,boundaryBlocks[b],1); }
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,boundaryBlocks[b],1); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();*/
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       calcNodeUe(nodeRhoQi,nodeJi,nodeJ,nodeUe,innerFlagNode,
 #ifdef USE_OUTER_BOUNDARY_ZONE
 		 outerBoundaryFlagNode,
@@ -330,24 +330,24 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // cell->node Ue
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellUeID);
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellUe,nodeUe,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellUe,nodeUe,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellUeID);
    profile::stop();
    profile::start("intpol",profIntpolID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellUe,nodeUe,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellUe,nodeUe,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
 #endif
-   
+
    // upwind nodeB
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { upwindNodeB(cellB,nodeUe,nodeB,sim,simClasses,b); }
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { upwindNodeB(cellB,nodeUe,nodeB,sim,simClasses,b); }
    profile::stop();
-   
+
    // calculate nodeE
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       calcNodeE(nodeUe,nodeB,
 #ifdef USE_RESISTIVITY
       nodeEta,
@@ -361,17 +361,17 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::stop();
 
    // nodeE filter
-   for(int i=0;i<Hybrid::Efilter;i++) {
+   for (int i=0;i<Hybrid::Efilter;i++) {
       // node->cell E
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       profile::start("intpol",profIntpolID);
-      for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { node2Cell(nodeE,cellJ,sim,simClasses,innerBlocks[b]); }
+      for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { node2Cell(nodeE,cellJ,sim,simClasses,innerBlocks[b]); }
       profile::stop();
       profile::start("MPI waits",mpiWaitID);
       simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       profile::stop();
       profile::start("intpol",profIntpolID);
-      for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { node2Cell(nodeE,cellJ,sim,simClasses,boundaryBlocks[b]); }
+      for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { node2Cell(nodeE,cellJ,sim,simClasses,boundaryBlocks[b]); }
       profile::stop();
       // Neumann boundary conditions
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
@@ -382,32 +382,32 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
       // cell->node E
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
       profile::start("intpol",profIntpolID);
-      for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJ,nodeE,sim,simClasses,innerBlocks[b]); }
+      for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJ,nodeE,sim,simClasses,innerBlocks[b]); }
       profile::stop();
       profile::start("MPI waits",mpiWaitID);
       simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
       profile::stop();
       profile::start("intpol",profIntpolID);
-      for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJ,nodeE,sim,simClasses,boundaryBlocks[b]); }
+      for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJ,nodeE,sim,simClasses,boundaryBlocks[b]); }
       profile::stop();
       // zero cellJ
-      for(pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfAllCells();++b) for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) {
+      for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfAllCells();++b) for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	 const int n3 = (b*block::SIZE+block::index(i,j,k))*3;
-	 for(int l=0;l<3;++l) {
+	 for (int l=0;l<3;++l) {
 	    cellJ[n3+l]  = 0.0;
 	 }
       }
    }
    // nodeE gaussian filter
-   if(Hybrid::EfilterNodeGaussSigma > 0) {
+   if (Hybrid::EfilterNodeGaussSigma > 0) {
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       const size_t N = simClasses.pargrid.getNumberOfAllCells()*simClasses.pargrid.getUserDataStaticElements(Hybrid::dataNodeEID);
       Real* nodeEOld = new Real[N];
       *nodeEOld = *nodeE;
-      for(size_t i=0;i<N;++i) { nodeEOld[i] = nodeE[i]; }
-      for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { nodeAvg(nodeEOld,nodeE,sim,simClasses,innerBlocks[b]); }
-      for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { nodeAvg(nodeEOld,nodeE,sim,simClasses,boundaryBlocks[b]); }
+      for (size_t i=0;i<N;++i) { nodeEOld[i] = nodeE[i]; }
+      for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { nodeAvg(nodeEOld,nodeE,sim,simClasses,innerBlocks[b]); }
+      for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { nodeAvg(nodeEOld,nodeE,sim,simClasses,boundaryBlocks[b]); }
       delete [] nodeEOld;
       nodeEOld = NULL;
    }
@@ -415,30 +415,30 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // propagate faceB by Faraday's law using nodeE
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { faceCurl(nodeE,faceB,true,sim,simClasses,innerBlocks[b]); }
+   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { faceCurl(nodeE,faceB,true,sim,simClasses,innerBlocks[b]); }
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
    profile::stop();
    profile::start("field propag",profPropagFieldID);
-   for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { faceCurl(nodeE,faceB,true,sim,simClasses,boundaryBlocks[b]); }
+   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { faceCurl(nodeE,faceB,true,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
 
    // calculated cellEp
-   if(Hybrid::useElectronPressureElectricField == true) {
+   if (Hybrid::useElectronPressureElectricField == true) {
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeRhoQiID);
       profile::start("intpol",profIntpolID);
-      for(pargrid::CellID b=0; b<innerBlocks.size(); ++b) { calcCellEp(nodeRhoQi,cellRhoQi,innerFlagCellEp,cellEp,sim,simClasses,innerBlocks[b]); }
+      for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { calcCellEp(nodeRhoQi,cellRhoQi,innerFlagCellEp,cellEp,sim,simClasses,innerBlocks[b]); }
       profile::stop();
       profile::start("MPI waits",mpiWaitID);
       simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeRhoQiID);
       profile::stop();
       profile::start("intpol",profIntpolID);
-      for(pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { calcCellEp(nodeRhoQi,cellRhoQi,innerFlagCellEp,cellEp,sim,simClasses,boundaryBlocks[b]); }
+      for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { calcCellEp(nodeRhoQi,cellRhoQi,innerFlagCellEp,cellEp,sim,simClasses,boundaryBlocks[b]); }
       profile::stop();
    }
-   
-   if(sim.atDataSaveStep == true) {
+
+   if (sim.atDataSaveStep == true) {
       saveStepHappened = true;
    }
 
@@ -453,209 +453,209 @@ void neumannCell(Real* cellData,Simulation& sim,SimulationClasses& simClasses,co
    Real* aa = new Real[s*vectorDim]; // temp array
    const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
 
-   for(pargrid::CellID eb=0;eb<exteriorBlocks.size();++eb) {
+   for (pargrid::CellID eb=0;eb<exteriorBlocks.size();++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
       fetchData(cellData,aa,simClasses,b,vectorDim);
-      int di=0; if(block::WIDTH_X > 1) { di=block::WIDTH_X-1; }
-      int dj=0; if(block::WIDTH_Y > 1) { dj=block::WIDTH_Y-1; }
-      int dk=0; if(block::WIDTH_Z > 1) { dk=block::WIDTH_Z-1; }
+      int di=0; if (block::WIDTH_X > 1) { di=block::WIDTH_X-1; }
+      int dj=0; if (block::WIDTH_Y > 1) { dj=block::WIDTH_Y-1; }
+      int dk=0; if (block::WIDTH_Z > 1) { dk=block::WIDTH_Z-1; }
       const uint32_t& nf = neighbourFlags[b];
       // back (-x) wall
-      if((nf & Hybrid::X_NEG_EXISTS) == 0) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0+di;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+2,j+1,k+1)*vectorDim;
-	    for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	    for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
 	 }
       }
       // side (+y) wall
-      if((nf & Hybrid::Y_POS_EXISTS) == 0) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Y_POS_EXISTS) == 0) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int j = block::WIDTH_Y-1-dj;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+0,k+1)*vectorDim;
-	    for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	    for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
 	 }
       }
       // side (-y) wall
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Y_NEG_EXISTS) == 0) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int j = 0+dj;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+2,k+1)*vectorDim;
-	    for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	    for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
 	 }
       }
       // side (+z) wall
-      if((nf & Hybrid::Z_POS_EXISTS) == 0) {
-	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int k = block::WIDTH_Z-1-dk;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+1,k+0)*vectorDim;
-	    for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	    for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
 	 }
       }
       // side (-z) wall
-      if((nf & Hybrid::Z_NEG_EXISTS) == 0) {
-	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int k = 0+dk;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+1,k+2)*vectorDim;
-	    for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	    for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
 	 }
       }
       // front (+x) wall
-      if((nf & Hybrid::X_POS_EXISTS) == 0) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+0,j+1,k+1)*vectorDim;
-	    for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	    for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
 	 }
       }
-      
+
       // NOTE: block indices not correct for these yet
 
       // edge (-x,-y)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+2,k+1)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (-x,+y)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+0,k+1)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (+x,-y)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+2,k+1)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (+x,+y)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+0,k+1)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (-x,-z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+1,k+2)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (-x,+z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+1,k+0)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (+x,-z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+1,k+2)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (+x,+z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+1,k+0)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (-y,-z)
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+1,j+2,k+2)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (-y,+z)
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+1,j+2,k+0)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (+y,-z)
-      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+1,j+0,k+2)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // edge (+y,+z)
-      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+1,j+0,k+0)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // corner (-x,-y,-z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+2,k+2)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // corner (-x,-y,+z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+2,k+0)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // corner (-x,+y,-z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+0,k+2)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // corner (-x,+y,+z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+2,j+0,k+0)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // corner (+x,-y,-z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+2,k+2)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // corner (+x,-y,+z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+2,k+0)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // corner (+x,+y,-z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+0,k+2)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
       // corner (+x,+y,+z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m = block::arrayIndex(i+0,j+0,k+0)*vectorDim;
-	 for(size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
+	 for (size_t l=0;l<vectorDim;++l) { cellData[n+l] = aa[m+l]; }
       }
    }
    delete [] aa; aa = NULL;
@@ -670,16 +670,16 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
    Real* aa = new Real[s*vectorDim]; // temp array
    const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
 
-   for(pargrid::CellID eb=0;eb<exteriorBlocks.size();++eb) {
+   for (pargrid::CellID eb=0;eb<exteriorBlocks.size();++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
       fetchData(faceData,aa,simClasses,b,vectorDim);
-      int di=0; if(block::WIDTH_X > 1) { di=block::WIDTH_X-1; }
-      int dj=0; if(block::WIDTH_Y > 1) { dj=block::WIDTH_Y-1; }
-      int dk=0; if(block::WIDTH_Z > 1) { dk=block::WIDTH_Z-1; }
+      int di=0; if (block::WIDTH_X > 1) { di=block::WIDTH_X-1; }
+      int dj=0; if (block::WIDTH_Y > 1) { dj=block::WIDTH_Y-1; }
+      int dk=0; if (block::WIDTH_Z > 1) { dk=block::WIDTH_Z-1; }
       const uint32_t& nf = neighbourFlags[b];
       // back (-x) wall
-      if((nf & Hybrid::X_NEG_EXISTS) == 0) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0+di;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+2,j+1,k+1)*vectorDim;
@@ -688,8 +688,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	 }
       }
       // side (+y) wall
-      if((nf & Hybrid::Y_POS_EXISTS) == 0) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Y_POS_EXISTS) == 0) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int j = block::WIDTH_Y-1-dj;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+0,k+1)*vectorDim;
@@ -698,8 +698,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	 }
       }
       // side (-y) wall
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Y_NEG_EXISTS) == 0) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int j = 0+dj;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+2,k+1)*vectorDim;
@@ -708,8 +708,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	 }
       }
       // side (+z) wall
-      if((nf & Hybrid::Z_POS_EXISTS) == 0) {
-	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Z_POS_EXISTS) == 0) {
+	 for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int k = block::WIDTH_Z-1-dk;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+1,k+0)*vectorDim;
@@ -718,8 +718,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	 }
       }
       // side (-z) wall
-      if((nf & Hybrid::Z_NEG_EXISTS) == 0) {
-	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Z_NEG_EXISTS) == 0) {
+	 for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int k = 0+dk;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+1,j+1,k+2)*vectorDim;
@@ -728,8 +728,8 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 	 }
       }
       // front (+x) wall
-      if((nf & Hybrid::X_POS_EXISTS) == 0) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	    const int m = block::arrayIndex(i+0,j+1,k+1)*vectorDim;
@@ -740,7 +740,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
       // NOTE: block indices not correct for these yet
 
       // edge (-x,-y)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m121 = block::arrayIndex(i+1,j+2,k+1)*vectorDim;
@@ -751,7 +751,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m221+2];
       }
       // edge (-x,+y)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
          const int m101 = block::arrayIndex(i+1,j+0,k+1)*vectorDim;
@@ -760,7 +760,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m201+2];
       }
       // edge (+x,-y)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m011 = block::arrayIndex(i+0,j+1,k+1)*vectorDim;
@@ -769,14 +769,14 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m021+2];
       }
       // edge (+x,+y)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m001 = block::arrayIndex(i+0,j+0,k+1)*vectorDim;
          faceData[n+2] = aa[m001+2];
       }
       // edge (-x,-z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
          const int m112 = block::arrayIndex(i+1,j+1,k+2)*vectorDim;
@@ -787,7 +787,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m211+2];
       }
       // edge (-x,+z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
          const int m110 = block::arrayIndex(i+1,j+1,k+0)*vectorDim;
@@ -796,7 +796,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+1] = aa[m210+1];
       }
       // edge (+x,-z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
          const int m012 = block::arrayIndex(i+0,j+1,k+2)*vectorDim;
@@ -805,14 +805,14 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m011+2];
       }
       // edge (+x,+z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m010 = block::arrayIndex(i+0,j+1,k+0)*vectorDim;
          faceData[n+1] = aa[m010+1];
       }
       // edge (-y,-z)
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m122 = block::arrayIndex(i+1,j+2,k+2)*vectorDim;
@@ -823,7 +823,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m121+2];
       }
       // edge (-y,+z)
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m120 = block::arrayIndex(i+1,j+2,k+0)*vectorDim;
@@ -832,7 +832,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+1] = aa[m110+1];
       }
       // edge (+y,-z)
-      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m102 = block::arrayIndex(i+1,j+0,k+2)*vectorDim;
@@ -841,14 +841,14 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m101+2];
       }
       // edge (+y,+z)
-      if((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m100 = block::arrayIndex(i+1,j+0,k+0)*vectorDim;
          faceData[n+0] = aa[m100+0];
       }
       // corner (-x,-y,-z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m122 = block::arrayIndex(i+1,j+2,k+2)*vectorDim;
@@ -859,7 +859,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m221+2];
       }
       // corner (-x,-y,+z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m120 = block::arrayIndex(i+1,j+2,k+0)*vectorDim;
@@ -868,7 +868,7 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+1] = aa[m210+1];
       }
       // corner (-x,+y,-z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m102 = block::arrayIndex(i+1,j+0,k+2)*vectorDim;
@@ -877,14 +877,14 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m201+2];
       }
       // corner (-x,+y,+z)
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m100 = block::arrayIndex(i+1,j+0,k+0)*vectorDim;
          faceData[n+0] = aa[m100+0];
       }
       // corner (+x,-y,-z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m012 = block::arrayIndex(i+0,j+1,k+2)*vectorDim;
@@ -893,21 +893,21 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
          faceData[n+2] = aa[m021+2];
       }
       // corner (+x,-y,+z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_NEG_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m010 = block::arrayIndex(i+0,j+1,k+0)*vectorDim;
          faceData[n+1] = aa[m010+1];
       }
       // corner (+x,+y,-z)
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_NEG_EXISTS) == 0) {
 	 const int i=0,j=0,k=0;
 	 const int n = (b*block::SIZE+block::index(i,j,k))*vectorDim;
 	 const int m001 = block::arrayIndex(i+0,j+0,k+1)*vectorDim;
          faceData[n+2] = aa[m001+2];
       }
       // corner (+x,+y,+z)
-      //if((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
+      //if ((nf & Hybrid::X_POS_EXISTS) == 0 && (nf & Hybrid::Y_POS_EXISTS) == 0 && (nf & Hybrid::Z_POS_EXISTS) == 0) {
       // all ghost outer faces
       //}
    }
@@ -917,12 +917,12 @@ void neumannFace(Real* faceData,Simulation& sim,SimulationClasses& simClasses,co
 void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const vector<pargrid::CellID>& exteriorBlocks)
 {
    const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
-   for(pargrid::CellID eb=0; eb<exteriorBlocks.size(); ++eb) {
+   for (pargrid::CellID eb=0; eb<exteriorBlocks.size(); ++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
       const uint32_t& nf = neighbourFlags[b];
       // +x (front) wall
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[0] == true) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[0] == true) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    cellB[n+0] = Hybrid::IMFBx;
@@ -931,8 +931,8 @@ void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // -x (back) wall
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[1] == true) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[1] == true) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    cellB[n+0] = Hybrid::IMFBx;
@@ -941,8 +941,8 @@ void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // +y side wall
-      if((nf & Hybrid::Y_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[2] == true) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Y_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[2] == true) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int j = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    cellB[n+0] = Hybrid::IMFBx;
@@ -951,8 +951,8 @@ void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // -y side wall
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[3] == true) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Y_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[3] == true) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int j = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    cellB[n+0] = Hybrid::IMFBx;
@@ -961,8 +961,8 @@ void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // +z side wall
-      if((nf & Hybrid::Z_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[4] == true) {
-	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Z_POS_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[4] == true) {
+	 for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int k = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    cellB[n+0] = Hybrid::IMFBx;
@@ -971,8 +971,8 @@ void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // -z side wall
-      if((nf & Hybrid::Z_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[5] == true) {
-	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Z_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryCellB[5] == true) {
+	 for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int k = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    cellB[n+0] = Hybrid::IMFBx;
@@ -986,12 +986,12 @@ void setIMFCell(Real* cellB,Simulation& sim,SimulationClasses& simClasses,const 
 void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const vector<pargrid::CellID>& exteriorBlocks)
 {
    const std::vector<uint32_t>& neighbourFlags = simClasses.pargrid.getNeighbourFlags();
-   for(pargrid::CellID eb=0; eb<exteriorBlocks.size(); ++eb) {
+   for (pargrid::CellID eb=0; eb<exteriorBlocks.size(); ++eb) {
       const pargrid::CellID b = exteriorBlocks[eb];
       const uint32_t& nf = neighbourFlags[b];
       // +x (front) wall
-      if((nf & Hybrid::X_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[0] == true) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+      if ((nf & Hybrid::X_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[0] == true) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    faceB[n+1] = Hybrid::IMFBy;
@@ -999,8 +999,8 @@ void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // -x (back) wall
-      if((nf & Hybrid::X_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[1] == true) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) {
+      if ((nf & Hybrid::X_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[1] == true) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) {
 	    const int i = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    faceB[n+1] = Hybrid::IMFBy;
@@ -1008,8 +1008,8 @@ void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // +y side wall
-      if((nf & Hybrid::Y_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[2] == true) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Y_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[2] == true) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int j = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    faceB[n+0] = Hybrid::IMFBx;
@@ -1017,8 +1017,8 @@ void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // -y side wall
-      if((nf & Hybrid::Y_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[3] == true) {
-	 for(int k=0; k<block::WIDTH_Z; ++k) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Y_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[3] == true) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int j = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    faceB[n+0] = Hybrid::IMFBx;
@@ -1026,8 +1026,8 @@ void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // +z side wall
-      if((nf & Hybrid::Z_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[4] == true) {
-	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Z_POS_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[4] == true) {
+	 for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int k = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    faceB[n+0] = Hybrid::IMFBx;
@@ -1035,8 +1035,8 @@ void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const 
 	 }
       }
       // -z side wall
-      if((nf & Hybrid::Z_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[5] == true) {
-	 for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+      if ((nf & Hybrid::Z_NEG_EXISTS) == 0 && Hybrid::IMFBoundaryFaceB[5] == true) {
+	 for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	    const int k = 0;
 	    const int n = (b*block::SIZE+block::index(i,j,k))*3;
 	    faceB[n+0] = Hybrid::IMFBx;
@@ -1049,12 +1049,12 @@ void setIMFFace(Real* faceB,Simulation& sim,SimulationClasses& simClasses,const 
 // interpolation from faces to cells
 void face2Cell(Real* faceData,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
    const size_t vectorDim = 3;
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
    fetchData(faceData,aa,simClasses,blockID,vectorDim);
-   for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+   for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
       cellData[n+0] = 0.5*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0] + aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+0]);
       cellData[n+1] = 0.5*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1] + aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+1]);
@@ -1068,20 +1068,20 @@ void cell2Node(Real* cellData,Real* nodeData,Simulation& sim,SimulationClasses& 
    int di=0;
    int dj=0;
    int dk=0;
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real* aa = new Real[s*vectorDim]; // temp array
    fetchData(cellData,aa,simClasses,blockID,vectorDim);
-   for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
-      for(size_t l=0;l<vectorDim;++l) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 nodeData[n+l] = 0.125*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
 				aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l] +
 				aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l] +
@@ -1098,14 +1098,14 @@ void cell2Node(Real* cellData,Real* nodeData,Simulation& sim,SimulationClasses& 
 // interpolation from nodes to cells
 void node2Cell(Real* nodeData,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
    const size_t vectorDim = 3;
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
    fetchData(nodeData,aa,simClasses,blockID,vectorDim);
-   for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+   for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*3;
-      for(size_t l=0;l<vectorDim;++l) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 cellData[n+l] = 0.125*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
 				aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
 				aa[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l] +
@@ -1124,13 +1124,13 @@ void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses&
    int di=0;
    int dj=0;
    int dk=0;
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    const Real initVal = numeric_limits<Real>::max();
@@ -1142,9 +1142,9 @@ void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses&
    const Real C3 = Hybrid::EfilterNodeGaussCoeffs[2]; // diagonal neighbors (distance = sqrt(2)*dx)
    const Real C4 = Hybrid::EfilterNodeGaussCoeffs[3]; // diagonal neighbors (distance = sqrt(3)*dx)
    // loop through all nodes in the simulation domain
-   for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
-      for(size_t l=0;l<vectorDim;++l) {
+      for (size_t l=0;l<vectorDim;++l) {
          // electric field component l (x=0,y=1,z=2) at 27 nodes
          Real nodeEl111 = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l];
          Real nodeEl110 = aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l];
@@ -1177,37 +1177,37 @@ void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses&
          // weight coefficients for each node (if the electric field value is exactly
          // zero, the node is excluedd as it should be a boundary node)
          bool zeroFound = false;
-         Real C111 = C1; if(nodeEl111 == initVal) { nodeEl111 = 0.0; C111 = 0.0; zeroFound = true; }
-         Real C110 = C2; if(nodeEl110 == initVal) { nodeEl110 = 0.0; C110 = 0.0; zeroFound = true; }
-         Real C011 = C2; if(nodeEl011 == initVal) { nodeEl011 = 0.0; C011 = 0.0; zeroFound = true; }
-         Real C121 = C2; if(nodeEl121 == initVal) { nodeEl121 = 0.0; C121 = 0.0; zeroFound = true; }
-         Real C211 = C2; if(nodeEl211 == initVal) { nodeEl211 = 0.0; C211 = 0.0; zeroFound = true; }
-         Real C101 = C2; if(nodeEl101 == initVal) { nodeEl101 = 0.0; C101 = 0.0; zeroFound = true; }
-         Real C112 = C2; if(nodeEl112 == initVal) { nodeEl112 = 0.0; C112 = 0.0; zeroFound = true; }
-         Real C010 = C3; if(nodeEl010 == initVal) { nodeEl010 = 0.0; C010 = 0.0; zeroFound = true; }
-         Real C100 = C3; if(nodeEl100 == initVal) { nodeEl100 = 0.0; C100 = 0.0; zeroFound = true; }
-         Real C120 = C3; if(nodeEl120 == initVal) { nodeEl120 = 0.0; C120 = 0.0; zeroFound = true; }
-         Real C210 = C3; if(nodeEl210 == initVal) { nodeEl210 = 0.0; C210 = 0.0; zeroFound = true; }
-         Real C001 = C3; if(nodeEl001 == initVal) { nodeEl001 = 0.0; C001 = 0.0; zeroFound = true; }
-         Real C021 = C3; if(nodeEl021 == initVal) { nodeEl021 = 0.0; C021 = 0.0; zeroFound = true; }
-         Real C221 = C3; if(nodeEl221 == initVal) { nodeEl221 = 0.0; C221 = 0.0; zeroFound = true; }
-         Real C201 = C3; if(nodeEl201 == initVal) { nodeEl201 = 0.0; C201 = 0.0; zeroFound = true; }
-         Real C012 = C3; if(nodeEl012 == initVal) { nodeEl012 = 0.0; C012 = 0.0; zeroFound = true; }
-         Real C122 = C3; if(nodeEl122 == initVal) { nodeEl122 = 0.0; C122 = 0.0; zeroFound = true; }
-         Real C212 = C3; if(nodeEl212 == initVal) { nodeEl212 = 0.0; C212 = 0.0; zeroFound = true; }
-         Real C102 = C3; if(nodeEl102 == initVal) { nodeEl102 = 0.0; C102 = 0.0; zeroFound = true; }
-         Real C002 = C4; if(nodeEl002 == initVal) { nodeEl002 = 0.0; C002 = 0.0; zeroFound = true; }
-         Real C022 = C4; if(nodeEl022 == initVal) { nodeEl022 = 0.0; C022 = 0.0; zeroFound = true; }
-         Real C202 = C4; if(nodeEl202 == initVal) { nodeEl202 = 0.0; C202 = 0.0; zeroFound = true; }
-         Real C222 = C4; if(nodeEl222 == initVal) { nodeEl222 = 0.0; C222 = 0.0; zeroFound = true; }
-         Real C000 = C4; if(nodeEl000 == initVal) { nodeEl000 = 0.0; C000 = 0.0; zeroFound = true; }
-         Real C020 = C4; if(nodeEl020 == initVal) { nodeEl020 = 0.0; C020 = 0.0; zeroFound = true; }
-         Real C200 = C4; if(nodeEl200 == initVal) { nodeEl200 = 0.0; C200 = 0.0; zeroFound = true; }
-         Real C220 = C4; if(nodeEl220 == initVal) { nodeEl220 = 0.0; C220 = 0.0; zeroFound = true; }
+         Real C111 = C1; if (nodeEl111 == initVal) { nodeEl111 = 0.0; C111 = 0.0; zeroFound = true; }
+         Real C110 = C2; if (nodeEl110 == initVal) { nodeEl110 = 0.0; C110 = 0.0; zeroFound = true; }
+         Real C011 = C2; if (nodeEl011 == initVal) { nodeEl011 = 0.0; C011 = 0.0; zeroFound = true; }
+         Real C121 = C2; if (nodeEl121 == initVal) { nodeEl121 = 0.0; C121 = 0.0; zeroFound = true; }
+         Real C211 = C2; if (nodeEl211 == initVal) { nodeEl211 = 0.0; C211 = 0.0; zeroFound = true; }
+         Real C101 = C2; if (nodeEl101 == initVal) { nodeEl101 = 0.0; C101 = 0.0; zeroFound = true; }
+         Real C112 = C2; if (nodeEl112 == initVal) { nodeEl112 = 0.0; C112 = 0.0; zeroFound = true; }
+         Real C010 = C3; if (nodeEl010 == initVal) { nodeEl010 = 0.0; C010 = 0.0; zeroFound = true; }
+         Real C100 = C3; if (nodeEl100 == initVal) { nodeEl100 = 0.0; C100 = 0.0; zeroFound = true; }
+         Real C120 = C3; if (nodeEl120 == initVal) { nodeEl120 = 0.0; C120 = 0.0; zeroFound = true; }
+         Real C210 = C3; if (nodeEl210 == initVal) { nodeEl210 = 0.0; C210 = 0.0; zeroFound = true; }
+         Real C001 = C3; if (nodeEl001 == initVal) { nodeEl001 = 0.0; C001 = 0.0; zeroFound = true; }
+         Real C021 = C3; if (nodeEl021 == initVal) { nodeEl021 = 0.0; C021 = 0.0; zeroFound = true; }
+         Real C221 = C3; if (nodeEl221 == initVal) { nodeEl221 = 0.0; C221 = 0.0; zeroFound = true; }
+         Real C201 = C3; if (nodeEl201 == initVal) { nodeEl201 = 0.0; C201 = 0.0; zeroFound = true; }
+         Real C012 = C3; if (nodeEl012 == initVal) { nodeEl012 = 0.0; C012 = 0.0; zeroFound = true; }
+         Real C122 = C3; if (nodeEl122 == initVal) { nodeEl122 = 0.0; C122 = 0.0; zeroFound = true; }
+         Real C212 = C3; if (nodeEl212 == initVal) { nodeEl212 = 0.0; C212 = 0.0; zeroFound = true; }
+         Real C102 = C3; if (nodeEl102 == initVal) { nodeEl102 = 0.0; C102 = 0.0; zeroFound = true; }
+         Real C002 = C4; if (nodeEl002 == initVal) { nodeEl002 = 0.0; C002 = 0.0; zeroFound = true; }
+         Real C022 = C4; if (nodeEl022 == initVal) { nodeEl022 = 0.0; C022 = 0.0; zeroFound = true; }
+         Real C202 = C4; if (nodeEl202 == initVal) { nodeEl202 = 0.0; C202 = 0.0; zeroFound = true; }
+         Real C222 = C4; if (nodeEl222 == initVal) { nodeEl222 = 0.0; C222 = 0.0; zeroFound = true; }
+         Real C000 = C4; if (nodeEl000 == initVal) { nodeEl000 = 0.0; C000 = 0.0; zeroFound = true; }
+         Real C020 = C4; if (nodeEl020 == initVal) { nodeEl020 = 0.0; C020 = 0.0; zeroFound = true; }
+         Real C200 = C4; if (nodeEl200 == initVal) { nodeEl200 = 0.0; C200 = 0.0; zeroFound = true; }
+         Real C220 = C4; if (nodeEl220 == initVal) { nodeEl220 = 0.0; C220 = 0.0; zeroFound = true; }
          // renormalize if boundary node found
-         if(zeroFound == true) {
+         if (zeroFound == true) {
             const Real Csum = C111+C110+C011+C121+C211+C101+C112+C010+C100+C120+C210+C001+C021+C221+C201+C012+C122+C212+C102+C002+C022+C202+C222+C000+C020+C200+C220;
-            if(Csum > 0.0) {
+            if (Csum > 0.0) {
                C111 /= Csum;
                C110 /= Csum;
                C011 /= Csum;
@@ -1276,19 +1276,19 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
    int di=0;
    int dj=0;
    int dk=0;
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
    const size_t vectorDim = 3;
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
    fetchData(cellB,aa,simClasses,blockID,vectorDim);
-   for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
 
       // upwind displacement vector = (-0.5,0,0) if Ue = 0
@@ -1298,7 +1298,7 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
 
       // upwind displacement vector = -0.5*nodeUe/|nodeUe| (dimensionaless, dx=1)
       const Real Ue = sqrt(sqr(nodeUe[n+0]) + sqr(nodeUe[n+1]) + sqr(nodeUe[n+2]));
-      if(Ue > 0) {
+      if (Ue > 0) {
 	 const Real a = -0.5/Ue;
 	 xUpwind = nodeUe[n+0]*a;
 	 yUpwind = nodeUe[n+1]*a;
@@ -1326,8 +1326,8 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
       const Real w222 = 1/sqrt(sqr(xCell222-xUpwind) + sqr(yCell222-yUpwind) + sqr(zCell222-zUpwind));
       const Real wsum = w111+w112+w121+w211+w122+w221+w212+w222;
 
-      if(wsum > 0) {
-	 for(size_t l=0;l<vectorDim;++l) {
+      if (wsum > 0) {
+	 for (size_t l=0;l<vectorDim;++l) {
 	    nodeB[n+l] = (w111*aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
 			  w112*aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l] +
 			  w121*aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l] +
@@ -1354,28 +1354,28 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 #endif
 		Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
-   for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+   for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
       // inner boundary condition for Ue
-      if(innerFlag[n] == true) {
+      if (innerFlag[n] == true) {
 	 cellUe[n3+0] = Hybrid::fieldObstacleUe[0];
 	 cellUe[n3+1] = Hybrid::fieldObstacleUe[1];
 	 cellUe[n3+2] = Hybrid::fieldObstacleUe[2];
 	 continue;
       }
 #ifdef USE_OUTER_BOUNDARY_ZONE
-      if(outerBoundaryFlag[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
+      if (outerBoundaryFlag[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
 	 cellUe[n3+0] = -Hybrid::upstreamBulkU;
 	 cellUe[n3+1] = cellUe[n3+2] = 0.0;
 	 continue;
       }
 #endif
       // calc Ue = (J - Ji)/rhoqi
-      for(int l=0;l<3;++l) {
-	 if(fabs(cellRhoQi[n]) > 0) {
-            if(Hybrid::useHallElectricField == true) {
+      for (int l=0;l<3;++l) {
+	 if (fabs(cellRhoQi[n]) > 0) {
+            if (Hybrid::useHallElectricField == true) {
                cellUe[n3+l] = -(cellJ[n3+l] - cellJi[n3+l])/cellRhoQi[n];
             }
             else {
@@ -1386,10 +1386,10 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 	    cellUe[n3+l] = 0.0;
 	 }
       }
-      
+
       // check max Ue
       const Real Ue2 = sqr(cellUe[n3+0]) + sqr(cellUe[n3+1]) + sqr(cellUe[n3+2]);
-      if(Ue2 > Hybrid::maxUe2) {
+      if (Ue2 > Hybrid::maxUe2) {
 	 const Real norm = sqrt(Hybrid::maxUe2/Ue2);
 	 cellUe[n3+0] *= norm;
 	 cellUe[n3+1] *= norm;
@@ -1401,7 +1401,7 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
       }
    }
 }
-   
+
 
 // E = -Ue x B + eta*J
 void calcNodeE(Real* nodeUe,Real* nodeB,
@@ -1417,20 +1417,20 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
    int di=0;
    int dj=0;
    int dk=0;
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
 
 #ifdef USE_B_CONSTANT
    const Real* crd = getBlockCoordinateArray(sim,simClasses);
    const size_t b3 = 3*blockID;
 #endif
-   for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
       Real Btot[3];
@@ -1441,7 +1441,7 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
       const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
       const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
       const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
-      if(Hybrid::includeConstantB0InFaradaysLaw == true) { addConstantB(sim,simClasses,xNode,yNode,zNode,Btot); }
+      if (Hybrid::includeConstantB0InFaradaysLaw == true) { addConstantB(sim,simClasses,xNode,yNode,zNode,Btot); }
 #endif
       nodeE[n3+0] = -(nodeUe[n3+1]*Btot[2] - nodeUe[n3+2]*Btot[1]);
       nodeE[n3+1] = -(nodeUe[n3+2]*Btot[0] - nodeUe[n3+0]*Btot[2]);
@@ -1451,7 +1451,7 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
       nodeE[n3+1] += nodeEta[n]*nodeJ[n3+1];
       nodeE[n3+2] += nodeEta[n]*nodeJ[n3+2];
 #endif
-      if(Hybrid::maxE2 > 0) {
+      if (Hybrid::maxE2 > 0) {
          const Real E2 = sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]);
          if (E2 > Hybrid::maxE2) {
             Real scaling = sqrt(Hybrid::maxE2/E2);
@@ -1477,19 +1477,19 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
    int di=0;
    int dj=0;
    int dk=0;
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
    const size_t vectorDim = 3;
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
    fetchData(faceB,aa,simClasses,blockID,vectorDim);
-   for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*vectorDim;
       const Real edgeJx1 =
@@ -1526,7 +1526,7 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
       Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
       const Real ne = nodeRhoQi[n]/constants::CHARGE_ELEMENTARY;
       const Real Btot = sqrt( sqr(nodeB[n3+0]) + sqr(nodeB[n3+1]) + sqr(nodeB[n3+2]) );
-      if(ne > 0.0 && Hybrid::dx > 0.0) {
+      if (ne > 0.0 && Hybrid::dx > 0.0) {
 	vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
       }
       if (vw > Hybrid::maxVw && Hybrid::maxVw > 0.0) {
@@ -1555,40 +1555,40 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
    int di=0;
    int dj=0;
    int dk=0;
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
-   for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
       // inner boundary condition for Ue
-      if(innerFlag[n] == true) {
+      if (innerFlag[n] == true) {
 	 nodeUe[n3+0] = Hybrid::fieldObstacleUe[0];
 	 nodeUe[n3+1] = Hybrid::fieldObstacleUe[1];
 	 nodeUe[n3+2] = Hybrid::fieldObstacleUe[2];
 	 continue;
       }
 #ifdef USE_OUTER_BOUNDARY_ZONE
-      if(outerBoundaryFlagNode[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
+      if (outerBoundaryFlagNode[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
 	 nodeUe[n3+0] = -Hybrid::upstreamBulkU;
 	 nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
 	 continue;
       }
 #endif
       // check min nodeRhoQi
-      if(nodeRhoQi[n] < Hybrid::minRhoQi) {
+      if (nodeRhoQi[n] < Hybrid::minRhoQi) {
 	 nodeRhoQi[n] = Hybrid::minRhoQi;
 	 Hybrid::logCounterFieldMinNodeRhoQi++;
       }
       // calc Ue = (J - Ji)/rhoqi
-      for(int l=0;l<3;++l) {
-	 if(fabs(nodeRhoQi[n]) > 0) {
-            if(Hybrid::useHallElectricField == true) {
+      for (int l=0;l<3;++l) {
+	 if (fabs(nodeRhoQi[n]) > 0) {
+            if (Hybrid::useHallElectricField == true) {
                nodeUe[n3+l] = -(nodeJ[n3+l] - nodeJi[n3+l])/nodeRhoQi[n];
             }
             else {
@@ -1599,10 +1599,10 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
 	    nodeUe[n3+l] = 0.0;
 	 }
       }
-      
+
       // check max Ue
       const Real Ue2 = sqr(nodeUe[n3+0]) + sqr(nodeUe[n3+1]) + sqr(nodeUe[n3+2]);
-      if(Ue2 > Hybrid::maxUe2) {
+      if (Ue2 > Hybrid::maxUe2) {
 	 const Real norm = sqrt(Hybrid::maxUe2/Ue2);
 	 nodeUe[n3+0] *= norm;
 	 nodeUe[n3+1] *= norm;
@@ -1624,16 +1624,16 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
    int di=0;
    int dj=0;
    int dk=0;
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0) { doYFace = doZFace = false; }
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0) { doXFace = doZFace = false; }
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0) { doXFace = doYFace = false; }
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
-      if((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) {
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_POS_EXISTS) == 0) return;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0) { doYFace = doZFace = false; }
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0) { doXFace = doZFace = false; }
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0) { doXFace = doYFace = false; }
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::X_NEG_EXISTS) == 0 && block::WIDTH_X > 1) di = block::WIDTH_X-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Y_NEG_EXISTS) == 0 && block::WIDTH_Y > 1) dj = block::WIDTH_Y-1;
+      if ((simClasses.pargrid.getNeighbourFlags()[blockID] & Hybrid::Z_NEG_EXISTS) == 0 && block::WIDTH_Z > 1) dk = block::WIDTH_Z-1;
    }
 
    const size_t vectorDim = 3;
@@ -1641,7 +1641,7 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
    Real aa[s*vectorDim]; // temp array
    fetchData(nodeData,aa,simClasses,blockID,vectorDim);
 
-   for(int k=0+dk; k<block::WIDTH_Z; ++k) for(int j=0+dj; j<block::WIDTH_Y; ++j) for(int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*vectorDim;
       Real node1x = aa[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+0];
@@ -1672,27 +1672,27 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
       Real node8y = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1];
       Real node8z = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2];
 
-      if(doXFace == true) {
+      if (doXFace == true) {
 	 Real curlX = 0.5*(+node5z+node6z-node6y-node7y-node7z-node8z+node8y+node5y)/Hybrid::dx;
-	 if(doFaraday == true) {
+	 if (doFaraday == true) {
 	    faceData[n3+0] += sim.dt*curlX; // Faraday's law
 	 }
 	 else {
 	    faceData[n3+0] = -curlX/constants::PERMEABILITY; // Ampere's law
 	 }
       }
-      if(doYFace == true) {
+      if (doYFace == true) {
 	 Real curlY = 0.5*(-node4x-node8x+node8z+node7z+node7x+node3x-node3z-node4z)/Hybrid::dx;
-	 if(doFaraday == true) {
+	 if (doFaraday == true) {
 	    faceData[n3+1] += sim.dt*curlY;
 	 }
 	 else {
 	    faceData[n3+1] = -curlY/constants::PERMEABILITY;
 	 }
       }
-      if(doZFace == true) {
+      if (doZFace == true) {
 	 Real curlZ = 0.5*(-node1x-node5x-node5y-node8y+node8x+node4x+node4y+node1y)/Hybrid::dx;
-	 if(doFaraday == true) {
+	 if (doFaraday == true) {
 	    faceData[n3+2] += sim.dt*curlZ;
 	 }
 	 else {
@@ -1705,18 +1705,18 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
 // calculate the electron pressure gradient term of the electric field
 void calcCellEp(Real* nodeRhoQi,Real* cellRhoQi,bool* innerFlagCellEp,Real* cellEp,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
    const size_t vectorDim = 3; // NOTE: here should likely be 1 but not changing in this commit just to be sure
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
    fetchData(nodeRhoQi,aa,simClasses,blockID,1);
-   for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+   for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
       cellEp[n3+0] = 0.0;
       cellEp[n3+1] = 0.0;
       cellEp[n3+2] = 0.0;
-      if(innerFlagCellEp[n] == true) { continue; }
+      if (innerFlagCellEp[n] == true) { continue; }
       // node2face interpolation: nodeRhoQi -> faceRhoQi
       const Real xPosFaceRhoQi =
         0.25*(aa[(block::arrayIndex(i+1,j+1,k+1))] +
@@ -1754,14 +1754,14 @@ void calcCellEp(Real* nodeRhoQi,Real* cellRhoQi,bool* innerFlagCellEp,Real* cell
       const Real zCellGradRhoQi = (zPosFaceRhoQi - zNegFaceRhoQi)/Hybrid::dx;
       // calculate electron pressure term of the electric field
       // adiabatic electrons
-      if(Hybrid::useAdiabaticElectronPressure == true) {
+      if (Hybrid::useAdiabaticElectronPressure == true) {
          cellEp[n3+0] = -Hybrid::electronPressureCoeff*xCellGradRhoQi;
          cellEp[n3+1] = -Hybrid::electronPressureCoeff*yCellGradRhoQi;
          cellEp[n3+2] = -Hybrid::electronPressureCoeff*zCellGradRhoQi;
       }
       else {
          // isothermal electrons
-         if(fabs(cellRhoQi[n]) > 0) {
+         if (fabs(cellRhoQi[n]) > 0) {
             cellEp[n3+0] = -Hybrid::electronPressureCoeff*xCellGradRhoQi/cellRhoQi[n];
             cellEp[n3+1] = -Hybrid::electronPressureCoeff*yCellGradRhoQi/cellRhoQi[n];
             cellEp[n3+2] = -Hybrid::electronPressureCoeff*zCellGradRhoQi/cellRhoQi[n];
@@ -1773,7 +1773,7 @@ void calcCellEp(Real* nodeRhoQi,Real* cellRhoQi,bool* innerFlagCellEp,Real* cell
 // interpolation from faces to arbitrary point r (in block's local coordinates)
 void face2r(Real* r,Real* faceData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result)
 {
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
    const size_t vectorDim = 3;
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
@@ -1814,7 +1814,7 @@ void face2r(Real* r,Real* faceData,Simulation& sim,SimulationClasses& simClasses
 // interpolation from nodes to arbitrary point r (in block's local coordinates)
 void node2r(Real* r,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result)
 {
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
    const size_t vectorDim = 3;
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
@@ -1851,8 +1851,8 @@ void node2r(Real* r,Real* nodeData,Simulation& sim,SimulationClasses& simClasses
    const Real w000 = 1/sqrt(sqr(xNode000-x) + sqr(yNode000-y) + sqr(zNode000-z));
    const Real wsum = w111+w011+w101+w001+w110+w010+w100+w000;
 
-   if(wsum > 0) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (wsum > 0) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 result[l] = (w111*aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
 		      w011*aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
 		      w101*aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l] +
@@ -1870,7 +1870,7 @@ void node2r(Real* r,Real* nodeData,Simulation& sim,SimulationClasses& simClasses
 
 // zero order interpolation from cells to arbitrary point r (in block's local coordinates)
 void cell2r(Real* r,Real* cellData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,Real* result) {
-   if(simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
+   if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
    const size_t vectorDim = 3;
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
@@ -1886,7 +1886,7 @@ void cell2r(Real* r,Real* cellData,Simulation& sim,SimulationClasses& simClasses
    const int j = static_cast<int>(floor(y));
    const int k = static_cast<int>(floor(z));
 
-   for(size_t l=0;l<vectorDim;++l) {
+   for (size_t l=0;l<vectorDim;++l) {
       result[l] = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l];
    }
 }
@@ -1896,8 +1896,8 @@ void setupGetFields(Simulation& sim,SimulationClasses& simClasses) {
    profile::start("setupGetFields",setupGetFieldsID);
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
    Real* nodeE = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
-   if(faceB == NULL) {cerr << "ERROR: obtained NULL faceB array!" << endl; exit(1);}
-   if(nodeE == NULL) {cerr << "ERROR: obtained NULL nodeE array!" << endl; exit(1);}
+   if (faceB == NULL) {cerr << "ERROR: obtained NULL faceB array!" << endl; exit(1);}
+   if (nodeE == NULL) {cerr << "ERROR: obtained NULL nodeE array!" << endl; exit(1);}
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
    profile::start("MPI waits",mpiWaitID);
@@ -1916,7 +1916,7 @@ void getFields(Real* r,Real* B,Real* Ue,Real* Ep,Simulation& sim,SimulationClass
    face2r(r,faceB,sim,simClasses,blockID,B);
    //node2r(r,nodeE,sim,simClasses,blockID,E);
    cell2r(r,cellUe,sim,simClasses,blockID,Ue);
-   if(Hybrid::useElectronPressureElectricField == true) {
+   if (Hybrid::useElectronPressureElectricField == true) {
       cell2r(r,cellEp,sim,simClasses,blockID,Ep);
    }
 }
@@ -1928,7 +1928,7 @@ void fetchData(Real* D,Real* aa,SimulationClasses& simClasses,pargrid::CellID bl
 
    // THIS BLOCK
 
-   for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
       aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+l] = D[(blockID*block::SIZE+block::index(i,j,k))*vectorDim+l];
    }
 
@@ -1936,43 +1936,43 @@ void fetchData(Real* D,Real* aa,SimulationClasses& simClasses,pargrid::CellID bl
 
    // -x
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,+0,+0)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,j+1,k+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,j,k))*vectorDim+l];
       }
    }
    // -y
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+0,-1,+0)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(i+1,0,k+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(i,block::WIDTH_Y-1,k))*vectorDim+l];
       }
    }
    // -z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+0,+0,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(i+1,j+1,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(i,j,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // +x
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,+0,+0)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(int j=0;j<block::WIDTH_Y;++j) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,j+1,k+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,j,k))*vectorDim+l];
       }
    }
    // +y
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+0,+1,+0)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(i+1,block::WIDTH_Y+1,k+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(i,0,k))*vectorDim+l];
       }
    }
    // +z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+0,+0,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int j=0;j<block::WIDTH_Y;++j) for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(i+1,j+1,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(i,j,0))*vectorDim+l];
       }
    }
@@ -1981,85 +1981,85 @@ void fetchData(Real* D,Real* aa,SimulationClasses& simClasses,pargrid::CellID bl
 
    // -x,-y
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,-1,+0)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,0,k+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,block::WIDTH_Y-1,k))*vectorDim+l];
       }
    }
    // +x,-y
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,-1,+0)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,0,k+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,block::WIDTH_Y-1,k))*vectorDim+l];
       }
    }
    // -x,+y
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,+1,+0)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,block::WIDTH_Y+1,k+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,0,k))*vectorDim+l];
       }
    }
    // +x,+y
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,+1,+0)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int k=0;k<block::WIDTH_Z;++k) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int k=0;k<block::WIDTH_Z;++k) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,block::WIDTH_Y+1,k+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,0,k))*vectorDim+l];
       }
    }
    // -y,-z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+0,-1,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(i+1,0,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(i,block::WIDTH_Y-1,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // +y,-z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+0,+1,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(i+1,block::WIDTH_Y+1,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(i,0,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // -y,+z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+0,-1,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(i+1,0,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(i,block::WIDTH_Y-1,0))*vectorDim+l];
       }
    }
    // +y,+z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+0,+1,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int i=0;i<block::WIDTH_X;++i) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int i=0;i<block::WIDTH_X;++i) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(i+1,block::WIDTH_Y+1,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(i,0,0))*vectorDim+l];
       }
    }
    // -x,-z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,+0,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int j=0;j<block::WIDTH_Y;++j) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int j=0;j<block::WIDTH_Y;++j) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,j+1,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,j,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // +x,-z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,+0,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int j=0;j<block::WIDTH_Y;++j) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int j=0;j<block::WIDTH_Y;++j) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,j+1,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,j,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // -x,+z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,+0,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int j=0;j<block::WIDTH_Y;++j) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int j=0;j<block::WIDTH_Y;++j) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,j+1,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,j,0))*vectorDim+l];
       }
    }
    // +x,+z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,+0,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(int j=0;j<block::WIDTH_Y;++j) for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (int j=0;j<block::WIDTH_Y;++j) for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,j+1,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,j,0))*vectorDim+l];
       }
    }
@@ -2068,57 +2068,57 @@ void fetchData(Real* D,Real* aa,SimulationClasses& simClasses,pargrid::CellID bl
 
    // -x,-y,-z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,-1,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,0,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,block::WIDTH_Y-1,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // +x,-y,-z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,-1,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,0,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,block::WIDTH_Y-1,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // -x,+y,-z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,+1,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,block::WIDTH_Y+1,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,0,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // +x,+y,-z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,+1,-1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,block::WIDTH_Y+1,0)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,0,block::WIDTH_Z-1))*vectorDim+l];
       }
    }
    // -x,-y,+z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,-1,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,0,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,block::WIDTH_Y-1,0))*vectorDim+l];
       }
    }
    // +x,-y,+z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,-1,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,0,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,block::WIDTH_Y-1,0))*vectorDim+l];
       }
    }
    // -x,+y,+z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(-1,+1,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(0,block::WIDTH_Y+1,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(block::WIDTH_X-1,0,0))*vectorDim+l];
       }
    }
    // +x,+y,+z
    nbrLID = nbrs[simClasses.pargrid.calcNeighbourTypeID(+1,+1,+1)];
-   if(nbrLID != simClasses.pargrid.invalid()) {
-      for(size_t l=0;l<vectorDim;++l) {
+   if (nbrLID != simClasses.pargrid.invalid()) {
+      for (size_t l=0;l<vectorDim;++l) {
 	 aa[block::arrayIndex(block::WIDTH_X+1,block::WIDTH_Y+1,block::WIDTH_Z+1)*vectorDim+l] = D[(nbrLID*block::SIZE+block::index(0,0,0))*vectorDim+l];
       }
    }

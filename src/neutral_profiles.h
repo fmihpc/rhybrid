@@ -33,61 +33,61 @@ struct NeutralProfileArgs{
 
 Real neutralDensityChamberlainH(SimulationClasses& simClasses,Real x,Real y,Real z,Real r0,std::vector<Real> n0,std::vector<Real> H0,Real R_exobase,Real R_shadow) {
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
-   if(r < R_exobase) { return 0.0; }
-   if(x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
-   if(n0.size() < 1 || n0.size() != H0.size()) {
+   if (r < R_exobase) { return 0.0; }
+   if (x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
+   if (n0.size() < 1 || n0.size() != H0.size()) {
       simClasses.logger << "(neutralDensityChamberlainH) ERROR: Give same number of n0 and H0 parameters" << std::endl << write;
       return -1.0;
    }
    Real n = 0.0;
-   for(size_t i=0;i<n0.size();i++) { n += n0[i]*exp(-H0[i]*(1/r0 - 1/r)); }
+   for (size_t i=0;i<n0.size();i++) { n += n0[i]*exp(-H0[i]*(1/r0 - 1/r)); }
    return n;
 }
 
 Real neutralDensityChamberlainT(SimulationClasses& simClasses,Real x,Real y,Real z,Real m,Real r0,std::vector<Real> n0,std::vector<Real> T0,Real R_exobase,Real R_shadow) {
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
-   if(r < R_exobase) { return 0.0; }
-   if(x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
-   if(n0.size() < 1 || n0.size() != T0.size()) {
+   if (r < R_exobase) { return 0.0; }
+   if (x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
+   if (n0.size() < 1 || n0.size() != T0.size()) {
       simClasses.logger << "(neutralDensityChamberlainT) ERROR: Give same number of n0 and T0 parameters" << std::endl << write;
       return -1.0;
    }
    const Real a = constants::GRAVITY * Hybrid::M_object * m / constants::BOLTZMANN;
    Real n = 0.0;
-   for(size_t i=0;i<n0.size();i++) { n += n0[i]*exp(-a/T0[i]*(1/r0 - 1/r)); }
+   for (size_t i=0;i<n0.size();i++) { n += n0[i]*exp(-a/T0[i]*(1/r0 - 1/r)); }
    return n;
 }
 
 Real neutralDensityExponential(SimulationClasses& simClasses,Real x,Real y,Real z,Real r0,std::vector<Real> n0,std::vector<Real> H0,Real R_exobase,Real R_shadow) {
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
-   if(r < R_exobase) { return 0.0; }
-   if(x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
-   if(n0.size() < 1 || n0.size() != H0.size()) {
+   if (r < R_exobase) { return 0.0; }
+   if (x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
+   if (n0.size() < 1 || n0.size() != H0.size()) {
       simClasses.logger << "(neutralDensityExponential) ERROR: Give same number of n0 and H0 parameters" << std::endl << write;
       return -1.0;
    }
    Real n = 0.0;
-   for(size_t i=0;i<n0.size();i++) { n += n0[i]*exp(-(r-r0)/H0[i]); }
+   for (size_t i=0;i<n0.size();i++) { n += n0[i]*exp(-(r-r0)/H0[i]); }
    return n;
 }
 
 Real neutralDensityPowerLaw(SimulationClasses& simClasses,Real x,Real y,Real z,Real r0,std::vector<Real> n0,std::vector<Real> k0,Real R_exobase,Real R_shadow) {
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
-   if(r < R_exobase) { return 0.0; }
-   if(x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
-   if(n0.size() < 1 || n0.size() != k0.size()) {
+   if (r < R_exobase) { return 0.0; }
+   if (x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
+   if (n0.size() < 1 || n0.size() != k0.size()) {
       simClasses.logger << "(neutralDensityPowerLaw) ERROR: Give same number of n0 and k0 parameters" << std::endl << write;
       return -1.0;
    }
    Real n = 0.0;
-   for(size_t i=0;i<n0.size();i++) { n += n0[i]*pow(r0/r,k0[i]); }
+   for (size_t i=0;i<n0.size();i++) { n += n0[i]*pow(r0/r,k0[i]); }
    return n;
 }
 
 Real neutralDensityVenusHydrogen(SimulationClasses& simClasses,Real x,Real y,Real z,Real R_exobase,Real R_shadow) {
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
-   if(r < R_exobase) { return 0.0; }
-   if(x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
+   if (r < R_exobase) { return 0.0; }
+   if (x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
    const Real sza = acos(x/r);
    const Real exoR = constants::DIST_VENUS_RADIUS + 170e3;
    // thermal hydrogen
@@ -112,7 +112,7 @@ Real neutralDensityVenusHydrogen(SimulationClasses& simClasses,Real x,Real y,Rea
    const Real n_hot_term = exp(a_1_term*r + a_2_term + a_3_term/r);
    const Real n_hot_midn = exp(a_1_midn*r + a_2_midn + a_3_midn/r);
    Real n_hot;
-   if(sza <= M_PI/2) {
+   if (sza <= M_PI/2) {
       n_hot = (1.0 - (sza/(M_PI/2)))*n_hot_noon + (sza/(M_PI/2))*n_hot_term;
    }
    else {
@@ -123,8 +123,8 @@ Real neutralDensityVenusHydrogen(SimulationClasses& simClasses,Real x,Real y,Rea
 
 Real neutralDensityVenusOxygen(SimulationClasses& simClasses,Real x,Real y,Real z,Real R_exobase,Real R_shadow) {
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
-   if(r < R_exobase) { return 0.0; }
-   if(x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
+   if (r < R_exobase) { return 0.0; }
+   if (x < 0 && sqr(y) + sqr(z) < sqr(R_shadow)) { return 0.0; }
    const Real sza = acos(x/r);
    const Real r_0_day = constants::DIST_VENUS_RADIUS + 200e3;
    const Real beta_day = constants::GRAVITY * constants::MASS_VENUS * constants::MASS_OXYGEN/(constants::BOLTZMANN*6400);
@@ -134,13 +134,13 @@ Real neutralDensityVenusOxygen(SimulationClasses& simClasses,Real x,Real y,Real 
    const Real n_0_night = 2e9;
    Real n_day;
    Real n_night;
-   if(r < r_0_day) {
+   if (r < r_0_day) {
       n_day = 0;
    }
    else {
       n_day = n_0_day*exp(-beta_day*(1.0/r_0_day - 1.0/r));
    }
-   if(r < r_0_night) {
+   if (r < r_0_night) {
       n_night = 0;
    }
    else {
@@ -150,22 +150,22 @@ Real neutralDensityVenusOxygen(SimulationClasses& simClasses,Real x,Real y,Real 
 }
 
 Real getNeutralDensity(SimulationClasses& simClasses,std::string name,Real x,Real y,Real z,NeutralProfileArgs a) {
-   if(name.compare("ChamberlainH") == 0) {
+   if (name.compare("ChamberlainH") == 0) {
       return neutralDensityChamberlainH(simClasses,x,y,z,a.r0,a.n0,a.H0,a.R_exobase,a.R_shadow);
    }
-   else if(name.compare("ChamberlainT") == 0) {
+   else if (name.compare("ChamberlainT") == 0) {
       return neutralDensityChamberlainT(simClasses,x,y,z,a.m,a.r0,a.n0,a.T0,a.R_exobase,a.R_shadow);
    }
-   else if(name.compare("Exponential") == 0) {
+   else if (name.compare("Exponential") == 0) {
       return neutralDensityExponential(simClasses,x,y,z,a.r0,a.n0,a.H0,a.R_exobase,a.R_shadow);
    }
-   else if(name.compare("PowerLaw") == 0) {
+   else if (name.compare("PowerLaw") == 0) {
       return neutralDensityPowerLaw(simClasses,x,y,z,a.r0,a.n0,a.k0,a.R_exobase,a.R_shadow);
    }
-   else if(name.compare("VenusHydrogen") == 0) {
+   else if (name.compare("VenusHydrogen") == 0) {
       return neutralDensityVenusHydrogen(simClasses,x,y,z,a.R_exobase,a.R_shadow);
    }
-   else if(name.compare("VenusOxygen") == 0) {
+   else if (name.compare("VenusOxygen") == 0) {
       return neutralDensityVenusOxygen(simClasses,x,y,z,a.R_exobase,a.R_shadow);
    }
    else {

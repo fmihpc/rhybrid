@@ -57,11 +57,11 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
    pargrid::DataWrapper<PARTICLE> wrapper = simClasses->pargrid.getUserDataDynamic<PARTICLE>(particleDataID);
 
    // filter corrupted particles after a restart
-   if(sim->restarted == true && Hybrid::filterParticlesAfterRestartDone == false) {
+   if (sim->restarted == true && Hybrid::filterParticlesAfterRestartDone == false) {
        simClasses->logger << "(RHYBRID) Removing corrupted macroparticles after a restart (" << species.name << ")" << std::endl;
        Real N_macroParticles = 0.0;
        Real N_badMacroParticles = 0.0;
-       for(pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+       for (pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
 	   // get block sizes
 	   Real bs[3];
 	   getBlockSize(*simClasses,*sim,b,bs);
@@ -78,7 +78,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	       const Real vz = particles[current].state[particle::VZ];
 	       const Real w = particles[current].state[particle::WEIGHT];
 	       // check coordinates, velocities and weight: remove if the particle is corrupted
-	       if(x < 0 || y < 0 || z < 0 || x > bs[0] || y > bs[1] || z > bs[2] ||
+	       if (x < 0 || y < 0 || z < 0 || x > bs[0] || y > bs[1] || z > bs[2] ||
 		  fabs(vx) > Hybrid::maxVi || fabs(vy) > Hybrid::maxVi || fabs(vz) > Hybrid::maxVi ||
 		  w != this->weight ||
 		  std::isnan(x) == true || std::isnan(y) == true || std::isnan(z) == true ||
@@ -98,7 +98,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
        Real N_badMacroParticlesGlobal = 0.0;
        MPI_Reduce(&N_macroParticles,&N_macroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim->MASTER_RANK,sim->comm);
        MPI_Reduce(&N_badMacroParticles,&N_badMacroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim->MASTER_RANK,sim->comm);
-       if(sim->mpiRank == sim->MASTER_RANK) {
+       if (sim->mpiRank == sim->MASTER_RANK) {
 	   simClasses->logger
 	       << "Number of corrupted macroparticles removed: "
 	       << real2str(N_badMacroParticlesGlobal,15) << " (" << species.name << ")" << std::endl;
@@ -116,7 +116,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
       if (sim->countPropagTime == true) { t_propag = MPI_Wtime(); }
       const pargrid::CellID blockLID = exteriorBlocks[b];
       PARTICLE* particles = wrapper.data()[blockLID];
-      for(size_t p=0; p<N_particles[blockLID]; ++p) {
+      for (size_t p=0; p<N_particles[blockLID]; ++p) {
 	 // escape counter
 	 Hybrid::logCounterParticleEscape[species.popid-1] += particles[p].state[particle::WEIGHT];
 	 Hybrid::logCounterParticleEscapeKineticEnergy[species.popid-1] += particles[p].state[particle::WEIGHT]*( sqr(particles[p].state[particle::VX]) + sqr(particles[p].state[particle::VY]) + sqr(particles[p].state[particle::VZ]) );
