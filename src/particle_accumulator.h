@@ -32,7 +32,7 @@ class Accumulator: public ParticleAccumulatorBase {
  public:
    Accumulator();
    ~Accumulator();
-   
+
    bool accumulateBoundaryCells(pargrid::DataID particleDataID,const unsigned int* N_particles);
    bool accumulateInnerCells(pargrid::DataID particleDataID,const unsigned int* N_particles);
    bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
@@ -43,13 +43,13 @@ class Accumulator: public ParticleAccumulatorBase {
 		   const std::string& regionName,const ParticleListBase* plist);
    bool sendUpdates();
    bool wait();
-   
+
  private:
    static int N_accumulators;        /**< Total number of allocated Accumulators, used together with variable 
 				      * accumulatorCounter to determine when MPI transfers should be started.*/
    int myOrderNumber;                /**< Order number of this Accumulator.*/
    const Species* species;
-   
+
    #if PROFILE_LEVEL > 0
       int arrayClearing;
       int dataCopying;

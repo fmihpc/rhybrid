@@ -42,7 +42,7 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
    vector<Real> detParticleOutputGlobal(N_linesTotal);
    // create displacement vector for detParticleOutputGlobal
    int displ[sim.mpiProcesses];
-   if(sim.mpiRank == sim.MASTER_RANK) {
+   if (sim.mpiRank == sim.MASTER_RANK) {
       int sum = 0.0;
       for (int i = 0; i < sim.mpiProcesses; ++i) {
 	 displ[i] = sum;
@@ -52,9 +52,9 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
    // gather in master
    MPI_Gatherv(&Hybrid::detParticleOutput[0],N_linesLocal,MPI_Type<Real>(),&detParticleOutputGlobal[0],&N_linesGlobal[0],&displ[0],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
    // master writes
-   if(sim.mpiRank == sim.MASTER_RANK) {
-      if(Hybrid::detParticleFileLineCnt <= Hybrid::N_detParticleMaxFileLines) {
-	 if(detParticleOutputGlobal.size() % DETECTOR_PARTICLE_FILE_VARIABLES != 0) {
+   if (sim.mpiRank == sim.MASTER_RANK) {
+      if (Hybrid::detParticleFileLineCnt <= Hybrid::N_detParticleMaxFileLines) {
+	 if (detParticleOutputGlobal.size() % DETECTOR_PARTICLE_FILE_VARIABLES != 0) {
 	    simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when writing a particle detector file" << endl << write;
 	    return false;
 	 }
@@ -65,7 +65,7 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
 	 particleFile << scientific;
 	 unsigned long fileLineCnt = 0;
 	 particleFile << "% t popid cellid vx vy vz" << endl;
-	 for(unsigned int i=0;i<detParticleOutputGlobal.size();i+=DETECTOR_PARTICLE_FILE_VARIABLES) {
+	 for (unsigned int i=0;i<detParticleOutputGlobal.size();i+=DETECTOR_PARTICLE_FILE_VARIABLES) {
 	    particleFile.precision(6);
 	    particleFile
 	      << detParticleOutputGlobal[i+0] << " "                             // 01 t
@@ -112,13 +112,13 @@ bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
    Real* cellJi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* nodeE  = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    // loop all blocks and cells in this process
-   for(pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
-      for(int k=0; k<block::WIDTH_Z; ++k) for(int j=0; j<block::WIDTH_Y; ++j) for(int i=0; i<block::WIDTH_X; ++i) {
+   for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+      for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	 const pargrid::CellID globalID = simClasses.pargrid.getGlobalIDs()[b]; // Note: we assume here block size = 1 (i.e. blocks == cells)
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
 	 // record bulk parameters in flagged cells
-	 if(detBlkFlag[n] == true && Hybrid::detBulkParamRecording == true) {
+	 if (detBlkFlag[n] == true && Hybrid::detBulkParamRecording == true) {
 	    Hybrid::detBulkParamOutput.push_back( static_cast<Real>(sim.t)    ); // 1. t
 	    Hybrid::detBulkParamOutput.push_back( static_cast<Real>(globalID) ); // 2. cellid
 	    Hybrid::detBulkParamOutput.push_back( cellRhoQi[n] ); //  3. rhoqi
@@ -153,7 +153,7 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
    vector<Real> detBulkParamOutputGlobal(N_linesTotal);
    // create displacement vector for detBulkParamOutputGlobal
    int displ[sim.mpiProcesses];
-   if(sim.mpiRank == sim.MASTER_RANK) {
+   if (sim.mpiRank == sim.MASTER_RANK) {
       int sum = 0.0;
       for (int i = 0; i < sim.mpiProcesses; ++i) {
 	 displ[i] = sum;
@@ -163,9 +163,9 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
    // gather in master
    MPI_Gatherv(&Hybrid::detBulkParamOutput[0],N_linesLocal,MPI_Type<Real>(),&detBulkParamOutputGlobal[0],&N_linesGlobal[0],&displ[0],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
    // master writes
-   if(sim.mpiRank == sim.MASTER_RANK) {
-      if(Hybrid::detBulkParamFileLineCnt <= Hybrid::N_detBulkParamMaxFileLines) {
-	 if(detBulkParamOutputGlobal.size() % DETECTOR_BULK_PARAMETER_FILE_VARIABLES != 0) {
+   if (sim.mpiRank == sim.MASTER_RANK) {
+      if (Hybrid::detBulkParamFileLineCnt <= Hybrid::N_detBulkParamMaxFileLines) {
+	 if (detBulkParamOutputGlobal.size() % DETECTOR_BULK_PARAMETER_FILE_VARIABLES != 0) {
 	    simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when writing a bulk parameter detector file" << endl << write;
 	    return false;
 	 }
@@ -176,7 +176,7 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	 bulkParamFile << scientific;
 	 unsigned long fileLineCnt = 0;
 	 bulkParamFile << "% t cellid rhoqi Bx By Bz Jx Jy Jz Uex Uey Uez Jix Jiy Jiz Ex(node) Ey(node) Ez(node)" << endl;
-	 for(unsigned int i=0;i<detBulkParamOutputGlobal.size();i+=DETECTOR_BULK_PARAMETER_FILE_VARIABLES) {
+	 for (unsigned int i=0;i<detBulkParamOutputGlobal.size();i+=DETECTOR_BULK_PARAMETER_FILE_VARIABLES) {
 	    bulkParamFile
 	      << detBulkParamOutputGlobal[i+0] << " "
 	      << static_cast<unsigned int>(detBulkParamOutputGlobal[i+1]) << " "

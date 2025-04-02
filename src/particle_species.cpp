@@ -42,7 +42,7 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
    static int popid_cnt = 1;
    this->popid = popid_cnt;
    popid_cnt++;
-   
+
    // Read species' parameters from config file:
    string q_unit,m_unit;
    cr.add(name+".mass_unit","Unit in which 'mass' is given (string).",string(""));
@@ -67,30 +67,30 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
 
    // Check input parameters for sanity:
    Real charge = simClasses.constants.get(q_unit);
-   if(charge == simClasses.constants.notFound()) {
+   if (charge == simClasses.constants.notFound()) {
       simClasses.logger << "(SPECIES) ERROR: illegal charge unit '" << q_unit << "' !" << endl << write;
       success = false;
    }
    Real mass = simClasses.constants.get(m_unit);
-   if(mass == simClasses.constants.notFound()) {
+   if (mass == simClasses.constants.notFound()) {
       simClasses.logger << "(SPECIES) ERROR: illegal mass unit '" << m_unit << "' !" << endl << write;
       success = false;
    }   
-   if(q == numeric_limits<Real>::infinity()) {
+   if (q == numeric_limits<Real>::infinity()) {
       simClasses.logger << "(SPECIES) ERROR: Charge was not specified with parameter '" << name+".charge' !" << endl << write;
       success = false;
    }
-   if(m == numeric_limits<Real>::infinity()) {
+   if (m == numeric_limits<Real>::infinity()) {
       simClasses.logger << "(SPECIES) ERROR: Mass was not specified with parameter '" << name+".mass' !" << endl << write;
       success = false;
    }
-   if(R2_obstacle > 0.0) {
+   if (R2_obstacle > 0.0) {
       R2_obstacle *= R2_obstacle;
    }
    else {
       R2_obstacle = -1.0;
    }
-   
+
    q *= charge;
    m *= mass;
    q_per_m = q/m;
@@ -105,6 +105,6 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
      << "accelerate = " << accelerate << endl
      << "output str = " << outStr << endl
      << "output in plasma = " << outIncludeInPlasma << endl;
-   
+
    return success;
 }

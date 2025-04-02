@@ -56,7 +56,7 @@ inline std::string int2str(int x,unsigned int N) {
 inline bool convertConfigFileVariableVelocity(std::string velStr,std::vector<Real>& vel) {
    // check velocity format: (Ux,Uy,Uz)
    bool velStrOk = true;
-   if(count(velStr.begin(),velStr.end(),'(') != 1 ||
+   if (count(velStr.begin(),velStr.end(),'(') != 1 ||
       count(velStr.begin(),velStr.end(),')') != 1 ||
       count(velStr.begin(),velStr.end(),',') != 2 ||
       velStr.find_first_not_of("(),+-0123456789.e ") != std::string::npos) {
@@ -75,7 +75,7 @@ inline bool convertConfigFileVariableVelocity(std::string velStr,std::vector<Rea
    std::stringstream ss(velStrEdit);
    while (ss >> vtmp) { vel.push_back(vtmp); }
    // check velocity format: (Ux,Uy,Uz)
-   if(vel.size() != 3) { velStrOk = false; }
+   if (vel.size() != 3) { velStrOk = false; }
    return velStrOk;
 }
 

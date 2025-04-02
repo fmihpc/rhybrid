@@ -1,54 +1,57 @@
-EXAMPLE COMPILATIONS
+EXAMPLE COMPILATION
 
-Ubuntu 14.04.3 LTS (Jan 11, 2016)
+Ubuntu 22.04.5 LTS (Apr 2, 2025)
 
-cd /home/user/bin
-wget https://github.com/fmihpc/rhybrid/archive/master.zip -O rhybrid.zip
-wget https://github.com/fmihpc/corsair/archive/master.zip -O corsair.zip
-wget https://github.com/fmihpc/vlsv/archive/master.zip -O vlsv.zip
-wget https://github.com/fmihpc/pargrid/archive/master.zip -O pargrid.zip
-wget http://ftp.mcs.anl.gov/pub/alice/10x10/zoltan_distrib_v3.6.tar.gz
-tar -xzf zoltan_distrib_v3.6.tar.gz
-rm parmetis_3.1.tar.gz ._scotch_5.1.12b.tar.gz scotch_5.1.12b.tar.gz
-cd Zoltan_v3.6
+# download source codes
+mkdir ~/bin/
+cd ~/bin/
+git clone https://github.com/fmihpc/analysator
+git clone https://github.com/fmihpc/rhybrid
+git clone https://github.com/fmihpc/corsair
+git clone https://github.com/fmihpc/vlsv
+git clone https://github.com/fmihpc/pargrid
+wget https://github.com/sandialabs/Zoltan/archive/refs/tags/v3.901.tar.gz
+mv v3.901.tar.gz Zoltan-v3.901.tar.gz
+tar -xzf ~/Dropbox/downz/Zoltan-v3.901.tar.gz -C ./
+
+# compile Zoltan
+cd Zoltan-3.901/
 mkdir build
 cd build
-../configure --prefix=/home/user/bin/Zoltan_v3.6/build
+../configure --prefix=$HOME/bin/Zoltan-3.901/build
 make
 make install
-cd ~/bin
-unzip '*.zip'
-cd vlsv-master
-cp Makefile.arch Makefile.my
-jed Makefile.my
+
+# compile VLSV
+cd ~/bin/vlsv
+cp -p Makefile.arch Makefile.newuser
+jed Makefile.newuser
+CXXFLAGS = -O3 -std=c++17 -Wall
 INC_SILO=
 LIB_SILO=
 jed Makefile
-ARCH ?= my
+ARCH ?= newuser
+default: lib
+# and other necessary options for your local system
 make
-cd visit-plugin
-xmledit vlsv.xml
-CXXFLAGS -std=c++0x -I/home/user/bin/vlsv-master -DNEW_VTK_API
-LDFLAGS -L/home/user/bin/vlsv-master
-xml2cmake vlsv.xml
-cmake .
-make
-cd ~/bin
-mv rhybrid-master/src/ corsair-master/src/user/rhybrid
-cd corsair-master
-cp Makefile.arch Makefile.my
-jed Makefile
-ARCH ?= my
+
+# compile Corsair and RHybrid
+cd ~/bin/corsair/
+mkdir ~/bin/corsair/src/user/rhybrid/
+cp -p ~/bin/rhybrid/src/* ~/bin/corsair/src/user/rhybrid/
+cd ~/bin/corsair/
+cp -p Makefile.arch Makefile.newuser
+jed Makefile.newuser
 SIM=rhybrid
-jed Makefile.my
-INC=
-INC_BOOST=-I/usr/include/boost
-LIB_BOOST=-L/usr/lib/ -lboost_program_options
-INC_PARGRID=-I/home/user/bin/pargrid-master
-LIB_PARGRID=
-INC_VLSV=-I/home/user/bin/vlsv-master
-LIB_VLSV=-L/home/user/bin/vlsv-master -lvlsv
-INC_ZOLTAN=-I/home/user/bin/Zoltan_v3.6/build/include
-LIB_ZOLTAN=-L/home/user/bin/Zoltan_v3.6/build/lib -lzoltan
+# and other necessary options for your local system
 make
+
+# perform a testrun
+mkdir testrun
+cd testrun
+OMPI_MCA_io=^ompio mpirun -n 4 ../corsair_rhybrid --runconfig=${HOME}/bin/rhybrid/examples/mars.cfg
+
+# visualize results with Analysator
+PYTHONPATH=$PYTHONPATH:~/bin/analysator python ~/bin/rhybrid/tools/plotter_example_testrun.py
+eog testrun.png
 

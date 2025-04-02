@@ -33,7 +33,7 @@ namespace particle {
 template<typename REAL>
 struct Particle {
    REAL state[particle::SIZE];
-   
+
    static void getDatatype(MPI_Datatype& datatype);
 };
 

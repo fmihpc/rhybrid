@@ -57,17 +57,17 @@ bool registerObjectMakers(ObjectFactories& objectFactories) {
    if (objectFactories.particleInjectors.registerMaker("ChapmanIonosphereInjector",ChapmanIonosphereIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("ExosphereInjector",ExosphereIonCreator) == false) { success = false; }
    if (objectFactories.particlePropagators.registerMaker("BorisBuneman",BBMaker<PARTICLE>) == false) {success = false;}
-   
+
    return success;
 }
 
 bool registerDataOperators() {
    bool success = true;
    DataOperatorContainer& doc = corsair::getObjectWrapper().dataOperatorContainer;
-   //if(doc.registerOperator(new MPIRank) == false)          { success = false; }
-   if(doc.registerOperator(new CellIDOP) == false)         { success = false; }
-   //if(doc.registerOperator(new LoadOP) == false)           { success = false; }
-   if(doc.registerOperator(new UserDataOP) == false)       { success = false; }
-   if(doc.registerOperator(new ParticleOperator) == false) { success = false; }
+   //if (doc.registerOperator(new MPIRank) == false)          { success = false; }
+   if (doc.registerOperator(new CellIDOP) == false)         { success = false; }
+   //if (doc.registerOperator(new LoadOP) == false)           { success = false; }
+   if (doc.registerOperator(new UserDataOP) == false)       { success = false; }
+   if (doc.registerOperator(new ParticleOperator) == false) { success = false; }
    return success;
 }
