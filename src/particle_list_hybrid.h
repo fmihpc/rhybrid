@@ -134,7 +134,7 @@ bool ParticleListHybrid<SPECIES,PARTICLE>::writeParticles(const std::string& spa
 
    // write ids of spatial cells where each particle belongs to
    vectorSize = 1; // id is a scalar variable of type pargrid::CellID (unsigned int)
-   std::vector<pargrid::CellID> cellIDs; // Note: we assume here block size = 1 (i.e. blocks == cells)
+   std::vector<pargrid::CellID> cellIDs; // TBD: we assume here block size = 1 (i.e. blocks == cells)
    for (pargrid::CellID b=0; b<this->simClasses->pargrid.getNumberOfLocalCells(); ++b) {
       pargrid::CellID cid = globalIDs[b];
       if (cid % Hybrid::saveParticlesNstride != 0 ||
