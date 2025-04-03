@@ -861,30 +861,29 @@ bool saveStateReduced(Simulation& sim,SimulationClasses& simClasses,const std::v
    }
    const Real t_start = MPI_Wtime();
    // write parameters
-   std::map<std::string,std::string> attributes;
+   std::map<std::string,std::string> attribs;
    if (simClasses.pargrid.getRank() == sim.MASTER_RANK) {
-      attributes["name"] = "time";
-      if (simClasses.vlsv.writeArray("PARAMETER",attributes,1,1,&sim.t) == false) { success = false; }
-      attributes["name"] = "timestep";
-      if (simClasses.vlsv.writeArray("PARAMETER",attributes,1,1,&sim.timestep) == false) { success = false; }
-      attributes["name"] = "Nstride";
-      if (simClasses.vlsv.writeArray("PARAMETER",attributes,1,1,&Hybrid::saveReducedStateNstride) == false) { success = false; }
+      attribs["name"] = "time";
+      if (simClasses.vlsv.writeArray("PARAMETER",attribs,1,1,&sim.t) == false) { success = false; }
+      attribs["name"] = "timestep";
+      if (simClasses.vlsv.writeArray("PARAMETER",attribs,1,1,&sim.timestep) == false) { success = false; }
+      attribs["name"] = "Nstride";
+      if (simClasses.vlsv.writeArray("PARAMETER",attribs,1,1,&Hybrid::saveReducedStateNstride) == false) { success = false; }
    }
    else {
-      if (simClasses.vlsv.writeArray("PARAMETER",attributes,0,0,&sim.t) == false) { success = false; }
-      if (simClasses.vlsv.writeArray("PARAMETER",attributes,0,0,&sim.timestep) == false) { success = false; }
-      if (simClasses.vlsv.writeArray("PARAMETER",attributes,0,0,&Hybrid::saveReducedStateNstride) == false) { success = false; }
+      if (simClasses.vlsv.writeArray("PARAMETER",attribs,0,0,&sim.t) == false) { success = false; }
+      if (simClasses.vlsv.writeArray("PARAMETER",attribs,0,0,&sim.timestep) == false) { success = false; }
+      if (simClasses.vlsv.writeArray("PARAMETER",attribs,0,0,&Hybrid::saveReducedStateNstride) == false) { success = false; }
    }
-   // prepare for generating a reduced data grid as a point mesh with Nstride
+   // generate reduced bulk variables to be saved as a point mesh with Nstride
    const std::vector<pargrid::CellID>& globalIDs = simClasses.pargrid.getGlobalIDs();
-   const long nx = sim.x_blocks*block::WIDTH_X;
-   const long ny = sim.y_blocks*block::WIDTH_Y;
+   //const double* crdBlock = getBlockCoordinateArray(sim,simClasses); // block coordinates
+   const long nx = sim.x_blocks*block::WIDTH_X; // number of cells in x direction
+   const long ny = sim.y_blocks*block::WIDTH_Y; // number of cells in y direction
    uint64_t arraySize = 0; // counter for the resulting arraySize with striding
-   const std::string meshName = "ReducedPointMesh";
-   std::map<std::string,std::string> attribs;
-   attribs["mesh"] = meshName;
+   attribs.clear();
+   attribs["mesh"] = "ReducedPointMesh";
    attribs["type"] = "pointdata";
-   // generate reduced variables to be saved
    Real* cellB = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellBID));
    std::vector<Real> reducedCellB;
    std::vector<pargrid::CellID> reducedCellIDs;
@@ -903,11 +902,72 @@ bool saveStateReduced(Simulation& sim,SimulationClasses& simClasses,const std::v
 	 arraySize++;
       }
    }
-   // write variables
+   // write bulk variables
    attribs["name"] = "CellID";
    if (simClasses.vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(reducedCellIDs[0])) == false) { success = false; }
    attribs["name"] = "cellB";
    if (simClasses.vlsv.writeArray("VARIABLE",attribs,arraySize,3,&(reducedCellB[0])) == false) { success = false; }
+   // prepare and write particle variables
+   if (Hybrid::saveReducedStateParticles == true) {
+      attribs.clear();
+      attribs["type"] = "pointdata";
+      for (size_t s=0; s<particleLists.size(); ++s) {
+	 // counter of number of particles on this process to be saved with Nstride
+	 size_t Nparticles = 0;
+	 //std::vector<Real> reducedMeshParticleCrd;               // particle coordinates
+	 std::vector<pargrid::CellID> reducedMeshParticleCellID; // particle cell ids
+	 std::vector<Real> reducedMeshParticleVel;               // particle velocities
+	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
+	 const std::string particleMeshName = "ReducedParticlePointMesh_" + species->name;
+	 attribs["mesh"] = particleMeshName;
+	 //particleLists[species]->writeParticles(spatMeshName) == false
+	 pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
+	 if (particleLists[s]->getParticles(speciesDataID) == false) { continue; }
+	 pargrid::DataWrapper<Particle<Real> > wrapper = simClasses.pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
+	 Particle<Real>** particleList = wrapper.data();
+	 for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
+	    //const size_t b3 = b*3;
+	    //const Real xBlock = crdBlock[b3+0];
+	    //const Real yBlock = crdBlock[b3+1];
+	    //const Real zBlock = crdBlock[b3+2];
+	    pargrid::CellID cid = globalIDs[b];
+	    if (cid % Hybrid::saveReducedStateNstride != 0 ||
+		cid % (Hybrid::saveReducedStateNstride*nx) >= nx ||
+		cid % (Hybrid::saveReducedStateNstride*nx*ny) >= nx*ny) { continue; } // TBD: we assume here block size = 1 (i.e. blocks == cells)
+	    //Particle<Real>* particles = particleList[b];
+	    const pargrid::ArraySizetype N_particles = wrapper.size(b);
+	    //const pargrid::ArraySizetype N_particles = wrapper.size()[b];
+	    for (size_t p=0; p<N_particles; ++p) {
+	       //reducedMeshParticleCrd.push_back(particleList[b][p].state[particle::X] + xBlock);
+	       //reducedMeshParticleCrd.push_back(particleList[b][p].state[particle::Y] + yBlock);
+	       //reducedMeshParticleCrd.push_back(particleList[b][p].state[particle::Z] + zBlock);
+	       reducedMeshParticleCellID.push_back(globalIDs[b]);
+	       reducedMeshParticleVel.push_back(particleList[b][p].state[particle::VX]);
+	       reducedMeshParticleVel.push_back(particleList[b][p].state[particle::VY]);
+	       reducedMeshParticleVel.push_back(particleList[b][p].state[particle::VZ]);
+	       Nparticles++;
+	    }
+	 }
+	 /*attribs["name"] = "coordinates_" + species->name;
+	  attribs["type"] = "pointdata"; // vlsv::mesh::STRING_POINT;
+	  if (simClasses.vlsv.writeArray("VARIABLE",attribs,Nparticles,3,&(reducedMeshParticleCrd[0])) == false) {
+	  simClasses.logger << "\t ERROR failed to write reduced particle coordinates (" << species->name << ")" << std::endl;
+	  success = false;
+	  }*/
+	 attribs["name"] = "CellID_" + species->name;
+	 attribs["type"] = "pointdata";
+	 if (simClasses.vlsv.writeArray("VARIABLE",attribs,Nparticles,1,&(reducedMeshParticleCellID[0])) == false) {
+	    simClasses.logger << "\t ERROR failed to write reduced particle cell IDs (" << species->name << ")" << std::endl;
+	    success = false;
+	 }
+	 attribs["name"] = "v_" + species->name;
+	 attribs["type"] = "pointdata";
+	 if (simClasses.vlsv.writeArray("VARIABLE",attribs,Nparticles,3,&(reducedMeshParticleVel[0])) == false) {
+	    simClasses.logger << "\t ERROR failed to write reduced particle velocities (" << species->name << ")" << std::endl;
+	    success = false;
+	 }
+      }
+   }
    // close file
    const Real t_total = MPI_Wtime() - t_start;
    const uint64_t bytesWritten = simClasses.vlsv.getBytesWritten();
@@ -955,6 +1015,6 @@ bool saveStateReduced(Simulation& sim,SimulationClasses& simClasses,const std::v
    return success;
 }
 
-}
+} // namespace diagnostics
 
 #endif
