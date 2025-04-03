@@ -845,6 +845,79 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    return success;
 }
 
+// write reduced state
+bool saveStateReduced(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
+   bool success = true;
+   std::stringstream ss;
+   ss.fill('0');
+   ss << "reduced" << std::setw(8) << sim.timestep << ".vlsv";
+   std::string fileName;
+   ss >> fileName;
+   simClasses.logger << "\t Starting to write reduced save state: " << fileName << " (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl;
+   //const std::string meshName = "ReducedGrid";
+   if (simClasses.vlsv.open(fileName,sim.comm,sim.MASTER_RANK) == false) {
+      simClasses.logger << "\t Failed to open output file '" << fileName << "'" << std::endl;
+      success = false;
+   }
+   const Real t_start = MPI_Wtime();
+   std::map<std::string,std::string> attributes;
+   if (simClasses.pargrid.getRank() == sim.MASTER_RANK) {
+      attributes["name"] = "time";
+      if(simClasses.vlsv.writeArray("PARAMETER",attributes,1,1,&sim.t) == false) { success = false; }
+      attributes["name"] = "timestep";
+      if(simClasses.vlsv.writeArray("PARAMETER",attributes,1,1,&sim.timestep) == false) { success = false; }
+   }
+   else {
+      if(simClasses.vlsv.writeArray("PARAMETER",attributes,0,0,&sim.t) == false) { success = false; }
+      if(simClasses.vlsv.writeArray("PARAMETER",attributes,0,0,&sim.timestep) == false) { success = false; }
+   }
+   // write reduced data
+   //Hybrid::saveReducedStateNstride;
+
+   const Real t_total = MPI_Wtime() - t_start;
+   const uint64_t bytesWritten = simClasses.vlsv.getBytesWritten();
+   if(simClasses.vlsv.close() == false) {
+      simClasses.logger << "\t Error occurred while closing output file '" << fileName << "'" << std::endl;
+      success = false;
+   }
+
+   // Check that all processes succeeded in data writing:
+   unsigned int successSum = 0;
+   unsigned int mySuccess = 0;
+   if(success == false) { ++mySuccess; }
+   MPI_Allreduce(&mySuccess,&successSum,1,MPI_Type<unsigned int>(),MPI_SUM,sim.comm);
+   if (successSum > 0) {
+      simClasses.logger << "\t " << successSum << " processes failed to write data!" << std::endl;
+      success = false;
+   }
+   // Flush log message and exit:
+   Real divider = 1.0e3;
+   std::string units = "kB";
+   if (bytesWritten >= 1.0e9) {
+      divider = 1.0e9;
+      units = "GB";
+   } else if (bytesWritten >= 1.0e6) {
+      divider = 1.0e6;
+      units = "MB";
+   }
+   Real datarate = bytesWritten/t_total;
+   std::string datarateUnits = "kB/s";
+   if (datarate >= 1.0e9) {
+      datarateUnits = "GB/s";
+      datarate /= 1.0e9;
+   } else if (datarate >= 1.0e6) {
+      datarateUnits = "MB/s";
+      datarate /= 1.0e6;
+   } else {
+      datarate /= 1.0e3;
+   }
+   simClasses.logger << "\t Wrote " << bytesWritten/divider << ' ' << units << " in " << t_total << " seconds, " << "throughput " << datarate << ' ' << datarateUnits << "." << std::endl;
+   if(successSum < 1) { simClasses.logger << "\t Writing successful." << std::endl; }
+   else { simClasses.logger << "\t Writing failed." << std::endl; }
+   simClasses.logger << std::endl;
+   return success;
+}
+
 }
 
 #endif

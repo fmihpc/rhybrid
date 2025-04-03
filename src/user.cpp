@@ -62,7 +62,7 @@ bool str2bool(SimulationClasses& simClasses,const string & v) {
 }
 
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
-   bool rvalue = true;
+   bool success = true;
    if (Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::initialFlowThrough == true) {
       static bool switchOffDone = false;
       if (switchOffDone == false) {
@@ -73,7 +73,7 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    }
    // Apply boundary conditions: remove illegal macroparticles after a restart
    if (sim.restarted == true && Hybrid::filterParticlesAfterRestartDone == false) {
-       for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
+       for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->applyBoundaryConditions() == false) { success = false; } }
        Hybrid::filterParticlesAfterRestartDone = true;
    }
    // logging: main, field, particles
@@ -85,13 +85,13 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       if ((sim.timestep)%(Hybrid::logInterval) == 0.0) {
          int masterFailed = 0; // check for failure of the master PE for run termination
          if (diagnostics::logWriteParticleField(sim,simClasses,particleLists) == false) {
-            rvalue = false;
+            success = false;
             if (sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
          }
          // broadcast failed flag from master to all PEs (note: this should be handled on a higher level like corsair / int main)
          MPI_Bcast(&masterFailed,1,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
          if (masterFailed > 0) {
-            rvalue = false;
+            success = false;
          }
       }
    }
@@ -122,21 +122,21 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
 #endif
    setupGetFields(sim,simClasses);
    // Propagate all particles:
-   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->propagateBoundaryCellParticles() == false) { rvalue = false; }  }
-   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->propagateInnerCellParticles() == false) { rvalue = false; } }
-   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->clearAccumulationArrays() == false) { rvalue = false; } }
-   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->waitParticleSends() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->propagateBoundaryCellParticles() == false) { success = false; }  }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->propagateInnerCellParticles() == false) { success = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->clearAccumulationArrays() == false) { success = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->waitParticleSends() == false) { success = false; } }
    // Accumulate particle quantities to simulation mesh:
-   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->accumulateBoundaryCells() == false) { rvalue = false; } }
-   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->accumulateInnerCells() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->accumulateBoundaryCells() == false) { success = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->accumulateInnerCells() == false) { success = false; } }
    // Apply boundary conditions:
-   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->applyBoundaryConditions() == false) { rvalue = false; } }
+   for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->applyBoundaryConditions() == false) { success = false; } }
    // Inject new particles:
    for (size_t p=0;p<particleLists.size();++p) {
-      if (particleLists[p]->injectParticles() == false) { rvalue = false; } 
+      if (particleLists[p]->injectParticles() == false) { success = false; }
    }
    // propagate magnetic field
-   if (propagateB(sim,simClasses,particleLists) == false) { rvalue = false; }
+   if (propagateB(sim,simClasses,particleLists) == false) { success = false; }
 #ifdef USE_DETECTORS
    if (Hybrid::detParticleRecording == true) {
       if (Hybrid::detParticleTimestepCnt >= Hybrid::detParticleWriteInterval) {
@@ -152,8 +152,14 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       }
    }
 #endif
+   // write reduced state if in a save step for it
+   if (Hybrid::saveReducedStateInterval > 0) {
+      if ((sim.timestep)%(Hybrid::saveReducedStateInterval) == 0.0) {
+	 if (diagnostics::saveStateReduced(sim,simClasses,particleLists) == false) { success = false; }
+      }
+   }
    //Hybrid::IMFBy = 1.0e-9*(sin(20.0*sim.t/(sim.maximumTimesteps*sim.dt))); // RHBTESTS: convect sine wave in By with the solar wind from the front wall
-   return rvalue;
+   return success;
 }
 
 #ifdef USE_OUTER_BOUNDARY_ZONE
@@ -336,10 +342,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    string magneticFieldProfileName = "";
 #endif
-   cr.add("Hybrid.log_interval","Log interval in units of timestep [-] (int)",0);
+   cr.add("Hybrid.log_interval","Log interval in units of time step [dt] (int)",0);
    cr.add("Hybrid.log_precision","Precision of floating point numbers in log file [-] (int)",10);
    cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
+   cr.add("Hybrid.save_reduced_state_interval","Interval of reduced state saving in units of time step [dt] (unsigned int)",0);
+   cr.add("Hybrid.save_reduced_state_Nstride","Write every Nstride'th cell in reduced state output (unsigned int)",10);
+   cr.add("Hybrid.save_reduced_state_include_particles","Include particles in reduced state output [-] (bool)",false);
    cr.add("Hybrid.save_particles","Write particles or not (bool)",false);
    cr.add("Hybrid.save_particles_Nstride","Write particles in every Nstride'th cell (unsigned int)",10);
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
@@ -371,6 +380,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.log_precision",logPrecision);
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
+   cr.get("Hybrid.save_reduced_state_interval",Hybrid::saveReducedStateInterval);
+   cr.get("Hybrid.save_reduced_state_Nstride",Hybrid::saveReducedStateNstride);
+   cr.get("Hybrid.save_reduced_state_include_particles",Hybrid::saveReducedStateParticles);
    cr.get("Hybrid.save_particles",Hybrid::saveParticles);
    cr.get("Hybrid.save_particles_Nstride",Hybrid::saveParticlesNstride);
    cr.get("Hybrid.R_object",Hybrid::R_object);
@@ -555,10 +567,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    if (Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
    if (logPrecision < 1) { logPrecision = 1; }
-   if (Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
-      simClasses.logger << "(RHYBRID) WARNING Hybrid.save_particles_Nstride should be > 0, setting as 10" << endl;
-      Hybrid::saveParticlesNstride = 10;
-   }
    if (Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if (Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
    else { Hybrid::R2_fieldObstacle = -1; }
@@ -577,7 +585,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "cells per block (x y z) = " << block::WIDTH_X << " " << block::WIDTH_Y << " " << block::WIDTH_Z << endl
      << "cells (x y z) = " << nx << " " << ny << " " << nz << endl
      << "total cells = " << Ncells << " = " << Ncells/1e6 << " x 10^6" << endl
-     << "periodic (x y z) = " << sim.x_periodic << " " << sim.y_periodic << " " << sim.z_periodic << " " << endl << endl;
+     << "periodic (x y z) = " << sim.x_periodic << " " << sim.y_periodic << " " << sim.z_periodic << endl << endl;
 
    simClasses.logger
      << "(SIMULATION DOMAIN)" << endl
@@ -591,7 +599,18 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "y [dx] = " << sim.y_min/Hybrid::dx << " ... " << sim.y_max/Hybrid::dx << endl
      << "z [dx] = " << sim.z_min/Hybrid::dx << " ... " << sim.z_max/Hybrid::dx << endl
      << "dx = " << Hybrid::dx/1e3 << " km = R_object/" << Hybrid::R_object/Hybrid::dx << " = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
-     << "dV = " << Hybrid::dV << " m^3" << endl << endl
+     << "dV = " << Hybrid::dV << " m^3" << endl << endl;
+
+   Real maxTime = 0.0;
+   if (sim.maximumTime > 0) { maxTime = sim.maximumTime; }
+   if (sim.maximumTimesteps > 0) { maxTime = sim.maximumTimesteps*sim.dt; }
+   simClasses.logger
+     << "(SIMULATION TIME)" << endl
+     << "time step    = " << sim.dt << " s" << endl
+     << "initial time = " << sim.t << " s" << endl
+     << "maximum time = " << maxTime << " s = " << maxTime/sim.dt << " dt" << endl << endl;
+
+   simClasses.logger
      << "(BASIC PARAMETERS)" << endl
      << "R_object  = " << Hybrid::R_object/1e3 << " km = " << Hybrid::R_object/Hybrid::dx << " dx" << endl
      << "Using spherical inner boundary" << endl
@@ -1235,7 +1254,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("DetectorParticle.t_start","Simulation time to start particle detector recording (real)",-1);
    cr.add("DetectorParticle.t_end","Simulation time to end particle detector recording (real)",-1);
    cr.add("DetectorParticle.max_detections","Maximum number of recorded particles by all detectors (real)",1e5);
-   cr.add("DetectorParticle.write_interval_timestep","Write interval of particle detector file in timesteps (real)",10);
+   cr.add("DetectorParticle.write_interval_timestep","Write interval of particle detector file in time steps (real)",10);
    cr.addComposed("DetectorParticle.orbitfile","Names of orbit file(s) for particle detectors (string)");
    cr.parse();
    cr.get("DetectorParticle.t_start",Hybrid::detParticleStartTime);
@@ -1246,7 +1265,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger
      << "(RHYBRID) DETECTORS: recording particles at t = " << Hybrid::detParticleStartTime << " ... " << Hybrid::detParticleEndTime << " s" << endl
      << "(RHYBRID) DETECTORS: maximum number of recorded particles: " << Hybrid::N_detParticleMaxFileLines << endl
-     << "(RHYBRID) DETECTORS: writing interval of particle detector: " << Hybrid::detParticleWriteInterval << " timesteps" << endl;
+     << "(RHYBRID) DETECTORS: writing interval of particle detector: " << Hybrid::detParticleWriteInterval << " time steps" << endl;
    vector< vector<Real> > detParticleOrbitCoordinates;
    // only master reads orbit coordinates from files
    if (sim.mpiRank==sim.MASTER_RANK) {
@@ -1275,7 +1294,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("DetectorBulkParameter.t_start","Simulation time to start bulk parameter detector recording (real)",-1);
    cr.add("DetectorBulkParameter.t_end","Simulation time to end bulk parameter detector recording (real)",-1);
    cr.add("DetectorBulkParameter.max_detections","Maximum number of recorded bulk parameter values by all detectors (real)",1e5);
-   cr.add("DetectorBulkParameter.write_interval_timestep","Write interval of bulk parameter detector file in timesteps (real)",10);
+   cr.add("DetectorBulkParameter.write_interval_timestep","Write interval of bulk parameter detector file in time steps (real)",10);
    cr.addComposed("DetectorBulkParameter.orbitfile","Names of orbit file(s) for bulk parameter detector (string)");
    cr.parse();
    cr.get("DetectorBulkParameter.t_start",Hybrid::detBulkParamStartTime);
@@ -1286,7 +1305,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger << endl
      << "(RHYBRID) DETECTORS: recording bulk parameters at t = " << Hybrid::detBulkParamStartTime << " ... " << Hybrid::detBulkParamEndTime << " s" << endl
      << "(RHYBRID) DETECTORS: maximum number of recorded bulk parameter values: " << Hybrid::N_detBulkParamMaxFileLines << endl
-     << "(RHYBRID) DETECTORS: writing interval of bulk parameter detector: " << Hybrid::detBulkParamWriteInterval << " timesteps" << endl;
+     << "(RHYBRID) DETECTORS: writing interval of bulk parameter detector: " << Hybrid::detBulkParamWriteInterval << " time steps" << endl;
    vector< vector<Real> > detBulkParamOrbitCoordinates;
    // only master reads orbit coordinates from files
    if (sim.mpiRank==sim.MASTER_RANK) {
@@ -2445,6 +2464,25 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 simClasses.logger << "(RHYBRID) WARNING: output parameter defined twice: " << p.first << endl;
       }
    }*/
+
+   simClasses.logger
+     << "(REPARTITIONING)" << endl
+     << "check interval = " << sim.repartitionCheckInterval*sim.dt << " s = " << sim.repartitionCheckInterval << " dt" << endl
+     << "maximum load imbalance = " << sim.maximumLoadImbalance << endl << endl;
+
+   simClasses.logger
+     << "(RESTART STATE OUTPUT)" << endl
+     << "write interval = " << sim.restartWriteInterval*sim.dt << " s = " << sim.restartWriteInterval << " dt" << endl
+     << "major store interval = " << sim.restartMajorInterval*sim.dt << " s = " << sim.restartMajorInterval << " dt" << endl
+     << "minor store amount   = " << sim.restartMinorFileAmount << endl
+     << "file name prefix     = " << sim.restartFilenamePrefix << endl
+     << "do restart = " << sim.restarted << endl << endl;
+   
+   simClasses.logger << "(SIMULATION STATE OUTPUT)" << endl;
+   Real stateSaveInterval = 0.0;
+   if (sim.dataIntervalIsTime == true) { stateSaveInterval = sim.dataIntervalFloat; }
+   else { stateSaveInterval = static_cast<Real>(sim.dataIntervalInteger)*sim.dt; }
+   simClasses.logger << "Interval = " << stateSaveInterval << " s = " << stateSaveInterval/sim.dt << " dt" << endl << endl;
    // process output parameter selection
    if (Hybrid::outputCellParams.size() > 0 && outputParams.length() > 0) {
       istringstream iss(outputParams);
@@ -2460,48 +2498,65 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	       Hybrid::outputCellParams[p] = true;
 	    }
 	    else {
-	       simClasses.logger << "(RHYBRID) WARNING: parameter requested for output does not exist: " << p << endl;
+	       simClasses.logger << "WARNING: parameter requested for output does not exist: " << p << endl;
 	    }
 	 }
       }
    }
    else {
-      simClasses.logger << "(RHYBRID) WARNING: no output parameters" << endl;
+      simClasses.logger << "WARNING: no output parameters" << endl;
    }
-   simClasses.logger << "(RHYBRID) selected output parameters:" << endl;
+   simClasses.logger << "Selected output parameters:" << endl;
    for (auto p: Hybrid::outputCellParams) {
       if (p.second == true) { simClasses.logger << p.first << endl; }
    }
-   simClasses.logger << endl << "(RHYBRID) not-selected available output parameters:" << endl;
+   simClasses.logger << endl << "Not-selected available output parameters:" << endl;
    for (auto p: Hybrid::outputCellParams) {
       if (p.second == false) { simClasses.logger << p.first << endl; }
    }
    simClasses.logger << endl;
 #ifndef WRITE_GRID_TEMPORAL_AVERAGES
    if (Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true || Hybrid::outputCellParams["n_tot_ave"] == true || Hybrid::outputCellParams["v_tot_ave"] == true) {
-      simClasses.logger << "(RHYBRID) WARNING: Average output parameters selected but WRITE_GRID_TEMPORAL_AVERAGES not defined in Makefile" << endl;
+      simClasses.logger << "WARNING: Average output parameters selected but WRITE_GRID_TEMPORAL_AVERAGES not defined in Makefile" << endl;
    }
 #endif
 #ifndef USE_B_CONSTANT
    if (Hybrid::outputCellParams["cellB0"] == true) {
-      simClasses.logger << "(RHYBRID) WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
+      simClasses.logger << "WARNING: cellB0 output parameter selected but USE_B_CONSTANT not defined in Makefile" << endl;
    }
 #endif
    if (Hybrid::outputCellParams["MPI_rank"] == true) {
       DataOperatorContainer& doc = corsair::getObjectWrapper().dataOperatorContainer;
       if (doc.registerOperator(new MPIRank) == false) {
-	 simClasses.logger << "(RHYBRID) ERROR: failed to add MPIRank output operator" << endl;
+	 simClasses.logger << "ERROR: failed to add MPIRank output operator" << endl;
 	 return false;
       }
    }
    if (Hybrid::outputCellParams["Load"] == true) {
       DataOperatorContainer& doc = corsair::getObjectWrapper().dataOperatorContainer;
       if (doc.registerOperator(new LoadOP) == false) {
-	 simClasses.logger << "(RHYBRID) ERROR: failed to add LoadOP output operator" << endl;
+	 simClasses.logger << "ERROR: failed to add LoadOP output operator" << endl;
 	 return false;
       }
    }
-   simClasses.logger << "Save particles = " << Hybrid::saveParticles << " (in every Nth cell, where N = " << Hybrid::saveParticlesNstride << ")" << endl << endl;
+   if (Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
+      simClasses.logger << "WARNING Hybrid.save_particles_Nstride should be > 0, setting as 10" << endl << endl;
+      Hybrid::saveParticlesNstride = 10;
+   }
+   simClasses.logger
+     << "Particles in state output:" << endl
+     << "Save particles = " << Hybrid::saveParticles << endl
+     << "Nstride        = " << Hybrid::saveParticlesNstride << " (include particles in every Nstride'th cell)" << endl << endl;
+
+   simClasses.logger << "(REDUCED SIMULATION STATE OUTPUT)" << endl;
+   if (Hybrid::saveReducedStateInterval > 0 && Hybrid::saveReducedStateNstride <= 0) {
+      simClasses.logger << "WARNING Hybrid.save_reduced_state_Nstride should be > 0, setting as 10" << endl;
+      Hybrid::saveReducedStateNstride = 10;
+   }
+   simClasses.logger << "Interval = " << Hybrid::saveReducedStateInterval*sim.dt << " s = " << Hybrid::saveReducedStateInterval << " dt" << endl;
+   simClasses.logger << "Nstride  = " << Hybrid::saveReducedStateNstride << " (include every Nstride'th cell)" << endl;
+   simClasses.logger << "Save particles = " << Hybrid::saveReducedStateParticles << endl << endl;
+
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // initial values
    if (sim.restarted == false) {
