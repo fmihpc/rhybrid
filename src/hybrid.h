@@ -191,9 +191,10 @@ struct Hybrid {
    static uint32_t Z_POS_EXISTS;
    static uint32_t Z_NEG_EXISTS;
 
-   static int logInterval;
+   static unsigned int logInterval;
+   static unsigned int mainLogDiagnosticsInterval;
+   static bool writeMainLogDiagnosticsAfterLogStep;
    static bool includeInnerCellsInFieldLog;
-   static bool writeMainLogEntriesAfterSaveStep;
    static unsigned int saveReducedStateInterval;
    static unsigned int saveReducedStateNstride;
    static bool saveReducedStateParticles;

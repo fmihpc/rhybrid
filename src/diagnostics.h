@@ -183,28 +183,6 @@ bool calcPlasmaParametersSingleParticle(SimulationClasses& simClasses,std::vecto
    return true;
 }
 
-// log amounts of macroparticles
-void logWriteMainMacroparticles(Simulation& sim,SimulationClasses& simClasses,const std::vector<ParticleListBase*>& particleLists) {
-    simClasses.logger << "(RHYBRID) Number of macroparticles per population (time step = " << sim.timestep << ", time = " << sim.t << "):" << std::endl;
-    for (size_t s=0;s<particleLists.size();++s) {
-	Real N_macroParticles = 0.0;
-	// For now skip particles with invalid data id:
-	pargrid::DataID speciesDataID = pargrid::INVALID_DATAID;
-	if (particleLists[s]->getParticles(speciesDataID) == true) {
-	    pargrid::DataWrapper<Particle<Real> > wrapper = simClasses.pargrid.getUserDataDynamic<Particle<Real> >(speciesDataID);
-	    for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
-		pargrid::ArraySizetype N_particles = wrapper.size(b);
-		N_macroParticles += N_particles;
-	    }
-	}
-	Real N_macroParticlesGlobal = 0.0;
-	MPI_Reduce(&N_macroParticles,&N_macroParticlesGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-	const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
-	simClasses.logger << "\t N(" << species->name << ") = " << real2str(N_macroParticlesGlobal,15) << " = " << real2str(N_macroParticlesGlobal/1.0e9,15) << " x 10^9" << std::endl;
-    }
-   simClasses.logger << write;
-}
-
 // calculate particle log quantities
 void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<LogDataParticle>& logDataParticle,const std::vector<ParticleListBase*>& particleLists,std::vector<Real>& cellRhoM)
 {
@@ -463,6 +441,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    }
    Real maxViAllPopulations = 0.0;
    const Real Dt = sim.t - Hybrid::logCounterTimeStart;
+   std::stringstream ssMainLogMacroparticles;
    // go thru populations and sum particle counters
    for (size_t s=0;s<particleLists.size();++s) {
       Real N_macroParticlesThisProcess = logDataParticle[s].N_macroParticles;
@@ -514,7 +493,11 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       MPI_Reduce(&sumInjectKineticEnergyThisProcess,&sumInjectKineticEnergyGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       MPI_Reduce(&sumMaxViThisProcess,&sumMaxViGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
       if (sim.mpiRank==sim.MASTER_RANK) {
+	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
 	 (*Hybrid::logParticle[s]) << N_realParticlesGlobal << " " << N_macroParticlesGlobal << " ";
+	 if (Hybrid::writeMainLogDiagnosticsAfterLogStep == true) {
+	    ssMainLogMacroparticles << "\t Nmacroparticles(" << species->name << ") = " << real2str(N_macroParticlesGlobal,15) << " = " << real2str(N_macroParticlesGlobal/1.0e9,15) << " x 10^9" << std::endl;
+	 }
 	 if (N_realParticlesGlobal > 0.0) {
 	    (*Hybrid::logParticle[s])
 	      << sumVxGlobal/N_realParticlesGlobal << " "
@@ -525,7 +508,6 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	 else {
 	    (*Hybrid::logParticle[s]) << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " ";
 	 }
-	 const Species* species = reinterpret_cast<const Species*>(particleLists[s]->getSpecies());
 	 (*Hybrid::logParticle[s]) << 0.5*species->m*sumWV2Global << " " << maxViGlobal << " ";
 	 if (maxViAllPopulations < maxViGlobal) { maxViAllPopulations = maxViGlobal; }
 	 if (Dt > 0) {
@@ -776,9 +758,10 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
       const Real maxUe_dxdt = maxUeGlobal/(Hybrid::dx/sim.dt);
 
       // write if on a save step or save step already happened after previous entry
-      if (Hybrid::writeMainLogEntriesAfterSaveStep == true && sim.mpiRank == sim.MASTER_RANK) {
+      if (Hybrid::writeMainLogDiagnosticsAfterLogStep == true && sim.mpiRank == sim.MASTER_RANK) {
 	 simClasses.logger
 	   << "(RHYBRID) Diagnostics (time step = " << sim.timestep << ", time = " << sim.t << "):" << std::endl
+	   << ssMainLogMacroparticles.str()
 	   << "\t Max. |Vion|             : Vi_max  = " << maxViAllPopulations/1e3 << " km/s = " << maxVi_dxdt << " dx/dt" << std::endl
 	   << "\t Max. |Ue|               : Ue_max  = " << maxUeGlobal/1e3 << " km/s = " << maxUe_dxdt << " dx/dt" << std::endl
 	   << "\t Max. |VAlfven|          : Va_max  = " << maxVAlfvenGlobal/1e3 << " km/s = " << maxVA_dxdt << " dx/dt" << std::endl
@@ -791,7 +774,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	   << "\t Max. e- inertial length : de_max  = " << maxInerLengthElectronGlobal/1e3 << " km = " << maxInerLengthElectronGlobal/Hybrid::dx << " dx" << std::endl
 	   << "\t Min. H+ inertial length : di_min  = " << minInerLengthProtonGlobal/1e3 << " km = " << minInerLengthProtonGlobal/Hybrid::dx << " dx" << std::endl
 	   << "\t Max. H+ inertial length : di_max  = " << maxInerLengthProtonGlobal/1e3 << " km = " << maxInerLengthProtonGlobal/Hybrid::dx << " dx" << std::endl << write;
-	 Hybrid::writeMainLogEntriesAfterSaveStep = false;
+	 Hybrid::writeMainLogDiagnosticsAfterLogStep = false;
       }
       if (sim.mpiRank == sim.MASTER_RANK) {
 	 if (tL_min_dt < 10)   { simClasses.logger << "(RHYBRID) WARNING: Minimum Larmor period: tL_min/dt < 10 ("      << tL_min_dt  << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
