@@ -23,7 +23,7 @@ using namespace std;
 
 // Init static variables:
 
-// new variable handling TBD
+// TBD: new variable handling
 //map< string , HybridVariable<Real> > Hybrid::varReal;
 //map< string , HybridVariable<bool> > Hybrid::varBool;
 

@@ -261,27 +261,27 @@ Real getGaussianDistr(Real x,Real sigma) {
    }
 }
 
-// new variable handling TBD
+// TBD: new variable handling
 /*bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
    if (vectorDim <= 0) { return true; }
    // create pargrid array struct
    HybridVariable <Real>d;
    d.vectorDim = vectorDim;
-   d.id = simClasses.pargrid.invalidDataID();
-   d.id = simClasses.pargrid.addUserData<Real>(name,block::SIZE*vectorDim);
-   if (d.id == simClasses.pargrid.invalidCellID()) {
+   d.dataID = simClasses.pargrid.invalidDataID();
+   d.dataID = simClasses.pargrid.addUserData<Real>(name,block::SIZE*vectorDim);
+   if (d.dataID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid user data array: " << name << endl << write;
       return false;
    }
    // add data transfers
    for (auto p : stencilID) {
-      if (simClasses.pargrid.addDataTransfer(d.id,p) == false) {
+      if (simClasses.pargrid.addDataTransfer(d.dataID,p) == false) {
 	 simClasses.logger << "(USER) ERROR: failed to create ParGrid data transfer: " << name  << endl << write;
 	 return false;
       }
    }
    // create pointer
-   d.ptr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.id));
+   d.ptr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.dataID));
    if (d.ptr == NULL) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid data pointer: " << name  << endl << write;
       return false;
@@ -922,7 +922,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // id of a stencil used for particle accumulation into grid
    Hybrid::accumulationStencilID = sim.inverseStencilID;
 
-   // create a parallel data arrays
+   // TBD: new variable handling: create a parallel data arrays
    //vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
    //vector<pargrid::StencilID> sIDAcc = {pargrid::DEFAULT_STENCIL,Hybrid::accumulationStencilID};
    //vector<pargrid::StencilID> sIDEmpty;
@@ -2582,9 +2582,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    simClasses.logger << "(RHYBRID) Starting finalization." << endl;
    bool success = true;
-   // new variable handling TBD
+   // TBD: new variable handling
    /*for (const auto &p : Hybrid::varReal) {
-      simClasses.logger << "(USER) removed ParGrid array: " << p.first << endl;
+      if (simClasses.pargrid.removeUserData(p.second.dataID) == false) { success = false; }
+      simClasses.logger << "(USER) removed ParGrid array: " << p.second.name << endl;
    }*/
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
