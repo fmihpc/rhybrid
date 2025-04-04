@@ -78,8 +78,12 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    }
    // logging: main, field, particles
    if (sim.atDataSaveStep == true) {
-      Hybrid::writeMainLogEntriesAfterSaveStep = true;
-      diagnostics::logWriteMainMacroparticles(sim,simClasses,particleLists);
+
+   }
+   if (Hybrid::mainLogDiagnosticsInterval > 0) {
+      if ((sim.timestep)%(Hybrid::mainLogDiagnosticsInterval) == 0.0) {
+	 Hybrid::writeMainLogDiagnosticsAfterLogStep = true;
+      }
    }
    if (Hybrid::logInterval > 0) {
       if ((sim.timestep)%(Hybrid::logInterval) == 0.0) {
@@ -261,27 +265,27 @@ Real getGaussianDistr(Real x,Real sigma) {
    }
 }
 
-// new variable handling TBD
+// TBD: new variable handling
 /*bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
    if (vectorDim <= 0) { return true; }
    // create pargrid array struct
    HybridVariable <Real>d;
    d.vectorDim = vectorDim;
-   d.id = simClasses.pargrid.invalidDataID();
-   d.id = simClasses.pargrid.addUserData<Real>(name,block::SIZE*vectorDim);
-   if (d.id == simClasses.pargrid.invalidCellID()) {
+   d.dataID = simClasses.pargrid.invalidDataID();
+   d.dataID = simClasses.pargrid.addUserData<Real>(name,block::SIZE*vectorDim);
+   if (d.dataID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid user data array: " << name << endl << write;
       return false;
    }
    // add data transfers
    for (auto p : stencilID) {
-      if (simClasses.pargrid.addDataTransfer(d.id,p) == false) {
+      if (simClasses.pargrid.addDataTransfer(d.dataID,p) == false) {
 	 simClasses.logger << "(USER) ERROR: failed to create ParGrid data transfer: " << name  << endl << write;
 	 return false;
       }
    }
    // create pointer
-   d.ptr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.id));
+   d.ptr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.dataID));
    if (d.ptr == NULL) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid data pointer: " << name  << endl << write;
       return false;
@@ -342,8 +346,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    string magneticFieldProfileName = "";
 #endif
-   cr.add("Hybrid.log_interval","Log interval in units of time step [dt] (int)",0);
+   cr.add("Hybrid.log_interval","Logging interval of field and particle logs in units of time step [dt] (unsigned int)",0);
    cr.add("Hybrid.log_precision","Precision of floating point numbers in log file [-] (int)",10);
+   cr.add("Hybrid.main_log_diagnostics_interval","Logging interval of diagnostics quantities in the main log in units of time step [dt] (unsigned int)",0);
    cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
    cr.add("Hybrid.save_reduced_state_interval","Interval of reduced state saving in units of time step [dt] (unsigned int)",0);
@@ -378,6 +383,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    unsigned int logPrecision = 10;
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
    cr.get("Hybrid.log_precision",logPrecision);
+   cr.get("Hybrid.main_log_diagnostics_interval",Hybrid::mainLogDiagnosticsInterval);
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
    cr.get("Hybrid.save_reduced_state_interval",Hybrid::saveReducedStateInterval);
@@ -567,6 +573,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    if (Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
    if (logPrecision < 1) { logPrecision = 1; }
+   if (Hybrid::mainLogDiagnosticsInterval > 0 && Hybrid::mainLogDiagnosticsInterval < Hybrid::logInterval) {
+      simClasses.logger << "WARNING: main_log_diagnostics_interval has to be zero or at least log_interval, setting main_log_diagnostics_interval = " << Hybrid::logInterval << endl;
+      Hybrid::mainLogDiagnosticsInterval = Hybrid::logInterval;
+   }
    if (Hybrid::R_object < 0) { Hybrid::R_object = 1.0; }
    if (Hybrid::R2_fieldObstacle > 0) { Hybrid::R2_fieldObstacle = sqr(Hybrid::R2_fieldObstacle); }
    else { Hybrid::R2_fieldObstacle = -1; }
@@ -767,7 +777,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Particle and field logs" << endl
      << " interval  = " << Hybrid::logInterval*sim.dt << " s = " << Hybrid::logInterval << " dt" << endl
      << " precision = " << logPrecision << endl
-     << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl << endl;
+     << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl
+     << "Diagnostics interval in main log = " << Hybrid::mainLogDiagnosticsInterval*sim.dt << " s = " << Hybrid::mainLogDiagnosticsInterval << " dt" << endl << endl;
 
    simClasses.logger << "(RHYBRID) Configuring: particle populations" << endl << write;
 
@@ -922,7 +933,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // id of a stencil used for particle accumulation into grid
    Hybrid::accumulationStencilID = sim.inverseStencilID;
 
-   // create a parallel data arrays
+   // TBD: new variable handling: create a parallel data arrays
    //vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
    //vector<pargrid::StencilID> sIDAcc = {pargrid::DEFAULT_STENCIL,Hybrid::accumulationStencilID};
    //vector<pargrid::StencilID> sIDEmpty;
@@ -2582,9 +2593,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    simClasses.logger << "(RHYBRID) Starting finalization." << endl;
    bool success = true;
-   // new variable handling TBD
+   // TBD: new variable handling
    /*for (const auto &p : Hybrid::varReal) {
-      simClasses.logger << "(USER) removed ParGrid array: " << p.first << endl;
+      if (simClasses.pargrid.removeUserData(p.second.dataID) == false) { success = false; }
+      simClasses.logger << "(USER) removed ParGrid array: " << p.second.name << endl;
    }*/
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }

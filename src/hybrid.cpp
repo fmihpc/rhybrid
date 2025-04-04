@@ -23,7 +23,7 @@ using namespace std;
 
 // Init static variables:
 
-// new variable handling TBD
+// TBD: new variable handling
 //map< string , HybridVariable<Real> > Hybrid::varReal;
 //map< string , HybridVariable<bool> > Hybrid::varBool;
 
@@ -107,9 +107,10 @@ uint32_t Hybrid::Y_NEG_EXISTS;
 uint32_t Hybrid::Z_POS_EXISTS;
 uint32_t Hybrid::Z_NEG_EXISTS;
 
-int Hybrid::logInterval;
+unsigned int Hybrid::logInterval;
+unsigned int Hybrid::mainLogDiagnosticsInterval;
 bool Hybrid::includeInnerCellsInFieldLog;
-bool Hybrid::writeMainLogEntriesAfterSaveStep = true;
+bool Hybrid::writeMainLogDiagnosticsAfterLogStep = true;
 unsigned int Hybrid::saveReducedStateInterval = 0;
 unsigned int Hybrid::saveReducedStateNstride = 10;
 bool Hybrid::saveReducedStateParticles = false;

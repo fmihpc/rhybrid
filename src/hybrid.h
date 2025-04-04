@@ -94,18 +94,19 @@ struct OuterBoundaryZone {
 };
 #endif
 
-// new variable handling TBD
+// TBD: new variable handling
 /*template<typename T>
 struct HybridVariable {
    std::string name = "";
    std::string type = "";
    std::size_t vectorDim = 0;
-   pargrid::DataID id = pargrid::INVALID_DATAID;
+   pargrid::DataID dataID = pargrid::INVALID_DATAID;
+   pargrid::StencilID stencilID = pargrid::INVALID_STENCILID;
    T* ptr = NULL;
 };*/
 
 struct Hybrid {
-   // new variable handling TBD
+   // TBD: new variable handling
    //static std::map< std::string, HybridVariable<Real> > varReal;
    //static std::map< std::string, HybridVariable<bool> > varBool;
 
@@ -190,9 +191,10 @@ struct Hybrid {
    static uint32_t Z_POS_EXISTS;
    static uint32_t Z_NEG_EXISTS;
 
-   static int logInterval;
+   static unsigned int logInterval;
+   static unsigned int mainLogDiagnosticsInterval;
+   static bool writeMainLogDiagnosticsAfterLogStep;
    static bool includeInnerCellsInFieldLog;
-   static bool writeMainLogEntriesAfterSaveStep;
    static unsigned int saveReducedStateInterval;
    static unsigned int saveReducedStateNstride;
    static bool saveReducedStateParticles;
