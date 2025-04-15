@@ -271,6 +271,7 @@ Real getGaussianDistr(Real x,Real sigma) {
    // create pargrid array struct
    HybridVariable <Real>d;
    d.vectorDim = vectorDim;
+   // add pargrid user data
    d.dataID = simClasses.pargrid.invalidDataID();
    d.dataID = simClasses.pargrid.addUserData<Real>(name,block::SIZE*vectorDim);
    if (d.dataID == simClasses.pargrid.invalidCellID()) {
@@ -278,18 +279,20 @@ Real getGaussianDistr(Real x,Real sigma) {
       return false;
    }
    // add data transfers
-   for (auto p : stencilID) {
+   for (auto const& p : stencilID) {
       if (simClasses.pargrid.addDataTransfer(d.dataID,p) == false) {
-	 simClasses.logger << "(USER) ERROR: failed to create ParGrid data transfer: " << name  << endl << write;
+	 simClasses.logger << "(USER) ERROR: failed to create ParGrid data transfer: " << name << ", stencilID: " << p << endl << write;
 	 return false;
       }
    }
-   // create pointer
+   // create pointer to user data
    d.ptr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.dataID));
+   //d.constPtr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.dataID)); // how to get this working?
    if (d.ptr == NULL) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid data pointer: " << name  << endl << write;
       return false;
    }
+   // initialize array with zeros if not a restarted run
    if (sim.restarted == false) {
       const size_t arraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*vectorDim;
       for (size_t i=0; i<arraySize; ++i) { d.ptr[i] = 0.0; }
@@ -934,14 +937,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::accumulationStencilID = sim.inverseStencilID;
 
    // TBD: new variable handling: create a parallel data arrays
-   //vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
-   //vector<pargrid::StencilID> sIDAcc = {pargrid::DEFAULT_STENCIL,Hybrid::accumulationStencilID};
-   //vector<pargrid::StencilID> sIDEmpty;
-   //addVarReal(sim,simClasses,"faceB_",3,sID);
+   /*vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
+   vector<pargrid::StencilID> sIDAcc = {pargrid::DEFAULT_STENCIL,Hybrid::accumulationStencilID};
+   vector<pargrid::StencilID> sIDEmpty;
+   addVarReal(sim,simClasses,"faceB_",3,sID);
+   addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);*/
 #ifndef USE_EDGE_J
    //addVarReal(sim,simClasses,"faceJ_",3,sID);
 #endif
-   //addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    //addVarReal(sim,simClasses,"cellRhoQiBg_",1,sID);
 #endif
@@ -1913,7 +1916,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // initialize cell arrays with an initial state if simulation was not restarted
    if (sim.restarted == false) {
-      for (size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
+      //for (size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { faceJ[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellB[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellJ[i] = 0.0; }
@@ -2235,15 +2238,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             // +x face
             setInitialB(sim,simClasses,xFaceXCenter,yFaceXCenter,zFaceXCenter,B_initial);
             faceB[n*3+0] = B_initial[0];
-	    //Hybrid::varReal["faceB_"].ptr[n*3+0] = B_initial[0];
+	    //Hybrid::varReal["faceB_"].ptr[n*3+0] = B_initial[0]; // TBD: new variable handling
             // +y face
             setInitialB(sim,simClasses,xFaceYCenter,yFaceYCenter,zFaceYCenter,B_initial);
             faceB[n*3+1] = B_initial[1];
-	    //Hybrid::varReal["faceB_"].ptr[n*3+1] = B_initial[1];
+	    //Hybrid::varReal["faceB_"].ptr[n*3+1] = B_initial[1]; // TBD: new variable handling
             // +z face
             setInitialB(sim,simClasses,xFaceZCenter,yFaceZCenter,zFaceZCenter,B_initial);
             faceB[n*3+2] = B_initial[2];
-	    //Hybrid::varReal["faceB_"].ptr[n*3+2] = B_initial[2];
+	    //Hybrid::varReal["faceB_"].ptr[n*3+2] = B_initial[2]; // TBD: new variable handling
 	    const Real xCellCenter = crd[b3+0] + (i+0.5)*Hybrid::dx;
 	    const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
 	    const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
@@ -2467,7 +2470,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"MPI_rank",false},
       {"Load",false}
    };
-   /*for (auto p : Hybrid::varReal) {
+   // TBD: new variable handling
+   // set parameters that can be written in output state files
+   /*for (auto const& p : Hybrid::varReal) {
       if (Hybrid::outputCellParams.count(p.first) < 1) {
 	 Hybrid::outputCellParams[p.first] = false;
       }
@@ -2594,7 +2599,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    simClasses.logger << "(RHYBRID) Starting finalization." << endl;
    bool success = true;
    // TBD: new variable handling
-   /*for (const auto &p : Hybrid::varReal) {
+   /*for (auto const& p : Hybrid::varReal) {
       if (simClasses.pargrid.removeUserData(p.second.dataID) == false) { success = false; }
       simClasses.logger << "(USER) removed ParGrid array: " << p.second.name << endl;
    }*/

@@ -64,6 +64,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    map<string,string> attribs;
    attribs["mesh"] = spatMeshName;
    attribs["type"] = "celldata";
+   // TBD: new variable handling
    // write selected ParGrid arrays
    /*for (auto const& p : Hybrid::varReal) {
       if (Hybrid::outputCellParams[p.first] == false) { continue; }
@@ -277,6 +278,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       simClasses->pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
       Real* const faceB = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataFaceBID));
       calcCellDiv(faceB,divB);
+      //calcCellDiv(Hybrid::varReal["faceB_"].ptr,divB); // TBD: new variable handling
       attribs["name"] = "cellDivB";
       if (simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(divB[0])) == false) { success = false; }
    }

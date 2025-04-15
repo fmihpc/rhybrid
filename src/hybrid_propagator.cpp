@@ -41,9 +41,10 @@ static bool saveStepHappened=false;
 
 bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool success = true;
-   profile::start("propagateB",totalID);   
+   profile::start("propagateB",totalID);
 
    // get data array pointers
+   // TBD: new variable handling
    //Real* faceB_ = Hybrid::varReal["faceB_"].ptr;
    Real* faceB               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
    Real* faceJ               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceJID);
@@ -132,14 +133,19 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 
    // face->cell B
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
+   //simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
    profile::start("intpol",profIntpolID);
    for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { face2Cell(faceB,cellB,sim,simClasses,innerBlocks[b]); }
+   //for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { face2Cell(Hybrid::varReal["faceB_"].ptr,cellB,sim,simClasses,innerBlocks[b]); } // TBD: new variable handling
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
+   //simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
    profile::stop();
    profile::start("intpol",profIntpolID);
    for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { face2Cell(faceB,cellB,sim,simClasses,boundaryBlocks[b]); }
+   //for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { face2Cell(Hybrid::varReal["faceB_"].ptr,cellB,sim,simClasses,boundaryBlocks[b]); } // TBD: new variable handling
+
    profile::stop();
 
    // SET FIELD BOUNDARY CONDITIONS
@@ -199,11 +205,16 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #ifdef USE_EDGE_J
    neumannFace(faceB,sim,simClasses,exteriorBlocks);
    setIMFFace(faceB,sim,simClasses,exteriorBlocks);
+   // TBD: new variable handling
+   //neumannFace(Hybrid::varReal["faceB_"].ptr,sim,simClasses,exteriorBlocks);
+   //setIMFFace(Hybrid::varReal["faceB_"].ptr,sim,simClasses,exteriorBlocks);
+   //simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID);
    // nodeJ = avg(edgeJ) = avg(curl(faceB)/mu0)
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    profile::start("field propag",profPropagFieldID);
    for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) {
       calcNodeJ(faceB,nodeB,nodeRhoQi,nodeJ,
+      //calcNodeJ(Hybrid::varReal["faceB_"].ptr,nodeB,nodeRhoQi,nodeJ, // TBD: new variable handling
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
                 gridCounterNodeMaxVw,
 #endif
@@ -212,10 +223,12 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
+   //simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
    profile::stop();
    profile::start("field propag",profPropagFieldID);
    for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) {
       calcNodeJ(faceB,nodeB,nodeRhoQi,nodeJ,
+      //calcNodeJ(Hybrid::varReal["faceB_"].ptr,nodeB,nodeRhoQi,nodeJ, // TBD: new variable handling
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
                 gridCounterNodeMaxVw,
 #endif
@@ -416,12 +429,14 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
    profile::start("field propag",profPropagFieldID);
    for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { faceCurl(nodeE,faceB,true,sim,simClasses,innerBlocks[b]); }
+   //for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { faceCurl(nodeE,Hybrid::varReal["faceB_"].ptr,true,sim,simClasses,innerBlocks[b]); } // TBD: new variable handling
    profile::stop();
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
    profile::stop();
    profile::start("field propag",profPropagFieldID);
    for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { faceCurl(nodeE,faceB,true,sim,simClasses,boundaryBlocks[b]); }
+   //for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { faceCurl(nodeE,Hybrid::varReal["faceB_"].ptr,true,sim,simClasses,boundaryBlocks[b]); } // TBD: new variable handling
    profile::stop();
 
    // calculated cellEp
@@ -1895,14 +1910,16 @@ void cell2r(Real* r,Real* cellData,Simulation& sim,SimulationClasses& simClasses
 void setupGetFields(Simulation& sim,SimulationClasses& simClasses) {
    profile::start("setupGetFields",setupGetFieldsID);
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
-   Real* nodeE = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
+   //Real* nodeE = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
    if (faceB == NULL) {cerr << "ERROR: obtained NULL faceB array!" << endl; exit(1);}
-   if (nodeE == NULL) {cerr << "ERROR: obtained NULL nodeE array!" << endl; exit(1);}
+   //if (nodeE == NULL) {cerr << "ERROR: obtained NULL nodeE array!" << endl; exit(1);}
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
-   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
+   //simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
+   //simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
    profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
-   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
+   //simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
+   //simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
    profile::stop();
    profile::stop();
 }
@@ -1914,7 +1931,8 @@ void getFields(Real* r,Real* B,Real* Ue,Real* Ep,Simulation& sim,SimulationClass
    Real* cellUe = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellUeID));
    Real* cellEp = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellEpID));
    face2r(r,faceB,sim,simClasses,blockID,B);
-   //node2r(r,nodeE,sim,simClasses,blockID,E);
+   //face2r(r,Hybrid::varReal["faceB_"].ptr,sim,simClasses,blockID,B); // TBD: new variable handling
+   //node2r(r,nodeE,sim,simClasses,blockID,E); // this does not work, instead NGP Ue need to be used
    cell2r(r,cellUe,sim,simClasses,blockID,Ue);
    if (Hybrid::useElectronPressureElectricField == true) {
       cell2r(r,cellEp,sim,simClasses,blockID,Ep);

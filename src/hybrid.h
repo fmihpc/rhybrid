@@ -103,6 +103,7 @@ struct HybridVariable {
    pargrid::DataID dataID = pargrid::INVALID_DATAID;
    pargrid::StencilID stencilID = pargrid::INVALID_STENCILID;
    T* ptr = NULL;
+   //T* const constPtr = NULL;
 };*/
 
 struct Hybrid {
