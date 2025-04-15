@@ -1916,7 +1916,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // initialize cell arrays with an initial state if simulation was not restarted
    if (sim.restarted == false) {
-      //for (size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { faceJ[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellB[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellJ[i] = 0.0; }
