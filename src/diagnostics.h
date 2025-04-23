@@ -265,8 +265,10 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
 {
    // synchronize faceB before using it below
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
+   //simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
    //profile::start("MPI waits",mpiWaitID);
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
+   //simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
    //profile::stop();
    logDataField.N_cells = 0.0;
    // face magnetic field
@@ -321,6 +323,7 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
       const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
       Real aa[s*vectorDim]; // temp array
       fetchData(faceB,aa,simClasses,b,vectorDim);
+      //fetchData(Hybrid::varReal["faceB_"].ptr,aa,simClasses,b,vectorDim); // TBD: new variable handling
       for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
