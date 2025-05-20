@@ -64,9 +64,9 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    map<string,string> attribs;
    attribs["mesh"] = spatMeshName;
    attribs["type"] = "celldata";
-   // TBD: new variable handling
+#ifdef USE_NEW_VARIBLE_HANDLING
    // write selected ParGrid arrays
-   /*for (auto const& p : Hybrid::varReal) {
+   for (auto const& p : Hybrid::varReal) {
       if (Hybrid::outputCellParams[p.first] == false) { continue; }
       const uint64_t arraySize = N_blocks*block::SIZE;
       map<string,string> attribs;
@@ -74,8 +74,11 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       attribs["mesh"] = spatMeshName;
       attribs["type"] = "celldata";
       if (simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,p.second.vectorDim,p.second.ptr) == false) { success = false; }
-   }*/
+   }
+#endif
+#ifndef USE_NEW_VARIBLE_HANDLING
    writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,                "faceB",               N_blocks,3);
+#endif
    writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,                "faceJ",               N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,            "cellRhoQi",           N_blocks,1);
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
@@ -274,11 +277,16 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       }
    }
    if (Hybrid::outputCellParams["cellDivB"] == true) {
+#ifndef USE_NEW_VARIBLE_HANDLING
       simClasses->pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
       simClasses->pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
       Real* const faceB = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataFaceBID));
       calcCellDiv(faceB,divB);
-      //calcCellDiv(Hybrid::varReal["faceB_"].ptr,divB); // TBD: new variable handling
+#else
+      simClasses->pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID);
+      simClasses->pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID);
+      calcCellDiv(Hybrid::varReal["faceB_"].ptr,divB);
+#endif
       attribs["name"] = "cellDivB";
       if (simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(divB[0])) == false) { success = false; }
    }

@@ -23,12 +23,15 @@ using namespace std;
 
 // Init static variables:
 
-// TBD: new variable handling
-//map< string , HybridVariable<Real> > Hybrid::varReal;
-//map< string , HybridVariable<bool> > Hybrid::varBool;
+#ifdef USE_NEW_VARIBLE_HANDLING
+map< string , HybridVariable<Real> > Hybrid::varReal;
+map< string , HybridVariable<bool> > Hybrid::varBool;
+#endif
 
 // face data
+#ifndef USE_NEW_VARIBLE_HANDLING
 pargrid::DataID Hybrid::dataFaceBID;
+#endif
 pargrid::DataID Hybrid::dataFaceJID;
 
 // cell data

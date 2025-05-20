@@ -264,11 +264,17 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
 void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& logDataField,std::vector<Real>& cellRhoM)
 {
    // synchronize faceB before using it below
+#ifndef USE_NEW_VARIBLE_HANDLING
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
-   //simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
+#else
+   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID);
+#endif
    //profile::start("MPI waits",mpiWaitID);
+#ifndef USE_NEW_VARIBLE_HANDLING
    simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
-   //simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
+#else
+   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID);
+#endif
    //profile::stop();
    logDataField.N_cells = 0.0;
    // face magnetic field
@@ -310,7 +316,9 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    logDataField.minTLarmor = std::numeric_limits<Real>::max();
    logDataField.maxVAlfven = 0.0;
    logDataField.maxUe = 0.0;
+#ifndef USE_NEW_VARIBLE_HANDLING
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
+#endif
    Real* cellRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
    Real* cellJi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellUe = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellUeID);
@@ -322,8 +330,11 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
       const size_t vectorDim = 3;
       const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
       Real aa[s*vectorDim]; // temp array
+#ifndef USE_NEW_VARIBLE_HANDLING
       fetchData(faceB,aa,simClasses,b,vectorDim);
-      //fetchData(Hybrid::varReal["faceB_"].ptr,aa,simClasses,b,vectorDim); // TBD: new variable handling
+#else
+      fetchData(Hybrid::varReal["faceB_"].ptr,aa,simClasses,b,vectorDim);
+#endif
       for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;

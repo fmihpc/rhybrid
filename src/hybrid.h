@@ -94,8 +94,8 @@ struct OuterBoundaryZone {
 };
 #endif
 
-// TBD: new variable handling
-/*template<typename T>
+#ifdef USE_NEW_VARIBLE_HANDLING
+template<typename T>
 struct HybridVariable {
    std::string name = "";
    std::string type = "";
@@ -104,15 +104,19 @@ struct HybridVariable {
    pargrid::StencilID stencilID = pargrid::INVALID_STENCILID;
    T* ptr = NULL;
    //T* const constPtr = NULL;
-};*/
+};
+#endif
 
 struct Hybrid {
-   // TBD: new variable handling
-   //static std::map< std::string, HybridVariable<Real> > varReal;
-   //static std::map< std::string, HybridVariable<bool> > varBool;
+#ifdef USE_NEW_VARIBLE_HANDLING
+   static std::map< std::string, HybridVariable<Real> > varReal;
+   static std::map< std::string, HybridVariable<bool> > varBool;
+#endif
 
    // face data
+#ifndef USE_NEW_VARIBLE_HANDLING
    static pargrid::DataID dataFaceBID;
+#endif
    static pargrid::DataID dataFaceJID;
 
    // cell data

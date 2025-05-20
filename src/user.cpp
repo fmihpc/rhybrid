@@ -265,8 +265,8 @@ Real getGaussianDistr(Real x,Real sigma) {
    }
 }
 
-// TBD: new variable handling
-/*bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
+#ifdef USE_NEW_VARIBLE_HANDLING
+bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
    if (vectorDim <= 0) { return true; }
    // create pargrid array struct
    HybridVariable <Real>d;
@@ -301,7 +301,8 @@ Real getGaussianDistr(Real x,Real sigma) {
    Hybrid::varReal[name] = d;
    simClasses.logger << "(USER): created ParGrid used data array: " << name << " (Real[" << vectorDim << "])" << endl;
    return true;
-}*/
+}
+#endif
 
 // sanity check of the injector type of a particle population
 bool checkInjectorName(SimulationClasses& simClasses,ConfigReader& cr,string speciesName,string injectorNameA) {
@@ -895,7 +896,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::N_ionospherePopulations = static_cast<unsigned int>( ionospherePopulations.size() );
    Hybrid::N_exospherePopulations = static_cast<unsigned int>( exospherePopulations.size() );
 
+#ifndef USE_NEW_VARIBLE_HANDLING
    Hybrid::dataFaceBID               = simClasses.pargrid.invalidDataID();
+#endif
    Hybrid::dataFaceJID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellRhoQiID           = simClasses.pargrid.invalidDataID();
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
@@ -936,12 +939,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // id of a stencil used for particle accumulation into grid
    Hybrid::accumulationStencilID = sim.inverseStencilID;
 
-   // TBD: new variable handling: create a parallel data arrays
-   /*vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
+#ifdef USE_NEW_VARIBLE_HANDLING
+   // create a parallel data arrays
+   vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
    vector<pargrid::StencilID> sIDAcc = {pargrid::DEFAULT_STENCIL,Hybrid::accumulationStencilID};
    vector<pargrid::StencilID> sIDEmpty;
    addVarReal(sim,simClasses,"faceB_",3,sID);
-   addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);*/
+   addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);
+#endif
 #ifndef USE_EDGE_J
    //addVarReal(sim,simClasses,"faceJ_",3,sID);
 #endif
@@ -982,12 +987,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    //addVarReal(sim,simClasses,"cellAverageB",3,sIDEmpty);
 #endif
-
+#ifndef USE_NEW_VARIBLE_HANDLING
    Hybrid::dataFaceBID = simClasses.pargrid.addUserData<Real>("faceB",block::SIZE*3);
    if (Hybrid::dataFaceBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add faceB array to ParGrid!" << endl << write;
       return false;
    }
+#endif
    Hybrid::dataFaceJID = simClasses.pargrid.addUserData<Real>("faceJ",block::SIZE*3);
    if (Hybrid::dataFaceJID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add faceJ array to ParGrid!" << endl << write;
@@ -1156,10 +1162,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 
    // Create data transfers
-
+#ifndef USE_NEW_VARIBLE_HANDLING
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataFaceBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add faceB data transfer!" << endl << write; return false;
    }
+#endif
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataFaceJID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add faceJ data transfer!" << endl << write; return false;
    }
@@ -1220,8 +1227,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeJiID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeJi data transfer!" << endl << write; return false;
    }
-
+#ifndef USE_NEW_VARIBLE_HANDLING
    Real* faceB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
+#endif
    Real* faceJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceJID));
    Real* cellRhoQi           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiID));
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
@@ -1916,7 +1924,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // initialize cell arrays with an initial state if simulation was not restarted
    if (sim.restarted == false) {
+#ifndef USE_NEW_VARIBLE_HANDLING
       for (size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
+#endif
       for (size_t i=0; i<vectorArraySize; ++i) { faceJ[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellB[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellJ[i] = 0.0; }
@@ -1971,6 +1981,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
 #ifdef USE_SHOCKTUBE_TEST_CONFIGURATION
+#ifndef USE_NEW_VARIBLE_HANDLING
 	    // initial shocktube setup
 	    if (xCellCenter >= 0.5e5) {
 	       faceB[n*3+1] = 1e-9;
@@ -1979,6 +1990,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	       faceB[n*3+1] = -1e-9;
 	    }
 	    faceB[n*3+0] = 1.5e-9;
+#endif
 #endif
 	    const Real r2 = sqr(xCellCenter) + sqr(yCellCenter) + sqr(zCellCenter);
 	    if (r2 < Hybrid::R2_fieldObstacle) { innerFlagField[n] = true; }
@@ -2237,16 +2249,25 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             Real B_initial[3] = {0.0,0.0,0.0};
             // +x face
             setInitialB(sim,simClasses,xFaceXCenter,yFaceXCenter,zFaceXCenter,B_initial);
+#ifndef USE_NEW_VARIBLE_HANDLING
             faceB[n*3+0] = B_initial[0];
-	    //Hybrid::varReal["faceB_"].ptr[n*3+0] = B_initial[0]; // TBD: new variable handling
+#else
+	    Hybrid::varReal["faceB_"].ptr[n*3+0] = B_initial[0];
+#endif
             // +y face
             setInitialB(sim,simClasses,xFaceYCenter,yFaceYCenter,zFaceYCenter,B_initial);
+#ifndef USE_NEW_VARIBLE_HANDLING
             faceB[n*3+1] = B_initial[1];
-	    //Hybrid::varReal["faceB_"].ptr[n*3+1] = B_initial[1]; // TBD: new variable handling
+#else
+	    Hybrid::varReal["faceB_"].ptr[n*3+1] = B_initial[1];
+#endif
             // +z face
             setInitialB(sim,simClasses,xFaceZCenter,yFaceZCenter,zFaceZCenter,B_initial);
+#ifndef USE_NEW_VARIBLE_HANDLING
             faceB[n*3+2] = B_initial[2];
-	    //Hybrid::varReal["faceB_"].ptr[n*3+2] = B_initial[2]; // TBD: new variable handling
+#else
+	    Hybrid::varReal["faceB_"].ptr[n*3+2] = B_initial[2];
+#endif
 	    const Real xCellCenter = crd[b3+0] + (i+0.5)*Hybrid::dx;
 	    const Real yCellCenter = crd[b3+1] + (j+0.5)*Hybrid::dx;
 	    const Real zCellCenter = crd[b3+2] + (k+0.5)*Hybrid::dx;
@@ -2416,7 +2437,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    // set parameters written in vlsv files
    Hybrid::outputCellParams = {
+#ifndef USE_NEW_VARIBLE_HANDLING
       {"faceB",false},
+#endif
       {"faceJ",false},
       {"cellRhoQi",false},
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
@@ -2470,16 +2493,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"MPI_rank",false},
       {"Load",false}
    };
-   // TBD: new variable handling
+#ifdef USE_NEW_VARIBLE_HANDLING
    // set parameters that can be written in output state files
-   /*for (auto const& p : Hybrid::varReal) {
+   for (auto const& p : Hybrid::varReal) {
       if (Hybrid::outputCellParams.count(p.first) < 1) {
 	 Hybrid::outputCellParams[p.first] = false;
       }
       else {
 	 simClasses.logger << "(RHYBRID) WARNING: output parameter defined twice: " << p.first << endl;
       }
-   }*/
+   }
+#endif
 
    simClasses.logger
      << "(REPARTITIONING)" << endl
@@ -2598,12 +2622,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    simClasses.logger << "(RHYBRID) Starting finalization." << endl;
    bool success = true;
-   // TBD: new variable handling
-   /*for (auto const& p : Hybrid::varReal) {
+#ifdef USE_NEW_VARIBLE_HANDLING
+   for (auto const& p : Hybrid::varReal) {
       if (simClasses.pargrid.removeUserData(p.second.dataID) == false) { success = false; }
       simClasses.logger << "(USER) removed ParGrid array: " << p.second.name << endl;
-   }*/
+   }
+#endif
+#ifndef USE_NEW_VARIBLE_HANDLING
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
+#endif
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
