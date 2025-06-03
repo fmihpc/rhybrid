@@ -12,7 +12,7 @@ git clone https://github.com/fmihpc/vlsv
 git clone https://github.com/fmihpc/pargrid
 wget https://github.com/sandialabs/Zoltan/archive/refs/tags/v3.901.tar.gz
 mv v3.901.tar.gz Zoltan-v3.901.tar.gz
-tar -xzf ~/Dropbox/downz/Zoltan-v3.901.tar.gz -C ./
+tar -xzf Zoltan-v3.901.tar.gz -C ./
 
 # compile Zoltan
 cd Zoltan-3.901/
