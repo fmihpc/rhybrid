@@ -43,6 +43,9 @@ cd ~/bin/corsair/
 cp -p Makefile.arch Makefile.newuser
 jed Makefile.newuser
 SIM=rhybrid
+jed Makefile
+ARCH ?= newuser
+SIM ?= rhybrid
 # and other necessary options for your local system
 make
 
