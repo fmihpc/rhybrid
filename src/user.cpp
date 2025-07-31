@@ -266,14 +266,18 @@ Real getGaussianDistr(Real x,Real sigma) {
 }
 
 #ifdef USE_NEW_VARIBLE_HANDLING
-bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
-   if (vectorDim <= 0) { return true; }
+template<typename T>
+bool addVarHybrid(Simulation& sim,SimulationClasses& simClasses,string name, size_t vectorDim,vector<pargrid::StencilID> stencilID) {
+   if (vectorDim <= 0) {
+      simClasses.logger << "(USER) ERROR: cannot create ParGrid away with vector dimension <= 0: " << name << endl << write;
+      return false;
+   }
    // create pargrid array struct
-   HybridVariable <Real>d;
+   HybridVariable <T>d;
    d.vectorDim = vectorDim;
    // add pargrid user data
    d.dataID = simClasses.pargrid.invalidDataID();
-   d.dataID = simClasses.pargrid.addUserData<Real>(name,block::SIZE*vectorDim);
+   d.dataID = simClasses.pargrid.addUserData<T>(name,block::SIZE*vectorDim);
    if (d.dataID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid user data array: " << name << endl << write;
       return false;
@@ -286,8 +290,8 @@ bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_
       }
    }
    // create pointer to user data
-   d.ptr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.dataID));
-   //d.constPtr = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(d.dataID)); // how to get this working?
+   d.ptr = reinterpret_cast<T*>(simClasses.pargrid.getUserData(d.dataID));
+   //d.constPtr = reinterpret_cast<T*>(simClasses.pargrid.getUserData(d.dataID)); // how to get this working?
    if (d.ptr == NULL) {
       simClasses.logger << "(USER) ERROR: failed to create ParGrid data pointer: " << name  << endl << write;
       return false;
@@ -298,8 +302,20 @@ bool addVarReal(Simulation& sim,SimulationClasses& simClasses,string name, size_
       for (size_t i=0; i<arraySize; ++i) { d.ptr[i] = 0.0; }
    }
    // add variable to global map
-   Hybrid::varReal[name] = d;
-   simClasses.logger << "(USER): created ParGrid used data array: " << name << " (Real[" << vectorDim << "])" << endl;
+   string strVarType = "";
+   if constexpr (is_same_v<T,Real>) {
+      Hybrid::varReal[name] = d;
+      strVarType = "Real";
+   }
+   else if constexpr (is_same_v<T,bool>) {
+      Hybrid::varBool[name] = d;
+      strVarType = "bool";
+   }
+   else {
+      simClasses.logger << "(USER) ERROR: addVarHybrid function support only Real and bool types: " << name << endl << write;
+      return false;
+   }
+   simClasses.logger << "(USER): created ParGrid used data array: " << name << " (" << strVarType << "[" << vectorDim << "])" << endl;
    return true;
 }
 #endif
@@ -944,49 +960,67 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    vector<pargrid::StencilID> sID = {pargrid::DEFAULT_STENCIL};
    vector<pargrid::StencilID> sIDAcc = {pargrid::DEFAULT_STENCIL,Hybrid::accumulationStencilID};
    vector<pargrid::StencilID> sIDEmpty;
-   addVarReal(sim,simClasses,"faceB_",3,sID);
-   addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);
-#endif
-#ifndef USE_EDGE_J
-   //addVarReal(sim,simClasses,"faceJ_",3,sID);
-#endif
+   addVarHybrid<Real>(sim,simClasses,"faceB_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"faceJ_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"cellRhoQi_",1,sIDAcc);
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
-   //addVarReal(sim,simClasses,"cellRhoQiBg_",1,sID);
+   addVarHybrid<Real>(sim,simClasses,"cellRhoQiBg_",1,sID);
 #endif
-   //addVarReal(sim,simClasses,"cellB_",3,sID);
-   //addVarReal(sim,simClasses,"cellJ_",3,sID);
-   //addVarReal(sim,simClasses,"cellUe_",3,sID);
-   //addVarReal(sim,simClasses,"cellJi_",3,sIDAcc);
-   //addVarReal(sim,simClasses,"cellEp_",3,sID);
-   //addVarReal(sim,simClasses,"nodeRhoQi_",1,sID);
-   //addVarReal(sim,simClasses,"nodeE_",3,sID);
-   //addVarReal(sim,simClasses,"nodeB_",3,sID);
-   //addVarReal(sim,simClasses,"nodeJ_",3,sID);   
-   //addVarReal(sim,simClasses,"nodeUe_",3,sID);
-   //addVarReal(sim,simClasses,"nodeJi_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"cellB_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"cellJ_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"cellUe_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"cellJi_",3,sIDAcc);
+   addVarHybrid<Real>(sim,simClasses,"cellEp_",3,sID);
+   if (Hybrid::N_ionospherePopulations > 0) {
+      addVarHybrid<Real>(sim,simClasses,"cellIonosphere_",block::SIZE*Hybrid::N_ionospherePopulations,sID);
+   }
+   if (Hybrid::N_exospherePopulations > 0) {
+      addVarHybrid<Real>(sim,simClasses,"cellExosphere_",block::SIZE*Hybrid::N_exospherePopulations,sID);
+   }
+   addVarHybrid<Real>(sim,simClasses,"nodeRhoQi_",1,sID);
+   addVarHybrid<Real>(sim,simClasses,"nodeE_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"nodeB_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"nodeJ_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"nodeUe_",3,sID);
+   addVarHybrid<Real>(sim,simClasses,"nodeJi_",3,sID);
 #ifdef USE_RESISTIVITY
-   //addVarReal(sim,simClasses,"nodeEta_",1,sIDEmpty);
+   addVarHybrid<Real>(sim,simClasses,"nodeEta_",1,sIDEmpty);
 #endif
-   //addVarReal(sim,simClasses,"gridCounterCellMaxUe_",1,sIDEmpty);
-   //addVarReal(sim,simClasses,"gridCounterCellMaxVi_",1,sIDEmpty);
-   //addVarReal(sim,simClasses,"gridCounterCellMinRhoQi_",1,sIDEmpty);
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-   //addVarReal(sim,simClasses,"gridCounterNodeMaxE_",1,sIDEmpty);
-   //addVarReal(sim,simClasses,"gridCounterNodeMaxVw_",1,sIDEmpty);
+   addVarHybrid<Real>(sim,simClasses,"gridCounterCellMaxUe_",1,sIDEmpty);
+   addVarHybrid<Real>(sim,simClasses,"gridCounterCellMaxVi_",1,sIDEmpty);
+   addVarHybrid<Real>(sim,simClasses,"gridCounterCellMinRhoQi_",1,sIDEmpty);
+   addVarHybrid<Real>(sim,simClasses,"gridCounterNodeMaxE_",1,sIDEmpty);
+   addVarHybrid<Real>(sim,simClasses,"gridCounterNodeMaxVw_",1,sIDEmpty);
 #endif
-   //addVarBool(sim,simClasses,"innerFlagField_",1,sIDEmpty);
-   //addVarBool(sim,simClasses,"innerFlagNode_",1,sIDEmpty);
-   //addVarBool(sim,simClasses,"innerFlagParticle_",1,sIDEmpty);
-   //addVarBool(sim,simClasses,"innerFlagCellEp_",1,sIDEmpty);
+   addVarHybrid<bool>(sim,simClasses,"innerFlagField_",1,sIDEmpty);
+   addVarHybrid<bool>(sim,simClasses,"innerFlagNode_",1,sIDEmpty);
+   addVarHybrid<bool>(sim,simClasses,"innerFlagParticle_",1,sIDEmpty);
+   addVarHybrid<bool>(sim,simClasses,"innerFlagCellEp_",1,sIDEmpty);
 #ifdef USE_OUTER_BOUNDARY_ZONE
-   //addVarBool(sim,simClasses,"outerBoundaryFlag_",1,sIDEmpty);
+   addVarHybrid<bool>(sim,simClasses,"outerBoundaryFlag_",1,sIDEmpty);
+   addVarHybrid<bool>(sim,simClasses,"outerBoundaryFlagNode_",1,sIDEmpty);
 #endif
 #ifdef USE_DETECTORS
-   //addVarBool(sim,simClasses,"detPleFlag_",1,sIDEmpty);
+   addVarHybrid<bool>(sim,simClasses,"detPleFlag_",1,sIDEmpty);
+   addVarHybrid<bool>(sim,simClasses,"detBlkFlag_",1,sIDEmpty);
 #endif
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
-   //addVarReal(sim,simClasses,"cellAverageB",3,sIDEmpty);
+   addVarHybrid<Real>(sim,simClasses,"cellAverageB_",3,sID);
+   vector<Real*> nAve_;
+   vector<Real*> vAve_;
+   for (unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
+      const string popDensityVarName = "cellDensityAverage_pop" + to_string(i) + "_";
+      const string popVelocityVarName = "cellVelocityAverage_pop" + to_string(i) + "_";
+      addVarHybrid<Real>(sim,simClasses,popDensityVarName,block::SIZE,sIDAcc);
+      addVarHybrid<Real>(sim,simClasses,popVelocityVarName,block::SIZE*3,sIDAcc);
+      nAve_.push_back(reinterpret_cast<Real*>(Hybrid::varReal[popDensityVarName].dataID));
+      vAve_.push_back(reinterpret_cast<Real*>(Hybrid::varReal[popVelocityVarName].dataID));
+   }
 #endif
+
+#endif // ifdef USE_NEW_VARIBLE_HANDLING
+
 #ifndef USE_NEW_VARIBLE_HANDLING
    Hybrid::dataFaceBID = simClasses.pargrid.addUserData<Real>("faceB",block::SIZE*3);
    if (Hybrid::dataFaceBID == simClasses.pargrid.invalidCellID()) {
