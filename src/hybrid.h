@@ -52,9 +52,9 @@ inline std::string int2str(int x,unsigned int N) {
     return ss.str();
 }
 
-// convert string velocity vector cfg variable to Real vector
-inline bool convertConfigFileVariableVelocity(std::string velStr,std::vector<Real>& vel) {
-   // check velocity format: (Ux,Uy,Uz)
+// convert string to 3d Real vector
+inline bool str2RealVector3D(std::string velStr,std::vector<Real>& vel) {
+   // check string format of a 3d vector, which should be: (Ux,Uy,Uz)
    bool velStrOk = true;
    if (count(velStr.begin(),velStr.end(),'(') != 1 ||
       count(velStr.begin(),velStr.end(),')') != 1 ||
@@ -79,6 +79,48 @@ inline bool convertConfigFileVariableVelocity(std::string velStr,std::vector<Rea
    return velStrOk;
 }
 
+// convert string to Real vector
+inline bool str2RealVector(std::string realStr,std::vector<Real>& res) {
+   bool realStrOk = true;
+   if (realStr.find_first_not_of("+-0123456789.e ") != std::string::npos) {
+      realStrOk = false;
+   }
+   // convert string to Reals
+   res.clear();
+   Real resTmp;
+   std::stringstream ss(realStr);
+   while (ss >> resTmp) { res.push_back(resTmp); }
+   return realStrOk;
+}
+
+// convert string to unsigned int vector
+inline bool str2UIntVector(std::string intStr,std::vector<unsigned int>& res) {
+   bool intStrOk = true;
+   if (intStr.find_first_not_of("0123456789 ") != std::string::npos) {
+      intStrOk = false;
+   }
+   // convert string to ints
+   res.clear();
+   int resTmp;
+   std::stringstream ss(intStr);
+   while (ss >> resTmp) { res.push_back(resTmp); }
+   return intStrOk;
+}
+
+// convert string to bool vector
+inline bool str2BoolVector(std::string boolStr,std::vector<bool>& res) {
+   bool boolStrOk = true;
+   if (boolStr.find_first_not_of("01 ") != std::string::npos) {
+      boolStrOk = false;
+   }
+   // convert string to bools
+   res.clear();
+   bool resTmp;
+   std::stringstream ss(boolStr);
+   while (ss >> resTmp) { res.push_back( static_cast<bool>(resTmp) ); }
+   return boolStrOk;
+}
+
 // cross product of 3D vectors
 inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[0] = a[1]*b[2] - a[2]*b[1];
@@ -88,6 +130,7 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
 
 #ifdef USE_OUTER_BOUNDARY_ZONE
 struct OuterBoundaryZone {
+   bool etaBoundaries[6] = {0};
    int typeEta=0,typeMinRhoQi=0;
    Real sizeEta=0.0,sizeMinRhoQi=0.0,minRhoQi=0.0,eta=0.0;
    bool constUe = false;

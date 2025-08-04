@@ -211,10 +211,10 @@ inline bool setResistivityProfile(SimulationClasses& simClasses,std::string resP
    return true;
 }
 
-Real getResistivity(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z) {
-   Real res = Hybrid::resistivityProfilePtr(sim,simClasses,x,y,z);
 #ifdef USE_OUTER_BOUNDARY_ZONE
+bool getResistivityOuterBoundaryZone(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z) {
    const Real bZone = Hybrid::outerBoundaryZone.sizeEta;
+   Real res = 0.0;
    if (Hybrid::outerBoundaryZone.typeEta == 0) { // not used
       res += 0.0;
    }
@@ -308,7 +308,12 @@ Real getResistivity(Simulation& sim,SimulationClasses& simClasses,const Real x,c
       simClasses.logger << "(getResistivity) ERROR: unknown type of an outer boundary zone for eta (" << Hybrid::outerBoundaryZone.typeEta << ")" << std::endl << write;
       MPI_Finalize();
    }
+   return res;
+}
 #endif
+
+Real getResistivity(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z) {
+   Real res = Hybrid::resistivityProfilePtr(sim,simClasses,x,y,z);
    return res;
 }
 

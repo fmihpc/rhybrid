@@ -402,7 +402,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      {
 	bool velStrOk = true;
 	vector<Real> vel;
-	velStrOk = convertConfigFileVariableVelocity(fieldObstacleUeStr,vel);
+	velStrOk = str2RealVector3D(fieldObstacleUeStr,vel);
 	// if not correct format
 	if (velStrOk == false) {
 	   simClasses.logger << "(RHYBRID) ERROR: bad format of fieldObstacleUe vector (" << fieldObstacleUeStr << ")" << endl << write;
@@ -464,47 +464,37 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
-   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
-   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (bool,multiple)",string(""));
+   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (six bools)",string("1 0 0 0 0 0"));
+   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (six bools)",string("1 0 0 0 0 0"));
    simClasses.logger << "(RHYBRID) Configuring: IMF" << endl << write;
    cr.parse();
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
-   string inputStr;
+   string inputStr = "1 0 0 0 0 0";
    cr.get("IMF.BoundaryCellB",inputStr);
-   if (inputStr.size() != 11 ||
-      inputStr.substr(1,1).compare(" ") != 0 ||
-      inputStr.substr(3,1).compare(" ") != 0 ||
-      inputStr.substr(5,1).compare(" ") != 0 ||
-      inputStr.substr(7,1).compare(" ") != 0 ||
-      inputStr.substr(9,1).compare(" ") != 0) {
-      simClasses.logger << "(RHYBRID) ERROR: IMF.BoundaryCellB should contain six boolean values separated by a whitespace each (" << inputStr << ")" << endl << write;
+   vector<bool> selectionBoundaryCellB;
+   if (str2BoolVector(inputStr,selectionBoundaryCellB) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: bad format of IMF.BoundaryCellB vector, should be x x x x x x, where x = 0/1 (" << inputStr << ")" << endl << write;
       exit(1);
    }
-   Hybrid::IMFBoundaryCellB[0] = str2bool(simClasses,inputStr.substr(0,1));
-   Hybrid::IMFBoundaryCellB[1] = str2bool(simClasses,inputStr.substr(2,1));
-   Hybrid::IMFBoundaryCellB[2] = str2bool(simClasses,inputStr.substr(4,1));
-   Hybrid::IMFBoundaryCellB[3] = str2bool(simClasses,inputStr.substr(6,1));
-   Hybrid::IMFBoundaryCellB[4] = str2bool(simClasses,inputStr.substr(8,1));
-   Hybrid::IMFBoundaryCellB[5] = str2bool(simClasses,inputStr.substr(10,1));
-   inputStr = "";
+   if(selectionBoundaryCellB.size() != 6) {
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in IMF.BoundaryCellB vector, should be x x x x x x, where x = 0/1 (" << inputStr << ")" << endl << write;
+      exit(1);
+   }
+   for(size_t i=0;i<6;++i) { Hybrid::IMFBoundaryCellB[i] = selectionBoundaryCellB[i]; }
+   inputStr = "1 0 0 0 0 0";
    cr.get("IMF.BoundaryFaceB",inputStr);
-   if (inputStr.size() != 11 ||
-      inputStr.substr(1,1).compare(" ") != 0 ||
-      inputStr.substr(3,1).compare(" ") != 0 ||
-      inputStr.substr(5,1).compare(" ") != 0 ||
-      inputStr.substr(7,1).compare(" ") != 0 ||
-      inputStr.substr(9,1).compare(" ") != 0) {
-      simClasses.logger << "(RHYBRID) ERROR: IMF.BoundaryFaceB should contain six boolean values separated by a whitespace each (" << inputStr << ")" << endl << write;
+   vector<bool> selectionBoundaryFaceB;
+   if (str2BoolVector(inputStr,selectionBoundaryFaceB) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: bad format of IMF.BoundaryFaceB vector, should be x x x x x x, where x = 0/1 (" << inputStr << ")" << endl << write;
       exit(1);
    }
-   Hybrid::IMFBoundaryFaceB[0] = str2bool(simClasses,inputStr.substr(0,1));
-   Hybrid::IMFBoundaryFaceB[1] = str2bool(simClasses,inputStr.substr(2,1));
-   Hybrid::IMFBoundaryFaceB[2] = str2bool(simClasses,inputStr.substr(4,1));
-   Hybrid::IMFBoundaryFaceB[3] = str2bool(simClasses,inputStr.substr(6,1));
-   Hybrid::IMFBoundaryFaceB[4] = str2bool(simClasses,inputStr.substr(8,1));
-   Hybrid::IMFBoundaryFaceB[5] = str2bool(simClasses,inputStr.substr(10,1));
+   if(selectionBoundaryFaceB.size() != 6) {
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in IMF.BoundaryFaceB vector, should be x x x x x x, where x = 0/1 (" << inputStr << ")" << endl << write;
+      exit(1);
+   }
+   for(size_t i=0;i<6;++i) { Hybrid::IMFBoundaryFaceB[i] = selectionBoundaryFaceB[i]; }
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    cr.add("IntrinsicB.profile_name","Magnetic field profile name [-] (string)",string(""));
    cr.add("IntrinsicB.dBx","Magnitude of Bx random fluctuations [T] (float)",defaultValue);
@@ -687,16 +677,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << endl;
    simClasses.logger
      << "(IMF BOUNDARY CONDITIONS)" << endl
-     << "cellB (+x,-x,+y,-y,+z,-z) = ";
-   for (size_t i = 0;i<6;++i) {
-      simClasses.logger << Hybrid::IMFBoundaryCellB[i] << " ";
-   }
+     << "cellB (+x,-x,+y,-y,+z,-z) ="; for (size_t i = 0;i<6;++i) { simClasses.logger << " " << Hybrid::IMFBoundaryCellB[i]; }
    simClasses.logger
      << endl
-     << "faceB (+x,-x,+y,-y,+z,-z) = ";
-   for (size_t i = 0;i<6;++i) {
-      simClasses.logger << Hybrid::IMFBoundaryFaceB[i] << " ";
-   }
+     << "faceB (+x,-x,+y,-y,+z,-z) ="; for (size_t i = 0;i<6;++i) { simClasses.logger << " " << Hybrid::IMFBoundaryFaceB[i]; }
    simClasses.logger << endl << endl;
 
    if (Hybrid::Efilter < 0) { Hybrid::Efilter = 0; }
@@ -1740,6 +1724,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::maxVi = sqrt(Hybrid::maxVi2);
 
 #ifdef USE_OUTER_BOUNDARY_ZONE
+   string inputStrEtaBoundarySizes = "0 0 0 0 0 0";
+   string inputStrEtaBoundaryCoeffs = "0 0 0 0 0 0";
+   cr.add("OuterBoundaryZone.etaBoundarySizes","descr",string("0 0 0 0 0 0"));
+   cr.add("OuterBoundaryZone.etaBoundaryCoeffs","descr",string("0 0 0 0 0 0"));
    cr.add("OuterBoundaryZone.typeEta","Type of the outer boundary zone for resistivity: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-], 3 = -x wall and all edges except +x edges (int)",0);
    cr.add("OuterBoundaryZone.typeMinRhoQi","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
    cr.add("OuterBoundaryZone.sizeEta","Size of the outer boundary zone for resitivity [dx] (float)",defaultValue);
@@ -1749,6 +1737,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("OuterBoundaryZone.constUe","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
    simClasses.logger << "(RHYBRID) Configuring: outer boundary zone" << endl;
    cr.parse();
+   cr.get("OuterBoundaryZone.etaBoundarySizes",inputStrEtaBoundarySizes);
+   cr.get("OuterBoundaryZone.etaBoundaryCoeffs",inputStrEtaBoundaryCoeffs);
    cr.get("OuterBoundaryZone.typeEta",Hybrid::outerBoundaryZone.typeEta);
    cr.get("OuterBoundaryZone.typeMinRhoQi",Hybrid::outerBoundaryZone.typeMinRhoQi);
    cr.get("OuterBoundaryZone.sizeEta",Hybrid::outerBoundaryZone.sizeEta);
@@ -1756,6 +1746,26 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
    cr.get("OuterBoundaryZone.etaC",Hybrid::outerBoundaryZone.eta);
    cr.get("OuterBoundaryZone.constUe",Hybrid::outerBoundaryZone.constUe);
+   vector<unsigned int> etaBoundarySizes;
+   // if not correct format
+   if (str2UIntVector(inputStrEtaBoundarySizes,etaBoundarySizes) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundarySizes vector, should be x x x x x x, where x = uint (" << inputStrEtaBoundarySizes << ")" << endl << write;
+      exit(1);
+   }
+   if(etaBoundarySizes.size() != 6) {
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundarySizes vector, should be x x x x x x, where x = uint (" << inputStrEtaBoundarySizes << ")" << endl << write;
+      exit(1);
+   }
+   vector<Real> etaBoundaryCoeffs;
+   // if not correct format
+   if (str2RealVector(inputStrEtaBoundaryCoeffs,etaBoundaryCoeffs) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundaryCoeffs vector, should be x x x x x x, where x = Real (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
+      exit(1);
+   }
+   if(etaBoundaryCoeffs.size() != 6) {
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundaryCoeffs vector, should be x x x x x x, where x = Real (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
+      exit(1);
+   }
    Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
    Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
 #endif
@@ -1859,6 +1869,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_OUTER_BOUNDARY_ZONE
    simClasses.logger
      << "(OUTER BOUNDARY ZONE)" << endl
+     << "eta boundary size [dx] ="; for (auto aa: etaBoundarySizes) { simClasses.logger << " " << aa; }
+   simClasses.logger
+     << endl
+     << "eta boundary coefficients ="; for (auto aa: etaBoundaryCoeffs) { simClasses.logger << " " << aa; }
+   simClasses.logger
+     << endl
      << "type (eta)       = " << Hybrid::outerBoundaryZone.typeEta << endl
      << "type (minRhoQi)  = " << Hybrid::outerBoundaryZone.typeMinRhoQi << endl
      << "size (eta)       = " << Hybrid::outerBoundaryZone.sizeEta/(Hybrid::dx + 1e-30) << " dx" << endl
