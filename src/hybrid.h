@@ -139,9 +139,8 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
 
 #ifdef USE_OUTER_BOUNDARY_ZONE
 struct OuterBoundaryZone {
-   bool etaBoundaries[6] = {0};
-   int typeEta=0,typeMinRhoQi=0;
-   Real sizeEta=0.0,sizeMinRhoQi=0.0,minRhoQi=0.0,eta=0.0;
+   int typeMinRhoQi=0;
+   Real sizeMinRhoQi=0.0,minRhoQi=0.0;
    bool constUe = false;
 };
 #endif
