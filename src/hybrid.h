@@ -187,10 +187,7 @@ struct Hybrid {
    static pargrid::DataID dataNodeJID;
    static pargrid::DataID dataNodeUeID;
    static pargrid::DataID dataNodeJiID;
-
-#ifdef USE_RESISTIVITY
    static pargrid::DataID dataNodeEtaID;
-#endif
 
    // grid constraint counters
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
@@ -272,13 +269,11 @@ struct Hybrid {
    static Real minRhoQi;
    static Real maxE2;
    static Real maxVw;
-#ifdef USE_RESISTIVITY
    static Real resistivityEta;
    static Real resistivityR2;
    static std::vector<Real> resistivitySphericalEta;
    static std::vector<Real> resistivitySphericalR2;
    static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
-#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
    static OuterBoundaryZone outerBoundaryZone;
 #endif

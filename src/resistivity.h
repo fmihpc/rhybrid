@@ -20,8 +20,6 @@
 #ifndef RESISTIVITY_H
 #define RESISTIVITY_H
 
-#ifdef USE_RESISTIVITY
-
 #include <string>
 #include <vector>
 #include <simulation.h>
@@ -316,7 +314,5 @@ Real getResistivity(Simulation& sim,SimulationClasses& simClasses,const Real x,c
    Real res = Hybrid::resistivityProfilePtr(sim,simClasses,x,y,z);
    return res;
 }
-
-#endif
 
 #endif

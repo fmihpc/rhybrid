@@ -38,9 +38,7 @@
 #include "particle_list_hybrid.h"
 #include "operator_userdata.h"
 #include "diagnostics.h"
-#ifdef USE_RESISTIVITY
 #include "resistivity.h"
-#endif
 #ifdef USE_B_INITIAL
 #include "magnetic_field.h"
 #endif
@@ -155,12 +153,6 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    //Hybrid::IMFBy = 1.0e-9*(sin(20.0*sim.t/(sim.maximumTimesteps*sim.dt))); // RHBTESTS: convect sine wave in By with the solar wind from the front wall
    return success;
 }
-
-#ifdef USE_OUTER_BOUNDARY_ZONE
-#ifndef USE_RESISTIVITY
-#error (RHYBRID) COMPILE ERROR: If USE_OUTER_BOUNDARY_ZONE is defined, also USE_RESISTIVITY need to be defined
-#endif
-#endif
 
 bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,vector<ParticleListBase*>& particleLists) {
    simClasses.logger << "(RHYBRID) Starting early initialization." << endl;
@@ -899,9 +891,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataNodeJID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataNodeUeID              = simClasses.pargrid.invalidDataID();
    Hybrid::dataNodeJiID              = simClasses.pargrid.invalidDataID();
-#ifdef USE_RESISTIVITY
    Hybrid::dataNodeEtaID             = simClasses.pargrid.invalidDataID();
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
    Hybrid::dataGridCounterCellMaxUeID    = simClasses.pargrid.invalidDataID();
    Hybrid::dataGridCounterCellMaxViID    = simClasses.pargrid.invalidDataID();
@@ -944,9 +934,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    //addVarReal(sim,simClasses,"nodeJ_",3,sID);   
    //addVarReal(sim,simClasses,"nodeUe_",3,sID);
    //addVarReal(sim,simClasses,"nodeJi_",3,sID);
-#ifdef USE_RESISTIVITY
    //addVarReal(sim,simClasses,"nodeEta_",1,sIDEmpty);
-#endif
    //addVarReal(sim,simClasses,"gridCounterCellMaxUe_",1,sIDEmpty);
    //addVarReal(sim,simClasses,"gridCounterCellMaxVi_",1,sIDEmpty);
    //addVarReal(sim,simClasses,"gridCounterCellMinRhoQi_",1,sIDEmpty);
@@ -1059,13 +1047,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add nodeJi array to ParGrid!" << endl << write;
       return false;
    }
-#ifdef USE_RESISTIVITY
    Hybrid::dataNodeEtaID = simClasses.pargrid.addUserData<Real>("nodeEta",block::SIZE*1);
    if (Hybrid::dataNodeEtaID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeEta array to ParGrid!" << endl << write;
       return false;
    }
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
    Hybrid::dataGridCounterCellMaxUeID = simClasses.pargrid.addUserData<Real>("gridCounterCellMaxUe",block::SIZE*1);
    if (Hybrid::dataGridCounterCellMaxUeID == simClasses.pargrid.invalidCellID()) {
@@ -1225,9 +1211,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real* nodeJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJID));
    Real* nodeUe              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeUeID));
    Real* nodeJi              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJiID));
-#ifdef USE_RESISTIVITY
    Real* nodeEta             = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEtaID));
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
    Real* gridCounterCellMaxUe    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterCellMaxUeID));
    Real* gridCounterCellMaxVi    = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataGridCounterCellMaxViID));
@@ -1775,7 +1759,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
 #endif
 
-#ifdef USE_RESISTIVITY
    string resProfileName = "";
    string resValueUnit = "";
    Real resValue = 0.0;
@@ -1871,7 +1854,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "none" << endl;
    }
    simClasses.logger << endl;
-#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
    simClasses.logger
      << "(OUTER BOUNDARY ZONE)" << endl
@@ -1907,11 +1889,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoq" << endl << endl;
 
    // evaluate and log CFL conditions from individual signal speeds and all summed together
-#ifdef USE_RESISTIVITY
    const Real dx_per_td_min = Hybrid::dx/td_min_smallest;
-#else
-   const Real dx_per_td_min = 0.0;
-#endif
    const Real summedSignalSpeed = Ubulk + vms + 2*vExB + vw + dx_per_td_min;
    const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + sqrt(Hybrid::maxVi2) + Hybrid::maxVw + vms + dx_per_td_min;
    simClasses.logger
@@ -1925,9 +1903,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "vms = " << vms/1e3 << " km/s = " << vms/dx_per_dt << " dx/dt" << endl
      << "2*|vExB| = " << 2*vExB/1e3 << " km/s = " << 2*vExB/dx_per_dt << " dx/dt" << endl
      << "vw = " << vw/1e3 << " km/s = " << vw/dx_per_dt << " dx/dt" << endl
-#ifdef USE_RESISTIVITY
      << "dx/min(td_min) = " << dx_per_td_min/1e3 << " km/s = " << dx_per_td_min/dx_per_dt << " dx/dt" << endl
-#endif
      << "summedSignalSpeed = " << summedSignalSpeed/1e3 << " km/s = " << summedSignalSpeed/dx_per_dt << " dx/dt" << endl
      << "summedFullConstraintedSignalSpeed = " << summedFullConstraintedSignalSpeed/1e3 << " km/s = " << summedFullConstraintedSignalSpeed/dx_per_dt << " dx/dt" << endl
      << endl;
@@ -1950,9 +1926,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       for (size_t i=0; i<vectorArraySize; ++i) { nodeJ[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { nodeUe[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { nodeJi[i] = 0.0; }
-#ifdef USE_RESISTIVITY
       for (size_t i=0; i<scalarArraySize; ++i) { nodeEta[i] = 0.0; }
-#endif
       for (size_t i=0; i<scalarArraySize; ++i) { nodeRhoQi[i] = 0.0; }
       for (size_t i=0; i<scalarArraySize; ++i) { cellRhoQi[i] = 0.0; }
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
@@ -2011,17 +1985,31 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    const Real rNode2 = sqr(xNode) + sqr(yNode) + sqr(zNode);
 	    if (rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0; // RHBTESTS */ }
 	    else                                  { innerFlagNode[n] = false; }
-#ifdef USE_RESISTIVITY
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
-#endif
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
             cellRhoQiBg[n] = getBackgroundChargeDensity(simClasses,bgChargeDensityProfileName,xCellCenter,yCellCenter,zCellCenter,bgChargeDensityArgs);
 #endif
             //nodeRhoQi[n] = exp(-sqrt(rNode2)/Hybrid::R_object);
 #ifdef USE_OUTER_BOUNDARY_ZONE
-//#ifdef USE_RESISTIVITY
-	    //const Real bZoneEtaSize[6] = {Hybrid::dx*etaBoundarySizes[0],Hybrid::dx*etaBoundarySizes[1],Hybrid::dx*etaBoundarySizes[2],Hybrid::dx*etaBoundarySizes[3],Hybrid::dx*etaBoundarySizes[4],Hybrid::dx*etaBoundarySizes[5]};
-//#endif
+	    // set boundary resistivity
+	    if (xNode < (sim.x_min + Hybrid::dx*etaBoundarySizes[0]*1.01)) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[0];
+	    }
+	    if (xNode > (sim.x_max - Hybrid::dx*etaBoundarySizes[1]*0.99)) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[1];
+	    }
+	    if (yNode < (sim.y_min + Hybrid::dx*etaBoundarySizes[2]*1.01)) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[2];
+	    }
+	    if (yNode > (sim.y_max - Hybrid::dx*etaBoundarySizes[3]*0.99)) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[3];
+	    }
+	    if (zNode < (sim.z_min + Hybrid::dx*etaBoundarySizes[4]*1.01)) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[4];
+	    }
+	    if (zNode > (sim.z_max - Hybrid::dx*etaBoundarySizes[5]*0.99)) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[5];
+	    }
             const Real bZone = Hybrid::outerBoundaryZone.sizeMinRhoQi; // boundary zone
             if (Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
                outerBoundaryFlag[n] = false;
@@ -2458,9 +2446,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"nodeJ",false},
       {"nodeUe",false},
       {"nodeJi",false},
-#ifdef USE_RESISTIVITY
       {"nodeEta",false},
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
       {"gridCounterCellMaxUe",false},
       {"gridCounterCellMaxVi",false},
@@ -2651,9 +2637,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeJID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeUeID)              == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeJiID)              == false) { success = false; }
-#ifdef USE_RESISTIVITY
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeEtaID)             == false) { success = false; }
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
    if (simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxUeID)    == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataGridCounterCellMaxViID)    == false) { success = false; }
