@@ -52,6 +52,15 @@ inline std::string int2str(int x,unsigned int N) {
     return ss.str();
 }
 
+// convert string to bool
+inline bool str2bool(const std::string boolStr,bool& res) {
+   if (boolStr.compare("0") != 0 && boolStr.compare("1") != 0 && boolStr.compare("true") != 0 && boolStr.compare("false") != 0 && boolStr.compare("True") != 0 && boolStr.compare("False") != 0) {
+      return false;
+   }
+   std::stringstream(boolStr) >> res;
+   return true;
+}
+
 // convert string to 3d Real vector
 inline bool str2RealVector3D(std::string velStr,std::vector<Real>& vel) {
    // check string format of a 3d vector, which should be: (Ux,Uy,Uz)

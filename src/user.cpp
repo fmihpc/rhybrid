@@ -51,16 +51,6 @@
 
 using namespace std;
 
-bool str2bool(SimulationClasses& simClasses,const string & v) {
-   if (v.compare("0") != 0 && v.compare("1") != 0) {
-      simClasses.logger << "(RHYBRID) ERROR: boolean should be 0 or 1 (" << v  << ")" << endl << write;
-      exit(1);
-   }
-   bool res;
-   istringstream(v) >> res;
-   return res;
-}
-
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool success = true;
    if (Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::initialFlowThrough == true) {
@@ -407,6 +397,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	if (velStrOk == false) {
 	   simClasses.logger << "(RHYBRID) ERROR: bad format of fieldObstacleUe vector (" << fieldObstacleUeStr << ")" << endl << write;
 	   exit(1);
+	   return false;
 	}
 	Hybrid::fieldObstacleUe[0] = vel[0];
 	Hybrid::fieldObstacleUe[1] = vel[1];
@@ -447,6 +438,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    else {
       simClasses.logger << "(RHYBRID) ERROR: Bad Hybrid.electron_pressure input value (" << useElectronPressureInput << ")" << endl << write;
       exit(1);
+      return false;
    }
    if (Hybrid::useElectronPressureElectricField == false) {
       Hybrid::electronTemperature = 0.0;
@@ -461,38 +453,45 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
 
+   // IMF parameters
+   string inputStrBoundaryCellB = "1 0 0 0 0 0";
+   string inputStrBoundaryFaceB = "1 0 0 0 0 0";
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
-   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB: +x,-x,+y,-y,+z,-z (six bools)",string("1 0 0 0 0 0"));
-   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB: +x,-x,+y,-y,+z,-z (six bools)",string("1 0 0 0 0 0"));
+   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB (six bools: +x -x +y -y +z -z)",string("1 0 0 0 0 0"));
+   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB (six bools: +x -x +y -y +z -z)",string("1 0 0 0 0 0"));
    simClasses.logger << "(RHYBRID) Configuring: IMF" << endl << write;
    cr.parse();
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
-   string inputStr = "1 0 0 0 0 0";
-   cr.get("IMF.BoundaryCellB",inputStr);
+   cr.get("IMF.BoundaryCellB",inputStrBoundaryCellB);
+   cr.get("IMF.BoundaryFaceB",inputStrBoundaryFaceB);
+   // parse BoundaryCellB string
    vector<bool> selectionBoundaryCellB;
-   if (str2BoolVector(inputStr,selectionBoundaryCellB) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: bad format of IMF.BoundaryCellB vector, should be x x x x x x, where x = 0/1 (" << inputStr << ")" << endl << write;
+   if (str2BoolVector(inputStrBoundaryCellB,selectionBoundaryCellB) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: bad format of IMF.BoundaryCellB vector, correct format: -x +x -y +y -z +z, where the six values are bools 0/1 (" << inputStrBoundaryCellB << ")" << endl << write;
       exit(1);
+      return false;
    }
    if(selectionBoundaryCellB.size() != 6) {
-      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in IMF.BoundaryCellB vector, should be x x x x x x, where x = 0/1 (" << inputStr << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in IMF.BoundaryCellB vector, correct format: -x +x -y +y -z +z, where the six values are bools 0/1 (" << inputStrBoundaryCellB << ")" << endl << write;
       exit(1);
+      return false;
    }
    for(size_t i=0;i<6;++i) { Hybrid::IMFBoundaryCellB[i] = selectionBoundaryCellB[i]; }
-   inputStr = "1 0 0 0 0 0";
-   cr.get("IMF.BoundaryFaceB",inputStr);
+   // parse BoundaryFaceB string
    vector<bool> selectionBoundaryFaceB;
-   if (str2BoolVector(inputStr,selectionBoundaryFaceB) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: bad format of IMF.BoundaryFaceB vector, should be x x x x x x, where x = 0/1 (" << inputStr << ")" << endl << write;
+   if (str2BoolVector(inputStrBoundaryFaceB,selectionBoundaryFaceB) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: bad format of IMF.BoundaryFaceB vector, correct format: -x +x -y +y -z +z, where the six values are bools 0/1 (" << inputStrBoundaryFaceB << ")" << endl << write;
       exit(1);
+      return false;
    }
    if(selectionBoundaryFaceB.size() != 6) {
-      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in IMF.BoundaryFaceB vector, should be x x x x x x, where x = 0/1 (" << inputStr << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in IMF.BoundaryFaceB vector, correct format: -x +x -y +y -z +z, where the six values are bools 0/1 (" << inputStrBoundaryFaceB << ")" << endl << write;
       exit(1);
+      return false;
    }
    for(size_t i=0;i<6;++i) { Hybrid::IMFBoundaryFaceB[i] = selectionBoundaryFaceB[i]; }
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
@@ -546,6 +545,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (setMagneticFieldProfile(magneticFieldProfileName) == false) {
       simClasses.logger << "(RHYBRID) ERROR: unknown name of a magnetic field profile (" << magneticFieldProfileName << ")" << endl << write;
       exit(1);
+      return false;
    }
 #endif
 
@@ -677,10 +677,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << endl;
    simClasses.logger
      << "(IMF BOUNDARY CONDITIONS)" << endl
-     << "cellB (+x,-x,+y,-y,+z,-z) ="; for (size_t i = 0;i<6;++i) { simClasses.logger << " " << Hybrid::IMFBoundaryCellB[i]; }
+     << "cellB (+x -x +y -y +z -z) ="; for (size_t i = 0;i<6;++i) { simClasses.logger << " " << Hybrid::IMFBoundaryCellB[i]; }
    simClasses.logger
      << endl
-     << "faceB (+x,-x,+y,-y,+z,-z) ="; for (size_t i = 0;i<6;++i) { simClasses.logger << " " << Hybrid::IMFBoundaryFaceB[i]; }
+     << "faceB (+x -x +y -y +z -z) ="; for (size_t i = 0;i<6;++i) { simClasses.logger << " " << Hybrid::IMFBoundaryFaceB[i]; }
    simClasses.logger << endl << endl;
 
    if (Hybrid::Efilter < 0) { Hybrid::Efilter = 0; }
@@ -739,6 +739,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (Hybrid::xDipMirror.size() != Hybrid::yDipMirror.size() || Hybrid::xDipMirror.size() != Hybrid::zDipMirror.size() || Hybrid::yDipMirror.size() != Hybrid::zDipMirror.size()) {
       simClasses.logger << "(RHYBRID) ERROR: mirror dipole coordinate arrays should be the same size (" << Hybrid::xDipMirror.size() << ", " << Hybrid::yDipMirror.size() << "," << Hybrid::zDipMirror.size() << ")" << endl << write;
       exit(1);
+      return false;
    }
    simClasses.logger << "Mirror dipole coordinates: " << endl;
    for (size_t i=0;i<Hybrid::xDipMirror.size();i++) {
@@ -1746,25 +1747,29 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
    cr.get("OuterBoundaryZone.etaC",Hybrid::outerBoundaryZone.eta);
    cr.get("OuterBoundaryZone.constUe",Hybrid::outerBoundaryZone.constUe);
+   // parse etaBoundarySizes string
    vector<unsigned int> etaBoundarySizes;
-   // if not correct format
    if (str2UIntVector(inputStrEtaBoundarySizes,etaBoundarySizes) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundarySizes vector, should be x x x x x x, where x = uint (" << inputStrEtaBoundarySizes << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundarySizes vector, correct format: -x +x -y +y -z +z, where the six values are unsigned ints (" << inputStrEtaBoundarySizes << ")" << endl << write;
       exit(1);
+      return false;
    }
    if(etaBoundarySizes.size() != 6) {
-      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundarySizes vector, should be x x x x x x, where x = uint (" << inputStrEtaBoundarySizes << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundarySizes vector, correct format: -x +x -y +y -z +z, where the six values are unsigned ints (" << inputStrEtaBoundarySizes << ")" << endl << write;
       exit(1);
+      return false;
    }
+   // parse etaBoundaryCoeffs string
    vector<Real> etaBoundaryCoeffs;
-   // if not correct format
    if (str2RealVector(inputStrEtaBoundaryCoeffs,etaBoundaryCoeffs) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundaryCoeffs vector, should be x x x x x x, where x = Real (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are reals (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
       exit(1);
+      return false;
    }
    if(etaBoundaryCoeffs.size() != 6) {
-      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundaryCoeffs vector, should be x x x x x x, where x = Real (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are reals (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
       exit(1);
+      return false;
    }
    Hybrid::outerBoundaryZone.sizeEta *= Hybrid::dx;
    Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
@@ -1795,6 +1800,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (setResistivityProfile(simClasses,resProfileName,resValueUnit,resValue,resSphericalValue,resistivityGridUnit,Ubulk) == false) {
       simClasses.logger << "(RHYBRID) ERROR: setting resistivity profile failed (" << resProfileName << ")" << endl << write;
       exit(1);
+      return false;
    }
 
    // find smallest diffusion speed
@@ -1869,10 +1875,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_OUTER_BOUNDARY_ZONE
    simClasses.logger
      << "(OUTER BOUNDARY ZONE)" << endl
-     << "eta boundary size [dx] ="; for (auto aa: etaBoundarySizes) { simClasses.logger << " " << aa; }
+     << "eta size (+x -x +y -y +z -z) [dx] ="; for (auto aa: etaBoundarySizes) { simClasses.logger << " " << aa; }
    simClasses.logger
      << endl
-     << "eta boundary coefficients ="; for (auto aa: etaBoundaryCoeffs) { simClasses.logger << " " << aa; }
+     << "eta coefficients (+x -x +y -y +z -z) ="; for (auto aa: etaBoundaryCoeffs) { simClasses.logger << " " << aa; }
    simClasses.logger
      << endl
      << "type (eta)       = " << Hybrid::outerBoundaryZone.typeEta << endl
@@ -2013,6 +2019,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
             //nodeRhoQi[n] = exp(-sqrt(rNode2)/Hybrid::R_object);
 #ifdef USE_OUTER_BOUNDARY_ZONE
+//#ifdef USE_RESISTIVITY
+	    //const Real bZoneEtaSize[6] = {Hybrid::dx*etaBoundarySizes[0],Hybrid::dx*etaBoundarySizes[1],Hybrid::dx*etaBoundarySizes[2],Hybrid::dx*etaBoundarySizes[3],Hybrid::dx*etaBoundarySizes[4],Hybrid::dx*etaBoundarySizes[5]};
+//#endif
             const Real bZone = Hybrid::outerBoundaryZone.sizeMinRhoQi; // boundary zone
             if (Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
                outerBoundaryFlag[n] = false;
