@@ -51,9 +51,7 @@ pargrid::DataID Hybrid::dataNodeBID;
 pargrid::DataID Hybrid::dataNodeJID;
 pargrid::DataID Hybrid::dataNodeUeID;
 pargrid::DataID Hybrid::dataNodeJiID;
-#ifdef USE_RESISTIVITY
 pargrid::DataID Hybrid::dataNodeEtaID;
-#endif
 
 // grid constraint counters
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
@@ -148,13 +146,11 @@ bool Hybrid::useGravity;
 int Hybrid::Efilter;
 Real Hybrid::EfilterNodeGaussSigma;
 Real Hybrid::EfilterNodeGaussCoeffs[4];
-#ifdef USE_RESISTIVITY
 Real Hybrid::resistivityEta;
 Real Hybrid::resistivityR2;
 vector<Real> Hybrid::resistivitySphericalEta;
 vector<Real> Hybrid::resistivitySphericalR2;
 Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
-#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
 OuterBoundaryZone Hybrid::outerBoundaryZone;
 #endif

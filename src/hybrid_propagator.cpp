@@ -60,9 +60,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    Real* nodeJ               = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeJID);
    Real* nodeUe              = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeUeID);
    Real* nodeJi              = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeJiID);
-#ifdef USE_RESISTIVITY
    Real* nodeEta             = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEtaID);
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
    Real* gridCounterCellMaxUe    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMaxUeID);
    Real* gridCounterCellMaxVi    = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMaxViID);
@@ -93,9 +91,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if (nodeJ               == NULL) {cerr << "ERROR: obtained NULL nodeJ array!"        << endl; exit(1);}
    if (nodeUe              == NULL) {cerr << "ERROR: obtained NULL nodeUe array!"       << endl; exit(1);}
    if (nodeJi              == NULL) {cerr << "ERROR: obtained NULL nodeJi array!"       << endl; exit(1);}
-#ifdef USE_RESISTIVITY
    if (nodeEta             == NULL) {cerr << "ERROR: obtained NULL nodeEta array!"      << endl; exit(1);}
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
    if (gridCounterCellMaxUe    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxUe array!"    << endl; exit(1);}
    if (gridCounterCellMaxVi    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxVi array!"    << endl; exit(1);}
@@ -361,15 +357,11 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // calculate nodeE
    profile::start("field propag",profPropagFieldID);
    for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
-      calcNodeE(nodeUe,nodeB,
-#ifdef USE_RESISTIVITY
-      nodeEta,
+#ifndef USE_GRID_CONSTRAINT_COUNTERS
+      calcNodeE(nodeUe,nodeB,nodeEta,nodeJ,nodeE,innerFlagNode,sim,simClasses,b);
+#else USE_GRID_CONSTRAINT_COUNTERS
+      calcNodeE(nodeUe,nodeB,nodeEta,nodeJ,nodeE,gridCounterNodeMaxE,innerFlagNode,sim,simClasses,b);
 #endif
-      nodeJ,nodeE,
-#ifdef USE_GRID_CONSTRAINT_COUNTERS
-      gridCounterNodeMaxE,
-#endif
-      innerFlagNode,sim,simClasses,b);
    }
    profile::stop();
 
@@ -1419,15 +1411,11 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 
 
 // E = -Ue x B + eta*J
-void calcNodeE(Real* nodeUe,Real* nodeB,
-#ifdef USE_RESISTIVITY
-Real* nodeEta,
+#ifndef USE_GRID_CONSTRAINT_COUNTERS
+void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
+#else
+void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,Real* gridCounterNodeMaxE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 #endif
-Real* nodeJ,Real* nodeE,
-#ifdef USE_GRID_CONSTRAINT_COUNTERS
-Real* gridCounterNodeMaxE,
-#endif
-bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    int di=0;
    int dj=0;
@@ -1461,11 +1449,9 @@ bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID bl
       nodeE[n3+0] = -(nodeUe[n3+1]*Btot[2] - nodeUe[n3+2]*Btot[1]);
       nodeE[n3+1] = -(nodeUe[n3+2]*Btot[0] - nodeUe[n3+0]*Btot[2]);
       nodeE[n3+2] = -(nodeUe[n3+0]*Btot[1] - nodeUe[n3+1]*Btot[0]);
-#ifdef USE_RESISTIVITY
       nodeE[n3+0] += nodeEta[n]*nodeJ[n3+0];
       nodeE[n3+1] += nodeEta[n]*nodeJ[n3+1];
       nodeE[n3+2] += nodeEta[n]*nodeJ[n3+2];
-#endif
       if (Hybrid::maxE2 > 0) {
          const Real E2 = sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]);
          if (E2 > Hybrid::maxE2) {
