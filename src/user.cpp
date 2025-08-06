@@ -544,16 +544,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    BackgroundChargeDensityArgs bgChargeDensityArgs;
    string bgChargeDensityProfileName = "";
-   cr.add("BackgroundChargeDensity.profile_name","Background ion charge density profile name [-] (string)",string(""));
-   cr.add("BackgroundChargeDensity.R","Radius of the background ion charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.r0","r0 of the background ion charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.rho_q_i_0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.bgcd_profile_name","Background ion charge density profile name [-] (string)",string(""));
+   cr.add("BackgroundChargeDensity.bgcd_R","Radius of the background ion charge density [m] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.bgcd_r0","r0 of the background ion charge density [m] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.bgcd_rho_q_i_0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
    simClasses.logger << "(RHYBRID) Configuring: background charge density" << endl << write;
    cr.parse();
-   cr.get("BackgroundChargeDensity.profile_name",bgChargeDensityProfileName);
-   cr.get("BackgroundChargeDensity.R",bgChargeDensityArgs.R);
-   cr.get("BackgroundChargeDensity.r0",bgChargeDensityArgs.r0);
-   cr.get("BackgroundChargeDensity.rho_q_i_0",bgChargeDensityArgs.rhoQi0);
+   cr.get("BackgroundChargeDensity.bgcd_profile_name",bgChargeDensityProfileName);
+   cr.get("BackgroundChargeDensity.bgcd_R",bgChargeDensityArgs.R);
+   cr.get("BackgroundChargeDensity.bgcd_r0",bgChargeDensityArgs.r0);
+   cr.get("BackgroundChargeDensity.bgcd_rho_q_i_0",bgChargeDensityArgs.rhoQi0);
 #endif
 
    if (Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
@@ -1711,20 +1711,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_OUTER_BOUNDARY_ZONE
    string inputStrEtaBoundarySizes = "0 0 0 0 0 0";
    string inputStrEtaBoundaryCoeffs = "0 0 0 0 0 0";
-   cr.add("OuterBoundaryZone.size_eta","Size of outer boundary zone for eta (six usigned ints: -x +x -y +y -z +z)",string("0 0 0 0 0 0"));
-   cr.add("OuterBoundaryZone.coeff_eta","Coefficients of eta that are used to multiply initial eta value (six floats: -x +x -y +y -z +z)",string("0 0 0 0 0 0"));
-   cr.add("OuterBoundaryZone.type_minimum_rho_q_i","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
-   cr.add("OuterBoundaryZone.size_minimum_rho_q_i","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.minimum_rho_q_i","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.constant_Ue","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
+   cr.add("OuterBoundaryZone.ob_size_eta","Size of outer boundary zone for eta (six usigned ints: -x +x -y +y -z +z)",string("0 0 0 0 0 0"));
+   cr.add("OuterBoundaryZone.ob_coeff_eta","Coefficients of eta that are used to multiply initial eta value (six floats: -x +x -y +y -z +z)",string("0 0 0 0 0 0"));
+   cr.add("OuterBoundaryZone.ob_type_minimum_rho_q_i","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
+   cr.add("OuterBoundaryZone.ob_size_minimum_rho_q_i","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.ob_constraint_minimum_rho_q_i","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.ob_constant_Ue","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
    simClasses.logger << "(RHYBRID) Configuring: outer boundary zone" << endl;
    cr.parse();
-   cr.get("OuterBoundaryZone.size_eta",inputStrEtaBoundarySizes);
-   cr.get("OuterBoundaryZone.coeff_eta",inputStrEtaBoundaryCoeffs);
-   cr.get("OuterBoundaryZone.type_minimum_rho_q_i",Hybrid::outerBoundaryZone.typeMinRhoQi);
-   cr.get("OuterBoundaryZone.size_minimum_rho_q_i",Hybrid::outerBoundaryZone.sizeMinRhoQi);
-   cr.get("OuterBoundaryZone.minimum_rho_q_i",Hybrid::outerBoundaryZone.minRhoQi);
-   cr.get("OuterBoundaryZone.constant_Ue",Hybrid::outerBoundaryZone.constUe);
+   cr.get("OuterBoundaryZone.ob_size_eta",inputStrEtaBoundarySizes);
+   cr.get("OuterBoundaryZone.ob_coeff_eta",inputStrEtaBoundaryCoeffs);
+   cr.get("OuterBoundaryZone.ob_type_minimum_rho_q_i",Hybrid::outerBoundaryZone.typeMinRhoQi);
+   cr.get("OuterBoundaryZone.ob_size_minimum_rho_q_i",Hybrid::outerBoundaryZone.sizeMinRhoQi);
+   cr.get("OuterBoundaryZone.ob_constraint_minimum_rho_q_i",Hybrid::outerBoundaryZone.minRhoQi);
+   cr.get("OuterBoundaryZone.ob_constant_Ue",Hybrid::outerBoundaryZone.constUe);
    // parse etaBoundarySizes string
    vector<unsigned int> etaBoundarySizes;
    if (str2UIntVector(inputStrEtaBoundarySizes,etaBoundarySizes) == false) {
