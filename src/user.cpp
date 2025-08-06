@@ -361,8 +361,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    cr.add("Hybrid.electron_pressure","Use electron pressure term in the electric field [0: none (pressureless electron fluid), 1: isothermal electron fluid, 2: adiabatic electron fluid] (int)",0);
    cr.add("Hybrid.Te","Temperature of isothermal electrons or upstream temperature of adiabatic electrons [K] (float)",defaultValue);
-   cr.add("Hybrid.filter_E_cycles","E filtering number [-] (unsigned int)",static_cast<unsigned int>(0));
-   cr.add("Hybrid.filter_E_gaussian_sigma","Coefficient associated with E filtering by Gaussian kernel [dx] (float)",defaultValue);
+   cr.add("Hybrid.smooth_E_cycles","Smoothing nodeE by averaging with node2cell and cell2node interpolations this many times [-] (unsigned int)",static_cast<unsigned int>(0));
+   cr.add("Hybrid.smooth_E_gaussian_sigma","Smoothing nodeE by averaging using a Gaussian kernel with this sigma parameter [dx] (float)",defaultValue);
    simClasses.logger << "(RHYBRID) Configuring: general hybrid simulation settings" << endl << write;
    cr.parse();
    unsigned int logPrecision = 10;
@@ -442,8 +442,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          Hybrid::electronPressureCoeff = constants::BOLTZMANN*Hybrid::electronTemperature/constants::CHARGE_ELEMENTARY;
       }
    }
-   cr.get("Hybrid.filter_E_cycles",Hybrid::Efilter);
-   cr.get("Hybrid.filter_E_gaussian_sigma",Hybrid::EfilterNodeGaussSigma);
+   cr.get("Hybrid.smooth_E_cycles",Hybrid::Efilter);
+   cr.get("Hybrid.smooth_E_gaussian_sigma",Hybrid::EfilterNodeGaussSigma);
 
    // IMF parameters
    string inputStrBoundaryCellB = "1 0 0 0 0 0";
