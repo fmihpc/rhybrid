@@ -334,7 +334,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.log_interval","Logging interval of field and particle logs in units of time step [dt] (unsigned int)",0);
    cr.add("Hybrid.log_precision","Precision of floating point numbers in log file [-] (int)",10);
    cr.add("Hybrid.main_log_diagnostics_interval","Logging interval of diagnostics quantities in the main log in units of time step [dt] (unsigned int)",0);
-   cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
+   cr.add("Hybrid.field_log_include_cells_inside_inner_boundary","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
    cr.add("Hybrid.save_reduced_state_interval","Interval of reduced state saving in units of time step [dt] (unsigned int)",0);
    cr.add("Hybrid.save_reduced_state_Nstride","Write every Nstride'th cell in reduced state output (unsigned int)",10);
@@ -342,34 +342,34 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.save_particles","Write particles or not (bool)",false);
    cr.add("Hybrid.save_particles_Nstride","Write particles in every Nstride'th cell (unsigned int)",10);
    cr.add("Hybrid.R_object","Radius of simulated object [m] (float)",defaultValue);
-   cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
-   cr.add("Hybrid.fieldObstacleUe","Ue velocity vector (Uex,Uey,Uez) inside the inner boundary [m/s] (float,float,float)",string("(0,0,0)"));
-   cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
-   cr.add("Hybrid.R_cellEpObstacle","Radius of inner boundary for zero electron pressure electric field [m] (float)",defaultValue);
+   cr.add("Hybrid.R_obstacle_field","Radius of inner field boundary [m] (float)",defaultValue);
+   cr.add("Hybrid.Ue_obstacle_field","Ue velocity vector (Uex,Uey,Uez) inside the inner boundary [m/s] (float,float,float)",string("(0,0,0)"));
+   cr.add("Hybrid.R_obstacle_particle","Radius of inner particle boundary [m] (float)",defaultValue);
+   cr.add("Hybrid.R_obstacle_Ep","Radius of inner boundary for zero electron pressure electric field [m] (float)",defaultValue);
    cr.add("Hybrid.gravity","Use gravitational acceleration [-] (bool)",false);
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
-   cr.add("Hybrid.initialFlowThroughPeriodFactor","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
-   cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
-   cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
-   cr.add("Hybrid.terminateLimitMaxB","Maximum magnitude of magnetic field above which a simulation run is terminated [T] (float)",defaultValue);
-   cr.add("Hybrid.minRhoQi","Global minimum value of ion charge density [C/m^3] (float)",defaultValue);
-   cr.add("Hybrid.maxE","Maximum value of node electric field [V/m] (float)",defaultValue);
-   cr.add("Hybrid.maxVw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
+   cr.add("Hybrid.initial_flow_through_periods","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
+   cr.add("Hybrid.constraint_maximum_Ue","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
+   cr.add("Hybrid.constraint_maximum_Vi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
+   cr.add("Hybrid.constraint_maximum_B_terminate_limit","Maximum magnitude of magnetic field above which a simulation run is terminated [T] (float)",defaultValue);
+   cr.add("Hybrid.constraint_minimum_rho_q_i","Global minimum value of ion charge density [C/m^3] (float)",defaultValue);
+   cr.add("Hybrid.constraint_maximum_E","Maximum value of node electric field [V/m] (float)",defaultValue);
+   cr.add("Hybrid.constraint_maximum_Vw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
 #ifdef USE_B_CONSTANT
    cr.add("Hybrid.include_B0_faraday","Include the constant B0 term in Faraday's law [-] (bool)",false);
 #endif
    cr.add("Hybrid.electron_pressure","Use electron pressure term in the electric field [0: none (pressureless electron fluid), 1: isothermal electron fluid, 2: adiabatic electron fluid] (int)",0);
    cr.add("Hybrid.Te","Temperature of isothermal electrons or upstream temperature of adiabatic electrons [K] (float)",defaultValue);
-   cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
-   cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
+   cr.add("Hybrid.filter_E_cycles","E filtering number [-] (unsigned int)",static_cast<unsigned int>(0));
+   cr.add("Hybrid.filter_E_gaussian_sigma","Coefficient associated with E filtering by Gaussian kernel [dx] (float)",defaultValue);
    simClasses.logger << "(RHYBRID) Configuring: general hybrid simulation settings" << endl << write;
    cr.parse();
    unsigned int logPrecision = 10;
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
    cr.get("Hybrid.log_precision",logPrecision);
    cr.get("Hybrid.main_log_diagnostics_interval",Hybrid::mainLogDiagnosticsInterval);
-   cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
+   cr.get("Hybrid.field_log_include_cells_inside_inner_boundary",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
    cr.get("Hybrid.save_reduced_state_interval",Hybrid::saveReducedStateInterval);
    cr.get("Hybrid.save_reduced_state_Nstride",Hybrid::saveReducedStateNstride);
@@ -377,9 +377,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.save_particles",Hybrid::saveParticles);
    cr.get("Hybrid.save_particles_Nstride",Hybrid::saveParticlesNstride);
    cr.get("Hybrid.R_object",Hybrid::R_object);
-   cr.get("Hybrid.R_fieldObstacle",Hybrid::R2_fieldObstacle);
-   cr.get("Hybrid.R_particleObstacle",Hybrid::R2_particleObstacle);
-   cr.get("Hybrid.fieldObstacleUe",fieldObstacleUeStr);
+   cr.get("Hybrid.R_obstacle_field",Hybrid::R2_fieldObstacle);
+   cr.get("Hybrid.R_obstacle_particle",Hybrid::R2_particleObstacle);
+   cr.get("Hybrid.Ue_obstacle_field",fieldObstacleUeStr);
    // check velocity vector format and set Hybrid::fieldObstacleUe
      {
 	bool velStrOk = true;
@@ -395,19 +395,19 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	Hybrid::fieldObstacleUe[1] = vel[1];
 	Hybrid::fieldObstacleUe[2] = vel[2];
      }
-   cr.get("Hybrid.R_cellEpObstacle",Hybrid::R2_cellEpObstacle);
+   cr.get("Hybrid.R_obstacle_Ep",Hybrid::R2_cellEpObstacle);
    cr.get("Hybrid.gravity",Hybrid::useGravity);
    cr.get("Hybrid.M_object",Hybrid::M_object);
    Hybrid::GMdt = constants::GRAVITY*Hybrid::M_object*sim.dt; // constant for gravitational acceleration
-   cr.get("Hybrid.initialFlowThroughPeriodFactor",Hybrid::initialFlowThroughPeriod);
-   cr.get("Hybrid.maxUe",Hybrid::maxUe2);
-   cr.get("Hybrid.maxVi",Hybrid::maxVi2);
-   cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
-   cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
-   cr.get("Hybrid.maxE",Hybrid::maxE2);
+   cr.get("Hybrid.initial_flow_through_periods",Hybrid::initialFlowThroughPeriod);
+   cr.get("Hybrid.constraint_maximum_Ue",Hybrid::maxUe2);
+   cr.get("Hybrid.constraint_maximum_Vi",Hybrid::maxVi2);
+   cr.get("Hybrid.constraint_maximum_B_terminate_limit",Hybrid::terminateLimitMaxB);
+   cr.get("Hybrid.constraint_minimum_rho_q_i",Hybrid::minRhoQi);
+   cr.get("Hybrid.constraint_maximum_E",Hybrid::maxE2);
    if (Hybrid::maxE2 > 0) { Hybrid::maxE2 = sqr(Hybrid::maxE2); }
    else { Hybrid::maxE2 = 0; }
-   cr.get("Hybrid.maxVw",Hybrid::maxVw);
+   cr.get("Hybrid.constraint_maximum_Vw",Hybrid::maxVw);
    cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
 #ifdef USE_B_CONSTANT
    cr.get("Hybrid.include_B0_faraday",Hybrid::includeConstantB0InFaradaysLaw);
@@ -442,8 +442,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
          Hybrid::electronPressureCoeff = constants::BOLTZMANN*Hybrid::electronTemperature/constants::CHARGE_ELEMENTARY;
       }
    }
-   cr.get("Hybrid.Efilter",Hybrid::Efilter);
-   cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
+   cr.get("Hybrid.filter_E_cycles",Hybrid::Efilter);
+   cr.get("Hybrid.filter_E_gaussian_sigma",Hybrid::EfilterNodeGaussSigma);
 
    // IMF parameters
    string inputStrBoundaryCellB = "1 0 0 0 0 0";
@@ -451,15 +451,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IMF.Bx","IMF Bx [T] (float)",defaultValue);
    cr.add("IMF.By","IMF By [T] (float)",defaultValue);
    cr.add("IMF.Bz","IMF Bz [T] (float)",defaultValue);
-   cr.add("IMF.BoundaryCellB","Boundary conditions for cellB (six bools: +x -x +y -y +z -z)",string("1 0 0 0 0 0"));
-   cr.add("IMF.BoundaryFaceB","Boundary conditions for faceB (six bools: +x -x +y -y +z -z)",string("1 0 0 0 0 0"));
+   cr.add("IMF.copy_boundaries_cellB","Copy boundary conditions for cellB (six bools: +x -x +y -y +z -z)",string("1 0 0 0 0 0"));
+   cr.add("IMF.copy_boundaries_faceB","Copy boundary conditions for faceB (six bools: +x -x +y -y +z -z)",string("1 0 0 0 0 0"));
    simClasses.logger << "(RHYBRID) Configuring: IMF" << endl << write;
    cr.parse();
    cr.get("IMF.Bx",Hybrid::IMFBx);
    cr.get("IMF.By",Hybrid::IMFBy);
    cr.get("IMF.Bz",Hybrid::IMFBz);
-   cr.get("IMF.BoundaryCellB",inputStrBoundaryCellB);
-   cr.get("IMF.BoundaryFaceB",inputStrBoundaryFaceB);
+   cr.get("IMF.copy_boundaries_cellB",inputStrBoundaryCellB);
+   cr.get("IMF.copy_boundaries_faceB",inputStrBoundaryFaceB);
    // parse BoundaryCellB string
    vector<bool> selectionBoundaryCellB;
    if (str2BoolVector(inputStrBoundaryCellB,selectionBoundaryCellB) == false) {
@@ -491,12 +491,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("IntrinsicB.dBx","Magnitude of Bx random fluctuations [T] (float)",defaultValue);
    cr.add("IntrinsicB.dBy","Magnitude of By random  fluctuations [T] (float)",defaultValue);
    cr.add("IntrinsicB.dBz","Magnitude of Bz random  fluctuations [T] (float)",defaultValue);
-   cr.add("IntrinsicB.laminarR","Laminar flow around sphere R [m] (float)",defaultValue);
-   cr.add("IntrinsicB.coeffDipole","Dipole coefficient [-] (float)",defaultValue);
-   cr.add("IntrinsicB.coeffQuadrupole","Quadrupole coefficient [-] (float)",defaultValue);
-   cr.add("IntrinsicB.dipoleSurfaceB","Dipole surface strength [T] (float)",defaultValue);
-   cr.add("IntrinsicB.dipoleSurfaceR","Dipole surface radius [m] (float)",defaultValue);
-   cr.add("IntrinsicB.minimumR","Minimum surface radius [m] (float)",defaultValue);
+   cr.add("IntrinsicB.R_laminar_flow_around_sphere","Laminar flow around sphere R [m] (float)",defaultValue);
+   cr.add("IntrinsicB.coeff_dipole","Dipole coefficient [-] (float)",defaultValue);
+   cr.add("IntrinsicB.coeff_quadrupole","Quadrupole coefficient [-] (float)",defaultValue);
+   cr.add("IntrinsicB.B_dipole_surface","Dipole surface strength [T] (float)",defaultValue);
+   cr.add("IntrinsicB.R_dipole_surface","Dipole surface radius [m] (float)",defaultValue);
+   cr.add("IntrinsicB.constraint_R_minimum","Minimum radius at which magnetic field profile is evaluated [m] (float)",defaultValue);
    cr.add("IntrinsicB.x","X coordinate of the origin [m] (float)",defaultValue);
    cr.add("IntrinsicB.y","Y coordinate of the origin [m] (float)",defaultValue);
    cr.add("IntrinsicB.z","Z coordinate of the origin [m] (float)",defaultValue);
@@ -516,12 +516,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("IntrinsicB.dBx",Hybrid::dBx);
    cr.get("IntrinsicB.dBy",Hybrid::dBy);
    cr.get("IntrinsicB.dBz",Hybrid::dBz);
-   cr.get("IntrinsicB.laminarR",Hybrid::laminarR2);
-   cr.get("IntrinsicB.coeffDipole",Hybrid::coeffDip);
-   cr.get("IntrinsicB.coeffQuadrupole",Hybrid::coeffQuad);
-   cr.get("IntrinsicB.dipoleSurfaceB",Hybrid::dipSurfB);
-   cr.get("IntrinsicB.dipoleSurfaceR",Hybrid::dipSurfR);
-   cr.get("IntrinsicB.minimumR",Hybrid::dipMinR2);
+   cr.get("IntrinsicB.R_laminar_flow_around_sphere",Hybrid::laminarR2);
+   cr.get("IntrinsicB.coeff_dipole",Hybrid::coeffDip);
+   cr.get("IntrinsicB.coeff_quadrupole",Hybrid::coeffQuad);
+   cr.get("IntrinsicB.B_dipole_surface",Hybrid::dipSurfB);
+   cr.get("IntrinsicB.R_dipole_surface",Hybrid::dipSurfR);
+   cr.get("IntrinsicB.constraint_R_minimum",Hybrid::dipMinR2);
    cr.get("IntrinsicB.x",Hybrid::xDip);
    cr.get("IntrinsicB.y",Hybrid::yDip);
    cr.get("IntrinsicB.z",Hybrid::zDip);
@@ -547,13 +547,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("BackgroundChargeDensity.profile_name","Background ion charge density profile name [-] (string)",string(""));
    cr.add("BackgroundChargeDensity.R","Radius of the background ion charge density [m] (float)",defaultValue);
    cr.add("BackgroundChargeDensity.r0","r0 of the background ion charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.rhoQi0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
+   cr.add("BackgroundChargeDensity.rho_q_i_0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
    simClasses.logger << "(RHYBRID) Configuring: background charge density" << endl << write;
    cr.parse();
    cr.get("BackgroundChargeDensity.profile_name",bgChargeDensityProfileName);
    cr.get("BackgroundChargeDensity.R",bgChargeDensityArgs.R);
    cr.get("BackgroundChargeDensity.r0",bgChargeDensityArgs.r0);
-   cr.get("BackgroundChargeDensity.rhoQi0",bgChargeDensityArgs.rhoQi0);
+   cr.get("BackgroundChargeDensity.rho_q_i_0",bgChargeDensityArgs.rhoQi0);
 #endif
 
    if (Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
@@ -1234,10 +1234,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* detPleFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
    Hybrid::detParticleFileLineCnt = 0;
    vector<string> detParticleOrbitFiles;
-   cr.add("DetectorParticle.t_start","Simulation time to start particle detector recording (real)",-1);
-   cr.add("DetectorParticle.t_end","Simulation time to end particle detector recording (real)",-1);
-   cr.add("DetectorParticle.max_detections","Maximum number of recorded particles by all detectors (real)",1e5);
-   cr.add("DetectorParticle.write_interval_timestep","Write interval of particle detector file in time steps (real)",10);
+   cr.add("DetectorParticle.t_start","Simulation time to start particle detector recording (float)",-1);
+   cr.add("DetectorParticle.t_end","Simulation time to end particle detector recording (float)",-1);
+   cr.add("DetectorParticle.max_detections","Maximum number of recorded particles by all detectors (float)",1e5);
+   cr.add("DetectorParticle.write_interval_timestep","Write interval of particle detector file in time steps (float)",10);
    cr.addComposed("DetectorParticle.orbitfile","Names of orbit file(s) for particle detectors (string)");
    cr.parse();
    cr.get("DetectorParticle.t_start",Hybrid::detParticleStartTime);
@@ -1274,10 +1274,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
    Hybrid::detBulkParamFileLineCnt = 0;
    vector<string> detBulkParamOrbitFiles;
-   cr.add("DetectorBulkParameter.t_start","Simulation time to start bulk parameter detector recording (real)",-1);
-   cr.add("DetectorBulkParameter.t_end","Simulation time to end bulk parameter detector recording (real)",-1);
-   cr.add("DetectorBulkParameter.max_detections","Maximum number of recorded bulk parameter values by all detectors (real)",1e5);
-   cr.add("DetectorBulkParameter.write_interval_timestep","Write interval of bulk parameter detector file in time steps (real)",10);
+   cr.add("DetectorBulkParameter.t_start","Simulation time to start bulk parameter detector recording (float)",-1);
+   cr.add("DetectorBulkParameter.t_end","Simulation time to end bulk parameter detector recording (float)",-1);
+   cr.add("DetectorBulkParameter.max_detections","Maximum number of recorded bulk parameter values by all detectors (float)",1e5);
+   cr.add("DetectorBulkParameter.write_interval_timestep","Write interval of bulk parameter detector file in time steps (float)",10);
    cr.addComposed("DetectorBulkParameter.orbitfile","Names of orbit file(s) for bulk parameter detector (string)");
    cr.parse();
    cr.get("DetectorBulkParameter.t_start",Hybrid::detBulkParamStartTime);
@@ -1711,20 +1711,20 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_OUTER_BOUNDARY_ZONE
    string inputStrEtaBoundarySizes = "0 0 0 0 0 0";
    string inputStrEtaBoundaryCoeffs = "0 0 0 0 0 0";
-   cr.add("OuterBoundaryZone.etaBoundarySizes","descr",string("0 0 0 0 0 0"));
-   cr.add("OuterBoundaryZone.etaBoundaryCoeffs","descr",string("0 0 0 0 0 0"));
-   cr.add("OuterBoundaryZone.typeMinRhoQi","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
-   cr.add("OuterBoundaryZone.sizeMinRhoQi","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.constUe","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
+   cr.add("OuterBoundaryZone.size_eta","Size of outer boundary zone for eta (six usigned ints: -x +x -y +y -z +z)",string("0 0 0 0 0 0"));
+   cr.add("OuterBoundaryZone.coeff_eta","Coefficients of eta that are used to multiply initial eta value (six floats: -x +x -y +y -z +z)",string("0 0 0 0 0 0"));
+   cr.add("OuterBoundaryZone.type_minimum_rho_q_i","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
+   cr.add("OuterBoundaryZone.size_minimum_rho_q_i","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.minimum_rho_q_i","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
+   cr.add("OuterBoundaryZone.constant_Ue","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
    simClasses.logger << "(RHYBRID) Configuring: outer boundary zone" << endl;
    cr.parse();
-   cr.get("OuterBoundaryZone.etaBoundarySizes",inputStrEtaBoundarySizes);
-   cr.get("OuterBoundaryZone.etaBoundaryCoeffs",inputStrEtaBoundaryCoeffs);
-   cr.get("OuterBoundaryZone.typeMinRhoQi",Hybrid::outerBoundaryZone.typeMinRhoQi);
-   cr.get("OuterBoundaryZone.sizeMinRhoQi",Hybrid::outerBoundaryZone.sizeMinRhoQi);
-   cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
-   cr.get("OuterBoundaryZone.constUe",Hybrid::outerBoundaryZone.constUe);
+   cr.get("OuterBoundaryZone.size_eta",inputStrEtaBoundarySizes);
+   cr.get("OuterBoundaryZone.coeff_eta",inputStrEtaBoundaryCoeffs);
+   cr.get("OuterBoundaryZone.type_minimum_rho_q_i",Hybrid::outerBoundaryZone.typeMinRhoQi);
+   cr.get("OuterBoundaryZone.size_minimum_rho_q_i",Hybrid::outerBoundaryZone.sizeMinRhoQi);
+   cr.get("OuterBoundaryZone.minimum_rho_q_i",Hybrid::outerBoundaryZone.minRhoQi);
+   cr.get("OuterBoundaryZone.constant_Ue",Hybrid::outerBoundaryZone.constUe);
    // parse etaBoundarySizes string
    vector<unsigned int> etaBoundarySizes;
    if (str2UIntVector(inputStrEtaBoundarySizes,etaBoundarySizes) == false) {
@@ -1740,12 +1740,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // parse etaBoundaryCoeffs string
    vector<Real> etaBoundaryCoeffs;
    if (str2RealVector(inputStrEtaBoundaryCoeffs,etaBoundaryCoeffs) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are reals (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are floats (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
       exit(1);
       return false;
    }
    if(etaBoundaryCoeffs.size() != 6) {
-      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are reals (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are floats (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
       exit(1);
       return false;
    }
@@ -1759,17 +1759,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)",string(""));
    cr.add("Resistivity.value_unit","Unit and quantity used to define value of resistivity [SI/grid/td/Rm/URm] (string)",string(""));
    cr.add("Resistivity.value","Parameter value used to define the value of resistivity [] (float)",defaultValue);
-   cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
-   cr.addComposed("Resistivity.value_spherical","Parameter values used to define the resistivity values of spherical shells [] (float vector)");
-   cr.addComposed("Resistivity.R_spherical","Radii of spherical resistivity shells [m] (float vector)");
+   cr.add("Resistivity.R_sphere","Radius of the super conducting sphere [m] (float)",defaultValue);
+   cr.addComposed("Resistivity.value_spherical_shell","Parameter values used to define the resistivity values of spherical shells [] (float vector)");
+   cr.addComposed("Resistivity.R_spherical_shell","Radii of spherical resistivity shells [m] (float vector)");
    simClasses.logger << "(RHYBRID) Configuring: resistivity" << endl << write;
    cr.parse();
    cr.get("Resistivity.profile_name",resProfileName);
    cr.get("Resistivity.value_unit",resValueUnit);
    cr.get("Resistivity.value",resValue);
-   cr.get("Resistivity.R",Hybrid::resistivityR2);
-   cr.get("Resistivity.value_spherical",resSphericalValue);
-   cr.get("Resistivity.R_spherical",Hybrid::resistivitySphericalR2);
+   cr.get("Resistivity.R_sphere",Hybrid::resistivityR2);
+   cr.get("Resistivity.value_spherical_shell",resSphericalValue);
+   cr.get("Resistivity.R_spherical_shell",Hybrid::resistivitySphericalR2);
    Real resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
 
    // set resistivity profile after all its parameters are parsed
