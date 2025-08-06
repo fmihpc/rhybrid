@@ -334,7 +334,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.log_interval","Logging interval of field and particle logs in units of time step [dt] (unsigned int)",0);
    cr.add("Hybrid.log_precision","Precision of floating point numbers in log file [-] (int)",10);
    cr.add("Hybrid.main_log_diagnostics_interval","Logging interval of diagnostics quantities in the main log in units of time step [dt] (unsigned int)",0);
-   cr.add("Hybrid.field_log_include_cells_inside_inner_boundary","Include cells inside the inner field boundary in the field log [-] (bool)",false);
+   cr.add("Hybrid.field_log_include_all_cells","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
    cr.add("Hybrid.save_reduced_state_interval","Interval of reduced state saving in units of time step [dt] (unsigned int)",0);
    cr.add("Hybrid.save_reduced_state_Nstride","Write every Nstride'th cell in reduced state output (unsigned int)",10);
@@ -369,7 +369,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
    cr.get("Hybrid.log_precision",logPrecision);
    cr.get("Hybrid.main_log_diagnostics_interval",Hybrid::mainLogDiagnosticsInterval);
-   cr.get("Hybrid.field_log_include_cells_inside_inner_boundary",Hybrid::includeInnerCellsInFieldLog);
+   cr.get("Hybrid.field_log_include_all_cells",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
    cr.get("Hybrid.save_reduced_state_interval",Hybrid::saveReducedStateInterval);
    cr.get("Hybrid.save_reduced_state_Nstride",Hybrid::saveReducedStateNstride);
