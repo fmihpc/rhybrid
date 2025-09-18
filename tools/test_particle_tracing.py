@@ -1,85 +1,110 @@
+# exec(open("test_particle_tracing.py").read())
 # propagete test particles in E and B fields from VLSV files
 import os
-#import pytools as pt
+import pytools as pt
 import numpy as np
-import bbtracer
+import matplotlib
+import matplotlib.pyplot as plt
+from bbtracer import loadRun, bbstep
 
-# radius of inner boundary
-Rp = 2440e4
+plt.rcParams.update({'font.size': 20})
+
+# radius of planet / inner boundary
+Rp = 2439.7e3
 
 # test particle mass and charge
 m = 1.672621716e-27
 q = 1.60217653e-19
 # timestep
-dt = 0.1
-# initial particle position and velocity
-rp = np.array((10e6,-1e5,0))
-vp = np.array((0,0,0))
+dt = 0.5
+Ndt = 20
 
-varNameB = 'cellB'
-varNameUe = 'cellUe'
-#varNameE = 'nodeE'
-varListSelected = [varNameB,varNameUe] # variables to interpolate
+#Ue = np.array((-400e3,0,0))
+#B = np.array((0,1e-9,0))
+#E = -np.cross(Ue,B)
+
+varList = ['cellB','cellUe'] # variables to interpolate
 folderRun = os.path.join(os.getenv("HOME"),'bin/corsair/testrun/'); # run folder
 runName = 'testrun01' # run name
 intpolOrder = 1 # interpolation order
 
-def getRunInformation(folder,runStr,varList):
- files = [f for f in os.listdir(folder) if f.startswith('state') if f.endswith('.vlsv')]
- # check VLSV files are found in the folder
- if len(files) < 1:
-  print('ERROR: no VLSV files found')
-  return False
- files.sort()
- Ntimesteps = len(files)
- vr = pt.vlsvfile.VlsvReader(os.path.join(folder,files[0]))
- if set(varList).issubset(vr.get_all_variables()) == False:
-  print('ERROR: error variable(s) not found in: ' + str(vr.get_all_variables()))
-  return False
- [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
- [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
- [sx,sy,sz] = vr.get_spatial_block_size() # how many cells per block per direction
- nx = mx*sx # number of cells along x
- ny = my*sy # number of cells along y
- nz = mz*sz # number of cells along z
- dx = (xmax-xmin)/nx # should be dx = dy = dz in rhybrid
- res = dict()
- res['folder'] = folder
- res['runName'] = runStr
- res['varList'] = varList
- res['files'] = files
- res['xmin'] = xmin
- res['xmax'] = xmax
- res['ymin'] = ymin
- res['ymax'] = ymax
- res['zmin'] = zmin
- res['zmax'] = zmax
- res['dx'] = dx
- return res
- #cid = np.ravel(vr.get_cellid(rp))[0]
- #vrout = pt.calculations.vlsv_intpol_points(vr,rp,varList)
+R = loadRun(folderRun,runName,varList)
 
-# Boris-Bunemann algorithm
-def bbstep(E,B,r,v,m,q,dt):
- # move particle
- r = r + dt*v;
- vold = v
- #accelerate particle
- qmideltT2= 0.5*q*dt/m
- dv = qmideltT2*E
- t = qmideltT2*B
- t2 = np.linalg.norm(t)
- b2 = 2.0/(1.0 + t2)
- s = b2*t
- vm = v + dv
- v0 = vm + np.cross(vm,t)
- vp = vm + np.cross(v0,s)
- v = vp + dv
- #dv = v-vold
+# initial particle positionsm velocities and time
+rpart = np.array([(R['xmax']-2*R['dx'],R['ymax']-5*R['dx'],0)])
+vpart = np.array([(0,0,0)])
+tpart = 0
 
-#def propagateTestParticles(vr,):
-# bbstep(np.array((1e-9,0,0)),np.array((0,0.1,0)),np.array((0,0,0)),np.array((0,0,0)),1,1,1)
+if rpart.shape != vpart.shape:
+ print("ERROR: rp and vp should be same size")
+ exit
 
-#runInfo = getRunInformation(folderRun,runName,varListSelected)
-#print(runInfo)
+# initialize test particle result arrays
+r_res = rpart
+v_res = vpart
+t_res = np.array((tpart))
 
+Nreader = 10
+vr = R['sim']['readers'][Nreader]
+
+# propagate test particles
+for ii in range(Ndt):
+ vrout = pt.calculations.vlsv_intpol_points(vr,rpart,varList)
+ B = vrout[2][0][0:3]
+ Ue = vrout[2][0][3:6]
+ E = -np.cross(Ue,B)
+ (rpart,vpart) = bbstep(E,B,rpart,vpart,m,q,dt)
+ # boundary conditions
+ # attach particle to result arrays
+ r_res = np.vstack((r_res,rpart))
+ v_res = np.vstack((v_res,vpart))
+ # increase time
+ tpart += dt
+ t_res = np.vstack((t_res,tpart))
+
+# 1D plot
+plt.figure()
+plt.subplot(6,1,1);
+plt.plot(t_res,r_res[:,0]/Rp)
+plt.ylabel('x [Rp]')
+plt.subplot(6,1,2);
+plt.plot(t_res,r_res[:,1]/Rp)
+plt.ylabel('y [Rp]')
+plt.subplot(6,1,3);
+plt.plot(t_res,r_res[:,2]/Rp)
+plt.ylabel('z [Rp]')
+plt.subplot(6,1,4);
+plt.plot(t_res,v_res[:,0]/1e3)
+plt.ylabel('vx [km/s]')
+plt.subplot(6,1,5);
+plt.plot(t_res,v_res[:,1]/1e3)
+plt.ylabel('vy [km/s]')
+plt.subplot(6,1,6);
+plt.plot(t_res,v_res[:,2]/1e3)
+plt.ylabel('vz [km/s]')
+plt.xlabel('t [s]')
+
+# 3d plot
+ax = plt.figure().add_subplot(projection='3d')
+
+# planet
+us = np.linspace(0, 2 * np.pi, 100)
+vs = np.linspace(0, np.pi, 100)
+xs = 1 * np.outer(np.cos(us), np.sin(vs))
+ys = 1 * np.outer(np.sin(us), np.sin(vs))
+zs = 1 * np.outer(np.ones(np.size(us)), np.cos(vs))
+ax.plot_surface(xs, ys, zs)
+#ax.set_aspect('equal')
+ax.set_box_aspect([1,1,1])
+
+# particle trajectory
+ax.plot(r_res[:,0]/Rp,r_res[:,1]/Rp,r_res[:,2]/Rp)
+ax.axes.set_xlim3d(xmin=R['xmin']/Rp,xmax=R['xmax']/Rp)
+ax.axes.set_ylim3d(ymin=R['ymin']/Rp,ymax=R['ymax']/Rp)
+ax.axes.set_zlim3d(zmin=R['zmin']/Rp,zmax=R['zmax']/Rp)
+ax.set_xlabel('x [Rp]')
+ax.set_ylabel('y [Rp]')
+ax.set_zlabel('z [Rp]')
+
+
+plt.show(block=True)
