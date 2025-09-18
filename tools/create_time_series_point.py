@@ -15,7 +15,7 @@ def createTimeSeriesRun(folder,runStr,varList,rp):
  if len(rp) > 1:
   print('ERROR: only one point per call is supported')
   return False
- files = [f for f in os.listdir(folder) if f.endswith('.vlsv')]
+ files = [f for f in os.listdir(folder) if f.startswith('state') if f.endswith('.vlsv')]
  # check VLSV files are found in the folder
  if len(files) < 1:
   print('ERROR: not files found')
@@ -23,6 +23,11 @@ def createTimeSeriesRun(folder,runStr,varList,rp):
  files.sort()
  Ntimesteps = len(files)
  vr = pt.vlsvfile.VlsvReader(os.path.join(folder,files[0]))
+ #varList = vr.get_variables() # interpolate all variables
+ # check variables are found
+ if set(varList).issubset(vr.get_all_variables()) == False:
+  print('ERROR: error variable(s) not found in: ' + str(vr.get_all_variables()))
+  return False
  [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
  [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
  [sx,sy,sz] = vr.get_spatial_block_size() # how many cells per block per direction
@@ -30,12 +35,6 @@ def createTimeSeriesRun(folder,runStr,varList,rp):
  ny = my*sy # number of cells along y
  nz = mz*sz # number of cells along z
  dx = (xmax-xmin)/nx # should be dx = dy = dz in rhybrid
- halfdx = dx/2
- #varList = vr.get_variables() # interpolate all variables
- # check variables are found
- if set(varList).issubset(vr.get_all_variables()) == False:
-  print('ERROR: error variable(s) not found in: ' + str(vr.get_all_variables()))
-  return False
  cid = np.ravel(vr.get_cellid(rp))[0]
  vrout = pt.calculations.vlsv_intpol_points(vr,rp,varList)
  Nvars = (vrout[2].shape)[1]
