@@ -70,7 +70,7 @@ for ii in range(Ndt):
  if np.linalg.norm(rpart) < Rp:
   break
  # interpolate Ue/E and B in particle position
- vrout = pt.calculations.vlsv_intpol_points(vr,rpart,varList)
+ vrout = pt.calculations.vlsv_intpol_points(vr,rpart,varList,interpolation_order=intpolOrder)
  B = vrout[2][0][0:3]
  Ue = vrout[2][0][3:6]
  # E = -Ue x B
