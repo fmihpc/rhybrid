@@ -80,7 +80,7 @@ tickLength = 2
 tickWidth = 1
 xTickAngle = 45
 
-outputFileNamePrefix = "./" # note: if folder name given here, that folder should exists
+outputFileNamePrefix = "./png/" # note: if folder name given here, that folder should exists
 
 xPlane = -2.0 # plotted yz plane at constant x = xPlane*Rp (3D runs, ignored for 2D runs)
 yPlane = 0.0 # plotted xz plane at constant y = yPlane*Rp (3D run, ignored for 2D runs)

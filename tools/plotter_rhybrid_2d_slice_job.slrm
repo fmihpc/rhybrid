@@ -3,9 +3,9 @@
 # 1) Creates PNG frames using plotter_rhybrid_2d_slice.py on multiple nodes (one process per node, Python multiprocessesing within a node)
 # 2) Calls ffmpeg to create MP4 movies files from the frames for each parameter
 #SBATCH --job-name=rhba
-#SBATCH --account=your_project_here
+#SBATCH --account=YOUR_PROJECT_HERE
 #SBATCH --time=01:00:00
-#SBATCH --partition=your_queue_here
+#SBATCH --partition=YOUR_QUEUE_HERE
 #SBATCH --hint=multithread
 #SBATCH --nodes=2
 #SBATCH --ntasks-per-node=2
@@ -13,7 +13,7 @@
 #SBATCH --mem=185G
 #SBATCH --exclusive
 cd $SLURM_SUBMIT_DIR
-analysatorFolder=/path/to/analysator/
+analysatorFolder=/PATH/TO/ANALYSATOR/
 
 #export OMP_NUM_THREADS=80
 
