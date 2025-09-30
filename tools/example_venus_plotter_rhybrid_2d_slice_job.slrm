@@ -1,0 +1,139 @@
+#!/bin/bash -l
+# Slurm batch job script for example_venus_plotter_rhybrid_2d_slice.py
+#SBATCH --job-name=rhba
+#SBATCH --account=YOUR_PROJECT_HERE
+#SBATCH --time=00:10:00
+#SBATCH --partition=YOUR_QUEUE_HERE
+#SBATCH --hint=multithread
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=2
+#SBATCH --cpus-per-task=15
+#SBATCH --mem=185G
+#SBATCH --exclusive
+cd $SLURM_SUBMIT_DIR
+analysatorFolder=/PATH/TO/ANALYSATOR/
+
+#export OMP_NUM_THREADS=80
+
+runFolder=../
+runDescription="run"
+cmdExec="srun -N 1 -n 1"
+
+echo "(SLRM) PLOTTING SCRIPT: START"
+echo ""
+
+echo "Current folder: " $(pwd)
+echo "Plotting run from: " $runFolder
+echo "Run description string: " $runDescription
+
+# find first and last saved time step of VLSV files in run folder
+tStartGlobal=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |head -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |bc)
+tEndGlobal=$(find "$runFolder/"state*.vlsv -type f -printf '%T+ %p\n' |tail -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |sed 's/^0*//')
+
+# force first and last saved time step
+#tStartGlobal=25000
+#tEndGlobal=30000
+
+echo "First state*.vlsv file time step: " $tStartGlobal
+echo "Last state*.vlsv file time step: " $tEndGlobal
+
+# parse object radius from logfile.txt
+Robject=$(grep "R_object  =" "$runFolder/"logfile.txt |cut -f 4 -d ' '|xargs)"e3"
+echo "Object radius: " $Robject "m"
+
+module load StdEnv
+module load gcc/11.3.0
+module load boost
+module load gnuplot/5.4.3
+module load texlive/texlive
+module load python-data/3.10-24.04
+
+mkdir -p png/
+
+export PYTHONPATH=$PYTHONPATH:$analysatorFolder
+
+# number of nodes
+if [ -z "$SLURM_JOB_NUM_NODES" ]
+then
+ Nnodes=1
+else
+ Nnodes=$SLURM_JOB_NUM_NODES
+fi
+
+# number of cores per node
+if [ -z "$SLURM_CPUS_PER_TASK" ]
+then
+ Ncores=1
+else
+ Ncores=$SLURM_CPUS_PER_TASK
+fi
+
+echo "Nnodes = " $Nnodes
+echo "Ncores = " $Ncores
+echo ""
+
+# get header information from the first VLSV file with Ncores = -1 argument
+cmdPyScript="example_venus_plotter_rhybrid_2d_slice.py -1 $runFolder "
+echo "(SLRM) HEADER INFORMATION"
+echo ""
+echo $cmdExec python $cmdPyScript
+$cmdExec python $cmdPyScript
+wait
+
+# create animation frames using one or multiple nodes
+cmdPyScript="example_venus_plotter_rhybrid_2d_slice.py $Ncores $runFolder $runDescription $Robject "
+echo "(SLRM) CREATING FIGURE FRAMES"
+echo ""
+if [[ $Nnodes -eq 1 ]]
+then
+ echo $cmdExec python $cmdPyScript $tStartGlobal $tEndGlobal $tStartGlobal $tEndGlobal
+ $cmdExec python $cmdPyScript $tStartGlobal $tEndGlobal $tStartGlobal $tEndGlobal
+else
+  nn=$(( ( $tEndGlobal - $tStartGlobal ) / $Nnodes ))
+  #nodeNames=$(scontrol show hostnames $SLURM_JOB_NODELIST)
+  #nodeNamesMinusOne=$(echo $nodeNames |cut -f 1-$(( $Nnodes - 1 )) -d ' ')
+  #nodeNamesLast=$(echo $nodeNames |cut -f $Nnodes -d ' ')
+  #ii=0
+  #for nname in $nodeNamesMinusOne
+  for ii in $( seq 0 $(( $Nnodes - 2 )) )
+  do
+   # first and last saved time step for this process
+   tStartProcess=$(( $tStartGlobal + $ii * $nn ))
+   tEndProcess=$(( $tStartGlobal + ( $ii + 1 ) * $nn - 1 ))
+   echo $cmdExec python $cmdPyScript $tStartProcess $tEndProcess $tStartGlobal $tEndGlobal
+   #$cmdExec --nodelist=$nname python $cmdPyScript $tStartProcess $tEndProcess $tStartGlobal $tEndGlobal &
+   $cmdExec python $cmdPyScript $tStartProcess $tEndProcess $tStartGlobal $tEndGlobal &
+   #srun -N 1 -n 1 hostname&
+   #ii=$(( $ii + 1 ))
+  done
+ #srun -N 1 -n 1 hostname&
+ echo $cmdExec python $cmdPyScript $(( $tEndProcess + 1 )) $tEndGlobal $tStartGlobal $tEndGlobal
+ $cmdExec python $cmdPyScript $(( $tEndProcess + 1 )) $tEndGlobal $tStartGlobal $tEndGlobal &
+fi
+wait
+
+echo ""
+echo "(SLRM) COMPILING VIDEO FILES"
+echo ""
+
+# compile video files
+module load ffmpeg
+
+mkdir -p mp4/
+
+# find parameter names from PNG file names
+paramNames=$(find png/ -type f -name "*state*.vlsv.png" | sed 's/_state[0-9]*.vlsv.png//g' |sort |uniq)
+
+for param in $paramNames
+do
+paramBaseName=$(basename $param)
+echo "Compiling: " $paramBaseName.mp4
+$cmdExec ffmpeg -framerate 4 -y -an -pattern_type glob -i ${param}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$paramBaseName.mp4 &
+done
+
+wait
+echo ""
+echo "(SLRM) PLOTTING SCRIPT: FINISHED"
+echo ""
+
+
