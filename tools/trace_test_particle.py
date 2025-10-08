@@ -106,6 +106,10 @@ plt.plot(t_res,v_res[:,2]/1e3)
 plt.ylabel('vz [km/s]')
 plt.xlabel('t [s]')
 
+plt.savefig("testrun_trace_test_particle_vel.png")
+plt.clf()
+plt.close()
+
 # 3d plot
 ax = plt.figure().add_subplot(projection='3d')
 
@@ -129,4 +133,8 @@ ax.set_xlabel('x [Rp]')
 ax.set_ylabel('y [Rp]')
 ax.set_zlabel('z [Rp]')
 
-plt.show(block=True)
+#plt.show(block=True)
+
+plt.savefig("testrun_trace_test_particle_traj.png")
+plt.clf()
+plt.close()

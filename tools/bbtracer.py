@@ -55,7 +55,7 @@ def bbstep(E,B,r,v,m,q,dt):
  qmideltT2= 0.5*q*dt/m
  dv = qmideltT2*E
  t = qmideltT2*B
- t2 = np.linalg.norm(t)
+ t2 = np.inner(t,t)
  b2 = 2.0/(1.0 + t2)
  s = b2*t
  vm = v + dv
