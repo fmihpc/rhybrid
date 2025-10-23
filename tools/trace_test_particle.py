@@ -28,7 +28,7 @@ else:
 m = mp
 q = qe
 # timestep [s]
-dt = 0.1
+dt = 0.5
 # max. number of timesteps
 Ndt = 200
 # constant crandom seed for reproducibility
@@ -58,6 +58,8 @@ r0 = np.array([
 (2.5*Rp,0,-1.3*Rp),
 ])
 
+Nparticles = len(r0)
+
 # initial particle velocities [m/s]
 Usw = (-400e3,0,0)
 vth = 30e3
@@ -69,27 +71,26 @@ if useHomogeneousFiels == True:
  E = -np.cross(Ue,B)
 
 # initial times [s]
-t0 = np.zeros(len(r0))
+t0 = np.zeros(Nparticles)
 
 if (r0.shape != v0.shape) | (len(r0) != len(t0)) | (len(v0) != len(t0)):
  print("ERROR: r0 and v0 should be same shape and same length as t0")
  exit()
 
 # particle ids for indexing results lists
-pid = np.arange(len(r0))
+pid = np.arange(Nparticles)
 
 # result lists
-r = np.split(r0,len(r0))
-v = np.split(v0,len(v0))
-t = np.split(t0,len(r0))
+r = np.split(r0,Nparticles)
+v = np.split(v0,Nparticles)
+t = np.split(t0,Nparticles)
 
 # particle positions, velocities and time at a timestep
-rnow = r0
-vnow = v0
-tnow = t0
-
+rnow = np.copy(r0)
+vnow = np.copy(v0)
+tnow = np.copy(t0)
 # propagate test particles
-for ii in range(Ndt):
+for iiDt in range(Ndt):
  # check boundary conditions if not tracing in homogeneous fields
  if useHomogeneousFiels == False:
   # check outer boundary conditions
@@ -142,11 +143,17 @@ for ii in range(Ndt):
  #r_arr = np.concatenate((r_arr,rnow_list_split_arr),axis=1)
  #r = [a for a in r_arr]
 
-Ndt_taken = ii
+
+
+# number of timesteps taken (=number of bbStep/vlsv_intpol_points function calls)
+dtTaken = iiDt + 1
+# total number of particle propagations (no initial state)
+bbStepsTotal = sum(tp.size for tp in t) - Nparticles
 print('')
 print('tracing finished')
-print('timesteps taken: ' + str(Ndt_taken))
-print('simulation time: ' + str(Ndt_taken*dt) + ' s')
+print('timesteps taken: ' + str(dtTaken))
+print('simulation time: ' + str(dtTaken*dt) + ' s')
+print('total number of particle propagations/field interpolations: ' + str(bbStepsTotal))
 
 # 1D plot
 plt.figure()
