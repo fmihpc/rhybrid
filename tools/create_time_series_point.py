@@ -1,6 +1,6 @@
 # interpolates variable values in a given point in all VLSV files in the folder and creates a time series ASCII file
 import os
-import pytools as pt
+import analysator as alr
 import numpy as np
 
 pointCoordinates = np.array([[10e6,-1e5,0]]) # point where to create time series
@@ -22,7 +22,7 @@ def createTimeSeriesRun(folder,runStr,varList,rp):
   return False
  files.sort()
  Ntimesteps = len(files)
- vr = pt.vlsvfile.VlsvReader(os.path.join(folder,files[0]))
+ vr = alr.vlsvfile.VlsvReader(os.path.join(folder,files[0]))
  #varList = vr.get_variables() # interpolate all variables
  # check variables are found
  if set(varList).issubset(vr.get_all_variables()) == False:
@@ -36,7 +36,7 @@ def createTimeSeriesRun(folder,runStr,varList,rp):
  nz = mz*sz # number of cells along z
  dx = (xmax-xmin)/nx # should be dx = dy = dz in rhybrid
  cid = np.ravel(vr.get_cellid(rp))[0]
- vrout = pt.calculations.vlsv_intpol_points(vr,rp,varList)
+ vrout = alr.calculations.vlsv_intpol_points(vr,rp,varList)
  Nvars = (vrout[2].shape)[1]
  # create header string of output file
  headerStr = 'run name: ' + runStr + '\n'
@@ -50,9 +50,9 @@ def createTimeSeriesRun(folder,runStr,varList,rp):
  varTimeSeries = np.empty((Ntimesteps,Nvars+1))
  varTimeSeries.fill(np.nan)
  for ii in range(Ntimesteps):
-  vr = pt.vlsvfile.VlsvReader(os.path.join(folder,files[ii]))
+  vr = alr.vlsvfile.VlsvReader(os.path.join(folder,files[ii]))
   t = vr.read_parameter("time")
-  vrout = pt.calculations.vlsv_intpol_points(vr,rp,varList,interpolation_order=intpolOrder)
+  vrout = alr.calculations.vlsv_intpol_points(vr,rp,varList,interpolation_order=intpolOrder)
   if np.isnan(np.min(vrout[2])) == 1:
    print('ERROR: interpolation did not succeed')
    return False

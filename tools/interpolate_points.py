@@ -2,7 +2,7 @@
 import sys
 import os
 import socket
-import pytools as pt
+import analysator as alr
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ intpolOrder = 1 # interpolation order
 fn = os.getenv("HOME") + "/bin/corsair/testrun/state00004000.vlsv"
 
 # read file
-vr = pt.vlsvfile.VlsvReader(fn)
+vr = alr.vlsvfile.VlsvReader(fn)
 # simulation box dimensions
 [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
 [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
@@ -44,7 +44,7 @@ points = (np.array([xp,yp,zp])).transpose()
 varlist = ('cellBAverage','n_H+sw_ave')
 
 # interpolate
-[crd,cellids,outVars,header] = pt.calculations.vlsv_intpol_points(vr,points,varlist,interpolation_order=intpolOrder)
+[crd,cellids,outVars,header] = alr.calculations.vlsv_intpol_points(vr,points,varlist,interpolation_order=intpolOrder)
 
 # extract variables
 n = 0

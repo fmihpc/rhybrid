@@ -1,8 +1,8 @@
 import os
-import pytools as pt
+import analysator as alr
 import numpy as np
 
-def loadRun(folder,runStr,varList):
+def loadRun(folder,varList):
  files = [f for f in os.listdir(folder) if f.startswith('state') if f.endswith('.vlsv')]
  # check VLSV files are found in the folder
  if len(files) < 1:
@@ -10,11 +10,11 @@ def loadRun(folder,runStr,varList):
   return False
  files.sort()
  Ntimesteps = len(files)
- # put VLSV readers and simulation time in lists
+ # place VLSV readers and simulation time in lists
  vr = list()
  tsim = list()
  for f in files:
-  vr.append(pt.vlsvfile.VlsvReader(os.path.join(folder,f)))
+  vr.append(alr.vlsvfile.VlsvReader(os.path.join(folder,f)))
   tsim.append(vr[-1].read_parameter("t"))
  # read header information from the first VLSV file
  vr0 = vr[0]
@@ -30,7 +30,6 @@ def loadRun(folder,runStr,varList):
  dx = (xmax-xmin)/nx # should be dx = dy = dz in rhybrid
  res = dict()
  res['folder'] = folder
- res['runName'] = runStr
  res['varList'] = varList
  res['xmin'] = xmin
  res['xmax'] = xmax
@@ -43,11 +42,9 @@ def loadRun(folder,runStr,varList):
  res['sim']['readers'] = vr
  res['sim']['t'] = np.array(tsim)
  return res
- #cid = np.ravel(vr0.get_cellid(rp))[0]
- #vrout = pt.calculations.vlsv_intpol_points(vr,rp,varList)
 
-# Boris-Bunemann algorithm
-def bbstep(E,B,r,v,m,q,dt):
+# Boris-Bunemann algorithm: move and accelerate particles one timestep
+def bbStep(E,B,r,v,m,q,dt):
  # move particle
  r = r + dt*v;
  vold = v
@@ -55,12 +52,11 @@ def bbstep(E,B,r,v,m,q,dt):
  qmideltT2= 0.5*q*dt/m
  dv = qmideltT2*E
  t = qmideltT2*B
- t2 = np.inner(t,t)
+ t2 = np.sum(t*t,axis=1)
  b2 = 2.0/(1.0 + t2)
- s = b2*t
+ s = b2[:,None]*t
  vm = v + dv
  v0 = vm + np.cross(vm,t)
  vp = vm + np.cross(v0,s)
  v = vp + dv
- #dv = v-vold
  return (r,v)
