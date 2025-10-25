@@ -6,52 +6,52 @@ import matplotlib.pyplot as plt
 
 
 # check run finished with no errors or warnings
-if os.path.isfile("logfile.txt") == False:
- print("FAILED: logfile.txt not found")
+if os.path.isfile('logfile.txt') == False:
+ print('FAILED: logfile.txt not found')
  quit()
-res = sp.run(["grep -q \"(MAIN) Exiting simulation after successful run.\" logfile.txt"],shell=True)
+res = sp.run(['grep -q \'(MAIN) Exiting simulation after successful run.\' logfile.txt'],shell=True)
 if res.returncode != 0:
- print("FAILED: run did not finish")
+ print('FAILED: run did not finish')
  quit()
-res = sp.run(["grep -qi \"error\" logfile.txt"],shell=True)
+res = sp.run(['grep -qi \'error\' logfile.txt'],shell=True)
 if res.returncode == 0:
- print("FAILED: run had errors")
+ print('FAILED: run had errors')
  quit()
-res = sp.run(["grep -qi \"warning\" logfile.txt"],shell=True)
+res = sp.run(['grep -qi \'warning\' logfile.txt'],shell=True)
 if res.returncode == 0:
- print("FAILED: run had warning")
+ print('FAILED: run had warning')
  quit()
 
  # read field log
-if os.path.isfile("field.log") == False:
- print("FAILED: field.log not found")
+if os.path.isfile('field.log') == False:
+ print('FAILED: field.log not found')
  quit()
-flog = np.loadtxt("field.log",comments="%")
+flog = np.loadtxt('field.log',comments='%')
 if flog.shape[1] != 41:
- print("FAILED: unknown field.log format")
+ print('FAILED: unknown field.log format')
  quit()
 if flog.shape[0] < 5:
- print("FAILED: too short field.log")
+ print('FAILED: too short field.log')
  quit()
 
 # read first particle log
-plogFileName = ""
-for f in sorted(os.listdir("./")):
- if (f.startswith("pop001_") and f.endswith(".log")):
+plogFileName = ''
+for f in sorted(os.listdir('./')):
+ if (f.startswith('pop001_') and f.endswith('.log')):
   plogFileName = f
-if (plogFileName == "") or (os.path.isfile(plogFileName) == False):
- print("FAILED: pop001_*.log not found")
+if (plogFileName == '') or (os.path.isfile(plogFileName) == False):
+ print('FAILED: pop001_*.log not found')
  quit()
-plog = np.loadtxt(plogFileName,comments="%")
+plog = np.loadtxt(plogFileName,comments='%')
 if plog.shape[1] != 17:
- print("FAILED: unknown pop001_*.log format")
+ print('FAILED: unknown pop001_*.log format')
  quit()
 if plog.shape[0] < 5:
- print("FAILED: too short pop001_*.log")
+ print('FAILED: too short pop001_*.log')
  quit()
 
-flog = np.loadtxt("field.log",comments="%")
-plog = np.loadtxt(plogFileName,comments="%")
+flog = np.loadtxt('field.log',comments='%')
+plog = np.loadtxt(plogFileName,comments='%')
 
 t = flog[:,0]
 tmin = t[0]

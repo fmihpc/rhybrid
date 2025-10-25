@@ -5,7 +5,8 @@ import numpy as np
 
 pointCoordinates = np.array([[10e6,-1e5,0]]) # point where to create time series
 varListSelected = ['cellB','n_H+sw_ave','v_H+sw_ave'] # variables to interpolate
-folderRun = os.path.join(os.getenv("HOME"),'bin/corsair/testrun/'); # run folder
+#folderRun = os.path.join(os.getenv('HOME'),'bin/corsair/testrun/') # run folder
+folderRun = './' # run folder
 runName = 'testrun01' # run name
 intpolOrder = 1 # interpolation order
 
@@ -51,7 +52,7 @@ def createTimeSeriesRun(folder,runStr,varList,rp):
  varTimeSeries.fill(np.nan)
  for ii in range(Ntimesteps):
   vr = alr.vlsvfile.VlsvReader(os.path.join(folder,files[ii]))
-  t = vr.read_parameter("time")
+  t = vr.read_parameter('time')
   vrout = alr.calculations.vlsv_intpol_points(vr,rp,varList,interpolation_order=intpolOrder)
   if np.isnan(np.min(vrout[2])) == 1:
    print('ERROR: interpolation did not succeed')

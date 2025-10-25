@@ -1,7 +1,4 @@
-#exec(open("./interpolate_points.py").read())
-import sys
 import os
-import socket
 import analysator as alr
 import numpy as np
 import matplotlib
@@ -14,8 +11,8 @@ matplotlib.rcParams['lines.linewidth'] = 2
 Rp = 3390e3 # Mars
 intpolOrder = 1 # interpolation order
 
-
-fn = os.getenv("HOME") + "/bin/corsair/testrun/state00004000.vlsv"
+#fn = os.getenv('HOME') + '/bin/corsair/testrun/state00004000.vlsv'
+fn = 'state00004000.vlsv'
 
 # read file
 vr = alr.vlsvfile.VlsvReader(fn)
@@ -39,8 +36,14 @@ zp = np.zeros(len(xp))
 #yp = np.zeros(len(xp))
 #zp = np.zeros(len(xp))
 # artifial time parameter along trajectory
+
+# artificial time parameter
 tp = np.linspace(0,1,NN)
+
+# point array for vlsv_intpol_points
 points = (np.array([xp,yp,zp])).transpose()
+
+# variable to interpolate
 varlist = ('cellBAverage','n_H+sw_ave')
 
 # interpolate
@@ -54,7 +57,8 @@ Bz     = outVars[:,n]; n = n + 1;
 nHsw   = outVars[:,n]; n = n + 1;
 Btot = np.sqrt(Bx**2 + By**2 + Bz**2)
 
-# plot
+# plot variable time series as a function artificial t
+
 figNy = 2
 figNx = 1
 figNsub = 1
@@ -76,7 +80,12 @@ plt.ylabel('n [cm-3]')
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.grid()
 
+plt.savefig('testrun_interpolate_points.png')
+plt.clf()
+plt.close()
+
 # plot orbit in 3d
+
 ax = plt.figure(figsize=(12,18)).add_subplot(projection='3d')
 
 # planet (r = Rp)
@@ -100,6 +109,10 @@ ax.set_zlabel('z [Rp]')
 
 ax.set_box_aspect([1,1,1])
 
-plt.show(block=True)
+plt.savefig('testrun_interpolate_points_3d.png')
+plt.clf()
+plt.close()
+
+#plt.show(block=True)
 
 

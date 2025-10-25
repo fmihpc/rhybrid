@@ -18,7 +18,7 @@
 import sys
 import os
 import matplotlib
-matplotlib.use("Agg") # this is needed for offline saving of graphics
+matplotlib.use('Agg') # this is needed for offline saving of graphics
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
@@ -26,31 +26,31 @@ import scipy as sp
 import operator as oper
 import socket
 import itertools
-plt.switch_backend("agg")
+plt.switch_backend('agg')
 
-matplotlib.rcParams.update({"font.size": 14})
-matplotlib.rcParams["lines.linewidth"] = 2
+matplotlib.rcParams.update({'font.size': 14})
+matplotlib.rcParams['lines.linewidth'] = 2
 figDpi = 100
-matplotlib.rcParams["figure.dpi"] = figDpi
-matplotlib.rcParams["savefig.dpi"] = figDpi
+matplotlib.rcParams['figure.dpi'] = figDpi
+matplotlib.rcParams['savefig.dpi'] = figDpi
 figResolutionX = 1920
 figResolutionY = 1080
 figureSize = (figResolutionX/figDpi,figResolutionY/figDpi)
-tickDir = "out"
+tickDir = 'out'
 tickLength = 2
 tickWidth = 1
 xTickAngle = 45
 
-runFolder = "./"
+runFolder = './'
 
 # check log files found
 
-if not any( (fileName.startswith("pop") and fileName.endswith(".log")) for fileName in os.listdir(runFolder)):
- print("ERROR: no pop*.log found in folder: " + runFolder)
+if not any( (fileName.startswith('pop') and fileName.endswith('.log')) for fileName in os.listdir(runFolder)):
+ print('ERROR: no pop*.log found in folder: ' + runFolder)
  quit()
-if not any( (fileName.startswith("field") and fileName.endswith(".log")) for fileName in os.listdir(runFolder)):
- print("ERROR: no field.log found in folder: " + runFolder)
+if not any( (fileName.startswith('field') and fileName.endswith('.log')) for fileName in os.listdir(runFolder)):
+ print('ERROR: no field.log found in folder: ' + runFolder)
  quit()
 
-#a = np.loadtxt( open(runFolder + "field.log","rt").readlines()[:-1],skiprows=0,comments="%",dtype=None)
+#a = np.loadtxt( open(runFolder + 'field.log','rt').readlines()[:-1],skiprows=0,comments='%',dtype=None)
 #t = a[:,0]

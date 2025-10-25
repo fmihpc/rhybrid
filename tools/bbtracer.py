@@ -15,7 +15,7 @@ def loadRun(folder,varList):
  tsim = list()
  for f in files:
   vr.append(alr.vlsvfile.VlsvReader(os.path.join(folder,f)))
-  tsim.append(vr[-1].read_parameter("t"))
+  tsim.append(vr[-1].read_parameter('t'))
  # read header information from the first VLSV file
  vr0 = vr[0]
  if set(varList).issubset(vr0.get_all_variables()) == False:
@@ -46,7 +46,7 @@ def loadRun(folder,varList):
 # Boris-Bunemann algorithm: move and accelerate particles one timestep
 def bbStep(E,B,r,v,m,q,dt):
  # move particle
- r = r + dt*v;
+ r = r + dt*v
  vold = v
  #accelerate particle
  qmideltT2= 0.5*q*dt/m
