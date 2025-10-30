@@ -79,6 +79,7 @@ pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
 pargrid::DataID Hybrid::dataDetectorParticleFlagID;
 Real Hybrid::detParticleStartTime;
 Real Hybrid::detParticleEndTime;
+bool Hybrid::detParticleRecordImpacts = false;
 Real Hybrid::N_detParticleMaxFileLines;
 Real Hybrid::detParticleWriteInterval;
 Real Hybrid::detParticleTimestepCnt;

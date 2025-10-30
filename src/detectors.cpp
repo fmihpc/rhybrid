@@ -27,7 +27,7 @@
 #include "hybrid.h"
 #include "detectors.h"
 
-#define DETECTOR_PARTICLE_FILE_VARIABLES 6
+#define DETECTOR_PARTICLE_FILE_VARIABLES 9
 #define DETECTOR_BULK_PARAMETER_FILE_VARIABLES 18
 
 using namespace std;
@@ -43,7 +43,7 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
    // create displacement vector for detParticleOutputGlobal
    int displ[sim.mpiProcesses];
    if (sim.mpiRank == sim.MASTER_RANK) {
-      int sum = 0.0;
+      int sum = 0;
       for (int i = 0; i < sim.mpiProcesses; ++i) {
 	 displ[i] = sum;
 	 sum += N_linesGlobal[i];
@@ -64,7 +64,7 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
 	 particleFile.precision(6);
 	 particleFile << scientific;
 	 unsigned long fileLineCnt = 0;
-	 particleFile << "% t popid cellid vx vy vz" << endl;
+	 particleFile << "% t popid cellid x y z vx vy vz" << endl;
 	 for (unsigned int i=0;i<detParticleOutputGlobal.size();i+=DETECTOR_PARTICLE_FILE_VARIABLES) {
 	    particleFile.precision(6);
 	    particleFile
@@ -73,9 +73,12 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
 	      << static_cast<unsigned int>(detParticleOutputGlobal[i+2]) << " "; // 03 blockid
 	    particleFile.precision(4);
 	    particleFile
-	      << detParticleOutputGlobal[i+3] << " "                             // 04 vx
-	      << detParticleOutputGlobal[i+4] << " "                             // 05 vy
-	      << detParticleOutputGlobal[i+5] << endl;                           // 06 vz
+	      << detParticleOutputGlobal[i+3] << " "                             // 04 x
+	      << detParticleOutputGlobal[i+4] << " "                             // 05 y
+	      << detParticleOutputGlobal[i+5] << " "                             // 06 z
+	      << detParticleOutputGlobal[i+6] << " "                             // 07 vx
+	      << detParticleOutputGlobal[i+7] << " "                             // 08 vy
+	      << detParticleOutputGlobal[i+8] << endl;                           // 09 vz
 	      /*<< detParticleOutputGlobal[i+2] << " "                           // weight
 	      << detParticleOutputGlobal[i+7] << " "                             // ini: t
 	      << static_cast<unsigned int>(detParticleOutputGlobal[i+8]) << " "  // ini: block id
@@ -154,7 +157,7 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
    // create displacement vector for detBulkParamOutputGlobal
    int displ[sim.mpiProcesses];
    if (sim.mpiRank == sim.MASTER_RANK) {
-      int sum = 0.0;
+      int sum = 0;
       for (int i = 0; i < sim.mpiProcesses; ++i) {
 	 displ[i] = sum;
 	 sum += N_linesGlobal[i];

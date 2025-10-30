@@ -172,24 +172,30 @@ template<class PARTICLE>
 #ifdef USE_DETECTORS
    bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
      if (detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
-      //if (particle.state[particle::INI_TIME] >= 0.0) {
+	 // global coordinates of the particle
+	 const Real xp = xBlock + particle.state[particle::X];
+	 const Real yp = yBlock + particle.state[particle::Y];
+	 const Real zp = zBlock + particle.state[particle::Z];
          Hybrid::detParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
          Hybrid::detParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::WEIGHT] );                        //
          Hybrid::detParticleOutput.push_back( static_cast<Real>(globalID) );                             // 3
-         Hybrid::detParticleOutput.push_back( particle.state[particle::VX] );                            // 4
-         Hybrid::detParticleOutput.push_back( particle.state[particle::VY] );                            // 5
-         Hybrid::detParticleOutput.push_back( particle.state[particle::VZ] );                            // 6
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_TIME] );                      // 
-         //Hybrid::detParticleOutput.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) ); // 
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_X] );                         // 
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_Y] );                         // 
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_Z] );                         // 
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VX] );                        // 
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VY] );                        // 
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VZ] );                        // 
+	 Hybrid::detParticleOutput.push_back(xp);                                                        // 4
+	 Hybrid::detParticleOutput.push_back(yp);                                                        // 5
+	 Hybrid::detParticleOutput.push_back(zp);                                                        // 6
+         Hybrid::detParticleOutput.push_back( particle.state[particle::VX] );                            // 7
+         Hybrid::detParticleOutput.push_back( particle.state[particle::VY] );                            // 8
+         Hybrid::detParticleOutput.push_back( particle.state[particle::VZ] );                            // 9
+	 //Hybrid::detParticleOutput.push_back( particle.state[particle::WEIGHT] );
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_TIME] );
+         //Hybrid::detParticleOutput.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) );
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_X] );
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_Y] );
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_Z] );
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VX] );
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VY] );
+         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VZ] );
 	 //particle.state[particle::INI_TIME] = -100.0; // only detect each particle once
-      //}
+	 //if (particle.state[particle::INI_TIME] >= 0.0)
    }
 #endif
    // move particle

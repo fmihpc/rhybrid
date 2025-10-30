@@ -214,6 +214,7 @@ struct Hybrid {
    static pargrid::DataID dataDetectorParticleFlagID;
    static Real detParticleStartTime;
    static Real detParticleEndTime;
+   static bool detParticleRecordImpacts;
    static Real N_detParticleMaxFileLines;
    static Real detParticleWriteInterval;
    static Real detParticleTimestepCnt;

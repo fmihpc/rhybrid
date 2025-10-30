@@ -359,7 +359,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
 #ifndef USE_GRID_CONSTRAINT_COUNTERS
       calcNodeE(nodeUe,nodeB,nodeEta,nodeJ,nodeE,innerFlagNode,sim,simClasses,b);
-#else USE_GRID_CONSTRAINT_COUNTERS
+#else
       calcNodeE(nodeUe,nodeB,nodeEta,nodeJ,nodeE,gridCounterNodeMaxE,innerFlagNode,sim,simClasses,b);
 #endif
    }
