@@ -12,6 +12,7 @@
 #SBATCH --cpus-per-task=15
 #SBATCH --mem=185G
 #SBATCH --exclusive
+##SBATCH --dependency=afterany:NNNN
 cd $SLURM_SUBMIT_DIR
 analysatorFolder=/PATH/TO/ANALYSATOR/
 
@@ -128,14 +129,27 @@ paramNames=$(find png/ -type f -name "*state*.vlsv.png" | sed 's/_state[0-9]*.vl
 
 for param in $paramNames
 do
-paramBaseName=$(basename $param)
-echo "Compiling: " $paramBaseName.mp4
-$cmdExec ffmpeg -framerate 20 -y -an -pattern_type glob -i ${param}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$paramBaseName.mp4 &
+ paramBaseName=$(basename $param)
+ echo "Compiling: " $paramBaseName.mp4
+ $cmdExec ffmpeg -framerate 20 -y -an -pattern_type glob -i ${param}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$paramBaseName.mp4 &
 done
+
+wait
+
+# remove png files if any
+count=$(/usr/bin/lfs find png/*.png 2>/dev/null |/bin/wc -l)
+if [ $count != 0 ]
+then
+ echo "$count png/*.png files found, deleting"
+ /usr/bin/lfs find png/ -name "*.png" -t f > rmlist.txt
+ /bin/sed -e 's:^:/bin/rm -v :' rmlist.txt > rmlist.sh
+ /bin/sh rmlist.sh
+ /bin/rm -v rmlist.txt rmlist.sh
+else
+ echo "No png/*.png files found, not deleting"
+fi
 
 wait
 echo ""
 echo "(SLRM) PLOTTING SCRIPT: FINISHED"
 echo ""
-
-
