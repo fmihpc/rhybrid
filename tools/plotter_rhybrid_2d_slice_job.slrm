@@ -22,6 +22,8 @@ runFolder=../
 runDescription="run"
 cmdExec="srun -N 1 -n 1"
 
+echo "Time stamp: " $(date -R)
+echo ""
 echo "(SLRM) PLOTTING SCRIPT: START"
 echo ""
 
@@ -150,6 +152,9 @@ else
 fi
 
 wait
+
 echo ""
 echo "(SLRM) PLOTTING SCRIPT: FINISHED"
+
 echo ""
+echo "Time stamp: " $(date -R)
