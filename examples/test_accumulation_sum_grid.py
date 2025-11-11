@@ -1,5 +1,5 @@
 import os
-import analysator as pt
+import analysator as alr
 
 refvalue = 1e27
 
@@ -11,7 +11,7 @@ for f in sorted(os.listdir(runFolder)):
 maxError = -1
 for f in runFiles:
  # read file
- vr = pt.vlsvfile.VlsvReader(runFolder + f)
+ vr = alr.vlsvfile.VlsvReader(runFolder + f)
  # simulation box dimensions
  [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
  [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction

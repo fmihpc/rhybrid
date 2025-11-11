@@ -109,7 +109,7 @@ class VlsvParticles(object):
           :returns: List of particle point mesh names in the file
           .. code-block:: python
              # Example usage:
-             vrp = pt.vlsvparticle.VlsvParticle("test.vlsv")
+             vrp = alr.vlsvparticle.VlsvParticle("test.vlsv")
              names_pmeshes = vrp.get_all_point_meshes()
       '''
       meshList = [];
@@ -124,7 +124,7 @@ class VlsvParticles(object):
           :returns: List of particle point mesh variable names in the file
           .. code-block:: python
              # Example usage:
-             vrp = pt.vlsvparticle.VlsvParticle("test.vlsv")
+             vrp = alr.vlsvparticle.VlsvParticle("test.vlsv")
              names_pvars = vrp.get_all_point_variables()
       '''
       varList = [];
@@ -141,7 +141,7 @@ class VlsvParticles(object):
           :returns: numpy array with the x, y and z coordinates of the particles
           .. code-block:: python
              # Example usage:
-             vrp = pt.vlsvparticle.VlsvParticle("test.vlsv")
+             vrp = alr.vlsvparticle.VlsvParticle("test.vlsv")
              ples = vrp.read_particle_mesh("ParticlePointMesh_sw_H+")
       '''
       if self.__fptr.closed:
@@ -177,7 +177,7 @@ class VlsvParticles(object):
           :returns: numpy array with the data
           .. code-block:: python
              # Example usage:
-             vrp = pt.vlsvparticle.VlsvParticle("test.vlsv")
+             vrp = alr.vlsvparticle.VlsvParticle("test.vlsv")
              v = vrp.read_particle_variable("v_sw_H+")
       '''
       if self.__fptr.closed:

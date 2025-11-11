@@ -20,7 +20,7 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import analysator as pt
+import analysator as alr
 import numpy as np
 import os
 import sys
@@ -160,7 +160,7 @@ def doPlotsWithInterpolation(fileName):
  intpolOrder = 0 # 0: NGP interpolation, 1: linear interpolation
 
  # read file
- vr = pt.vlsvfile.VlsvReader(fileName)
+ vr = alr.vlsvfile.VlsvReader(fileName)
  # simulation box dimensions
  [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
  [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
@@ -213,7 +213,7 @@ def doPlotsWithInterpolation(fileName):
  # do interpolation
  points = (np.array([xp,yp,zp])).transpose()
  varList = vr.get_all_variables()
- [crd,cellids,outVars,header]=pt.calculations.vlsv_intpol_points(vr,points,varList,"pass",intpolOrder)
+ [crd,cellids,outVars,header]=alr.calculations.vlsv_intpol_points(vr,points,varList,"pass",intpolOrder)
  Nvars = len(varList)
  Nscalars = outVars.shape[1]
  #x = crd[:,0] # should be the same as xp
@@ -275,7 +275,7 @@ def doPlotsWithInterpolation(fileName):
 # plot all scalar and vector variables from a file along primary axis
 def doPlots(fileName):
  # read file
- vr = pt.vlsvfile.VlsvReader(fileName)
+ vr = alr.vlsvfile.VlsvReader(fileName)
  [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent() # simulation box dimensions
  [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
  [sx,sy,sz] = vr.get_spatial_block_size() # how many cells per block per direction
@@ -359,7 +359,7 @@ def doComparison(varModeledValue,tmpInputVarName,rp,Ncomp=-1):
 # determine conditions of the flow and compare them to input parameters
 def checkFlowConditions(fileName,rp):
  # read file
- vr = pt.vlsvfile.VlsvReader(fileName)
+ vr = alr.vlsvfile.VlsvReader(fileName)
  [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent() # simulation box dimensions
  [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
  [sx,sy,sz] = vr.get_spatial_block_size() # how many cells per block per direction

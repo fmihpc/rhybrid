@@ -2,7 +2,7 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import analysator as pt
+import analysator as alr
 import numpy as np
 matplotlib.rcParams.update({'font.size': 14})
 matplotlib.rcParams['lines.linewidth'] = 2
@@ -13,7 +13,7 @@ for f in sorted(os.listdir(runFolder)):
  if (f.startswith("state") and f.endswith(".vlsv")):
   runFiles.append(f)
 
-vr = pt.vlsvfile.VlsvReader(runFolder + runFiles[0])
+vr = alr.vlsvfile.VlsvReader(runFolder + runFiles[0])
 # check grid variables
 # vr.get_all_variables()
 
@@ -38,9 +38,9 @@ Nx = 1
 
 for f in runFiles:
  # read file
- vr = pt.vlsvfile.VlsvReader(runFolder + f)
+ vr = alr.vlsvfile.VlsvReader(runFolder + f)
  # do interpolation
- [crd,cellids,outVars,header]=pt.calculations.vlsv_intpol_points(vr,points,varList)
+ [crd,cellids,outVars,header]=alr.calculations.vlsv_intpol_points(vr,points,varList)
  #x = crd[:,0] # should be the same as xp
  #y = crd[:,1] # should be the same as yp
  #z = crd[:,2] # should be the same as zp
