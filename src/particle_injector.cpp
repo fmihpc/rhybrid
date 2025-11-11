@@ -274,7 +274,7 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
      {
 	bool velStrOk = true;
 	vector<Real> vel;
-	velStrOk = convertConfigFileVariableVelocity(velStr,vel);
+	velStrOk = str2RealVector3D(velStr,vel);
 	// if not correct format
 	if (velStrOk == false) {
 	   simClasses.logger << "(" << species->name << ") ERROR: bad format of bulk velocity vector (" << velStr << ")" << endl << write;
@@ -745,7 +745,7 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
      {
 	bool velStrOk = true;
 	vector<Real> vel;
-	velStrOk = convertConfigFileVariableVelocity(velStr,vel);
+	velStrOk = str2RealVector3D(velStr,vel);
 	// if not correct format
 	if (velStrOk == false) {
 	   simClasses.logger << "(" << species->name << ") ERROR: bad format of bulk velocity vector (" << velStr << ")" << endl << write;
@@ -980,7 +980,7 @@ bool InjectorFlow::initialize(Simulation& sim,SimulationClasses& simClasses,Conf
      {
 	bool velStrOk = true;
 	vector<Real> vel;
-	velStrOk = convertConfigFileVariableVelocity(velStr,vel);
+	velStrOk = str2RealVector3D(velStr,vel);
 	// if not correct format
 	if (velStrOk == false) {
 	   simClasses.logger << "(" << species->name << ") ERROR: bad format of bulk velocity vector (" << velStr << ")" << endl << write;

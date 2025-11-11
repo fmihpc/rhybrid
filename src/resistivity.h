@@ -20,8 +20,6 @@
 #ifndef RESISTIVITY_H
 #define RESISTIVITY_H
 
-#ifdef USE_RESISTIVITY
-
 #include <string>
 #include <vector>
 #include <simulation.h>
@@ -213,105 +211,7 @@ inline bool setResistivityProfile(SimulationClasses& simClasses,std::string resP
 
 Real getResistivity(Simulation& sim,SimulationClasses& simClasses,const Real x,const Real y,const Real z) {
    Real res = Hybrid::resistivityProfilePtr(sim,simClasses,x,y,z);
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   const Real bZone = Hybrid::outerBoundaryZone.sizeEta;
-   if (Hybrid::outerBoundaryZone.typeEta == 0) { // not used
-      res += 0.0;
-   }
-   else if (Hybrid::outerBoundaryZone.typeEta == 1) { // all walls
-      if (x < (sim.x_min + bZone) || x > (sim.x_max - bZone) ||
-         y < (sim.y_min + bZone) || y > (sim.y_max - bZone) ||
-         z < (sim.z_min + bZone) || z > (sim.z_max - bZone)) {
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-   }
-   else if (Hybrid::outerBoundaryZone.typeEta == 2) { // all edges except +x
-      if ( (x < (sim.x_min + bZone)) && (y < (sim.y_min + bZone)) ) {
-         // (-x,-y) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (x < (sim.x_min + bZone)) && (y > (sim.y_max - bZone)) ) {
-         // (-x,+y) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (x < (sim.x_min + bZone)) && (z < (sim.z_min + bZone)) ) {
-         // (-x,-z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (x < (sim.x_min + bZone)) && (z > (sim.z_max - bZone)) ) {
-         // (-x,+z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (y < (sim.y_min + bZone)) && (z < (sim.z_min + bZone)) ) {
-         // (-y,-z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (y < (sim.y_min + bZone)) && (z > (sim.z_max - bZone)) ) {
-         // (-y,+z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (y > (sim.y_max - bZone)) && (z < (sim.z_min + bZone)) ) {
-         // (+y,-z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (y > (sim.y_max - bZone)) && (z > (sim.z_max - bZone)) ) {
-         // (+y,+z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-   }
-   else if (Hybrid::outerBoundaryZone.typeEta == 3) { // -x wall and all edges except +x
-      if ( x < (sim.x_min + bZone) ) {
-         // -x wall
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (x < (sim.x_min + bZone)) && (y < (sim.y_min + bZone)) ) {
-         // (-x,-y) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (x < (sim.x_min + bZone)) && (y > (sim.y_max - bZone)) ) {
-         // (-x,+y) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (x < (sim.x_min + bZone)) && (z < (sim.z_min + bZone)) ) {
-         // (-x,-z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (x < (sim.x_min + bZone)) && (z > (sim.z_max - bZone)) ) {
-         // (-x,+z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (y < (sim.y_min + bZone)) && (z < (sim.z_min + bZone)) ) {
-         // (-y,-z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (y < (sim.y_min + bZone)) && (z > (sim.z_max - bZone)) ) {
-         // (-y,+z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (y > (sim.y_max - bZone)) && (z < (sim.z_min + bZone)) ) {
-         // (+y,-z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-      else if ( (y > (sim.y_max - bZone)) && (z > (sim.z_max - bZone)) ) {
-         // (+y,+z) edge
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-   }
-   else if (Hybrid::outerBoundaryZone.typeEta == 4) { // all walls except -x
-      if (                                  x > (sim.x_max - bZone) ||
-         y < (sim.y_min + bZone) || y > (sim.y_max - bZone) ||
-         z < (sim.z_min + bZone) || z > (sim.z_max - bZone)) {
-         res += Hybrid::outerBoundaryZone.eta;
-      }
-   }
-   else {
-      simClasses.logger << "(getResistivity) ERROR: unknown type of an outer boundary zone for eta (" << Hybrid::outerBoundaryZone.typeEta << ")" << std::endl << write;
-      MPI_Finalize();
-   }
-#endif
    return res;
 }
-
-#endif
 
 #endif

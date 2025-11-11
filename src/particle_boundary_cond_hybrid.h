@@ -145,14 +145,30 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
       int current = 0;
       int end = N_particles[b]-1;
       while (current <= end) {
-	 const Real r2 =  sqr(xBlock + particles[current].state[particle::X]) +
-	   sqr(yBlock + particles[current].state[particle::Y]) +
-	   sqr(zBlock + particles[current].state[particle::Z]);
+	 // global coordinates of the particle
+	 const Real xp = xBlock + particles[current].state[particle::X];
+	 const Real yp = yBlock + particles[current].state[particle::Y];
+	 const Real zp = zBlock + particles[current].state[particle::Z];
+	 const Real r2 =  sqr(xp) + sqr(yp) + sqr(zp);
 	 //if (r2 < Hybrid::R2_particleObstacle) {
          if (r2 < this->species.R2_obstacle) {
 	    // impact counter
 	    Hybrid::logCounterParticleImpact[this->species.popid-1] += particles[current].state[particle::WEIGHT];
 	    Hybrid::logCounterParticleImpactKineticEnergy[this->species.popid-1] += particles[current].state[particle::WEIGHT]*( sqr(particles[current].state[particle::VX]) + sqr(particles[current].state[particle::VY]) + sqr(particles[current].state[particle::VZ]) );
+#ifdef USE_DETECTORS
+	    // store impacting particles for recording
+	    if (Hybrid::detParticleRecordImpacts == true && Hybrid::detParticleRecording == true) {
+	       Hybrid::detParticleOutput.push_back( static_cast<Real>(sim->t) );
+	       Hybrid::detParticleOutput.push_back( static_cast<Real>(this->species.popid) );
+	       Hybrid::detParticleOutput.push_back( static_cast<Real>(b) );
+	       Hybrid::detParticleOutput.push_back(xp);
+	       Hybrid::detParticleOutput.push_back(yp);
+	       Hybrid::detParticleOutput.push_back(zp);
+	       Hybrid::detParticleOutput.push_back( particles[current].state[particle::VX] );
+	       Hybrid::detParticleOutput.push_back( particles[current].state[particle::VY] );
+	       Hybrid::detParticleOutput.push_back( particles[current].state[particle::VZ] );
+	    }
+#endif
 	    particles[current] = particles[end];
 	    --end;
 	    continue;

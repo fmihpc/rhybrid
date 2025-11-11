@@ -44,7 +44,7 @@ import matplotlib
 matplotlib.use("Agg") # this is needed for offline saving of graphics
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import analysator as pt
+import analysator as alr
 import numpy as np
 import scipy as sp
 import operator as oper
@@ -80,7 +80,7 @@ tickLength = 2
 tickWidth = 1
 xTickAngle = 45
 
-outputFileNamePrefix = "./" # note: if folder name given here, that folder should exists
+outputFileNamePrefix = "./png/" # note: if folder name given here, that folder should exists
 
 xPlane = -2.0 # plotted yz plane at constant x = xPlane*Rp (3D runs, ignored for 2D runs)
 yPlane = 0.0 # plotted xz plane at constant y = yPlane*Rp (3D run, ignored for 2D runs)
@@ -361,7 +361,7 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
     print(HN + "ERROR: did not find file from " + runFolder)
     return
  # read file
- vr = pt.vlsvfile.VlsvReader(runFolder + vlsvFileName)
+ vr = alr.vlsvfile.VlsvReader(runFolder + vlsvFileName)
  # simulation box dimensions
  [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
  [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction
@@ -717,7 +717,7 @@ if Nfiles <= 0:
  quit()
 
 # find all variable from the first vlsv file
-vr = pt.vlsvfile.VlsvReader(runFiles[0])
+vr = alr.vlsvfile.VlsvReader(runFiles[0])
 all_vars = vr.get_all_variables()
 N_vector_vars_found = 0
 N_scalar_vars_found = 0
