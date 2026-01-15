@@ -36,6 +36,8 @@ if Path(output_file_mesh).is_file() == True:
  print('ERROR: output file already exists (' + output_file_mesh + ')')
  sys.exit()
 
+print('converting: ' + input_file)
+
 vr = alr.vlsvfile.VlsvReader(input_file)
 # simulation box dimensions
 [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
@@ -45,6 +47,8 @@ nx = mx*sx # number of cells along x
 ny = my*sy # number of cells along y
 nz = mz*sz # number of cells along z
 dx = (xmax-xmin)/nx # should be dx = dy = dz in rhybrid
+
+print('cells: ' + str(nx) + 'x' + str(ny) + 'x' + str(nz))
 
 # simulation time
 file_time = -1
@@ -91,6 +95,7 @@ grid.field_data["TIME"] = np.array([file_time], dtype=np.float64)
 # loop through all variables in VLSV file
 all_vars = vr.get_all_variables()
 for var in all_vars:
+ print('reading variable: ' + var)
  dim = vr.read_variable_vectorsize(var) # get variable dimension
  if dim != 1 and dim != 3:
   print('ERROR: variable should be 1d or 3d: ' + var + ': ' + str(dim))
@@ -109,6 +114,7 @@ for var in all_vars:
  grid.cell_data[var] = D # add a mesh variable as cell data to ImageData
 
 # save all mesh variables to VTK XML format
+print('saving: ' + output_file_mesh)
 grid.save(output_file_mesh,binary=True)
 
 # create separate particle files for testing: works in VisIt
