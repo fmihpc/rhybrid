@@ -149,15 +149,83 @@ Real neutralDensityVenusOxygen(SimulationClasses& simClasses,Real x,Real y,Real 
    return (1.0 - (sza/M_PI))*n_day + (sza/M_PI)*n_night;
 }
 
-/*Real neutralDensityMercurySodiumExner20(SimulationClasses& simClasses,Real x,Real y,Real z) {
+// for neutralDensityMercurySodiumExner20
+Real expexp(Real x,Real y,Real z,Real r,Real Rp,Real n0,Real Hr,Real Htheta,Real lat_nmax,Real lon_nmax) {
+   const Real lat = atan2(z,sqrt(sqr(x) + sqr(y))); // latitude in radians
+   const Real lon = atan2(y,x); // longitude in radians
+   const Real dtheta = acos(sin(lat)*sin(lat_nmax) + cos(lat)*cos(lat_nmax)*cos(lon_nmax - lon));
+   const Real res = n0 * exp(-(r-Rp)/Hr) * exp(-sqr(dtheta/Htheta));
+   return res;
+}
+
+// neutral profile from: Exner+ (2020), Inﬂuence of Mercury's exosphere on the structure of the magnetosphere, J. Geophys. Res., 125, e2019JA027691, doi:10.1029/2019JA027691
+Real neutralDensityMercurySodiumExner20(SimulationClasses& simClasses,Real x,Real y,Real z) {
    const Real Rp = constants::DIST_MERCURY_RADIUS;
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
    if (r < Rp) { return 0.0; }
-   Real n = 0.0;
-   //for (size_t i=0;i<n0.size();i++) { n += n0[i]*exp(-(r-r0)/H0[i]); }
-   if (x < 0 && sqr(y) + sqr(z) < sqr(Rp)) { n *= 0.2; }
+   // surface density [m-3]
+   const Real n0_TD  = 8.86e9;
+   const Real n0_MIV = 7.84e6;
+   const Real n0_PSD = 4.06e10;
+   const Real n0_SP  = 5.67e6;
+
+   // ccale height [m]
+   const Real Hr_TD  = 100e3;
+   const Real Hr_MIV = 431e3;
+   const Real Hr_PSD = 232e3;
+   const Real Hr_SP  = 748e3;
+
+   // angular width
+   const Real Htheta_TD = 15*M_PI/180.0;
+   const Real Htheta_PSD = 20*M_PI/180.0;
+   const Real Htheta_SP_day = 15*M_PI/180.0;
+   const Real Htheta_SP_nigth = 10*M_PI/180.0;
+
+   // lat and lon of maximum density
+   const Real lat_nmax_TD = 0*M_PI/180.0;
+   const Real lon_nmax_TD = 0*M_PI/180.0;
+
+   const Real lat_nmax_PSD1 = 50*M_PI/180.0;
+   const Real lon_nmax_PSD1 = 0*M_PI/180.0;
+
+   const Real lat_nmax_PSD2 = -50*M_PI/180.0;
+   const Real lon_nmax_PSD2 = 0*M_PI/180.0;
+
+   const Real lat_nmax_SP_day1 = 80*M_PI/180.0;
+   const Real lon_nmax_SP_day1 = 0*M_PI/180.0;
+
+   const Real lat_nmax_SP_day2 = -80*M_PI/180.0;
+   const Real lon_nmax_SP_day2 = 0*M_PI/180.0;
+
+   const Real lat_nmax_SP_nigth1 = 15*M_PI/180.0;
+   const Real lon_nmax_SP_nigth1 = 180*M_PI/180.0;
+
+   const Real lat_nmax_SP_nigth2 = -15*M_PI/180.0;
+   const Real lon_nmax_SP_nigth2 = 180*M_PI/180.0;
+
+   // MIV
+   const Real n_miv = n0_MIV * exp(-(r-Rp)/Hr_MIV);
+
+   // TD
+   const Real n_td = expexp(x,y,z,r,Rp,n0_TD,Hr_TD,Htheta_TD,lat_nmax_TD,lon_nmax_TD);
+
+   // SP day 1 & 2
+   const Real n_sp_day1 = expexp(x,y,z,r,Rp,n0_SP,Hr_SP,Htheta_SP_day,lat_nmax_SP_day1,lon_nmax_SP_day1);
+   const Real n_sp_day2 = expexp(x,y,z,r,Rp,n0_SP,Hr_SP,Htheta_SP_day,lat_nmax_SP_day2,lon_nmax_SP_day2);
+
+   // SP nigth 1 & 2
+   const Real n_sp_nigth1 = expexp(x,y,z,r,Rp,n0_SP,Hr_SP,Htheta_SP_nigth,lat_nmax_SP_nigth1,lon_nmax_SP_nigth1);
+   const Real n_sp_nigth2 = expexp(x,y,z,r,Rp,n0_SP,Hr_SP,Htheta_SP_nigth,lat_nmax_SP_nigth2,lon_nmax_SP_nigth2);
+
+   // PSD 1 & 2
+   const Real n_psd1 = expexp(x,y,z,r,Rp,n0_PSD,Hr_PSD,Htheta_PSD,lat_nmax_PSD1,lon_nmax_PSD1);
+   const Real n_psd2 = expexp(x,y,z,r,Rp,n0_PSD,Hr_PSD,Htheta_PSD,lat_nmax_PSD2,lon_nmax_PSD2);
+
+   Real n = sqr(Rp/r)*(n_miv + n_td + n_sp_day1 + n_sp_day2 + n_sp_nigth1 + n_sp_nigth2 + n_psd1 + n_psd2);
+   // ionization is only 1/5 in the shadow
+   if ( x < 0 && ( (sqr(y) + sqr(z)) < sqr(Rp) ) ) { n *= 0.2; }
    return n;
-}*/
+}
 
 Real getNeutralDensity(SimulationClasses& simClasses,std::string name,Real x,Real y,Real z,NeutralProfileArgs a) {
    if (name.compare("ChamberlainH") == 0) {
@@ -178,9 +246,9 @@ Real getNeutralDensity(SimulationClasses& simClasses,std::string name,Real x,Rea
    else if (name.compare("VenusOxygen") == 0) {
       return neutralDensityVenusOxygen(simClasses,x,y,z,a.R_exobase,a.R_shadow);
    }
-   /*else if (name.compare("MercurySodiumExner20") == 0) {
+   else if (name.compare("MercurySodiumExner20") == 0) {
       return neutralDensityMercurySodiumExner20(simClasses,x,y,z);
-   }*/
+   }
    else {
       simClasses.logger << "(getNeutralDensity) ERROR: unknown name of an exospheric neutral density profile (" << name << ")" << std::endl << write;
       return -1.0;
