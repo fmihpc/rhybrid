@@ -149,6 +149,16 @@ Real neutralDensityVenusOxygen(SimulationClasses& simClasses,Real x,Real y,Real 
    return (1.0 - (sza/M_PI))*n_day + (sza/M_PI)*n_night;
 }
 
+/*Real neutralDensityMercurySodiumExner20(SimulationClasses& simClasses,Real x,Real y,Real z) {
+   const Real Rp = constants::DIST_MERCURY_RADIUS;
+   const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
+   if (r < Rp) { return 0.0; }
+   Real n = 0.0;
+   //for (size_t i=0;i<n0.size();i++) { n += n0[i]*exp(-(r-r0)/H0[i]); }
+   if (x < 0 && sqr(y) + sqr(z) < sqr(Rp)) { n *= 0.2; }
+   return n;
+}*/
+
 Real getNeutralDensity(SimulationClasses& simClasses,std::string name,Real x,Real y,Real z,NeutralProfileArgs a) {
    if (name.compare("ChamberlainH") == 0) {
       return neutralDensityChamberlainH(simClasses,x,y,z,a.r0,a.n0,a.H0,a.R_exobase,a.R_shadow);
@@ -168,6 +178,9 @@ Real getNeutralDensity(SimulationClasses& simClasses,std::string name,Real x,Rea
    else if (name.compare("VenusOxygen") == 0) {
       return neutralDensityVenusOxygen(simClasses,x,y,z,a.R_exobase,a.R_shadow);
    }
+   /*else if (name.compare("MercurySodiumExner20") == 0) {
+      return neutralDensityMercurySodiumExner20(simClasses,x,y,z);
+   }*/
    else {
       simClasses.logger << "(getNeutralDensity) ERROR: unknown name of an exospheric neutral density profile (" << name << ")" << std::endl << write;
       return -1.0;
