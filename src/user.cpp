@@ -331,9 +331,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    string magneticFieldProfileName = "";
 #endif
-   cr.add("Hybrid.log_interval","Logging interval of field and particle logs in units of time step [dt] (unsigned int)",0);
+   cr.add("Hybrid.log_interval","Logging interval of field and particle logs in units of time step [dt] (unsigned int)",UINT_MAX);
    cr.add("Hybrid.log_precision","Precision of floating point numbers in log file [-] (int)",10);
-   cr.add("Hybrid.main_log_diagnostics_interval","Logging interval of diagnostics quantities in the main log in units of time step [dt] (unsigned int)",0);
+   cr.add("Hybrid.main_log_diagnostics_interval","Logging interval of diagnostics quantities in the main log in units of time step [dt] (unsigned int)",UINT_MAX);
    cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
    cr.add("Hybrid.save_reduced_state_interval","Interval of reduced state saving in units of time step [dt] (unsigned int)",0);
@@ -367,8 +367,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.parse();
    unsigned int logPrecision = 10;
    cr.get("Hybrid.log_interval",Hybrid::logInterval);
+   if (Hybrid::logInterval == UINT_MAX) { Hybrid::logInterval = 50; } // default if not given in cfg file
    cr.get("Hybrid.log_precision",logPrecision);
    cr.get("Hybrid.main_log_diagnostics_interval",Hybrid::mainLogDiagnosticsInterval);
+   if (Hybrid::mainLogDiagnosticsInterval == UINT_MAX) { Hybrid::mainLogDiagnosticsInterval = 100; } // default if not given in cfg file
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
    cr.get("Hybrid.save_reduced_state_interval",Hybrid::saveReducedStateInterval);
