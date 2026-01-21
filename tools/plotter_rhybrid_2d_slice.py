@@ -92,6 +92,13 @@ showPlanet = (1,1,0) # if to show a planet in xz, xy, yz plane
 colormap1 = "inferno" # basic perceptually uniform colormap, https://matplotlib.org/stable/users/explain/colors/colormaps.html
 colormap2 = "seismic" # basic blue-white-red difference colormap
 
+# constants
+mp = 1.6726217160e-27
+mHe = 6.6464761621e-27
+mO = 2.6567625437e-26
+mO2 = 5.3135250873e-26
+mu0 = 1.25663706e-6
+
 # parameters to be plotted (=found in P_settings below and in VLSV file), filled automatically
 P = list()
 
@@ -109,51 +116,95 @@ P_settings = list()
 # filename: prefix of the saved PNG filename [e.g. "B"]
 # sigma: smoothing parameter (Standard deviation for Gaussian kernel) for the sp.ndimage.filters.gaussian_filter [e.g. -1 (not used) or 0.9 (some smoothing)]
 
-P_settings.append({"param":"cellB","type":"magnitude","str":"$|B|$ [nT]","log":1,"lims":(1e-9,1000e-9),"unit":1e-9,"colormap":colormap1,"filename":"B","sigma":-1})
-#P_settings.append({"param":"cellB","type":"xcomp","str":"$B_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bx","sigma":-1})
-#P_settings.append({"param":"cellB","type":"ycomp","str":"$B_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"By","sigma":-1})
-P_settings.append({"param":"cellB","type":"zcomp","str":"$B_z$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bz","sigma":-1})
+# Instantaneous parameters
 
-P_settings.append({"param":"cellBAverage","type":"magnitude","str":"$|B|$ [nT]","log":1,"lims":(1e-9,1000e-9),"unit":1e-9,"colormap":colormap1,"filename":"B","sigma":-1})
-#P_settings.append({"param":"cellBAverage","type":"xcomp","str":"$B_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bx","sigma":-1})
-#P_settings.append({"param":"cellBAverage","type":"ycomp","str":"$B_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"By","sigma":-1})
-P_settings.append({"param":"cellBAverage","type":"zcomp","str":"$B_z$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bz","sigma":-1})
+P_settings.append({"param":"cellB","type":"magnitude","str":"$|cellB|$ [nT]","log":1,"lims":(1e-9,1000e-9),"unit":1e-9,"colormap":colormap1,"filename":"B","sigma":-1})
+P_settings.append({"param":"cellB","type":"xcomp","str":"$cellB_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bx","sigma":-1})
+P_settings.append({"param":"cellB","type":"ycomp","str":"$cellB_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"By","sigma":-1})
+P_settings.append({"param":"cellB","type":"zcomp","str":"$cellB_z$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"Bz","sigma":-1})
 
-P_settings.append({"param":"n_H+sw_ave","type":"scalar","str":"$n$(H$^+_\mathrm{sw}$) [m$^{-3}$]","log":1,"lims":(1e4,1e9),"unit":1,"colormap":colormap1,"filename":"Hsw_n","sigma":-1})
-#P_settings.append({"param":"n_He++sw_ave","type":"scalar","str":"$n$(He$^{++}_\mathrm{sw}$) [m$^{-3}$]","log":1,"lims":(0.04*1e4,0.04*1e9),"unit":1,"colormap":colormap1,"filename":"Hesw_n","sigma":-1})
+P_settings.append({"param":"faceB","type":"magnitude","str":"$|faceB|$ [nT]","log":1,"lims":(1e-9,1000e-9),"unit":1e-9,"colormap":colormap1,"filename":"faceB","sigma":-1})
+P_settings.append({"param":"faceB","type":"xcomp","str":"$faceB_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"faceBx","sigma":-1})
+P_settings.append({"param":"faceB","type":"ycomp","str":"$faceB_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"faceBy","sigma":-1})
+P_settings.append({"param":"faceB","type":"zcomp","str":"$faceB_z$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"faceBz","sigma":-1})
 
-#P_settings.append({"param":"nodeE","type":"magnitude","str":"$|E|$ [V/m]","log":1,"lims":(0.0001,0.1),"unit":1,"colormap":colormap1,"filename":"E","sigma":-1})
-#P_settings.append({"param":"nodeE","type":"xcomp","str":"$E_x$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ex","sigma":-1})
-#P_settings.append({"param":"nodeE","type":"ycomp","str":"$E_y$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ey","sigma":-1})
-#P_settings.append({"param":"nodeE","type":"zcomp","str":"$E_z$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"Ez","sigma":-1})
+P_settings.append({"param":"n_H+sw","type":"scalar","str":"$n$(H$^{+}_\mathrm{sw}$) [m$^{-3}$]","log":1,"lims":(1e4,1e9),"unit":1,"colormap":colormap1,"filename":"Hsw_n","sigma":-1})
+P_settings.append({"param":"n_He++sw","type":"scalar","str":"$n$(He$^{++}_\mathrm{sw}$) [m$^{-3}$]","log":1,"lims":(0.04*1e4,0.04*1e9),"unit":1,"colormap":colormap1,"filename":"Hesw_n","sigma":-1})
+P_settings.append({"param":"n_Na+","type":"scalar","str":"$n$(Na$^{+}$) [m$^{-3}$]","log":1,"lims":(10,1e10),"unit":1,"colormap":colormap1,"filename":"Na_n","sigma":-1})
+P_settings.append({"param":"n_O+","type":"scalar","str":"$n$(O$^{+}$) [m$^{-3}$]","log":1,"lims":(1,1e7),"unit":1,"colormap":colormap1,"filename":"O_n","sigma":-1})
+P_settings.append({"param":"n_O2+","type":"scalar","str":"$n$(O$^{+}_\mathrm{2}$) [m$^{-3}$]","log":1,"lims":(1,1e7),"unit":1,"colormap":colormap1,"filename":"O2_n","sigma":-1})
+P_settings.append({"param":"n_H+planet","type":"scalar","str":"$n$(H$^{+}_\mathrm{planet}$) [m$^{-3}$]","log":1,"lims":(1,1e7),"unit":1,"colormap":colormap1,"filename":"Hplanet_n","sigma":-1})
 
-#P_settings.append({"param":"cellEp","type":"magnitude","str":"$|E_p|$ [V/m]","log":1,"lims":(1e-6,1e-3),"unit":1,"colormap":colormap1,"filename":"Ep","sigma":-1})
-#P_settings.append({"param":"cellEp","type":"xcomp","str":"$E_{p,x}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epx","sigma":-1})
-#P_settings.append({"param":"cellEp","type":"ycomp","str":"$E_{p,y}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epy","sigma":-1})
-#P_settings.append({"param":"cellEp","type":"zcomp","str":"$E_{p,z}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epz","sigma":-1})
+P_settings.append({"param":"nodeE","type":"magnitude","str":"$|E|$ [V/m]","log":1,"lims":(0.0001,0.1),"unit":1,"colormap":colormap1,"filename":"nodeE","sigma":-1})
+P_settings.append({"param":"nodeE","type":"xcomp","str":"$E_x$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"nodeEx","sigma":-1})
+P_settings.append({"param":"nodeE","type":"ycomp","str":"$E_y$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"nodeEy","sigma":-1})
+P_settings.append({"param":"nodeE","type":"zcomp","str":"$E_z$ [mV/m]","log":0,"lims":(-0.02,0.02),"unit":1e-3,"colormap":colormap2,"filename":"nodeEz","sigma":-1})
 
-#P_settings.append({"param":"nodeJ","type":"magnitude","str":"$|J|$ [A/m$^2$]","log":1,"lims":(1e-9,1e-6),"unit":1,"colormap":colormap1,"filename":"J","sigma":-1})
-#P_settings.append({"param":"nodeJ","type":"xcomp","str":"$J_x$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jx","sigma":-1})
-#P_settings.append({"param":"nodeJ","type":"ycomp","str":"$J_y$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jy","sigma":-1})
-#P_settings.append({"param":"nodeJ","type":"zcomp","str":"$J_z$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"Jz","sigma":-1})
+P_settings.append({"param":"cellEp","type":"magnitude","str":"$|E_p|$ [V/m]","log":1,"lims":(1e-6,1e-3),"unit":1,"colormap":colormap1,"filename":"Ep","sigma":-1})
+P_settings.append({"param":"cellEp","type":"xcomp","str":"$E_{p,x}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epx","sigma":-1})
+P_settings.append({"param":"cellEp","type":"ycomp","str":"$E_{p,y}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epy","sigma":-1})
+P_settings.append({"param":"cellEp","type":"zcomp","str":"$E_{p,z}$ [V/m]","log":0,"lims":(-2e-04,2e-04),"unit":1,"colormap":colormap2,"filename":"Epz","sigma":-1})
 
-#P_settings.append({"param":"cellUe","type":"magnitude","str":"$|U|(e^-)$ [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"e_U","sigma":-1})
-#P_settings.append({"param":"cellUe","type":"xcomp","str":"$U_x(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Ux","sigma":-1})
-#P_settings.append({"param":"cellUe","type":"ycomp","str":"$U_y(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Uy","sigma":-1})
-#P_settings.append({"param":"cellUe","type":"zcomp","str":"$U_z(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Uz","sigma":-1})
+P_settings.append({"param":"nodeJ","type":"magnitude","str":"$|J|$ [A/m$^2$]","log":1,"lims":(1e-9,1e-6),"unit":1,"colormap":colormap1,"filename":"nodeJ","sigma":-1})
+P_settings.append({"param":"nodeJ","type":"xcomp","str":"$J_x$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"nodeJx","sigma":-1})
+P_settings.append({"param":"nodeJ","type":"ycomp","str":"$J_y$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"nodeJy","sigma":-1})
+P_settings.append({"param":"nodeJ","type":"zcomp","str":"$J_z$ [A/m$^2$]","log":0,"lims":(-3e-7,3e-7),"unit":1,"colormap":colormap2,"filename":"nodeJz","sigma":-1})
 
-#P_settings.append({"param":"v_H+sw_ave","type":"magnitude","str":"$|U|$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hsw_U","sigma":-1})
-#P_settings.append({"param":"v_H+sw_ave","type":"xcomp","str":"$U_x$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Ux","sigma":-1})
-#P_settings.append({"param":"v_H+sw_ave","type":"ycomp","str":"$U_y$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Uy","sigma":-1})
-#P_settings.append({"param":"v_H+sw_ave","type":"zcomp","str":"$U_z$(H$^+_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Uz","sigma":-1})
+P_settings.append({"param":"cellUe","type":"magnitude","str":"$|U|(e^-)$ [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"e_U","sigma":-1})
+P_settings.append({"param":"cellUe","type":"xcomp","str":"$U_x(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Ux","sigma":-1})
+P_settings.append({"param":"cellUe","type":"ycomp","str":"$U_y(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Uy","sigma":-1})
+P_settings.append({"param":"cellUe","type":"zcomp","str":"$U_z(e^-)$ [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"e_Uz","sigma":-1})
 
-#P_settings.append({"param":"v_He++sw_ave","type":"magnitude","str":"$|U|$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hesw_U","sigma":-1})
-#P_settings.append({"param":"v_He++sw_ave","type":"xcomp","str":"$U_x$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Ux","sigma":-1})
-#P_settings.append({"param":"v_He++sw_ave","type":"ycomp","str":"$U_y$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Uy","sigma":-1})
-#P_settings.append({"param":"v_He++sw_ave","type":"zcomp","str":"$U_z$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Uz","sigma":-1})
+P_settings.append({"param":"v_H+sw","type":"magnitude","str":"$|U|$(H$^{+}_\mathrm{sw}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hsw_U","sigma":-1})
+P_settings.append({"param":"v_H+sw","type":"xcomp","str":"$U_x$(H$^{+}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Ux","sigma":-1})
+P_settings.append({"param":"v_H+sw","type":"ycomp","str":"$U_y$(H$^{+}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Uy","sigma":-1})
+P_settings.append({"param":"v_H+sw","type":"zcomp","str":"$U_z$(H$^{+}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_Uz","sigma":-1})
 
-P_settings.append({"param":"T_H+sw","type":"scalar","str":"$T$(H$^+_\mathrm{sw}$) [K]","log":1,"lims":(1e5,1e8),"unit":1,"colormap":colormap1,"filename":"Hsw_T","sigma":-1})
-#P_settings.append({"param":"T_He++sw","type":"scalar","str":"$T$(He$^{++}_\mathrm{sw}$) [K]","log":1,"lims":(3.5*1e5,3.5*1e8),"unit":1,"colormap":colormap1,"filename":"Hesw_T","sigma":-1})
+P_settings.append({"param":"v_He++sw","type":"magnitude","str":"$|U|$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hesw_U","sigma":-1})
+P_settings.append({"param":"v_He++sw","type":"xcomp","str":"$U_x$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Ux","sigma":-1})
+P_settings.append({"param":"v_He++sw","type":"ycomp","str":"$U_y$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Uy","sigma":-1})
+P_settings.append({"param":"v_He++sw","type":"zcomp","str":"$U_z$(He$^{++}_\mathrm{sw}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_Uz","sigma":-1})
+
+P_settings.append({"param":"v_Na+","type":"magnitude","str":"$|U|$(Na$^{+}$) [km/s]","log":0,"lims":(0,1000e3),"unit":1e3,"colormap":colormap1,"filename":"Na_U","sigma":-1})
+P_settings.append({"param":"v_Na+","type":"xcomp","str":"$U_x$(Na$^{+}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Na_Ux","sigma":-1})
+P_settings.append({"param":"v_Na+","type":"ycomp","str":"$U_y$(Na$^{+}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Na_Uy","sigma":-1})
+P_settings.append({"param":"v_Na+","type":"zcomp","str":"$U_z$(Na$^{+}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Na_Uz","sigma":-1})
+
+P_settings.append({"param":"T_H+sw","type":"scalar","str":"$T$(H$^{+}_\mathrm{sw}$) [K]","log":1,"lims":(1e5,1e8),"unit":1,"colormap":colormap1,"filename":"Hsw_T","sigma":-1})
+P_settings.append({"param":"T_He++sw","type":"scalar","str":"$T$(He$^{++}_\mathrm{sw}$) [K]","log":1,"lims":(3.5*1e5,3.5*1e8),"unit":1,"colormap":colormap1,"filename":"Hesw_T","sigma":-1})
+P_settings.append({"param":"T_Na+","type":"scalar","str":"$T$(Na$^{+}$) [K]","log":1,"lims":(1e4,1e7),"unit":1,"colormap":colormap1,"filename":"Na_T","sigma":-1})
+P_settings.append({"param":"T_O+","type":"scalar","str":"$T$(O$^{+}$) [K]","log":1,"lims":(1e4,1e7),"unit":1,"colormap":colormap1,"filename":"O_T","sigma":-1})
+P_settings.append({"param":"T_O2+","type":"scalar","str":"$T$(O$^{+}_\mathrm{2}$) [K]","log":1,"lims":(1e4,1e7),"unit":1,"colormap":colormap1,"filename":"O2_T","sigma":-1})
+P_settings.append({"param":"T_H+planet","type":"scalar","str":"$T$(H$^{+}_\mathrm{planet}$) [K]","log":1,"lims":(1e5,10e6),"unit":1,"colormap":colormap1,"filename":"Hplanet_T","sigma":-1})
+
+# Temporally averaged parameters
+
+P_settings.append({"param":"cellBAverage","type":"magnitude","str":"$|B|$ [nT]","log":1,"lims":(1e-9,1000e-9),"unit":1e-9,"colormap":colormap1,"filename":"B_ave_","sigma":-1})
+P_settings.append({"param":"cellBAverage","type":"xcomp","str":"$B_x$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"B_ave_x","sigma":-1})
+P_settings.append({"param":"cellBAverage","type":"ycomp","str":"$B_y$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"B_ave_y","sigma":-1})
+P_settings.append({"param":"cellBAverage","type":"zcomp","str":"$B_z$ [nT]","log":0,"lims":(-100e-9,100e-9),"unit":1e-9,"colormap":colormap2,"filename":"B_ave_z","sigma":-1})
+
+P_settings.append({"param":"n_H+sw_ave","type":"scalar","str":"$n$(H$^{+}_\mathrm{sw,ave}$) [m$^{-3}$]","log":1,"lims":(1e4,1e9),"unit":1,"colormap":colormap1,"filename":"Hsw_ave_n","sigma":-1})
+P_settings.append({"param":"n_He++sw_ave","type":"scalar","str":"$n$(He$^{++}_\mathrm{sw,ave}$) [m$^{-3}$]","log":1,"lims":(0.04*1e4,0.04*1e9),"unit":1,"colormap":colormap1,"filename":"Hesw_ave_n","sigma":-1})
+P_settings.append({"param":"n_Na+_ave","type":"scalar","str":"$n$(Na$^{+}_\mathrm{ave}$) [m$^{-3}$]","log":1,"lims":(10,1e10),"unit":1,"colormap":colormap1,"filename":"Na_ave_n","sigma":-1})
+P_settings.append({"param":"n_O+_ave","type":"scalar","str":"$n$(O$^{+}_\mathrm{sw,ave}$) [m$^{-3}$]","log":1,"lims":(1,1e7),"unit":1,"colormap":colormap1,"filename":"O_ave_n","sigma":-1})
+P_settings.append({"param":"n_O2+_ave","type":"scalar","str":"$n$(O$^{+}_\mathrm{2,ave}$) [m$^{-3}$]","log":1,"lims":(1,1e7),"unit":1,"colormap":colormap1,"filename":"O2_ave_n","sigma":-1})
+P_settings.append({"param":"n_H+planet_ave","type":"scalar","str":"$n$(H$^{+}_\mathrm{planet,ave}$) [m$^{-3}$]","log":1,"lims":(1,1e7),"unit":1,"colormap":colormap1,"filename":"Hplanet_ave_n","sigma":-1})
+
+P_settings.append({"param":"v_H+sw_ave","type":"magnitude","str":"$|U|$(H$^{+}_\mathrm{sw,ave}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hsw_ave_U","sigma":-1})
+P_settings.append({"param":"v_H+sw_ave","type":"xcomp","str":"$U_x$(H$^{+}_\mathrm{sw,ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_ave_Ux","sigma":-1})
+P_settings.append({"param":"v_H+sw_ave","type":"ycomp","str":"$U_y$(H$^{+}_\mathrm{sw,ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_ave_Uy","sigma":-1})
+P_settings.append({"param":"v_H+sw_ave","type":"zcomp","str":"$U_z$(H$^{+}_\mathrm{sw,ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hsw_ave_Uz","sigma":-1})
+
+P_settings.append({"param":"v_He++sw_ave","type":"magnitude","str":"$|U|$(He$^{++}_\mathrm{sw,ave}$) [km/s]","log":0,"lims":(0,700e3),"unit":1e3,"colormap":colormap1,"filename":"Hesw_ave_U","sigma":-1})
+P_settings.append({"param":"v_He++sw_ave","type":"xcomp","str":"$U_x$(He$^{++}_\mathrm{sw,ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_ave_Ux","sigma":-1})
+P_settings.append({"param":"v_He++sw_ave","type":"ycomp","str":"$U_y$(He$^{++}_\mathrm{sw,ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_ave_Uy","sigma":-1})
+P_settings.append({"param":"v_He++sw_ave","type":"zcomp","str":"$U_z$(He$^{++}_\mathrm{sw,ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Hesw_ave_Uz","sigma":-1})
+
+P_settings.append({"param":"v_Na+_ave","type":"magnitude","str":"$|U|$(Na$^{+}_\mathrm{ave}$) [km/s]","log":0,"lims":(0,1000e3),"unit":1e3,"colormap":colormap1,"filename":"Na_ave_U","sigma":-1})
+P_settings.append({"param":"v_Na+_ave","type":"xcomp","str":"$U_x$(Na$^{+}_\mathrm{ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Na_ave_Ux","sigma":-1})
+P_settings.append({"param":"v_Na+_ave","type":"ycomp","str":"$U_y$(Na$^{+}_\mathrm{ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Na_ave_Uy","sigma":-1})
+P_settings.append({"param":"v_Na+_ave","type":"zcomp","str":"$U_z$(Na$^{+}_\mathrm{ave}$) [km/s]","log":0,"lims":(-600e3,600e3),"unit":1e3,"colormap":colormap2,"filename":"Na_ave_Uz","sigma":-1})
 
 # check and convert command line arguments
 Ncores = -100
@@ -525,11 +576,38 @@ def plotPanel(fig,axes,ii_run,P_ii,runFolder,vlsvFileName,runStr,Rp,Rp_str,print
  elif(P_ii["type"] == "zcomp"):
   D_i = vr.read_variable_info(P_ii["param"])
   D = D_i.data[:,2]
- elif(P_ii["type"] == "nvO"): # example of a custom parameter type
+ elif(P_ii["type"] == "nvO"): # custom parameter: Venus O+ bulk flux
   nO_i = vr.read_variable_info("n_O+_ave")
   VO_i = vr.read_variable_info("v_O+_ave")
   VtotO = np.sqrt(VO_i.data[:,0]**2 + VO_i.data[:,1]**2 + VO_i.data[:,2]**2)
   D = nO_i.data * VtotO
+ elif(P_ii["type"] == "rho_m"): # custom parameter: Mars total ion mass density
+  nHpla_i = vr.read_variable_info("n_H+planet_ave")
+  nHsw_i  = vr.read_variable_info("n_H+sw_ave")
+  nHesw_i = vr.read_variable_info("n_He++sw_ave")
+  nO_i    = vr.read_variable_info("n_O+_ave")
+  nO2_i   = vr.read_variable_info("n_O2+_ave")
+  D = nHpla_i.data*mp + nHsw_i.data*mp + nHesw_i.data*mHe + nO_i.data*mO + nO2_i.data*mO2
+ elif(P_ii["type"] == "U_bulk"): # custom parameter: Mars plasma MHD bulk velocity (mass weighted)
+  nHpla_i = vr.read_variable_info("n_H+planet_ave")
+  nHsw_i  = vr.read_variable_info("n_H+sw_ave")
+  nHesw_i = vr.read_variable_info("n_He++sw_ave")
+  nO_i    = vr.read_variable_info("n_O+_ave")
+  nO2_i   = vr.read_variable_info("n_O2+_ave")
+  vHpla_i = vr.read_variable_info("v_H+planet_ave")
+  vHsw_i  = vr.read_variable_info("v_H+sw_ave")
+  vHesw_i = vr.read_variable_info("v_He++sw_ave")
+  vO_i    = vr.read_variable_info("v_O+_ave")
+  vO2_i   = vr.read_variable_info("v_O2+_ave")
+  nn = 0; Ux = vHpla_i.data[:,nn]*nHpla_i.data*mp + vHsw_i.data[:,nn]*nHsw_i.data*mp + vHesw_i.data[:,nn]*nHesw_i.data*mHe + vO_i.data[:,nn]*nO_i.data*mO + vO2_i.data[:,nn]*nO2_i.data*mO2
+  nn = 1; Uy = vHpla_i.data[:,nn]*nHpla_i.data*mp + vHsw_i.data[:,nn]*nHsw_i.data*mp + vHesw_i.data[:,nn]*nHesw_i.data*mHe + vO_i.data[:,nn]*nO_i.data*mO + vO2_i.data[:,nn]*nO2_i.data*mO2
+  nn = 2; Uz = vHpla_i.data[:,nn]*nHpla_i.data*mp + vHsw_i.data[:,nn]*nHsw_i.data*mp + vHesw_i.data[:,nn]*nHesw_i.data*mHe + vO_i.data[:,nn]*nO_i.data*mO + vO2_i.data[:,nn]*nO2_i.data*mO2
+  rho_m = nHpla_i.data*mp + nHsw_i.data*mp + nHesw_i.data*mHe + nO_i.data*mO + nO2_i.data*mO2
+  D = np.sqrt(Ux**2 + Uy**2 + Uz**2)/rho_m
+ elif(P_ii["type"] == "p_B"): # custom parameter: magnetic pressure
+  B_i = vr.read_variable_info("cellBAverage")
+  B2 = B_i.data[:,0]**2 + B_i.data[:,1]**2 + B_i.data[:,2]**2
+  D = B2/(2*mu0)
  else:
   print(HN + "ERROR: unknown parameter type: " + P_ii["type"])
   quit()
@@ -766,6 +844,12 @@ for var_ in all_vars:
    if P_settings[ii]["param"] == var_ and P_settings[ii]["type"] == "scalar":
     P.append({"param":var_,"type":"scalar","str":P_settings[ii]["str"],"log":P_settings[ii]["log"],"lims":P_settings[ii]["lims"],"unit":P_settings[ii]["unit"],"colormap":P_settings[ii]["colormap"],"filename":P_settings[ii]["filename"],"sigma":P_settings[ii]["sigma"]})
     break
+
+# add custom parameters manually
+P.append({"param":"nvO","type":"nvO","str":"$nU$(O$^{+}$) [m$^{-2}$ s$^{-1}$]","log":1,"lims":(1e6,1e11),"unit":1,"colormap":colormap1,"filename":"nvO","sigma":-1})
+P.append({"param":"rho_m","type":"rho_m","str":"$\\rho_m$ [$\mu$g/m$^{3}$]","log":1,"lims":(1e-21,1e-18),"unit":1e-6,"colormap":colormap1,"filename":"rho_m","sigma":-1})
+P.append({"param":"U_bulk","type":"U_bulk","str":"$U_\mathrm{bulk}$ [km/s]","log":0,"lims":(0,600e3),"unit":1e3,"colormap":colormap1,"filename":"U_bulk","sigma":-1})
+P.append({"param":"p_B","type":"p_B","str":"$p_B$ [Pa]","log":1,"lims":(1e-13,1e-10),"unit":1,"colormap":colormap1,"filename":"p_B","sigma":-1})
 
 # total number of parameters to be plotted (scalar + 3*vector)
 Nparams = len(P)
