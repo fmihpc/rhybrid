@@ -54,7 +54,30 @@ mkdir testrun
 cd testrun
 OMPI_MCA_io=^ompio mpirun -n 4 ../corsair_rhybrid --runconfig=${HOME}/bin/rhybrid/examples/mars.cfg
 
-# visualize results with Analysator
-PYTHONPATH=$PYTHONPATH:~/bin/analysator python ~/bin/rhybrid/tools/plotter_example_testrun.py
+# plot particle and field logs as PDF files
+PATH=${PATH}:~/bin/rhybrid/tools/ rhb_log2pdf_all.sh lin
+evince field.pdf pop*.pdf
+
+# use Analysator to study simulation outputs
+export PYTHONPATH=$PYTHONPATH:~/bin/analysator
+
+# visualisation
+python ~/bin/rhybrid/tools/plotter_example_testrun.py
 eog testrun.png
+
+# interpolate variables in selected points
+python ~/bin/rhybrid/tools/interpolate_points.py
+eog testrun_interpolate_points*.png
+
+# construct time series in a point
+python ~/bin/rhybrid/tools/create_time_series_point.py
+cat time_series_testrun01.dat
+
+# create a new file with derived parameters
+python ~/bin/rhybrid/tools/create_derived_parameters.py
+ls *derived*.vlsv
+
+# propagate test particles in E and B fiels from testrun
+python ~/bin/rhybrid/tools/trace_test_particle.py
+eog testrun_trace_test_particle_*.png
 

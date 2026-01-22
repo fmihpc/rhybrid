@@ -106,8 +106,8 @@ uint32_t Hybrid::Y_NEG_EXISTS;
 uint32_t Hybrid::Z_POS_EXISTS;
 uint32_t Hybrid::Z_NEG_EXISTS;
 
-unsigned int Hybrid::logInterval;
-unsigned int Hybrid::mainLogDiagnosticsInterval;
+unsigned int Hybrid::logInterval = UINT_MAX;
+unsigned int Hybrid::mainLogDiagnosticsInterval = UINT_MAX;
 bool Hybrid::includeInnerCellsInFieldLog;
 bool Hybrid::writeMainLogDiagnosticsAfterLogStep = true;
 unsigned int Hybrid::saveReducedStateInterval = 0;

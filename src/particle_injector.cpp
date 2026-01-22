@@ -224,9 +224,9 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::X] = xinj[s];
       particles[p].state[particle::Y] = yinj[s];
       particles[p].state[particle::Z] = zinj[s];
-      particles[p].state[particle::VX] = velocity[0] + vth*gaussrnd(*simClasses); // not exactly correct
-      particles[p].state[particle::VY] = velocity[1] + vth*gaussrnd(*simClasses); // should be replaced with
-      particles[p].state[particle::VZ] = velocity[2] + vth*gaussrnd(*simClasses); // derivgaussrnd
+      particles[p].state[particle::VX] = velocity[0] + vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VY] = velocity[1] + vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VZ] = velocity[2] + vth*gaussrnd(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
 /*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
