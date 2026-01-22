@@ -159,7 +159,9 @@ bool getInjectorParameters(ParticleInjectorBase* injBasePtr,InjectorParameters& 
 
 InjectorUniform::InjectorUniform(): ParticleInjectorBase() {
    initialized = false;
-   velocity[0] = velocity[1] = velocity[2] = U = T = vth = n = w = xmin = xmax = 0.0;
+   velocity[0] = velocity[1] = velocity[2] = U = T = vth = n = w;
+   xmin = ymin = zmin = -1e50;
+   xmax = ymax = zmax = +1e50;
    N_macroParticlesPerCell = -1.0;
 }
 
@@ -193,13 +195,20 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
    const Real* crd = getBlockCoordinateArray(*sim,*simClasses);
    const size_t b3 = 3*blockID;
    const Real xBlock = crd[b3+0];
+   const Real yBlock = crd[b3+1];
+   const Real zBlock = crd[b3+2];
    vector<Real> xinj,yinj,zinj;
    for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
       const Real xCell = (i+0.5)*Hybrid::dx;
       const Real yCell = (j+0.5)*Hybrid::dx;
       const Real zCell = (k+0.5)*Hybrid::dx;
       const Real xCellGlobal = xBlock + xCell;
-      if (xCellGlobal < xmin || xCellGlobal > xmax) { continue; }
+      const Real yCellGlobal = yBlock + yCell;
+      const Real zCellGlobal = zBlock + zCell;
+      if (xCellGlobal < xmin || xCellGlobal > xmax ||
+	  yCellGlobal < ymin || yCellGlobal > ymax ||
+	  zCellGlobal < zmin || zCellGlobal > zmax) { continue; }
+      //if (xCellGlobal < xmin || xCellGlobal > xmax || yCellGlobal < ymin) { continue; }
       const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell);
       //const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell*(1.5 + sin( 10.0*xCellGlobal/(sim->x_max - sim->x_min) ))); // RHBTESTS: init uniform population with sine wave in density
       if (N_injectCell <= 0) { continue; }
@@ -252,8 +261,12 @@ bool InjectorUniform::addConfigFileItems(ConfigReader& cr,const std::string& con
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
    cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell [#] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".xmin","Minimum x coordinate [m] (float).",(Real)-1.0e22);
-   cr.add(configRegionName+".xmax","Maximum x coordinate [m] (float).",(Real)+1.0e22);
+   cr.add(configRegionName+".xmin","Minimum x coordinate [m] (float).",(Real)(-1e50));
+   cr.add(configRegionName+".xmax","Maximum x coordinate [m] (float).",(Real)(+1e50));
+   cr.add(configRegionName+".ymin","Minimum y coordinate [m] (float).",(Real)(-1e50));
+   cr.add(configRegionName+".ymax","Maximum y coordinate [m] (float).",(Real)(+1e50));
+   cr.add(configRegionName+".zmin","Minimum z coordinate [m] (float).",(Real)(-1e50));
+   cr.add(configRegionName+".zmax","Maximum z coordinate [m] (float).",(Real)(+1e50));
    return true;
 }
 
@@ -269,6 +282,10 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
    cr.get(configRegionName+".xmin",xmin);
    cr.get(configRegionName+".xmax",xmax);
+   cr.get(configRegionName+".ymin",ymin);
+   cr.get(configRegionName+".ymax",ymax);
+   cr.get(configRegionName+".zmin",zmin);
+   cr.get(configRegionName+".zmax",zmax);
 
    // bulk velocity vector
      {
@@ -299,6 +316,14 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
       simClasses.logger << "(" << species->name << ") ERROR: xmin >= xmax" << endl << write;
       initialized = false;
    }
+   if (ymin >= ymax) {
+      simClasses.logger << "(" << species->name << ") ERROR: ymin >= ymax" << endl << write;
+      initialized = false;
+   }
+   if (zmin >= zmax) {
+      simClasses.logger << "(" << species->name << ") ERROR: zmin >= zmax" << endl << write;
+      initialized = false;
+   }
    simClasses.logger
      << "(" << species->name << ") velocity      = (" << velocity[0]/1e3 << "," << velocity[1]/1e3 << "," << velocity[2]/1e3 << ") km/s" << endl
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
@@ -308,7 +333,11 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
      << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticle weight    = " << w << endl
      << "(" << species->name << ") xmin = " << xmin/1e3 << " km" << endl
-     << "(" << species->name << ") xmax = " << xmax/1e3 << " km" << endl;
+     << "(" << species->name << ") xmax = " << xmax/1e3 << " km" << endl
+     << "(" << species->name << ") ymin = " << ymin/1e3 << " km" << endl
+     << "(" << species->name << ") ymax = " << ymax/1e3 << " km" << endl
+     << "(" << species->name << ") zmin = " << zmin/1e3 << " km" << endl
+     << "(" << species->name << ") zmax = " << zmax/1e3 << " km" << endl;
    return initialized;
 }
 

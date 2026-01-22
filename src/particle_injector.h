@@ -53,7 +53,7 @@ class InjectorUniform: public ParticleInjectorBase {
    Real N_macroParticlesPerCell;
    const Species* species;
    Real velocity[3];
-   Real U,T,vth,n,w,xmin,xmax;
+   Real U,T,vth,n,w,xmin,xmax,ymin,ymax,zmin,zmax;
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
