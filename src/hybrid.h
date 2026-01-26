@@ -245,6 +245,9 @@ struct Hybrid {
    static unsigned int mainLogDiagnosticsInterval;
    static bool writeMainLogDiagnosticsAfterLogStep;
    static bool includeInnerCellsInFieldLog;
+   static Real simDataIntervalIntegerOriginal;
+   static Real dataSaveAllTimestepsStartTime;
+   static Real dataSaveAllTimestepsEndTime;
    static unsigned int saveReducedStateInterval;
    static unsigned int saveReducedStateNstride;
    static bool saveReducedStateParticles;

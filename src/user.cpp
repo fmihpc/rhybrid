@@ -64,10 +64,16 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
        for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->applyBoundaryConditions() == false) { success = false; } }
        Hybrid::filterParticlesAfterRestartDone = true;
    }
-   // logging: main, field, particles
-   if (sim.atDataSaveStep == true) {
-
+   // write simulation state at all timesteps
+   if (Hybrid::dataSaveAllTimestepsStartTime >= 0 && Hybrid::dataSaveAllTimestepsEndTime > 0) {
+      if (sim.t >= Hybrid::dataSaveAllTimestepsStartTime && sim.t <= Hybrid::dataSaveAllTimestepsEndTime) {
+	 sim.dataIntervalInteger = 1;
+      }
+      else {
+	 sim.dataIntervalInteger = Hybrid::simDataIntervalIntegerOriginal;
+      }
    }
+   // logging: main, field, particles
    if (Hybrid::mainLogDiagnosticsInterval > 0) {
       if ((sim.timestep)%(Hybrid::mainLogDiagnosticsInterval) == 0.0) {
 	 Hybrid::writeMainLogDiagnosticsAfterLogStep = true;
@@ -336,6 +342,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.main_log_diagnostics_interval","Logging interval of diagnostics quantities in the main log in units of time step [dt] (unsigned int)",UINT_MAX);
    cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
+   cr.add("Hybrid.data_save_all_timesteps_t_start","Simulation time to set data_save_interval to 1 (saving simulation state at every timestep starts) (float)",-1.0);
+   cr.add("Hybrid.data_save_all_timesteps_t_end","Simulation time to set data_save_interval back to original (saving simulation state at every timestep ends) (float)",-1.0);
    cr.add("Hybrid.save_reduced_state_interval","Interval of reduced state saving in units of time step [dt] (unsigned int)",0);
    cr.add("Hybrid.save_reduced_state_Nstride","Write every Nstride'th cell in reduced state output (unsigned int)",10);
    cr.add("Hybrid.save_reduced_state_include_particles","Include particles in reduced state output [-] (bool)",false);
@@ -373,6 +381,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (Hybrid::mainLogDiagnosticsInterval == UINT_MAX) { Hybrid::mainLogDiagnosticsInterval = 100; } // default if not given in cfg file
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
+   cr.get("Hybrid.data_save_all_timesteps_t_start",Hybrid::dataSaveAllTimestepsStartTime);
+   cr.get("Hybrid.data_save_all_timesteps_t_end",Hybrid::dataSaveAllTimestepsEndTime);
    cr.get("Hybrid.save_reduced_state_interval",Hybrid::saveReducedStateInterval);
    cr.get("Hybrid.save_reduced_state_Nstride",Hybrid::saveReducedStateNstride);
    cr.get("Hybrid.save_reduced_state_include_particles",Hybrid::saveReducedStateParticles);
@@ -723,7 +733,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Quadrupole coefficient = " << Hybrid::coeffQuad << endl
      << "Dipole surface B = " << Hybrid::dipSurfB/1e-9 << " nT" << endl
      << "Dipole surface R = " << Hybrid::dipSurfR/1e3 << " km = " << Hybrid::dipSurfR/Hybrid::dx << " dx" << endl
-     << "Minimum R = " << sqrt(Hybrid::dipMinR2)/1e3 << " km = " << sqrt(Hybrid::dipMinR2)/Hybrid::dx << " dx" << endl 
+     << "Minimum R = " << sqrt(Hybrid::dipMinR2)/1e3 << " km = " << sqrt(Hybrid::dipMinR2)/Hybrid::dx << " dx" << endl
      << "x = " << Hybrid::xDip/1e3 << " km = " << Hybrid::xDip/Hybrid::dx << " dx" << endl
      << "y = " << Hybrid::yDip/1e3 << " km = " << Hybrid::yDip/Hybrid::dx << " dx" << endl
      << "z = " << Hybrid::zDip/1e3 << " km = " << Hybrid::zDip/Hybrid::dx << " dx" << endl
@@ -1236,11 +1246,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* detPleFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
    Hybrid::detParticleFileLineCnt = 0;
    vector<string> detParticleOrbitFiles;
-   cr.add("DetectorParticle.t_start","Simulation time to start particle detector recording (real)",-1);
-   cr.add("DetectorParticle.t_end","Simulation time to end particle detector recording (real)",-1);
+   cr.add("DetectorParticle.t_start","Simulation time to start particle detector recording (float)",-1);
+   cr.add("DetectorParticle.t_end","Simulation time to end particle detector recording (float)",-1);
    cr.add("DetectorParticle.record_impacting_particles","Record particles impacting the inner boundary [-] (bool)",false);
-   cr.add("DetectorParticle.max_detections","Maximum number of recorded particles by all detectors (real)",1e5);
-   cr.add("DetectorParticle.write_interval_timestep","Write interval of particle detector file in time steps (real)",10);
+   cr.add("DetectorParticle.max_detections","Maximum number of recorded particles by all detectors (float)",1e5);
+   cr.add("DetectorParticle.write_interval_timestep","Write interval of particle detector file in time steps (float)",10);
    cr.addComposed("DetectorParticle.orbitfile","Names of orbit file(s) for particle detectors (string)");
    cr.parse();
    cr.get("DetectorParticle.t_start",Hybrid::detParticleStartTime);
@@ -1285,10 +1295,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
    Hybrid::detBulkParamFileLineCnt = 0;
    vector<string> detBulkParamOrbitFiles;
-   cr.add("DetectorBulkParameter.t_start","Simulation time to start bulk parameter detector recording (real)",-1);
-   cr.add("DetectorBulkParameter.t_end","Simulation time to end bulk parameter detector recording (real)",-1);
-   cr.add("DetectorBulkParameter.max_detections","Maximum number of recorded bulk parameter values by all detectors (real)",1e5);
-   cr.add("DetectorBulkParameter.write_interval_timestep","Write interval of bulk parameter detector file in time steps (real)",10);
+   cr.add("DetectorBulkParameter.t_start","Simulation time to start bulk parameter detector recording (float)",-1);
+   cr.add("DetectorBulkParameter.t_end","Simulation time to end bulk parameter detector recording (float)",-1);
+   cr.add("DetectorBulkParameter.max_detections","Maximum number of recorded bulk parameter values by all detectors (float)",1e5);
+   cr.add("DetectorBulkParameter.write_interval_timestep","Write interval of bulk parameter detector file in time steps (float)",10);
    cr.addComposed("DetectorBulkParameter.orbitfile","Names of orbit file(s) for bulk parameter detector (string)");
    cr.parse();
    cr.get("DetectorBulkParameter.t_start",Hybrid::detBulkParamStartTime);
@@ -2527,12 +2537,33 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "minor store amount   = " << sim.restartMinorFileAmount << endl
      << "file name prefix     = " << sim.restartFilenamePrefix << endl
      << "do restart = " << sim.restarted << endl << endl;
-   
+
    simClasses.logger << "(SIMULATION STATE OUTPUT)" << endl;
    Real stateSaveInterval = 0.0;
    if (sim.dataIntervalIsTime == true) { stateSaveInterval = sim.dataIntervalFloat; }
    else { stateSaveInterval = static_cast<Real>(sim.dataIntervalInteger)*sim.dt; }
-   simClasses.logger << "Interval = " << stateSaveInterval << " s = " << stateSaveInterval/sim.dt << " dt" << endl << endl;
+   simClasses.logger << "Save interval of state files = " << stateSaveInterval << " s = " << stateSaveInterval/sim.dt << " dt" << endl;
+   if (Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
+      simClasses.logger << "WARNING: Hybrid.save_particles_Nstride should be > 0, setting as 10" << endl;
+      Hybrid::saveParticlesNstride = 10;
+   }
+   simClasses.logger
+     << "Include particles in state files = " << Hybrid::saveParticles << endl
+     << "Striding cells for particles with Nstride = " << Hybrid::saveParticlesNstride << endl;
+   Hybrid::simDataIntervalIntegerOriginal = sim.dataIntervalInteger;
+   if (Hybrid::dataSaveAllTimestepsStartTime > Hybrid::dataSaveAllTimestepsEndTime) {
+      simClasses.logger << "ERROR: should be: Hybrid.data_save_all_timesteps_t_start < Hybrid.data_save_all_timesteps_t_end (" << Hybrid::dataSaveAllTimestepsStartTime << ", " << Hybrid::dataSaveAllTimestepsEndTime << ")" << endl;
+      return false;
+   }
+   if (Hybrid::dataSaveAllTimestepsStartTime < 0 || Hybrid::dataSaveAllTimestepsEndTime <= 0) {
+      Hybrid::dataSaveAllTimestepsStartTime = -1;
+      Hybrid::dataSaveAllTimestepsEndTime = -1;
+   }
+   simClasses.logger
+     << "Starting time for saving states at all timesteps = " << Hybrid::dataSaveAllTimestepsStartTime << " s = " << Hybrid::dataSaveAllTimestepsStartTime/sim.dt << " dt" << endl
+     << "Ending time for saving states at all timesteps   = " << Hybrid::dataSaveAllTimestepsEndTime   << " s = " << Hybrid::dataSaveAllTimestepsEndTime/sim.dt   << " dt"  << endl
+     << "Number of states to be saved at all timesteps    = " << round((Hybrid::dataSaveAllTimestepsEndTime - Hybrid::dataSaveAllTimestepsStartTime)/sim.dt) << endl << endl;
+
    // process output parameter selection
    if (Hybrid::outputCellParams.size() > 0 && outputParams.length() > 0) {
       istringstream iss(outputParams);
@@ -2589,14 +2620,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 return false;
       }
    }
-   if (Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
-      simClasses.logger << "WARNING Hybrid.save_particles_Nstride should be > 0, setting as 10" << endl << endl;
-      Hybrid::saveParticlesNstride = 10;
-   }
-   simClasses.logger
-     << "Particles in state output:" << endl
-     << "Save particles = " << Hybrid::saveParticles << endl
-     << "Nstride        = " << Hybrid::saveParticlesNstride << " (include particles in every Nstride'th cell)" << endl << endl;
 
    simClasses.logger << "(REDUCED SIMULATION STATE OUTPUT)" << endl;
    if (Hybrid::saveReducedStateInterval > 0 && Hybrid::saveReducedStateNstride <= 0) {

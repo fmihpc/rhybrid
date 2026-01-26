@@ -260,7 +260,7 @@ bool InjectorUniform::addConfigFileItems(ConfigReader& cr,const std::string& con
    cr.add(configRegionName+".velocity","Bulk velocity vector (Ux,Uy,Uz) [m/s] (float,float,float).",string(""));
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell [#] (float).",(Real)-1.0);
    cr.add(configRegionName+".xmin","Minimum x coordinate [m] (float).",(Real)(-1e50));
    cr.add(configRegionName+".xmax","Maximum x coordinate [m] (float).",(Real)(+1e50));
    cr.add(configRegionName+".ymin","Minimum y coordinate [m] (float).",(Real)(-1e50));
@@ -491,7 +491,7 @@ bool InjectorAmbient::injectParticles(pargrid::CellID blockID,const Species& spe
 bool InjectorAmbient::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell [#] (float).",(Real)-1.0);
    return true;
 }
 
@@ -755,7 +755,7 @@ bool InjectorSolarWind::addConfigFileItems(ConfigReader& cr,const std::string& c
    cr.add(configRegionName+".velocity","Bulk velocity vector (Ux,Uy,Uz) [m/s] (float,float,float).",string(""));
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell in undisturbed solar wind [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell in undisturbed solar wind [#] (float).",(Real)-1.0);
    return true;
 }
 
@@ -955,7 +955,7 @@ bool InjectorFlow::addConfigFileItems(ConfigReader& cr,const std::string& config
    cr.add(configRegionName+".velocity","Bulk velocity vector (Ux,Uy,Uz) [m/s] (float,float,float).",string(""));
    cr.add(configRegionName+".density","Number density [m^-3] (float).",(Real)0.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell in undisturbed solar wind [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell in undisturbed solar wind [#] (float).",(Real)-1.0);
    cr.add(configRegionName+".inflow_boundaries","Outer boundaries (walls) from where the population is injected [+x/-x/+y/-y/+z/-z] (string).",string(""));
    return true;
 }
@@ -1160,12 +1160,12 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
 
 bool InjectorIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
    cr.add(configRegionName+".profile_name","Ionospheric emission profile name [-] (string)",string(""));
-   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (Real)",(Real)-1.0);
-   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (Real)",(Real)-1.0);
-   cr.add(configRegionName+".night","Night side emission factor [-] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (float)",(Real)-1.0);
+   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (float)",(Real)-1.0);
+   cr.add(configRegionName+".night","Night side emission factor [-] (float)",(Real)-1.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float)",(Real)0.0);
-   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (Real)",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (Real)",(Real)-1.0);
+   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (float)",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (float)",(Real)-1.0);
    return true;
 }
 
@@ -1476,12 +1476,12 @@ bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Sp
 }
 
 bool InjectorChapmanIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
-   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".night","Night side emission factor [-] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".emission_radius","Radius of the spherical emission shell [m] (float).",(Real)-1.0);
+   cr.add(configRegionName+".noon","Noon (dayside) emission factor [-] (float).",(Real)-1.0);
+   cr.add(configRegionName+".night","Night side emission factor [-] (float).",(Real)-1.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
-   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (float).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (float).",(Real)-1.0);
    return true;
 }
 
@@ -1704,16 +1704,16 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
 
 bool InjectorExosphere::addConfigFileItems(ConfigReader& cr,const std::string& configRegionName) {
    cr.add(configRegionName+".neutral_profile","Name of the neutral density profile (string).",string(""));
-   cr.add(configRegionName+".neutral_profile.r0","Chamberlain: r0 radius [m] (Real).",(Real)-1.0);
-   cr.addComposed(configRegionName+".neutral_profile.n0","Neutral profile: Number densities at r = r0 [m^-3] (Real vector).");
-   cr.addComposed(configRegionName+".neutral_profile.H0","Neutral profile: Scale heights at r = r0 [m] (Real vector).");
-   cr.addComposed(configRegionName+".neutral_profile.T0","Neutral profile: Temperature at r = r0 [K] (Real vector).");
-   cr.addComposed(configRegionName+".neutral_profile.k0","Neutral profile: Exponent at r = r0 [-] (Real vector).");
-   cr.add(configRegionName+".temperature","Temperature [K] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".exobase_radius","Radius of the exobase [m] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".shadow_radius","Radius of the shadow [m] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (Real).",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (Real).",(Real)-1.0);
+   cr.add(configRegionName+".neutral_profile.r0","Chamberlain: r0 radius [m] (float).",(Real)-1.0);
+   cr.addComposed(configRegionName+".neutral_profile.n0","Neutral profile: Number densities at r = r0 [m^-3] (float vector).");
+   cr.addComposed(configRegionName+".neutral_profile.H0","Neutral profile: Scale heights at r = r0 [m] (float vector).");
+   cr.addComposed(configRegionName+".neutral_profile.T0","Neutral profile: Temperature at r = r0 [K] (float vector).");
+   cr.addComposed(configRegionName+".neutral_profile.k0","Neutral profile: Exponent at r = r0 [-] (float vector).");
+   cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)-1.0);
+   cr.add(configRegionName+".exobase_radius","Radius of the exobase [m] (float).",(Real)-1.0);
+   cr.add(configRegionName+".shadow_radius","Radius of the shadow [m] (float).",(Real)-1.0);
+   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (float).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (float).",(Real)-1.0);
    return true;
 }
 
