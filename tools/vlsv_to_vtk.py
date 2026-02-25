@@ -95,6 +95,9 @@ grid.field_data["TIME"] = np.array([file_time], dtype=np.float64)
 # loop through all variables in VLSV file
 all_vars = vr.get_all_variables()
 for var in all_vars:
+ # skip cell flags for detectors
+ if "detector_flag_" in var:
+  continue
  print('reading variable: ' + var)
  dim = vr.read_variable_vectorsize(var) # get variable dimension
  if dim != 1 and dim != 3:
