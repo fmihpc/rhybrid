@@ -27,6 +27,11 @@
 
 using namespace std;
 
+// epsilon for cell boundaries
+const Real epsCell = 1.0e-4;
+// number of points for the Monte-Carlo integration within a cell (ionospheric and exospheric injectors)
+const size_t N_MC_points = 1000;
+
 /* \brief Probabilistic Real2int rounding
  *
  * probround(x) (x >= 0) gives either floor(x) or ceil(x), with probability
@@ -213,10 +218,9 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       //const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell*(1.5 + sin( 10.0*xCellGlobal/(sim->x_max - sim->x_min) ))); // RHBTESTS: init uniform population with sine wave in density
       if (N_injectCell <= 0) { continue; }
       for (int s = 0;s<N_injectCell;s++) {
-	 const Real eps = 1.0e-2;
-	 const Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 const Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 const Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
 	 xinj.push_back(x);
 	 yinj.push_back(y);
 	 zinj.push_back(z);
@@ -436,10 +440,9 @@ bool InjectorAmbient::injectParticles(pargrid::CellID blockID,const Species& spe
       const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell);
       if (N_injectCell <= 0) { continue; }
       for (int s = 0;s<N_injectCell;s++) {
-	 const Real eps = 1.0e-2;
-	 Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
 	 // place particles just at the cell boundary
 	 if      (wall == 0) { x = xCell - 0.5*Hybrid::dx; }
 	 else if (wall == 1) { x = xCell + 0.5*Hybrid::dx; }
@@ -1103,10 +1106,9 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
       const Real yCell = (j+0.5)*Hybrid::dx;
       const Real zCell = (k+0.5)*Hybrid::dx;
       for (int s = 0;s<N_injectCell;s++) {
-	 const Real eps = 1.0e-2;
-	 const Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 const Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 const Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
 	 xinj.push_back(x);
 	 yinj.push_back(y);
 	 zinj.push_back(z);
@@ -1242,13 +1244,14 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 	 const Real xCellMax = xCell + 0.5*Hybrid::dx;
 	 const Real yCellMax = yCell + 0.5*Hybrid::dx;
 	 const Real zCellMax = zCell + 0.5*Hybrid::dx;
-	 // generate N random points inside each cell
+	 // use Monte-Carlo method to estimate how much of the
+	 // spherical emission surface area (r = R) is within
+	 // the volume of each cell
 	 Real N_inside = 0;
-	 for (int s = 0;s<1000;s++) {
-	    const Real eps = 1.0e-2;
-	    Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
-	    Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
-	    Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+	 for (size_t s = 0;s<N_MC_points;s++) {
+	    Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+	    Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+	    Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
 	    // project points on a shell r = R
 	    const Real norm = R/sqrt(sqr(x) + sqr(y) + sqr(z));
 	    x *= norm;
@@ -1264,11 +1267,8 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
             const Real rr = sqrt(sqr(xCell) + sqr(yCell) + sqr(zCell));
             const Real sza = acos(xCell/rr);
             Real a = 0.0;
-            if (sza < M_PI/2) {
-               a = noonFactor + (nightFactor - noonFactor) * ( 1 - cos(sza) );
-            } else {
-               a = nightFactor;
-            }
+            if (sza < M_PI/2) { a = noonFactor + (nightFactor - noonFactor) * ( 1 - cos(sza) ); }
+	    else { a = nightFactor; }
             N_inside *= a;
          }
          // dayside: constant and nightside: constant
@@ -1276,11 +1276,8 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
             const Real rr = sqrt(sqr(xCell) + sqr(yCell) + sqr(zCell));
             const Real sza = acos(xCell/rr);
             Real a = 0.0;
-            if (sza < M_PI/2) {
-               a = noonFactor;
-            } else {
-               a = nightFactor;
-            }
+            if (sza < M_PI/2) { a = noonFactor; }
+	    else { a = nightFactor; }
             N_inside *= a;
          }
 	 // constant everywhere
@@ -1308,11 +1305,8 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
             const Real sza = acos(x/rr);
             const Real colat = fabs(M_PI/2.0 - sza);
             Real a = 0.0;
-            if (colat <= cap) {
-               a = 1.0;
-            } else {
-               a = 0.0;
-            }
+            if (colat <= cap) { a = 1.0; }
+	    else { a = 0.0; }
             N_inside *= a;
          }
 	 else {
@@ -1335,9 +1329,7 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
 	 if (N_insideGlobal > 0.0 && N_insideSum > 0.0)  {
 	    cellIonosphere[nIono] = N_macroParticlesPerDt*cellIonosphere[nIono]/N_insideGlobal;
 	 }
-	 else {
-	    cellIonosphere[nIono] = 0.0;
-	 }
+	 else { cellIonosphere[nIono] = 0.0; }
       }
    }
    return initialized;
@@ -1400,32 +1392,26 @@ bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Sp
       const Real yCell = crd[b3+1] +(j+0.5)*Hybrid::dx;
       const Real zCell = crd[b3+2] +(k+0.5)*Hybrid::dx;
       for (int s = 0;s<N_injectCell;s++) {
-	 const Real eps = 1.0e-2;
-	 const Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 const Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 const Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
          Real r = sqrt(sqr(x)+ sqr(y)+sqr(z));
          Real sza = acos(x/r);
          Real a =0;
-         if (sza < M_PI/2) {
-	    a = noonFactor + (nightFactor - noonFactor) * ( 1-cos(sza) );
-         } else {
-	    a = nightFactor;
-         }
+         if (sza < M_PI/2) { a = noonFactor + (nightFactor - noonFactor) * ( 1-cos(sza) ); }
+	 else { a = nightFactor; }
          Real g = constants::GRAVITY*constants::MASS_MARS/sqr(constants::DIST_MARS_RADIUS);
          Real H = (constants::BOLTZMANN*T)/(species.m*g);
          Real h_prime = (r-R)/H-log(1.0/a);
          Real a0 = a*exp(1-h_prime-exp(-1*h_prime));
          Real a1 = simClasses->random.uniform();
          //simClasses->logger<<"Injecting:"<<N_injectCell<<"," << a0<<", "<<a<<","<<h_prime <<sza<<endl<<write; 
-         if (a1<a0){
+         if (a1 < a0){
 	    xinj.push_back(x);
 	    yinj.push_back(y);
 	    zinj.push_back(z);
          }
-         else {
-             s--;
-         }
+         else { s--; }
       }
    }
 
@@ -1543,35 +1529,27 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
       	 const Real xCell = crd[b3+0] + (i+0.5)*Hybrid::dx;
       	 const Real yCell = crd[b3+1] + (j+0.5)*Hybrid::dx;
       	 const Real zCell = crd[b3+2] + (k+0.5)*Hybrid::dx;
-      	 // generate N random points inside each cell
+	 // use Monte-Carlo method to estimate how much of the
+	 // spherical emission surface area (r = R) is within
+	 // the volume of each cell
       	 Real N_inside = 0;
-      	 for (int s = 0;s<2000;s++) {
-      	   const Real eps = 1.0e-2;
-      	   Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
-      	   Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
-      	   Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses.random.uniform()-0.5);
-
-
-
+      	 for (size_t s = 0;s<N_MC_points;s++) {
+	    Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+	    Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+	    Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
             Real a = 0;
             Real r = sqrt(sqr(x)+ sqr(y)+sqr(z));
             Real sza = acos(x/r);
-            if (sza < M_PI/2) {
-                a = noonFactor + (nightFactor - noonFactor) * ( 1-cos(sza) );
-            } else {
-                a = nightFactor;
-            }
-
+            if (sza < M_PI/2) { a = noonFactor + (nightFactor - noonFactor) * ( 1-cos(sza) ); }
+	    else { a = nightFactor; }
             Real g = constants::GRAVITY*constants::MASS_MARS/sqr(constants::DIST_MARS_RADIUS);
             Real H = (constants::BOLTZMANN*150)/(species->m*g);
             Real h_prime = (r-R)/H-log(1.0/a);
             Real a0 = a*exp(1-h_prime-exp(-1*h_prime));
             Real a1 = simClasses.random.uniform();
-            if (a1<a0){
-                N_inside++;
-            }
-      	}
-         if (N_inside <10){ N_inside = 0;}
+            if (a1 < a0){ N_inside++; }
+	 }
+         if (N_inside < 10){ N_inside = 0;}
          N_insideSum += N_inside;
          cellIonosphere[nIono] = N_inside;
       }
@@ -1587,9 +1565,7 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
 	 if (N_insideGlobal > 0.0 && N_insideSum > 0.0)  {
 	    cellIonosphere[nIono] = N_macroParticlesPerDt*cellIonosphere[nIono]/N_insideGlobal;
 	 }
-	 else {
-	    cellIonosphere[nIono] = 0.0;
-	 }
+	 else { cellIonosphere[nIono] = 0.0; }
       }
    }
    return initialized;
@@ -1659,10 +1635,9 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       const Real yCell = (j+0.5)*Hybrid::dx;
       const Real zCell = (k+0.5)*Hybrid::dx;
       for (int s = 0;s<N_injectCell;s++) {
-	 const Real eps = 1.0e-2;
-	 const Real x = xCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 const Real y = yCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
-	 const Real z = zCell + (1.0-eps)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 const Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
 	 xinj.push_back(x);
 	 yinj.push_back(y);
 	 zinj.push_back(z);
@@ -1810,7 +1785,17 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
 	 a.k0 = k0;
 	 a.R_exobase = R_exobase;
 	 a.R_shadow = R_shadow;
-	 cellExosphere[nExo] = getNeutralDensity(simClasses,neutralProfileName,xCell,yCell,zCell,a)*Hybrid::dV;
+	 // use Monte-Carlo method to estimate average neutral density within a cell
+	 Real averageNeutralDensity = 0.0;
+	 for (size_t s = 0;s<N_MC_points;s++) {
+	    Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+	    Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+	    Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
+	    averageNeutralDensity += getNeutralDensity(simClasses,neutralProfileName,x,y,z,a);
+	 }
+	 averageNeutralDensity /= N_MC_points;
+	 cellExosphere[nExo] = averageNeutralDensity*Hybrid::dV;
+	 //cellExosphere[nExo] = getNeutralDensity(simClasses,neutralProfileName,xCell,yCell,zCell,a)*Hybrid::dV;
 	 if (cellExosphere[nExo] < 0.0) {
 	    simClasses.logger << "(" << species->name << ") ERROR: negative neutral density at (x,y,z) =  (" << xCell/Hybrid::R_object << "," << yCell/Hybrid::R_object << "," << zCell/Hybrid::R_object << ") (" << cellExosphere[nExo] << ")" << endl << write;
 	    initialized = false;
