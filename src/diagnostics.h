@@ -304,9 +304,9 @@ void logCalcField(Simulation& sim,SimulationClasses& simClasses,LogDataField& lo
    logDataField.sumCellE2 = 0.0;
    // spatial, temporal and velocity scales
    logDataField.minInerLengthElectron = std::numeric_limits<Real>::max();
-   logDataField.maxInerLengthElectron = std::numeric_limits<Real>::min();
+   logDataField.maxInerLengthElectron = std::numeric_limits<Real>::lowest();
    logDataField.minInerLengthProton = std::numeric_limits<Real>::max();
-   logDataField.maxInerLengthProton = std::numeric_limits<Real>::min();
+   logDataField.maxInerLengthProton = std::numeric_limits<Real>::lowest();
    logDataField.minTLarmor = std::numeric_limits<Real>::max();
    logDataField.maxVAlfven = 0.0;
    logDataField.maxUe = 0.0;

@@ -1712,7 +1712,8 @@ bool InjectorExosphere::addConfigFileItems(ConfigReader& cr,const std::string& c
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)-1.0);
    cr.add(configRegionName+".exobase_radius","Radius of the exobase [m] (float).",(Real)-1.0);
    cr.add(configRegionName+".shadow_radius","Radius of the shadow [m] (float).",(Real)-1.0);
-   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (float).",(Real)-1.0);
+   cr.add(configRegionName+".ionization_rate","Ionization rate of the neutral profile [1/s] (negative values are considered as variable non-existing) (float).",(Real)-1.0);
+   cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (negative value are considered as variable non-existing) (float).",(Real)-1.0);
    cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (float).",(Real)-1.0);
    return true;
 }
@@ -1721,7 +1722,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
    this->type = "exosphere";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
-   Real totalRate = 0.0;
+   Real ionizationRate = -1.0, totalRate = -1.0;
    cr.parse();
    cr.get(configRegionName+".neutral_profile",neutralProfileName);
    cr.get(configRegionName+".neutral_profile.r0",r0);
@@ -1732,30 +1733,65 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".exobase_radius",R_exobase);
    cr.get(configRegionName+".shadow_radius",R_shadow);
+   cr.get(configRegionName+".ionization_rate",ionizationRate);
    cr.get(configRegionName+".total_production_rate",totalRate);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+
+   // check only ionization rate OR total production rate is given
+   bool ionizationRateGiven = false;
+   // neither is given
+   if (ionizationRate < 0.0 && totalRate < 0.0) {
+      simClasses.logger << "(" << species->name << ") ERROR: ionization_rate OR total_production_rate should be given" << endl;
+      initialized = false;
+      return false;
+   }
+   // only ionization rate given
+   else if (ionizationRate >= 0.0 && totalRate < 0.0) {
+      if (ionizationRate < 0.0) {
+	 simClasses.logger << "(" << species->name << ") ERROR: ionization_rate should be non-negative (" << ionizationRate << ")" << endl;
+	 initialized = false;
+	 return false;
+      }
+      ionizationRateGiven = true;
+      totalRate = 0.0;
+   }
+   // only total production rate given
+   else if (ionizationRate < 0.0 && totalRate >= 0.0) {
+      if (totalRate < 0.0) {
+	 simClasses.logger << "(" << species->name << ") ERROR: total_production_rate should be non-negative (" << totalRate << ")" << endl;
+	 initialized = false;
+	 return false;
+      }
+      ionizationRateGiven = false;
+      ionizationRate = 0.0;
+   }
+   // both given
+   else {
+      simClasses.logger << "(" << species->name << ") ERROR: only ionization_rate OR total_production_rate should be given" << endl;
+      initialized = false;
+      return false;
+   }
+
+   // number of macroparticles produced per timestep
    if (Hybrid::swMacroParticlesCellPerDt > 0.0) {
       N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
    }
    else {
-      simClasses.logger
-        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl;
+      simClasses.logger << "(" << species->name << ") WARNING: No solar wind macroparticles per cell per dt rate found, assuming 100" << endl;
       N_macroParticlesPerDt = N_macroParticlesPerCell*100;
    }
-   if (N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
-      w = totalRate*sim.dt/N_macroParticlesPerDt;
-   }
-   else {
-      N_macroParticlesPerDt = totalRate = w = 0.0;
-   }
+   // thermal speed
    if (T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
+
+   // increase counter of exospheric particle populations
    static unsigned int exoPopCnt = 0;
    N_exoPop = exoPopCnt;
    exoPopCnt++;
 
+   // calculate neutral density in each grid cell
    Real* cellExosphere = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellExosphereID);
-   Real sumThisProcess = 0.0;
+   Real sumExoNeutralsThisProcess = 0.0;
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
       const Real* crd = getBlockCoordinateArray(sim,simClasses);
       const size_t b3 = 3*b;
@@ -1776,25 +1812,57 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
 	 a.R_shadow = R_shadow;
 	 cellExosphere[nExo] = getNeutralDensity(simClasses,neutralProfileName,xCell,yCell,zCell,a)*Hybrid::dV;
 	 if (cellExosphere[nExo] < 0.0) {
-	    simClasses.logger << "(" << species->name << ") ERROR: Neutral profile init failed" << endl << write;
+	    simClasses.logger << "(" << species->name << ") ERROR: negative neutral density at (x,y,z) =  (" << xCell/Hybrid::R_object << "," << yCell/Hybrid::R_object << "," << zCell/Hybrid::R_object << ") (" << cellExosphere[nExo] << ")" << endl << write;
 	    initialized = false;
-	    goto break_for;
+	    return false;
 	 }
-	 sumThisProcess += cellExosphere[nExo];
+	 sumExoNeutralsThisProcess += cellExosphere[nExo];
       }
    }
-break_for:
-   Real sumGlobal = 0.0;
-   MPI_Reduce(&sumThisProcess,&sumGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-   MPI_Bcast(&sumGlobal,1,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-   const Real Ntot = sumGlobal;
-   const Real ionizationRate = totalRate/Ntot;
+
+   // sum total number of neutrals in the simulation box
+   Real sumExoNeutralsGlobal = 0.0;
+   MPI_Reduce(&sumExoNeutralsThisProcess,&sumExoNeutralsGlobal,1,MPI_Type<Real>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
+   MPI_Bcast(&sumExoNeutralsGlobal,1,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
+
+   if (N_macroParticlesPerDt <= 0.0) {
+      simClasses.logger << "(" << species->name << ") ERROR: number of injected macroparticles per timestep non-positive (" << N_macroParticlesPerDt << ")" << endl << write;
+      initialized = false;
+      return false;
+   }
+   if (sumExoNeutralsGlobal <= 0.0) {
+      simClasses.logger << "(" << species->name << ") ERROR: total number of neutrals non-positive (" << sumExoNeutralsGlobal << ")" << endl << write;
+      initialized = false;
+      return false;
+   }
+
+   if (ionizationRateGiven == true) { // ionization rate given: determine total global production rate
+      totalRate = sumExoNeutralsGlobal*ionizationRate;
+   }
+   else { // total rate given: determine ionization rate
+      ionizationRate = totalRate/sumExoNeutralsGlobal;
+   }
+   // double checks
+   if (totalRate <= 0.0) {
+      simClasses.logger << "(" << species->name << ") ERROR total production rate should be positive (" << totalRate << ")" << endl << write;
+      initialized = false;
+      return false;
+   }
+   if (ionizationRate < 0.0) {
+      simClasses.logger << "(" << species->name << ") ERROR: ionization_rate should be non-negative (" << ionizationRate << ")" << endl;
+      initialized = false;
+      return false;
+   }
+   // normalize cellExosphere from pure neutral density to the number of exospheric ion macroparticles injected in a cell per dt
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
       for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const size_t nExo = n*Hybrid::N_exospherePopulations + N_exoPop;
 	 cellExosphere[nExo] = N_macroParticlesPerDt*cellExosphere[nExo]*ionizationRate/totalRate; }
    }
+   // determine particle weight
+   w = totalRate*sim.dt/N_macroParticlesPerDt;
+   // write population information in the main log
    simClasses.logger
      << "(" << species->name << ") neutral profile     = " << neutralProfileName << endl
      << "(" << species->name << ") neutral profile: r0 = " << radiusToString(r0) << endl
@@ -1819,7 +1887,7 @@ break_for:
      << "(" << species->name << ") thermal speed  = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") exobase radius = " << radiusToString(R_exobase) << endl
      << "(" << species->name << ") shadow radius  = " << radiusToString(R_shadow)  << endl
-     << "(" << species->name << ") total number of neutrals  = " << Ntot << endl
+     << "(" << species->name << ") total number of neutrals  = " << sumExoNeutralsGlobal << endl
      << "(" << species->name << ") ionization rate           = " << ionizationRate << " 1/s" << endl
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
