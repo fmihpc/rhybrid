@@ -177,7 +177,7 @@ class InjectorExosphere: public ParticleInjectorBase {
    const Species* species;
    unsigned int N_exoPop;
    std::string neutralProfileName;
-   Real N_macroParticlesPerCell,N_macroParticlesPerDt,T,vth,w,r0,R_exobase,R_shadow;
+   Real N_macroParticlesPerCell,N_macroParticlesPerDt,T,vth,w,r0,R_exobase,R2_exobase,R_shadow,R2_shadow;
    std::vector<Real> n0,H0,T0,k0;
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };

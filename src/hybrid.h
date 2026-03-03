@@ -32,7 +32,9 @@
 
 template<class T> T sqr(const T& x) { return x*x; }
 template<class T> T cube(const T& x) { return x*x*x; }
-template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type vecsqr(const T& x) { return sqr(x[0])+sqr(x[1])+sqr(x[2]); }
+template<class T> T vecsqr(const T& x,const T& y) { return sqr(x) + sqr(y); }
+template<class T> T vecsqr(const T& x,const T& y,const T& z) { return sqr(x) + sqr(y) + sqr(z); }
+template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type vecsqr(const T& x) { return sqr(x[0]) + sqr(x[1]) + sqr(x[2]); }
 template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type normvec(const T& x) { using std::sqrt; return sqrt(vecsqr(x)); }
 
 // convert Real to string with given precicion

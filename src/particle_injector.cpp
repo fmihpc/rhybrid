@@ -1590,7 +1590,7 @@ InjectorExosphere::InjectorExosphere(): ParticleInjectorBase() {
    neutralProfileName = "";
    N_macroParticlesPerCell = -1.0;
    N_macroParticlesPerDt = -1.0;
-   T = vth = w = r0 = R_exobase = R_shadow = 0.0;
+   T = vth = w = r0 = R_exobase = R2_exobase = R_shadow = R2_shadow = 0.0;
    n0.clear();
    H0.clear();
    T0.clear();
@@ -1638,6 +1638,8 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
 	 const Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
 	 const Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
 	 const Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses->random.uniform()-0.5);
+	 //const Real r2 = vecsqr3(x,y,z);
+	 //if ( r2 < R2_exobase ) { continue; } // no injection inside the exobase
 	 xinj.push_back(x);
 	 yinj.push_back(y);
 	 zinj.push_back(z);
@@ -1688,6 +1690,7 @@ bool InjectorExosphere::addConfigFileItems(ConfigReader& cr,const std::string& c
    cr.add(configRegionName+".exobase_radius","Radius of the exobase [m] (float).",(Real)-1.0);
    cr.add(configRegionName+".shadow_radius","Radius of the shadow [m] (float).",(Real)-1.0);
    cr.add(configRegionName+".ionization_rate","Ionization rate of the neutral profile [1/s] (negative values are considered as variable non-existing) (float).",(Real)-1.0);
+   cr.add(configRegionName+".ionization_factor_shadow","Ionization rate in the shadow is: ionization_rate * ionization_factor_shadow [-] (float).",(Real)0.0);
    cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (negative value are considered as variable non-existing) (float).",(Real)-1.0);
    cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (float).",(Real)-1.0);
    return true;
@@ -1697,7 +1700,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    initialized = ParticleInjectorBase::initialize(sim,simClasses,cr,configRegionName,plist);
    this->type = "exosphere";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
-   Real ionizationRate = -1.0, totalRate = -1.0;
+   Real ionizationRate = -1.0, ionizationFactorShadow = 0.0, totalRate = -1.0;
    cr.parse();
    cr.get(configRegionName+".neutral_profile",neutralProfileName);
    cr.get(configRegionName+".neutral_profile.r0",r0);
@@ -1709,8 +1712,24 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    cr.get(configRegionName+".exobase_radius",R_exobase);
    cr.get(configRegionName+".shadow_radius",R_shadow);
    cr.get(configRegionName+".ionization_rate",ionizationRate);
+   cr.get(configRegionName+".ionization_factor_shadow",ionizationFactorShadow);
    cr.get(configRegionName+".total_production_rate",totalRate);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+
+   // thermal speed
+   if (T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
+   else { vth = 0.0; }
+
+   if (R_exobase < 0.0) {
+      simClasses.logger << "(" << species->name << ") WARNING: exobase_radius negative, setting as zero (" << R_exobase << ")" << endl;
+      R_exobase = R2_exobase = 0.0;
+   }
+   else { R2_exobase = sqr(R_exobase); }
+   if (R_shadow < 0.0) {
+      simClasses.logger << "(" << species->name << ") WARNING: shadow_radius negative, setting as zero (" << R_shadow << ")" << endl;
+      R_shadow = R2_shadow = 0.0;
+   }
+   else { R2_shadow = sqr(R_shadow); }
 
    // check only ionization rate OR total production rate is given
    bool ionizationRateGiven = false;
@@ -1746,7 +1765,10 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
       initialized = false;
       return false;
    }
-
+   if (ionizationFactorShadow < 0.0) {
+      simClasses.logger << "(" << species->name << ") WARNING: ionization_factor_shadow negative, setting as zero (" << ionizationFactorShadow << ")" << endl;
+      ionizationFactorShadow = 0.0;
+   }
    // number of macroparticles produced per timestep
    if (Hybrid::swMacroParticlesCellPerDt > 0.0) {
       N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
@@ -1755,9 +1777,6 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
       simClasses.logger << "(" << species->name << ") WARNING: No solar wind macroparticles per cell per dt rate found, assuming 100" << endl;
       N_macroParticlesPerDt = N_macroParticlesPerCell*100;
    }
-   // thermal speed
-   if (T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
-   else { vth = 0.0; }
 
    // increase counter of exospheric particle populations
    static unsigned int exoPopCnt = 0;
@@ -1783,19 +1802,19 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
 	 a.H0 = H0;
 	 a.T0 = T0;
 	 a.k0 = k0;
-	 a.R_exobase = R_exobase;
-	 a.R_shadow = R_shadow;
 	 // use Monte-Carlo method to estimate average neutral density within a cell
 	 Real averageNeutralDensity = 0.0;
 	 for (size_t s = 0;s<N_MC_points;s++) {
 	    Real x = xCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
 	    Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
 	    Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
-	    averageNeutralDensity += getNeutralDensity(simClasses,neutralProfileName,x,y,z,a);
+	    if (vecsqr(x,y,z) < R2_exobase) { continue; } // density below the exobase is zero
+	    Real densityFactor = 1.0;
+	    if ( (x < 0) && (vecsqr(y,z) < R2_shadow) ) { densityFactor = ionizationFactorShadow; } // ionization (density here) in the shadow is ionizationFactorShadow * ionizationRate 
+	    averageNeutralDensity += densityFactor*getNeutralDensity(simClasses,neutralProfileName,x,y,z,a);
 	 }
 	 averageNeutralDensity /= N_MC_points;
 	 cellExosphere[nExo] = averageNeutralDensity*Hybrid::dV;
-	 //cellExosphere[nExo] = getNeutralDensity(simClasses,neutralProfileName,xCell,yCell,zCell,a)*Hybrid::dV;
 	 if (cellExosphere[nExo] < 0.0) {
 	    simClasses.logger << "(" << species->name << ") ERROR: negative neutral density at (x,y,z) =  (" << xCell/Hybrid::R_object << "," << yCell/Hybrid::R_object << "," << zCell/Hybrid::R_object << ") (" << cellExosphere[nExo] << ")" << endl << write;
 	    initialized = false;
@@ -1838,6 +1857,9 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
       initialized = false;
       return false;
    }
+
+   // shadow function should be implemented here
+
    // normalize cellExosphere from pure neutral density to the number of exospheric ion macroparticles injected in a cell per dt
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
       for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
@@ -1874,6 +1896,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
      << "(" << species->name << ") shadow radius  = " << radiusToString(R_shadow)  << endl
      << "(" << species->name << ") total number of neutrals  = " << sumExoNeutralsGlobal << endl
      << "(" << species->name << ") ionization rate           = " << ionizationRate << " 1/s" << endl
+     << "(" << species->name << ") ionization factor shadow  = " << ionizationFactorShadow << endl
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
      << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
      << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
