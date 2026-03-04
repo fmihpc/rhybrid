@@ -150,7 +150,6 @@ Real expexp(Real x,Real y,Real z,Real r,Real Rp,Real n0,Real Hr,Real Htheta,Real
 Real neutralDensityMercurySodiumExner20(SimulationClasses& simClasses,Real x,Real y,Real z) {
    const Real Rp = constants::DIST_MERCURY_RADIUS;
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));
-   if (r < Rp) { return 0.0; }
    // surface density [m-3]
    const Real n0_TD  = 8.86e9;
    const Real n0_MIV = 7.84e6;
@@ -210,8 +209,6 @@ Real neutralDensityMercurySodiumExner20(SimulationClasses& simClasses,Real x,Rea
    const Real n_psd2 = expexp(x,y,z,r,Rp,n0_PSD,Hr_PSD,Htheta_PSD,lat_nmax_PSD2,lon_nmax_PSD2);
 
    Real n = sqr(Rp/r)*(n_miv + n_td + n_sp_day1 + n_sp_day2 + n_sp_nigth1 + n_sp_nigth2 + n_psd1 + n_psd2);
-   // ionization is only 1/5 in the shadow
-   if ( (x < 0) && (vecsqr(y,z) < sqr(Rp)) ) { n *= 0.2; }
    return n;
 }
 
