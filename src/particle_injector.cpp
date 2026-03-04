@@ -1228,6 +1228,7 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
    Real N_insideSum = 0.0;
    Real* cellIonosphere = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellIonosphereID);
    // go thru local blocks
+   simClasses.logger << endl << "(" << species->name << ") Estimating ionospheric emission in each grid cell with Monte-Carlo method (number of MC points per cell = " << N_MC_points << ")" << endl << endl;
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
       const size_t b3 = 3*b;
       // go thru cells in a block
@@ -1519,6 +1520,7 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
    Real N_insideSum = 0.0;
    Real* cellIonosphere = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellIonosphereID);
    // go thru local blocks
+   simClasses.logger << endl << "(" << species->name << ") Estimating ionospheric emission in each grid cell with Monte-Carlo method (number of MC points per cell = " << N_MC_points << ")" << endl << endl;
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
       const size_t b3 = 3*b;
       // go thru cells in a block
@@ -1786,7 +1788,8 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    // global coordinates
    const Real* crd = getBlockCoordinateArray(sim,simClasses);
 
-   // calculate neutral density in each grid cell
+   // estimate neutral density in each grid cell
+   simClasses.logger << endl << "(" << species->name << ") Estimating neutral density in each grid cell with Monte-Carlo method (number of MC points per cell = " << N_MC_points << ")" << endl << endl;
    Real* cellExosphere = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellExosphereID);
    Real sumExoNeutralsThisProcess = 0.0;
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
