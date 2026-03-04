@@ -808,6 +808,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 }
       }
    } while (erased == true);
+   // initialise help variable (determined in particle_injector.cpp)
+   Hybrid::upstreamMacroPleRatio = 0;
    // read particle populations: solar wind
    vector<string> solarwindPopulations;
    cr.addComposed("Hybrid.particle.population.solarwind","Names of solar wind particle populations (string)");

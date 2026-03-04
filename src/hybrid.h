@@ -290,7 +290,7 @@ struct Hybrid {
    static bool useAdiabaticElectronPressure;
    static Real electronTemperature;
    static Real electronPressureCoeff;
-   static Real swMacroParticlesCellPerDt;
+   static Real upstreamMacroPleRatio;
    static bool useGravity;
    static int Efilter;
    static Real EfilterNodeGaussSigma;

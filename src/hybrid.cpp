@@ -145,7 +145,7 @@ bool Hybrid::includeConstantB0InFaradaysLaw = false;
 #endif
 Real Hybrid::electronTemperature;
 Real Hybrid::electronPressureCoeff;
-Real Hybrid::swMacroParticlesCellPerDt;
+Real Hybrid::upstreamMacroPleRatio;
 bool Hybrid::useGravity;
 int Hybrid::Efilter;
 Real Hybrid::EfilterNodeGaussSigma;

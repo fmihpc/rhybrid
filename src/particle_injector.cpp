@@ -328,14 +328,22 @@ bool InjectorUniform::initialize(Simulation& sim,SimulationClasses& simClasses,C
       simClasses.logger << "(" << species->name << ") ERROR: zmin >= zmax" << endl << write;
       initialized = false;
    }
+   int N_x_cells = sim.x_blocks; // NOTE: blocks != 1 do not work in RHybrid
+   int N_y_cells = sim.y_blocks;
+   int N_z_cells = sim.z_blocks;
+   if (N_x_cells > 2 && sim.x_periodic == false) { N_x_cells -= 2; } // remove ghost cells
+   if (N_y_cells > 2 && sim.y_periodic == false) { N_y_cells -= 2; } // remove ghost cells
+   if (N_z_cells > 2 && sim.z_periodic == false) { N_z_cells -= 2; } // remove ghost cells
+   const Real N_macroParticlesTotal = N_macroParticlesPerCell*N_x_cells*N_y_cells*N_z_cells; // total number of uniform pop. macroparticles in the simulation domain
    simClasses.logger
      << "(" << species->name << ") velocity      = (" << velocity[0]/1e3 << "," << velocity[1]/1e3 << "," << velocity[2]/1e3 << ") km/s" << endl
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
      << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
      << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
-     << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
-     << "(" << species->name << ") macroparticle weight    = " << w << endl
+     << "(" << species->name << ") macroparticles per cell  = " << N_macroParticlesPerCell << endl
+     << "(" << species->name << ") macroparticles in domain = " << N_macroParticlesTotal << endl
+     << "(" << species->name << ") macroparticle weight     = " << w << endl
      << "(" << species->name << ") xmin = " << xmin/1e3 << " km" << endl
      << "(" << species->name << ") xmax = " << xmax/1e3 << " km" << endl
      << "(" << species->name << ") ymin = " << ymin/1e3 << " km" << endl
@@ -861,6 +869,8 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
    }
    if (T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
+   const Real N_macroParticlesTotal = N_macroParticlesPerCell*N_x_cells*N_y_cells*N_z_cells; // total number of solar wind pop. macroparticles in the domain
+   const Real N_macroParticlesPerDt = N_macroParticlesPerCellPerDt*N_perp_cells; // total number of injected macroparticles per timestpe
    simClasses.logger
      << "(" << species->name << ") velocity      = (" << velocity[0]/1e3 << "," << velocity[1]/1e3 << "," << velocity[2]/1e3 << ") km/s" << endl
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
@@ -868,13 +878,20 @@ bool InjectorSolarWind::initialize(Simulation& sim,SimulationClasses& simClasses
      << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") macroparticles per cell         = " << N_macroParticlesPerCell << endl
-     << "(" << species->name << ") macroparticles per dt           = " << N_macroParticlesPerCellPerDt*N_perp_cells << endl
+     << "(" << species->name << ") macroparticles per dt           = " << N_macroParticlesPerDt << endl
      << "(" << species->name << ") macroparticles per cell per dt  = " << N_macroParticlesPerCellPerDt << endl
+     << "(" << species->name << ") macroparticles in domain        = " << N_macroParticlesTotal << endl
      << "(" << species->name << ") macroparticle weight            = " << w << endl;
+
+   // store the ratio between:
+   //  (1) the total number of solarwind/flow macroparticles injected during one timestep (use the first population initialised)
+   //   and
+   //  (2) the number of macroparticles per cell
+   // this value is used elsewhere in the code as a helper variable
    static unsigned int swPopCnt = 0;
    swPopCnt++;
-   if (swPopCnt == 1) {
-      Hybrid::swMacroParticlesCellPerDt = N_macroParticlesPerCellPerDt*N_perp_cells/N_macroParticlesPerCell;
+   if (swPopCnt == 1 && Hybrid::upstreamMacroPleRatio <= 0) {
+      Hybrid::upstreamMacroPleRatio = N_macroParticlesPerDt/N_macroParticlesPerCell;
    }
    return initialized;
 }
@@ -1032,15 +1049,61 @@ bool InjectorFlow::initialize(Simulation& sim,SimulationClasses& simClasses,Conf
    }
    if (T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
    else { vth = 0.0; }
+   int N_perp_cells = 0;
+   int N_x_cells = sim.x_blocks; // NOTE: blocks != 1 do not work in RHybrid
+   int N_y_cells = sim.y_blocks;
+   int N_z_cells = sim.z_blocks;
+   if (N_x_cells > 2 && sim.x_periodic == false) { N_x_cells -= 2; } // remove ghost cells
+   if (N_y_cells > 2 && sim.y_periodic == false) { N_y_cells -= 2; } // remove ghost cells
+   if (N_z_cells > 2 && sim.z_periodic == false) { N_z_cells -= 2; } // remove ghost cells
+   const Real N_macroParticlesTotal = N_macroParticlesPerCell*N_x_cells*N_y_cells*N_z_cells; // total number of flow pop. macroparticles in the simulation domain
+   const Real N_macroParticlesPerCellPerDt = N_macroParticlesPerCell*U*sim.dt/Hybrid::dx;
+   // estimate the number of cells outer boundary cells encountered by the incident flow
+     {
+	// surface area in units of dx^2, i.e. ~the number of cells)
+	N_perp_cells = 0;
+	if (U > 0) {
+	   // the orthographic projected surface area as viewed from the bulk velocity vector
+	   Real vxUnit = fabs(velocity[0])/U;
+	   Real vyUnit = fabs(velocity[1])/U;
+	   Real vzUnit = fabs(velocity[2])/U;
+	   // projected area:
+	   // A = bc * |vx| + ac * |vy| + ab * |vz|
+	   N_perp_cells =
+	     (N_y_cells * N_z_cells) * vxUnit +
+	     (N_x_cells * N_z_cells) * vyUnit +
+	     (N_x_cells * N_y_cells) * vzUnit;
+	}
+	else {
+	   // if the bulk velocity is zero, use the largest outer boundary surface area
+	   N_perp_cells = max({N_x_cells*N_y_cells,N_x_cells*N_z_cells,N_y_cells*N_z_cells});
+	}
+     }
+   const Real N_macroParticlesPerDt = N_macroParticlesPerCellPerDt*N_perp_cells;
+   //const Real N_macroParticlesPerDt = N_macroParticlesTotal*U*sim.dt/Hybrid::dx;
    simClasses.logger
      << "(" << species->name << ") velocity      = (" << velocity[0]/1e3 << "," << velocity[1]/1e3 << "," << velocity[2]/1e3 << ") km/s" << endl
      << "(" << species->name << ") speed         = " << U/1e3 << " km/s" << endl
      << "(" << species->name << ") density       = " << n/1e6 << " cm^{-3}" << endl
      << "(" << species->name << ") temperature   = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed = " << vth/1e3 << " km/s" << endl
-     << "(" << species->name << ") macroparticles per cell = " << N_macroParticlesPerCell << endl
-     << "(" << species->name << ") macroparticle weight    = " << w << endl
-     << "(" << species->name << ") inflow boundaries       = " << injWalls << endl;
+     << "(" << species->name << ") macroparticles per cell        = " << N_macroParticlesPerCell << endl
+     << "(" << species->name << ") macroparticles per dt          = " << N_macroParticlesPerDt << endl
+     << "(" << species->name << ") macroparticles per cell per dt = " << N_macroParticlesPerCellPerDt << endl
+     << "(" << species->name << ") macroparticles in domain       = " << N_macroParticlesTotal << endl
+     << "(" << species->name << ") macroparticle weight           = " << w << endl
+     << "(" << species->name << ") inflow boundaries              = " << injWalls << endl;
+
+   // store the ratio between:
+   //  (1) the total number of solarwind/flow macroparticles injected during one timestep (use the first population initialised)
+   //   and
+   //  (2) the number of macroparticles per cell
+   // this value is used elsewhere in the code as a helper variable
+   static unsigned int flowPopCnt = 0;
+   flowPopCnt++;
+   if (flowPopCnt == 1 && Hybrid::upstreamMacroPleRatio <= 0) {
+      Hybrid::upstreamMacroPleRatio = N_macroParticlesPerDt/N_macroParticlesPerCell;
+   }
    return initialized;
 }
 
@@ -1062,7 +1125,7 @@ void InjectorFlow::getParams(InjectorParameters& p) {
 
 // IONOSPHERE EMISSION INJECTOR
 
-InjectorIonosphere::InjectorIonosphere(): ParticleInjectorBase() { 
+InjectorIonosphere::InjectorIonosphere(): ParticleInjectorBase() {
    initialized = false;
    N_ionoPop = -1;
    N_macroParticlesPerCell = -1.0;
@@ -1167,7 +1230,7 @@ bool InjectorIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& 
    cr.add(configRegionName+".night","Night side emission factor [-] (float)",(Real)-1.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float)",(Real)0.0);
    cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (float)",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (float)",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solarwind / flow population [#] (float)",(Real)-1.0);
    return true;
 }
 
@@ -1191,12 +1254,12 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
       simClasses.logger
         << "(" << species->name << ") WARNING: negative noon or night factor" << endl;
    }
-   if (Hybrid::swMacroParticlesCellPerDt > 0.0) {
-      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
+   if (Hybrid::upstreamMacroPleRatio > 0.0) {
+      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::upstreamMacroPleRatio;
    }
    else {
       simClasses.logger
-        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl;
+        << "(" << species->name << ") WARNING: upstreamMacroPleRatio not set, assuming 100" << endl;
       N_macroParticlesPerDt = N_macroParticlesPerCell*100;
    }
    if (N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
@@ -1468,7 +1531,7 @@ bool InjectorChapmanIonosphere::addConfigFileItems(ConfigReader& cr,const std::s
    cr.add(configRegionName+".night","Night side emission factor [-] (float).",(Real)-1.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
    cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (float).",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (float).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solarwind / flow population [#] (float).",(Real)-1.0);
    return true;
 }
 
@@ -1484,12 +1547,12 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".total_production_rate",totalRate);
    cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
-   if (Hybrid::swMacroParticlesCellPerDt > 0.0) {
-      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
+   if (Hybrid::upstreamMacroPleRatio > 0.0) {
+      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::upstreamMacroPleRatio;
    }
    else {
       simClasses.logger
-        << "(" << species->name << ") WARNING: No solar wind macroparticles cell per dt rate found, assuming 100" << endl;
+	<< "(" << species->name << ") WARNING: upstreamMacroPleRatio not set, assuming 100" << endl;
       N_macroParticlesPerDt = N_macroParticlesPerCell*100;
    }
    if (N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
@@ -1694,7 +1757,7 @@ bool InjectorExosphere::addConfigFileItems(ConfigReader& cr,const std::string& c
    cr.add(configRegionName+".ionization_rate","Ionization rate of the neutral profile [1/s] (negative values are considered as variable non-existing) (float).",(Real)-1.0);
    cr.add(configRegionName+".ionization_factor_shadow","Ionization rate in the shadow is: ionization_rate * ionization_factor_shadow [-] (float).",(Real)0.0);
    cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (negative value are considered as variable non-existing) (float).",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solar wind population [#] (float).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solarwind / flow population [#] (float).",(Real)-1.0);
    return true;
 }
 
@@ -1772,11 +1835,12 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
       ionizationFactorShadow = 0.0;
    }
    // number of macroparticles produced per timestep
-   if (Hybrid::swMacroParticlesCellPerDt > 0.0) {
-      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::swMacroParticlesCellPerDt;
+   if (Hybrid::upstreamMacroPleRatio > 0.0) {
+      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::upstreamMacroPleRatio;
    }
    else {
-      simClasses.logger << "(" << species->name << ") WARNING: No solar wind macroparticles per cell per dt rate found, assuming 100" << endl;
+      simClasses.logger
+	<< "(" << species->name << ") WARNING: upstreamMacroPleRatio not set, assuming 100" << endl;
       N_macroParticlesPerDt = N_macroParticlesPerCell*100;
    }
 
