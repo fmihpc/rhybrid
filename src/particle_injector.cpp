@@ -1783,11 +1783,13 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    N_exoPop = exoPopCnt;
    exoPopCnt++;
 
+   // global coordinates
+   const Real* crd = getBlockCoordinateArray(sim,simClasses);
+
    // calculate neutral density in each grid cell
    Real* cellExosphere = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellExosphereID);
    Real sumExoNeutralsThisProcess = 0.0;
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
-      const Real* crd = getBlockCoordinateArray(sim,simClasses);
       const size_t b3 = 3*b;
       for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
@@ -1809,9 +1811,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
 	    Real y = yCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
 	    Real z = zCell + (1.0-epsCell)*Hybrid::dx*(simClasses.random.uniform()-0.5);
 	    if (vecsqr(x,y,z) < R2_exobase) { continue; } // density below the exobase is zero
-	    Real densityFactor = 1.0;
-	    if ( (x < 0) && (vecsqr(y,z) < R2_shadow) ) { densityFactor = ionizationFactorShadow; } // ionization (density here) in the shadow is ionizationFactorShadow * ionizationRate 
-	    averageNeutralDensity += densityFactor*getNeutralDensity(simClasses,neutralProfileName,x,y,z,a);
+	    averageNeutralDensity += getNeutralDensity(simClasses,neutralProfileName,x,y,z,a);
 	 }
 	 averageNeutralDensity /= N_MC_points;
 	 cellExosphere[nExo] = averageNeutralDensity*Hybrid::dV;
@@ -1858,14 +1858,18 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
       return false;
    }
 
-   // shadow function should be implemented here
-
    // normalize cellExosphere from pure neutral density to the number of exospheric ion macroparticles injected in a cell per dt
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
+      const size_t b3 = 3*b;
       for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const size_t nExo = n*Hybrid::N_exospherePopulations + N_exoPop;
-	 cellExosphere[nExo] = N_macroParticlesPerDt*cellExosphere[nExo]*ionizationRate/totalRate; }
+	 const Real xCell = crd[b3+0] + (i+0.5)*Hybrid::dx;
+	 const Real yCell = crd[b3+1] + (j+0.5)*Hybrid::dx;
+	 const Real zCell = crd[b3+2] + (k+0.5)*Hybrid::dx;
+	 Real ionizationFactor = 1.0; // local factor used to multiply ionizationRate
+	 if ( (xCell < 0) && (vecsqr(yCell,zCell) < R2_shadow) ) { ionizationFactor = ionizationFactorShadow; } // shadow function
+	 cellExosphere[nExo] = N_macroParticlesPerDt*cellExosphere[nExo]*ionizationFactor*ionizationRate/totalRate; }
    }
    // determine particle weight
    w = totalRate*sim.dt/N_macroParticlesPerDt;
