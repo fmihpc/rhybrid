@@ -791,23 +791,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 }
       }
    } while (erased == true);
-   // read particle populations: ambient
-   vector<string> ambientPopulations;
-   cr.addComposed("Hybrid.particle.population.ambient","Names of ambient particle populations (string)");
-   cr.parse();
-   cr.get("Hybrid.particle.population.ambient",ambientPopulations);
-   // erase empty entries
-   erased = false;
-   do {
-      erased = false;
-      for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
-	 if ((*it).size() == 0) {
-	    ambientPopulations.erase(it);
-	    erased = true;
-	    break;
-	 }
-      }
-   } while (erased == true);
    // initialise help variable (determined in particle_injector.cpp)
    Hybrid::upstreamMacroPleRatio = 0;
    // read particle populations: solar wind
@@ -879,7 +862,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
    } while (erased == true);
    // number of all, ionospheric and exospheric particle populations
-   Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + ambientPopulations.size() + solarwindPopulations.size() + flowPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
+   Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + solarwindPopulations.size() + flowPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
    const size_t N_uniformPopulations = uniformPopulations.size();
    const size_t N_solarWindPopulations = solarwindPopulations.size();
    const size_t N_flowPopulations = flowPopulations.size();
@@ -1353,14 +1336,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing a uniform particle population: " << *it << endl;
       if (checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
-      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
-      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
-      Hybrid::populationNames.push_back(*it);
-   }
-   // initialize particle lists: ambient
-   for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
-      simClasses.logger << endl << "(RHYBRID) Initializing an ambient particle population: " << *it << endl;
-      if (checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);

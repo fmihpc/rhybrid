@@ -57,24 +57,6 @@ class InjectorUniform: public ParticleInjectorBase {
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
-class InjectorAmbient: public ParticleInjectorBase {
- public:
-   InjectorAmbient();
-   ~InjectorAmbient();
-   bool addConfigFileItems(ConfigReader& cr,const std::string& regionName);
-   bool finalize();
-   bool initialize(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& regionName,const ParticleListBase* plist);
-   bool inject(pargrid::DataID speciesDataID,unsigned int* N_particles);
-   void getParams(InjectorParameters& p);
- private:
-   bool initialized;
-   Real N_macroParticlesPerCellPerDt;
-   Real N_macroParticlesPerCell;
-   const Species* species;
-   Real T,vth,n,w;
-   bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper,unsigned int wall);
-};
-
 class InjectorSolarWind: public ParticleInjectorBase {
  public:
    InjectorSolarWind();
@@ -183,7 +165,6 @@ class InjectorExosphere: public ParticleInjectorBase {
 };
 
 inline ParticleInjectorBase* UniformIonCreator() {return new InjectorUniform();}
-inline ParticleInjectorBase* AmbientIonCreator() {return new InjectorAmbient();}
 inline ParticleInjectorBase* SolarWindIonCreator() {return new InjectorSolarWind();}
 inline ParticleInjectorBase* FlowIonCreator() {return new InjectorFlow();}
 inline ParticleInjectorBase* IonosphereIonCreator() {return new InjectorIonosphere();}
