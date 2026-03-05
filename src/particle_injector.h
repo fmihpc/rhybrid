@@ -124,7 +124,7 @@ class InjectorIonosphere: public ParticleInjectorBase {
    bool initialized;
    const Species* species;
    unsigned int N_ionoPop;
-   Real N_macroParticlesPerCell,N_macroParticlesPerDt,T,vth,w,R;
+   Real N_macroParticlesPerDt,T,vth,w,R;
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
@@ -141,7 +141,7 @@ class InjectorChapmanIonosphere: public ParticleInjectorBase {
    bool initialized;
    const Species* species;
    unsigned int N_ionoPop;
-   Real N_macroParticlesPerCell,N_macroParticlesPerDt,vth,w,R,T,noonFactor, nightFactor;
+   Real N_macroParticlesPerDt,vth,w,R,T,noonFactor,nightFactor;
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };
 
@@ -159,7 +159,7 @@ class InjectorExosphere: public ParticleInjectorBase {
    const Species* species;
    unsigned int N_exoPop;
    std::string neutralProfileName;
-   Real N_macroParticlesPerCell,N_macroParticlesPerDt,T,vth,w,r0,R_exobase,R2_exobase,R_shadow,R2_shadow;
+   Real N_macroParticlesPerDt,T,vth,w,r0,R_exobase,R2_exobase,R_shadow,R2_shadow;
    std::vector<Real> n0,H0,T0,k0;
    bool injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper);
 };

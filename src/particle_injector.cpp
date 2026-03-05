@@ -946,7 +946,6 @@ void InjectorFlow::getParams(InjectorParameters& p) {
 InjectorIonosphere::InjectorIonosphere(): ParticleInjectorBase() {
    initialized = false;
    N_ionoPop = -1;
-   N_macroParticlesPerCell = -1.0;
    N_macroParticlesPerDt = -1.0;
    T = vth = w = R = 0.0;
 }
@@ -1048,7 +1047,7 @@ bool InjectorIonosphere::addConfigFileItems(ConfigReader& cr,const std::string& 
    cr.add(configRegionName+".night","Night side emission factor [-] (float)",(Real)-1.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float)",(Real)0.0);
    cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (float)",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solarwind / flow population [#] (float)",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell_relative","Number of macroparticles per cell relative to the first solarwind / flow population [#] (float)",(Real)-1.0);
    return true;
 }
 
@@ -1060,6 +1059,7 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
    Real noonFactor = -1.0;
    Real nightFactor = -1.0;
    Real totalRate = 0.0;
+   Real N_macroParticlesPerCellRelative = -1.0;
    cr.parse();
    cr.get(configRegionName+".profile_name",profileName);
    cr.get(configRegionName+".emission_radius",R);
@@ -1067,18 +1067,20 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
    cr.get(configRegionName+".night",nightFactor);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".total_production_rate",totalRate);
-   cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+   cr.get(configRegionName+".macroparticles_per_cell_relative",N_macroParticlesPerCellRelative);
    if (noonFactor < 0.0 || nightFactor < 0.0) {
-      simClasses.logger
-        << "(" << species->name << ") WARNING: negative noon or night factor" << endl;
+      simClasses.logger << "(" << species->name << ") WARNING: negative noon or night factor" << endl;
+   }
+   if (N_macroParticlesPerCellRelative < 0) {
+      simClasses.logger << "(" << species->name << ") WARNING: macroparticles_per_cell_relative not set or negative, setting as 1 (" << N_macroParticlesPerCellRelative << ")" << endl;
+      N_macroParticlesPerCellRelative = 1.0;
    }
    if (Hybrid::upstreamMacroPleRatio > 0.0) {
-      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::upstreamMacroPleRatio;
+      N_macroParticlesPerDt = N_macroParticlesPerCellRelative*Hybrid::upstreamMacroPleRatio;
    }
    else {
-      simClasses.logger
-        << "(" << species->name << ") WARNING: upstreamMacroPleRatio not set, assuming 100" << endl;
-      N_macroParticlesPerDt = N_macroParticlesPerCell*100;
+      simClasses.logger << "(" << species->name << ") WARNING: upstreamMacroPleRatio not set, assuming 100" << endl;
+      N_macroParticlesPerDt = N_macroParticlesPerCellRelative*100;
    }
    if (N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
       w = totalRate*sim.dt/N_macroParticlesPerDt;
@@ -1096,10 +1098,10 @@ bool InjectorIonosphere::initialize(Simulation& sim,SimulationClasses& simClasse
      << "(" << species->name << ") temperature      = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed    = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") density          = " << ( totalRate/( 4*M_PI*sqr(R)*sqrt( constants::BOLTZMANN*T/(2*M_PI*species->m) ) ) )/1e6<< " cm^-3" << endl
-     << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
-     << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
-     << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
-     << "(" << species->name << ") macroparticle weight      = " << w << endl;
+     << "(" << species->name << ") total ion production rate          = " << totalRate << " 1/s" << endl
+     << "(" << species->name << ") macroparticles per cell (relative) = " << N_macroParticlesPerCellRelative << endl
+     << "(" << species->name << ") macroparticles per dt              = " << N_macroParticlesPerDt << endl
+     << "(" << species->name << ") macroparticle weight               = " << w << endl;
 
    static unsigned int ionoPopCnt = 0;
    N_ionoPop = ionoPopCnt;
@@ -1233,7 +1235,6 @@ void InjectorIonosphere::getParams(InjectorParameters& p){
 InjectorChapmanIonosphere::InjectorChapmanIonosphere(): ParticleInjectorBase() { 
    initialized = false;
    N_ionoPop = -1;
-   N_macroParticlesPerCell = -1.0;
    N_macroParticlesPerDt = -1.0;
    vth = w = R = T = noonFactor = nightFactor= 0.0;
 }
@@ -1349,7 +1350,7 @@ bool InjectorChapmanIonosphere::addConfigFileItems(ConfigReader& cr,const std::s
    cr.add(configRegionName+".night","Night side emission factor [-] (float).",(Real)-1.0);
    cr.add(configRegionName+".temperature","Temperature [K] (float).",(Real)0.0);
    cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (float).",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solarwind / flow population [#] (float).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell relative to the first solarwind / flow population [#] (float).",(Real)-1.0);
    return true;
 }
 
@@ -1358,20 +1359,24 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
    this->type = "ionosphere_chapman";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    Real totalRate = 0.0;
+   Real N_macroParticlesPerCellRelative = -1.0;
    cr.parse();
    cr.get(configRegionName+".emission_radius",R);
    cr.get(configRegionName+".noon",noonFactor);
    cr.get(configRegionName+".night",nightFactor);
    cr.get(configRegionName+".temperature",T);
    cr.get(configRegionName+".total_production_rate",totalRate);
-   cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+   cr.get(configRegionName+".macroparticles_per_cell_relative",N_macroParticlesPerCellRelative);
+   if (N_macroParticlesPerCellRelative < 0) {
+      simClasses.logger << "(" << species->name << ") WARNING: macroparticles_per_cell_relative not set or negative, setting as 1 (" << N_macroParticlesPerCellRelative << ")" << endl;
+      N_macroParticlesPerCellRelative = 1.0;
+   }
    if (Hybrid::upstreamMacroPleRatio > 0.0) {
-      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::upstreamMacroPleRatio;
+      N_macroParticlesPerDt = N_macroParticlesPerCellRelative*Hybrid::upstreamMacroPleRatio;
    }
    else {
-      simClasses.logger
-	<< "(" << species->name << ") WARNING: upstreamMacroPleRatio not set, assuming 100" << endl;
-      N_macroParticlesPerDt = N_macroParticlesPerCell*100;
+      simClasses.logger << "(" << species->name << ") WARNING: upstreamMacroPleRatio not set, assuming 100" << endl;
+      N_macroParticlesPerDt = N_macroParticlesPerCellRelative*100;
    }
    if (N_macroParticlesPerDt > 0.0 && totalRate > 0.0) {
       w = totalRate*sim.dt/N_macroParticlesPerDt;
@@ -1388,10 +1393,10 @@ bool InjectorChapmanIonosphere::initialize(Simulation& sim,SimulationClasses& si
      << "(" << species->name << ") temperature     = " << T << " K = " << T/constants::EV_TO_KELVIN << " eV" << endl
      << "(" << species->name << ") thermal speed   = " << vth/1e3 << " km/s" << endl
      << "(" << species->name << ") density         = " << ( totalRate/( 4*M_PI*sqr(R)*sqrt( constants::BOLTZMANN*T/(2*M_PI*species->m) ) ) )/1e6<< " cm^-3" << endl
-     << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
-     << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
-     << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
-     << "(" << species->name << ") macroparticle weight      = " << w << endl;
+     << "(" << species->name << ") total ion production rate          = " << totalRate << " 1/s" << endl
+     << "(" << species->name << ") macroparticles per cell (relative) = " << N_macroParticlesPerCellRelative << endl
+     << "(" << species->name << ") macroparticles per dt              = " << N_macroParticlesPerDt << endl
+     << "(" << species->name << ") macroparticle weight               = " << w << endl;
 
    static unsigned int ionoPopCnt = 0;
    N_ionoPop = ionoPopCnt;
@@ -1471,7 +1476,6 @@ InjectorExosphere::InjectorExosphere(): ParticleInjectorBase() {
    initialized = false;
    N_exoPop = -1;
    neutralProfileName = "";
-   N_macroParticlesPerCell = -1.0;
    N_macroParticlesPerDt = -1.0;
    T = vth = w = r0 = R_exobase = R2_exobase = R_shadow = R2_shadow = 0.0;
    n0.clear();
@@ -1575,7 +1579,7 @@ bool InjectorExosphere::addConfigFileItems(ConfigReader& cr,const std::string& c
    cr.add(configRegionName+".ionization_rate","Ionization rate of the neutral profile [1/s] (negative values are considered as variable non-existing) (float).",(Real)-1.0);
    cr.add(configRegionName+".ionization_factor_shadow","Ionization rate in the shadow is: ionization_rate * ionization_factor_shadow [-] (float).",(Real)0.0);
    cr.add(configRegionName+".total_production_rate","Total production rate of physical particles per second [#/s] (negative value are considered as variable non-existing) (float).",(Real)-1.0);
-   cr.add(configRegionName+".macroparticles_per_cell","Number of macroparticles per cell wtr. to the first solarwind / flow population [#] (float).",(Real)-1.0);
+   cr.add(configRegionName+".macroparticles_per_cell_relative","Number of macroparticles per cell relative to the first solarwind / flow population [#] (float).",(Real)-1.0);
    return true;
 }
 
@@ -1584,6 +1588,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    this->type = "exosphere";
    this->species = reinterpret_cast<const Species*>(plist->getSpecies());
    Real ionizationRate = -1.0, ionizationFactorShadow = 0.0, totalRate = -1.0;
+   Real N_macroParticlesPerCellRelative = -1.0;
    cr.parse();
    cr.get(configRegionName+".neutral_profile",neutralProfileName);
    cr.get(configRegionName+".neutral_profile.r0",r0);
@@ -1597,7 +1602,7 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
    cr.get(configRegionName+".ionization_rate",ionizationRate);
    cr.get(configRegionName+".ionization_factor_shadow",ionizationFactorShadow);
    cr.get(configRegionName+".total_production_rate",totalRate);
-   cr.get(configRegionName+".macroparticles_per_cell",N_macroParticlesPerCell);
+   cr.get(configRegionName+".macroparticles_per_cell_relative",N_macroParticlesPerCellRelative);
 
    // thermal speed
    if (T > 0) { vth = sqrt(constants::BOLTZMANN*T/species->m); }
@@ -1652,14 +1657,18 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
       simClasses.logger << "(" << species->name << ") WARNING: ionization_factor_shadow negative, setting as zero (" << ionizationFactorShadow << ")" << endl;
       ionizationFactorShadow = 0.0;
    }
+   if (N_macroParticlesPerCellRelative < 0) {
+      simClasses.logger << "(" << species->name << ") WARNING: macroparticles_per_cell_relative not set or negative, setting as 1 (" << N_macroParticlesPerCellRelative << ")" << endl;
+      N_macroParticlesPerCellRelative = 1.0;
+   }
    // number of macroparticles produced per timestep
    if (Hybrid::upstreamMacroPleRatio > 0.0) {
-      N_macroParticlesPerDt = N_macroParticlesPerCell*Hybrid::upstreamMacroPleRatio;
+      N_macroParticlesPerDt = N_macroParticlesPerCellRelative*Hybrid::upstreamMacroPleRatio;
    }
    else {
       simClasses.logger
 	<< "(" << species->name << ") WARNING: upstreamMacroPleRatio not set, assuming 100" << endl;
-      N_macroParticlesPerDt = N_macroParticlesPerCell*100;
+      N_macroParticlesPerDt = N_macroParticlesPerCellRelative*100;
    }
 
    // increase counter of exospheric particle populations
@@ -1787,9 +1796,9 @@ bool InjectorExosphere::initialize(Simulation& sim,SimulationClasses& simClasses
      << "(" << species->name << ") ionization rate           = " << ionizationRate << " 1/s" << endl
      << "(" << species->name << ") ionization factor shadow  = " << ionizationFactorShadow << endl
      << "(" << species->name << ") total ion production rate = " << totalRate << " 1/s" << endl
-     << "(" << species->name << ") macroparticles per cell   = " << N_macroParticlesPerCell << endl
-     << "(" << species->name << ") macroparticles per dt     = " << N_macroParticlesPerDt << endl
-     << "(" << species->name << ") macroparticle weight      = " << w << endl;
+     << "(" << species->name << ") macroparticles per cell (relative) = " << N_macroParticlesPerCellRelative << endl
+     << "(" << species->name << ") macroparticles per dt              = " << N_macroParticlesPerDt << endl
+     << "(" << species->name << ") macroparticle weight               = " << w << endl;
    return initialized;
 }
 
