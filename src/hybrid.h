@@ -213,7 +213,7 @@ struct Hybrid {
 #endif
 #ifdef USE_DETECTORS
    // detector: particles
-   static pargrid::DataID dataDetectorParticleFlagID;
+   static pargrid::DataID dataDetectorCellParticleFlagID;
    static Real detParticleStartTime;
    static Real detParticleEndTime;
    static bool detParticleRecordImpacts;
@@ -222,9 +222,9 @@ struct Hybrid {
    static Real detParticleTimestepCnt;
    static Real detParticleFileLineCnt;
    static bool detParticleRecording;
-   static std::vector<Real> detParticleOutput;
+   static std::vector<Real> detCellParticleData;
    // detector: bulk parameters
-   static pargrid::DataID dataDetectorBulkParamFlagID;
+   static pargrid::DataID dataDetectorCellBulkParamFlagID;
    static Real detBulkParamStartTime;
    static Real detBulkParamEndTime;
    static Real N_detBulkParamMaxFileLines;
@@ -232,7 +232,7 @@ struct Hybrid {
    static Real detBulkParamTimestepCnt;
    static Real detBulkParamFileLineCnt;
    static bool detBulkParamRecording;
-   static std::vector<Real> detBulkParamOutput;
+   static std::vector<Real> detCellBulkParamData;
 #endif
 
    // bit masks

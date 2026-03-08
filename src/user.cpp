@@ -1111,13 +1111,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 #endif
 #ifdef USE_DETECTORS
-   Hybrid::dataDetectorParticleFlagID = simClasses.pargrid.addUserData<bool>("detPleFlag",1);
-   if (Hybrid::dataDetectorParticleFlagID == simClasses.pargrid.invalidCellID()) {
+   Hybrid::dataDetectorCellParticleFlagID = simClasses.pargrid.addUserData<bool>("detPleFlag",1);
+   if (Hybrid::dataDetectorCellParticleFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add detPleFlag array to ParGrid!" << endl << write;
       return false;
    }
-   Hybrid::dataDetectorBulkParamFlagID = simClasses.pargrid.addUserData<bool>("detBlkFlag",1);
-   if (Hybrid::dataDetectorBulkParamFlagID == simClasses.pargrid.invalidCellID()) {
+   Hybrid::dataDetectorCellBulkParamFlagID = simClasses.pargrid.addUserData<bool>("detBlkFlag",1);
+   if (Hybrid::dataDetectorCellBulkParamFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add detBlkFlag array to ParGrid!" << endl << write;
       return false;
    }
@@ -1228,7 +1228,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_DETECTORS
    // detector: particles
    simClasses.logger << "(RHYBRID) Configuring: detectors" << endl << write;
-   bool* detPleFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+   bool* detPleFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorCellParticleFlagID));
    Hybrid::detParticleFileLineCnt = 0;
    vector<string> detParticleOrbitFiles;
    cr.add("DetectorParticle.t_start","Simulation time to start particle detector recording (float)",-1);
@@ -1277,7 +1277,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    int N_detParticleCells = 0;
    // detector: bulk parameters
-   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
+   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorCellBulkParamFlagID));
    Hybrid::detBulkParamFileLineCnt = 0;
    vector<string> detBulkParamOrbitFiles;
    cr.add("DetectorBulkParameter.t_start","Simulation time to start bulk parameter detector recording (float)",-1);
@@ -2676,8 +2676,8 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if (simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagNodeID) == false) { success = false; }
 #endif
 #ifdef USE_DETECTORS
-   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorParticleFlagID)  == false) { success = false; }
-   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorBulkParamFlagID) == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorCellParticleFlagID)  == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorCellBulkParamFlagID) == false) { success = false; }
 #endif
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)        == false) { success = false; }

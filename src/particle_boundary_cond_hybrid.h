@@ -158,15 +158,15 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 #ifdef USE_DETECTORS
 	    // store impacting particles for recording
 	    if (Hybrid::detParticleRecordImpacts == true && Hybrid::detParticleRecording == true) {
-	       Hybrid::detParticleOutput.push_back( static_cast<Real>(sim->t) );
-	       Hybrid::detParticleOutput.push_back( static_cast<Real>(this->species.popid) );
-	       Hybrid::detParticleOutput.push_back( static_cast<Real>(b) );
-	       Hybrid::detParticleOutput.push_back(xp);
-	       Hybrid::detParticleOutput.push_back(yp);
-	       Hybrid::detParticleOutput.push_back(zp);
-	       Hybrid::detParticleOutput.push_back( particles[current].state[particle::VX] );
-	       Hybrid::detParticleOutput.push_back( particles[current].state[particle::VY] );
-	       Hybrid::detParticleOutput.push_back( particles[current].state[particle::VZ] );
+	       Hybrid::detCellParticleData.push_back( static_cast<Real>(sim->t) );
+	       Hybrid::detCellParticleData.push_back( static_cast<Real>(this->species.popid) );
+	       Hybrid::detCellParticleData.push_back( static_cast<Real>(b) );
+	       Hybrid::detCellParticleData.push_back(xp);
+	       Hybrid::detCellParticleData.push_back(yp);
+	       Hybrid::detCellParticleData.push_back(zp);
+	       Hybrid::detCellParticleData.push_back( particles[current].state[particle::VX] );
+	       Hybrid::detCellParticleData.push_back( particles[current].state[particle::VY] );
+	       Hybrid::detCellParticleData.push_back( particles[current].state[particle::VZ] );
 	    }
 #endif
 	    particles[current] = particles[end];

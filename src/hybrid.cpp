@@ -76,7 +76,7 @@ pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
 #endif
 #ifdef USE_DETECTORS
 // detector: particle
-pargrid::DataID Hybrid::dataDetectorParticleFlagID;
+pargrid::DataID Hybrid::dataDetectorCellParticleFlagID;
 Real Hybrid::detParticleStartTime;
 Real Hybrid::detParticleEndTime;
 bool Hybrid::detParticleRecordImpacts = false;
@@ -85,9 +85,9 @@ Real Hybrid::detParticleWriteInterval;
 Real Hybrid::detParticleTimestepCnt;
 Real Hybrid::detParticleFileLineCnt;
 bool Hybrid::detParticleRecording = false;
-vector<Real> Hybrid::detParticleOutput;
+vector<Real> Hybrid::detCellParticleData;
 // detector: bulk parameters
-pargrid::DataID Hybrid::dataDetectorBulkParamFlagID;
+pargrid::DataID Hybrid::dataDetectorCellBulkParamFlagID;
 Real Hybrid::detBulkParamStartTime;
 Real Hybrid::detBulkParamEndTime;
 Real Hybrid::N_detBulkParamMaxFileLines;
@@ -95,7 +95,7 @@ Real Hybrid::detBulkParamWriteInterval;
 Real Hybrid::detBulkParamTimestepCnt;
 Real Hybrid::detBulkParamFileLineCnt;
 bool Hybrid::detBulkParamRecording = false;
-vector<Real> Hybrid::detBulkParamOutput;
+vector<Real> Hybrid::detCellBulkParamData;
 #endif
 
 // bit masks to check the existence of +x, -x, +y, -y, +z, -z neighbour cell

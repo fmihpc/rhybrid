@@ -170,30 +170,30 @@ template<class PARTICLE>
    }
 
 #ifdef USE_DETECTORS
-   bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+   bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorCellParticleFlagID));
      if (detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
 	 // global coordinates of the particle
 	 const Real xp = xBlock + particle.state[particle::X];
 	 const Real yp = yBlock + particle.state[particle::Y];
 	 const Real zp = zBlock + particle.state[particle::Z];
-         Hybrid::detParticleOutput.push_back( static_cast<Real>(sim->t) );                               // 1
-         Hybrid::detParticleOutput.push_back( static_cast<Real>(species.popid) );                        // 2
-         Hybrid::detParticleOutput.push_back( static_cast<Real>(globalID) );                             // 3
-	 Hybrid::detParticleOutput.push_back(xp);                                                        // 4
-	 Hybrid::detParticleOutput.push_back(yp);                                                        // 5
-	 Hybrid::detParticleOutput.push_back(zp);                                                        // 6
-         Hybrid::detParticleOutput.push_back( particle.state[particle::VX] );                            // 7
-         Hybrid::detParticleOutput.push_back( particle.state[particle::VY] );                            // 8
-         Hybrid::detParticleOutput.push_back( particle.state[particle::VZ] );                            // 9
-	 //Hybrid::detParticleOutput.push_back( particle.state[particle::WEIGHT] );
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_TIME] );
-         //Hybrid::detParticleOutput.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) );
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_X] );
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_Y] );
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_Z] );
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VX] );
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VY] );
-         //Hybrid::detParticleOutput.push_back( particle.state[particle::INI_VZ] );
+         Hybrid::detCellParticleData.push_back( static_cast<Real>(sim->t) );                               // 1
+         Hybrid::detCellParticleData.push_back( static_cast<Real>(species.popid) );                        // 2
+         Hybrid::detCellParticleData.push_back( static_cast<Real>(globalID) );                             // 3
+	 Hybrid::detCellParticleData.push_back(xp);                                                        // 4
+	 Hybrid::detCellParticleData.push_back(yp);                                                        // 5
+	 Hybrid::detCellParticleData.push_back(zp);                                                        // 6
+         Hybrid::detCellParticleData.push_back( particle.state[particle::VX] );                            // 7
+         Hybrid::detCellParticleData.push_back( particle.state[particle::VY] );                            // 8
+         Hybrid::detCellParticleData.push_back( particle.state[particle::VZ] );                            // 9
+	 //Hybrid::detCellParticleData.push_back( particle.state[particle::WEIGHT] );
+         //Hybrid::detCellParticleData.push_back( particle.state[particle::INI_TIME] );
+         //Hybrid::detCellParticleData.push_back( static_cast<Real>(particle.state[particle::INI_CELLID]) );
+         //Hybrid::detCellParticleData.push_back( particle.state[particle::INI_X] );
+         //Hybrid::detCellParticleData.push_back( particle.state[particle::INI_Y] );
+         //Hybrid::detCellParticleData.push_back( particle.state[particle::INI_Z] );
+         //Hybrid::detCellParticleData.push_back( particle.state[particle::INI_VX] );
+         //Hybrid::detCellParticleData.push_back( particle.state[particle::INI_VY] );
+         //Hybrid::detCellParticleData.push_back( particle.state[particle::INI_VZ] );
 	 //particle.state[particle::INI_TIME] = -100.0; // only detect each particle once
 	 //if (particle.state[particle::INI_TIME] >= 0.0)
    }

@@ -56,7 +56,7 @@ void Accumulator::accumulateCell(const Species& species,pargrid::CellID blockID,
    const Real q = species.q;
 
 #ifdef USE_DETECTORS
-   /*bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+   /*bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorCellParticleFlagID));
    pargrid::DataWrapper<Dist> wrapperSpectra = simClasses->pargrid.getUserDataDynamic<Dist>(Hybrid::dataSpectraID);
    Dist* spectra = wrapperSpectra.data()[blockID];*/
 #endif

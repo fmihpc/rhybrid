@@ -349,10 +349,10 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
 #ifdef USE_DETECTORS
    // write detector cell masks at the start
    if (sim->timestep <= 0) {
-      bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+      bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorCellParticleFlagID));
       attribs["name"] = string("detector_flag_particle");
       if (simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detPleFlag) == false) { success = false; }
-      bool* detBlkFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
+      bool* detBlkFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorCellBulkParamFlagID));
       attribs["name"] = string("detector_flag_bulk_param");
       if (simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,detBlkFlag) == false) { success = false; }
    }
