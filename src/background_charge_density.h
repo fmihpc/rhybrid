@@ -58,7 +58,7 @@ Real getBackgroundChargeDensity(SimulationClasses& simClasses,std::string name,R
    }
    else {
       simClasses.logger << "(getBackgroundChargeDensity) ERROR: unknown name of a background charge density profile (" << name << ")" << std::endl << write;
-      MPI_Finalize();
+      forceExit(sim,simClasses);
    }
    return 0.0;
 }

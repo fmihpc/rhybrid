@@ -79,13 +79,14 @@ pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
 pargrid::DataID Hybrid::dataDetectorCellParticleFlagID;
 Real Hybrid::detParticleStartTime;
 Real Hybrid::detParticleEndTime;
-bool Hybrid::detParticleRecordImpacts = false;
 Real Hybrid::N_detParticleMaxFileLines;
 Real Hybrid::detParticleWriteInterval;
+bool Hybrid::detParticleRecordImpacts = false;
 Real Hybrid::detParticleTimestepCnt;
 Real Hybrid::detParticleFileLineCnt;
 bool Hybrid::detParticleRecording = false;
 vector<Real> Hybrid::detCellParticleData;
+vector<Real> Hybrid::detImpactParticleData;
 // detector: bulk parameters
 pargrid::DataID Hybrid::dataDetectorCellBulkParamFlagID;
 Real Hybrid::detBulkParamStartTime;

@@ -37,6 +37,13 @@ template<class T> T vecsqr(const T& x,const T& y,const T& z) { return sqr(x) + s
 template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type vecsqr(const T& x) { return sqr(x[0]) + sqr(x[1]) + sqr(x[2]); }
 template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type normvec(const T& x) { using std::sqrt; return sqrt(vecsqr(x)); }
 
+// forced termination (this should never be needed, but is here until all calls to it have become obsolete)
+inline void forceExit(Simulation& sim,SimulationClasses& simClasses) {
+   simClasses.logger << std::endl << "(doExit): UNRECOVERABLE ERROR, IMMEDIATE EXIT" << std::endl << write;
+   MPI_Abort(sim.comm,1);
+   exit(1);
+}
+
 // convert Real to string with given precicion
 inline std::string real2str(Real x,unsigned int prec) {
     std::stringstream ss;
@@ -216,13 +223,14 @@ struct Hybrid {
    static pargrid::DataID dataDetectorCellParticleFlagID;
    static Real detParticleStartTime;
    static Real detParticleEndTime;
-   static bool detParticleRecordImpacts;
    static Real N_detParticleMaxFileLines;
    static Real detParticleWriteInterval;
+   static bool detParticleRecordImpacts;
    static Real detParticleTimestepCnt;
    static Real detParticleFileLineCnt;
    static bool detParticleRecording;
    static std::vector<Real> detCellParticleData;
+   static std::vector<Real> detImpactParticleData;
    // detector: bulk parameters
    static pargrid::DataID dataDetectorCellBulkParamFlagID;
    static Real detBulkParamStartTime;

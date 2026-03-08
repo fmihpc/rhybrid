@@ -41,7 +41,7 @@ Real resistivitySphericalShells(Simulation& sim,SimulationClasses& simClasses,co
    const size_t Nsize = Hybrid::resistivitySphericalR2.size();
    if (Nsize <= 0) {
       simClasses.logger << "(resistivitySphericalShells) ERROR: no function parameters given" << std::endl << write;
-      MPI_Finalize();
+      forceExit(sim,simClasses);
       return 0.0;
    }
    // check if the point is inside or at the first radii: return resistivity of the first shell
@@ -56,7 +56,7 @@ Real resistivitySphericalShells(Simulation& sim,SimulationClasses& simClasses,co
    // check if the point is above or at the last radii: return resistivity of the last shell
    //if (r2 >= Hybrid::resistivitySphericalR2[Nsize-1]) { return Hybrid::resistivitySphericalEta[Nsize-1]; }
    //simClasses.logger << "(resistivitySphericalShells) ERROR: reached function end, which should never happen" << std::endl << write;
-   //MPI_Finalize();
+   //forceExit(sim,simClasses);
    return 0.0;
 }
 

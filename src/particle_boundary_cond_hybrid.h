@@ -156,17 +156,17 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	    Hybrid::logCounterParticleImpact[this->species.popid-1] += particles[current].state[particle::WEIGHT];
 	    Hybrid::logCounterParticleImpactKineticEnergy[this->species.popid-1] += particles[current].state[particle::WEIGHT]*( sqr(particles[current].state[particle::VX]) + sqr(particles[current].state[particle::VY]) + sqr(particles[current].state[particle::VZ]) );
 #ifdef USE_DETECTORS
-	    // store impacting particles for recording
+	    // impact detector: store particles entering the inner boundary for later output
 	    if (Hybrid::detParticleRecordImpacts == true && Hybrid::detParticleRecording == true) {
-	       Hybrid::detCellParticleData.push_back( static_cast<Real>(sim->t) );
-	       Hybrid::detCellParticleData.push_back( static_cast<Real>(this->species.popid) );
-	       Hybrid::detCellParticleData.push_back( static_cast<Real>(b) );
-	       Hybrid::detCellParticleData.push_back(xp);
-	       Hybrid::detCellParticleData.push_back(yp);
-	       Hybrid::detCellParticleData.push_back(zp);
-	       Hybrid::detCellParticleData.push_back( particles[current].state[particle::VX] );
-	       Hybrid::detCellParticleData.push_back( particles[current].state[particle::VY] );
-	       Hybrid::detCellParticleData.push_back( particles[current].state[particle::VZ] );
+	       Hybrid::detImpactParticleData.push_back( static_cast<Real>(sim->t) );
+	       Hybrid::detImpactParticleData.push_back( static_cast<Real>(this->species.popid) );
+	       Hybrid::detImpactParticleData.push_back( static_cast<Real>(b) );
+	       Hybrid::detImpactParticleData.push_back(xp);
+	       Hybrid::detImpactParticleData.push_back(yp);
+	       Hybrid::detImpactParticleData.push_back(zp);
+	       Hybrid::detImpactParticleData.push_back( particles[current].state[particle::VX] );
+	       Hybrid::detImpactParticleData.push_back( particles[current].state[particle::VY] );
+	       Hybrid::detImpactParticleData.push_back( particles[current].state[particle::VZ] );
 	    }
 #endif
 	    particles[current] = particles[end];

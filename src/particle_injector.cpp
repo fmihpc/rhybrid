@@ -385,7 +385,7 @@ bool InjectorSolarWind::finalize() {
 // default function gives an error and exits if called
 bool InjectorSolarWind::checkIfInjectionCellDefault(const pargrid::CellID b) {
    simClasses->logger << "(InjectorSolarWind): ERROR checkIfInjectionCellDefault called " << endl << write;
-   exit(1);
+   forceExit(*sim,*simClasses);
    return false;
 }
 
@@ -452,7 +452,7 @@ bool InjectorSolarWind::checkIfInjectionCellZNeg(const pargrid::CellID b) {
 // default function gives an error and exits if called
 void InjectorSolarWind::initParticleCrdVelDefault(Real blockSize[3],Real& x,Real& y,Real& z,Real& vx,Real& vy,Real& vz) {
    simClasses->logger << "(InjectorSolarWind): ERROR initParticleCrdVelDefault called " << endl << write;
-   exit(1);
+   forceExit(*sim,*simClasses);
 }
 
 // initialize position and velocity of a new solar wind particle at positive x outer boundary
@@ -1342,7 +1342,7 @@ bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Sp
       particles[p].state[particle::VY] = vy;
       particles[p].state[particle::VZ] = vz;
       particles[p].state[particle::WEIGHT] = w;
-#ifdef ION_SPECTRA_ALONG_ORBIT
+/*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
       particles[p].state[particle::INI_X] = xBlock + particles[p].state[particle::X];
       particles[p].state[particle::INI_Y] = yBlock + particles[p].state[particle::Y];
@@ -1351,7 +1351,7 @@ bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Sp
       particles[p].state[particle::INI_VY] =  particles[p].state[particle::VY];
       particles[p].state[particle::INI_VZ] =  particles[p].state[particle::VZ];
       particles[p].state[particle::INI_TIME] = sim->t;
-#endif
+#endif*/
       // inject counter
       Hybrid::logCounterParticleInject[species.popid-1] += w;
       Hybrid::logCounterParticleInjectMacroparticles[species.popid-1] += 1;
