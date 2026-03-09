@@ -173,7 +173,7 @@ bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,Confi
    simClasses.logger << "(RHYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time" << endl << write;
    return false;
 #endif
-   simClasses.logger << "(RHYBRID) Compile information and Makefile options: " << endl;
+   simClasses.logger << "(RHYBRID) Compile information and Makefile options of this binary:" << endl;
 #ifdef COMPILEINFO
    simClasses.logger << COMPILEINFO << endl;
 #endif
@@ -199,6 +199,19 @@ vector< vector<Real> > readRealsFromFile(Simulation& sim,SimulationClasses& simC
    simClasses.logger << "(readRealsFromFile) reading: " << fileName << " ... ";
    size_t cnt = 0;
    while ( getline(inputFromCoordinateFile,tmpStr) ) {
+      // skip if line is empty
+      if (tmpStr.empty() == true) { continue; }
+      // skip if line has only whitespaces
+      const bool tmpStrOnlyWhiteSpaces = all_of(tmpStr.begin(),tmpStr.end(),[](unsigned char c) { return isspace(c); });
+      if (tmpStrOnlyWhiteSpaces == true) { continue; }
+      // skip if the first non-whitespace character is a comment character #
+      bool tmpStrIsComment = false;
+      for (unsigned char c : tmpStr) {
+	 if (isspace(c) == false) {
+	    if (c == '#') { tmpStrIsComment = true; break; }
+	 }
+      }
+      if (tmpStrIsComment == true) { continue; }
       istringstream buff(tmpStr);
       vector<Real> line((istream_iterator<Real>(buff)),istream_iterator<Real>());
       result.push_back(line);
