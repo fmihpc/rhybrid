@@ -37,7 +37,7 @@ bool writeCellDetectorParticles(Simulation& sim,SimulationClasses& simClasses,co
    // gather all recorded particles on master and write in file
    int N_linesLocal = detParticleData.size();
    vector<int> N_linesGlobal(sim.mpiProcesses);
-   MPI_Allgather(&N_linesLocal,1,MPI_Type<int>(),&N_linesGlobal[0],1,MPI_Type<int>(),sim.comm);
+   MPI_Allgather(&N_linesLocal,1,MPI_INT,&N_linesGlobal[0],1,MPI_INT,sim.comm);
    int N_linesTotal = accumulate(N_linesGlobal.begin(),N_linesGlobal.end(),0);
    vector<Real> detParticleDataGlobal(N_linesTotal);
    // create displacement vector for detParticleDataGlobal
@@ -106,15 +106,19 @@ bool writeCellDetectorParticles(Simulation& sim,SimulationClasses& simClasses,co
 
 // write particles recorded by all detectors to files
 bool writeDetectorParticleOutput(Simulation& sim,SimulationClasses& simClasses) {
-   bool success = false;
-   // write particles from the cell detector
-   success = writeCellDetectorParticles(sim,simClasses,Hybrid::detCellParticleData,"det_cell_ple_");
-   // empty particle output list of the cell detector
-   Hybrid::detCellParticleData.clear();
-   // write particles from the impact detector
-   success = writeCellDetectorParticles(sim,simClasses,Hybrid::detImpactParticleData,"det_impact_ple_");
-   // empty particle output list of the impact detector
-   Hybrid::detImpactParticleData.clear();
+   bool success = true;
+   if (Hybrid::detCellParticleEnabled == true) {
+      // write particles from the cell detector
+      success = writeCellDetectorParticles(sim,simClasses,Hybrid::detCellParticleData,"det_cell_ple_");
+      // empty particle output list of the cell detector
+      Hybrid::detCellParticleData.clear();
+   }
+   if (Hybrid::detParticleRecordImpacts == true) {
+      // write particles from the impact detector
+      success = writeCellDetectorParticles(sim,simClasses,Hybrid::detImpactParticleData,"det_impact_ple_");
+      // empty particle output list of the impact detector
+      Hybrid::detImpactParticleData.clear();
+   }
    simClasses.logger << endl << write;
    return success;
 }
@@ -166,7 +170,7 @@ bool writeDetectorBulkParamOutput(Simulation& sim,SimulationClasses& simClasses)
    // gather all recorded bulk values on master and write in file
    int N_linesLocal = Hybrid::detCellBulkParamData.size();
    vector<int> N_linesGlobal(sim.mpiProcesses);
-   MPI_Allgather(&N_linesLocal,1,MPI_Type<int>(),&N_linesGlobal[0],1,MPI_Type<int>(),sim.comm);
+   MPI_Allgather(&N_linesLocal,1,MPI_INT,&N_linesGlobal[0],1,MPI_INT,sim.comm);
    int N_linesTotal = accumulate(N_linesGlobal.begin(),N_linesGlobal.end(),0);
    vector<Real> detCellBulkParamDataGlobal(N_linesTotal);
    // create displacement vector for detCellBulkParamDataGlobal

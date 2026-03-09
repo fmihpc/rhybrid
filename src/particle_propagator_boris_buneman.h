@@ -172,7 +172,7 @@ template<class PARTICLE>
 #ifdef USE_DETECTORS
    // cell detector: store particles in detector cells for later output
    bool* detPleFlag = reinterpret_cast<bool*>(simClasses->pargrid.getUserData(Hybrid::dataDetectorCellParticleFlagID));
-     if (detPleFlag[blockID] == true && Hybrid::detParticleRecording == true) {
+     if (detPleFlag[blockID] == true && Hybrid::detParticleRecording == true && Hybrid::detCellParticleEnabled == true) {
 	 // global coordinates of the particle
 	 const Real xp = xBlock + particle.state[particle::X];
 	 const Real yp = yBlock + particle.state[particle::Y];

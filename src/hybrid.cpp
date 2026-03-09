@@ -84,6 +84,7 @@ Real Hybrid::detParticleWriteInterval;
 bool Hybrid::detParticleRecordImpacts = false;
 Real Hybrid::detParticleTimestepCnt;
 Real Hybrid::detParticleFileLineCnt;
+bool Hybrid::detCellParticleEnabled = false;
 bool Hybrid::detParticleRecording = false;
 vector<Real> Hybrid::detCellParticleData;
 vector<Real> Hybrid::detImpactParticleData;
@@ -95,6 +96,7 @@ Real Hybrid::N_detBulkParamMaxFileLines;
 Real Hybrid::detBulkParamWriteInterval;
 Real Hybrid::detBulkParamTimestepCnt;
 Real Hybrid::detBulkParamFileLineCnt;
+bool Hybrid::detBulkParamEnabled = false;
 bool Hybrid::detBulkParamRecording = false;
 vector<Real> Hybrid::detCellBulkParamData;
 #endif

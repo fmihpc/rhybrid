@@ -228,6 +228,7 @@ struct Hybrid {
    static bool detParticleRecordImpacts;
    static Real detParticleTimestepCnt;
    static Real detParticleFileLineCnt;
+   static bool detCellParticleEnabled;
    static bool detParticleRecording;
    static std::vector<Real> detCellParticleData;
    static std::vector<Real> detImpactParticleData;
@@ -239,6 +240,7 @@ struct Hybrid {
    static Real detBulkParamWriteInterval;
    static Real detBulkParamTimestepCnt;
    static Real detBulkParamFileLineCnt;
+   static bool detBulkParamEnabled;
    static bool detBulkParamRecording;
    static std::vector<Real> detCellBulkParamData;
 #endif
