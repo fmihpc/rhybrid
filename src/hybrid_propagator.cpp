@@ -1313,14 +1313,15 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
       }
 
       // cell centroid local dimensionless coordinates
-      const Real xCell111 = -0.5; const Real yCell111 = -0.5; const Real zCell111 = -0.5;
-      const Real xCell112 = -0.5; const Real yCell112 = -0.5; const Real zCell112 = +0.5;
-      const Real xCell121 = -0.5; const Real yCell121 = +0.5; const Real zCell121 = -0.5;
-      const Real xCell211 = +0.5; const Real yCell211 = -0.5; const Real zCell211 = -0.5;
-      const Real xCell122 = -0.5; const Real yCell122 = +0.5; const Real zCell122 = +0.5;
-      const Real xCell221 = +0.5; const Real yCell221 = +0.5; const Real zCell221 = -0.5;
-      const Real xCell212 = +0.5; const Real yCell212 = -0.5; const Real zCell212 = +0.5;
-      const Real xCell222 = +0.5; const Real yCell222 = +0.5; const Real zCell222 = +0.5;
+      const Real
+         xCell111 = -0.5, yCell111 = -0.5, zCell111 = -0.5,
+         xCell112 = -0.5, yCell112 = -0.5, zCell112 = +0.5,
+         xCell121 = -0.5, yCell121 = +0.5, zCell121 = -0.5,
+         xCell211 = +0.5, yCell211 = -0.5, zCell211 = -0.5,
+         xCell122 = -0.5, yCell122 = +0.5, zCell122 = +0.5,
+         xCell221 = +0.5, yCell221 = +0.5, zCell221 = -0.5,
+         xCell212 = +0.5, yCell212 = -0.5, zCell212 = +0.5,
+         xCell222 = +0.5, yCell222 = +0.5, zCell222 = +0.5;
 
       // weighting factors for the eight cells around the node
       const Real w111 = 1/sqrt(sqr(xCell111-xUpwind) + sqr(yCell111-yUpwind) + sqr(zCell111-zUpwind));
