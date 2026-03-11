@@ -1,18 +1,45 @@
+# test particle tracing
 import os
-import analysator as alr
-import numpy as np
-from matplotlib import cm, colors
-import matplotlib.pyplot as plt
+import sys
+from pathlib import Path
+import argparse
+
+try:
+ import analysator as alr
+except ModuleNotFoundError as err:
+ print('Analysator not found: ' + str(err))
+ sys.exit()
+try:
+ import numpy as np
+except ModuleNotFoundError as err:
+ print('NumPy not found: ' + str(err))
+ sys.exit()
+try:
+ from matplotlib import cm, colors
+ import matplotlib.pyplot as plt
+except ModuleNotFoundError as err:
+ print('matplotlib not found: ' + str(err))
+ sys.exit()
+
+# parse input arguments
+parser = argparse.ArgumentParser('trace_test_particles.py')
+parser.add_argument('input_file',help='Input VLSV file',type=Path)
+parser.add_argument('var_name_B',help='Variable name for magnetic field',type=str)
+parser.add_argument('var_name_Ue',help='Variable name for electron velocity',type=str)
+parser.add_argument('var_name_Ep',help='Variable name for electron pressure term of electric field',type=str)
+parser.add_argument('Rp',help='Planet radius',type=float)
+args = parser.parse_args()
+input_file = str(args.input_file) #input_file = './state00004000.vlsv'
+var_name_B = args.var_name_B # var_name_Ue = 'cellB'
+var_name_Ue = args.var_name_Ue # var_name_Ue = 'cellUe'
+var_name_Ep = args.var_name_Ep # var_name_Ue = 'cellEp'
+Rp = args.Rp #Rp = 3390e3
+if Path(input_file).is_file() == False:
+ print('ERROR: input file does not exist (' + input_file + ')')
+ sys.exit()
 
 save_figures = True # save figures as png files
 
-file_name = './state00004000.vlsv'
-# variable names for B, Ue and Ep in the VLSV file (B = magnetic field, Ue = electron velocity, Ep = electron pressure term of electric field)
-var_name_B = 'cellB'
-var_name_Ue = 'cellUe'
-var_name_Ep = 'cellEp'
-Rp = 3390e3 # Mars radius
-#Rp = 6051.8e3 # Venus radius
 Robstacle = Rp + 200e3 # obstacle radius (particle absorbed below this)
 m = 1.672621716e-27 # test particle mass
 q = 1.60217653e-19 # test particle charge
@@ -24,15 +51,15 @@ max_timesteps = 500
 # constant random seed for reproducibility
 np.random.seed(71)
 
-vr = alr.vlsvfile.VlsvReader(file_name)
+vr = alr.vlsvfile.VlsvReader(input_file)
 if vr.check_variable(var_name_B) == False:
- print('ERROR: variable name for B (' + var_name_B + ' / ' + file_name + ')')
+ print('ERROR: variable name for B (' + var_name_B + ' / ' + input_file + ')')
  exit()
 if vr.check_variable(var_name_Ue) == False:
- print('ERROR: variable name for Ue (' + var_name_Ue + ' / ' + file_name + ')')
+ print('ERROR: variable name for Ue (' + var_name_Ue + ' / ' + input_file + ')')
  exit()
 if vr.check_variable(var_name_Ep) == False:
- print('ERROR: variable name for Ep (' + var_name_Ep + ' / ' + file_name + ')')
+ print('ERROR: variable name for Ep (' + var_name_Ep + ' / ' + input_file + ')')
  exit()
 # simulation box dimensions
 [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
@@ -224,7 +251,7 @@ ax.set_ylabel('y')
 ax.set_zlabel('z')
 
 if save_figures == True:
- plt.savefig('trace_test_particles_time_trajectories.png')
+ plt.savefig('trace_test_particles_trajectories.png')
  plt.clf()
  plt.close()
 else:
