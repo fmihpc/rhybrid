@@ -25,6 +25,15 @@ if ! [ -x "$(command -v /bin/ls)" ]; then
  exit 1
 fi
 
+if command -v rhb_log2pdf.sh >/dev/null 2>&1; then
+ LOG_CMD="rhb_log2pdf.sh"
+elif command -v ./rhb_log2pdf.sh >/dev/null 2>&1; then
+ LOG_CMD="./rhb_log2pdf.sh"
+else
+ echo "ERROR: rhb_log2pdf.sh not in path and ./rhb_log2pdf.sh not found"
+ exit 1
+fi
+
 # multiple dirs
 if [ "$#" -le "0" ]; then
  echo "USAGE: rhb_log2pdf_all.sh lin/log [dir1/] [dir2/] [dir3/] [...]"
@@ -45,7 +54,7 @@ for i in $(/bin/ls ${firstdir}pop*.log)
 do
  i=$(basename $i)
  echo "plotting $i"
- rhb_log2pdf.sh $i $1 $sdirs
+ $LOG_CMD $i $1 $sdirs
 done
 echo "plotting field.log"
-rhb_log2pdf.sh field.log $1 $sdirs
+$LOG_CMD field.log $1 $sdirs
