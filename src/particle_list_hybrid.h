@@ -20,6 +20,7 @@
 #ifndef PARTICLE_LIST_HYBRID_H
 #define PARTICLE_LIST_HYBRID_H
 
+#include <vector>
 #include <particle_list_skeleton.h>
 #include <hybrid.h>
 
