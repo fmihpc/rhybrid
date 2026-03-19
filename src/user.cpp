@@ -21,7 +21,6 @@
 #include <iostream>
 #include <iterator>
 #include <istream>
-#include <vector>
 #include <user.h>
 #include <particle_list_skeleton.h>
 #include <gridbuilder.h>
@@ -268,15 +267,13 @@ bool mpiDistrVecVecReal(Simulation& sim,SimulationClasses& simClasses,vector< ve
    // if d on master has elements (>0), distribute d to all PEs
    if (NN[0] > 0) {
       Real* buff = new Real[NN[1]];
-      //std::vector<Real> buff(NN[1]);
       for (int i=0;i<NN[0];i++) {
 	 // create sending buffer on master
 	 if (sim.mpiRank == sim.MASTER_RANK) {
 	    for (int j=0;j<NN[1];j++) { buff[j] = d[i][j]; }
 	 }
 	 // start transfer
-   MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-	 //MPI_Bcast(buff.data(),NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
+	 MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
 	 // construct vector from the received buffer on non-master PEs
 	 if (sim.mpiRank != sim.MASTER_RANK) {
 	    d.push_back(vector<Real>());
