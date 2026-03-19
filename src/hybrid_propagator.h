@@ -42,15 +42,11 @@ bool* outerBoundaryFlag,
 Real* gridCounterCellMaxUe,
 #endif
 Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
-void calcNodeE(Real* nodeUe,Real* nodeB,
-#ifdef USE_RESISTIVITY
-Real* nodeEta,
+#ifndef USE_GRID_CONSTRAINT_COUNTERS
+void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
+#else
+void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,Real* gridCounterNodeMaxE,bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 #endif
-Real* nodeJ,Real* nodeE,
-#ifdef USE_GRID_CONSTRAINT_COUNTERS
-Real* gridCounterNodeMaxE,
-#endif
-bool* innerFlag,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcNodeJ(Real* faceB,Real* nodeB,Real* nodeRhoQi,Real* nodeJ,
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 Real* gridCounterNodeMaxVw,

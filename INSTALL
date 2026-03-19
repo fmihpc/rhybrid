@@ -1,54 +1,102 @@
-EXAMPLE COMPILATIONS
+EXAMPLE COMPILATION
 
-Ubuntu 14.04.3 LTS (Jan 11, 2016)
+Ubuntu 22.04.5 LTS (Apr 2, 2025)
 
-cd /home/user/bin
-wget https://github.com/fmihpc/rhybrid/archive/master.zip -O rhybrid.zip
-wget https://github.com/fmihpc/corsair/archive/master.zip -O corsair.zip
-wget https://github.com/fmihpc/vlsv/archive/master.zip -O vlsv.zip
-wget https://github.com/fmihpc/pargrid/archive/master.zip -O pargrid.zip
-wget http://ftp.mcs.anl.gov/pub/alice/10x10/zoltan_distrib_v3.6.tar.gz
-tar -xzf zoltan_distrib_v3.6.tar.gz
-rm parmetis_3.1.tar.gz ._scotch_5.1.12b.tar.gz scotch_5.1.12b.tar.gz
-cd Zoltan_v3.6
+# download source codes
+mkdir ~/bin/
+cd ~/bin/
+git clone https://github.com/fmihpc/analysator
+git clone https://github.com/fmihpc/rhybrid
+git clone https://github.com/fmihpc/corsair
+git clone https://github.com/fmihpc/vlsv
+git clone https://github.com/fmihpc/pargrid
+wget https://github.com/sandialabs/Zoltan/archive/refs/tags/v3.901.tar.gz
+mv v3.901.tar.gz Zoltan-v3.901.tar.gz
+tar -xzf Zoltan-v3.901.tar.gz -C ./
+
+# compile Zoltan
+cd Zoltan-3.901/
 mkdir build
 cd build
-../configure --prefix=/home/user/bin/Zoltan_v3.6/build
+../configure --prefix=$HOME/bin/Zoltan-3.901/build
 make
 make install
-cd ~/bin
-unzip '*.zip'
-cd vlsv-master
-cp Makefile.arch Makefile.my
-jed Makefile.my
+
+# compile VLSV
+cd ~/bin/vlsv
+cp -p Makefile.arch Makefile.newuser
+jed Makefile.newuser
+CXXFLAGS = -O3 -std=c++17 -Wall
 INC_SILO=
 LIB_SILO=
 jed Makefile
-ARCH ?= my
-make
-cd visit-plugin
-xmledit vlsv.xml
-CXXFLAGS -std=c++0x -I/home/user/bin/vlsv-master -DNEW_VTK_API
-LDFLAGS -L/home/user/bin/vlsv-master
-xml2cmake vlsv.xml
-cmake .
-make
-cd ~/bin
-mv rhybrid-master/src/ corsair-master/src/user/rhybrid
-cd corsair-master
-cp Makefile.arch Makefile.my
-jed Makefile
-ARCH ?= my
-SIM=rhybrid
-jed Makefile.my
-INC=
-INC_BOOST=-I/usr/include/boost
-LIB_BOOST=-L/usr/lib/ -lboost_program_options
-INC_PARGRID=-I/home/user/bin/pargrid-master
-LIB_PARGRID=
-INC_VLSV=-I/home/user/bin/vlsv-master
-LIB_VLSV=-L/home/user/bin/vlsv-master -lvlsv
-INC_ZOLTAN=-I/home/user/bin/Zoltan_v3.6/build/include
-LIB_ZOLTAN=-L/home/user/bin/Zoltan_v3.6/build/lib -lzoltan
+ARCH ?= newuser
+default: lib
+# and other necessary options for your local system
 make
 
+# compile Corsair and RHybrid
+cd ~/bin/corsair/
+mkdir ~/bin/corsair/src/user/rhybrid/
+cp -p ~/bin/rhybrid/src/* ~/bin/corsair/src/user/rhybrid/
+cd ~/bin/corsair/
+cp -p Makefile.arch Makefile.newuser
+jed Makefile.newuser
+SIM=rhybrid
+jed Makefile
+ARCH ?= newuser
+SIM ?= rhybrid
+# and other necessary options for your local system
+make
+
+# perform a testrun
+mkdir testrun
+cd testrun
+OMPI_MCA_io=^ompio mpirun -n 4 ../corsair_rhybrid --runconfig=${HOME}/bin/rhybrid/examples/mars.cfg
+
+# check run finished ok:
+grep "(MAIN) Exiting simulation after successful run." logfile.txt
+
+# POST-PROCESSING EXAMPLES
+
+# study source *.sh and *.py files for more details
+
+mkdir -p ~/bin/corsair/testrun/analysis/
+cd ~/bin/corsair/testrun/analysis/
+cp -p ~/bin/rhybrid/tools/* ./
+
+# create PDFs of field and particle population log files
+./rhb_log2pdf_all.sh lin ../
+ls field.pdf pop*.pdf
+
+# Python examples using Analysator
+
+export PYTHONPATH=$PYTHONPATH:~/bin/analysator/
+
+# create videos of 2d pseudocolor slices
+
+# individual frames
+mkdir -p png/
+python plotter_rhybrid_2d_slice.py 2 ../ "run1" 3390e3 0 4000
+# put together a video
+ffmpeg -framerate 5 -pattern_type glob -i './png/Hsw_ave_n_*.png' -c:v libx264 -crf 18 -pix_fmt yuv420p -vf scale=1920:-2 Hsw_ave_n.mp4
+ffmpeg -framerate 5 -pattern_type glob -i './png/B_ave_*.png' -c:v libx264 -crf 18 -pix_fmt yuv420p -vf scale=1920:-2 B_ave.mp4
+ffmpeg -framerate 5 -pattern_type glob -i './png/B_state*.png' -c:v libx264 -crf 18 -pix_fmt yuv420p -vf scale=1920:-2 B.mp4
+ls png/*.png
+ls Hsw_ave_n.mp4 B_ave.mp4 B.mp4
+
+# convert a VLSV file in to a VTK XML format
+python vlsv_to_vtk.py ../state00004000.vlsv
+ls state00004000.vti
+
+# trace test particles
+python trace_test_particles.py ../state00004000.vlsv cellB cellUe cellEp 3390e3
+ls trace_test_particles_*.png
+
+# create time series in a point
+python create_time_series_point.py ../ cellB,n_H+sw_ave,n_O+_ave,cellUe,v_H+sw_ave 10e6 1e6 1e6
+ls time_series.dat
+
+# create interpolation along a set of points (trajectory)
+python create_interpolation_along_trajectory.py ../state00004000.vlsv cellB,n_H+sw_ave,v_H+sw_ave,T_H+sw,cellUe,cellEp 3390e3
+ls create_interpolation_along_trajectory_*.png

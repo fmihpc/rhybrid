@@ -50,24 +50,23 @@ bool registerObjectMakers(ObjectFactories& objectFactories) {
    if (objectFactories.particleAccumulators.registerMaker("HybridAccumulator",AccumulatorMaker) == false) { success = false; }
    if (objectFactories.particleBoundaryConditions.registerMaker("HybridBoundaryCond",HybridBoundaryCondMaker<SPECIES,PARTICLE>) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("UniformInjector",UniformIonCreator) == false) { success = false; }
-   if (objectFactories.particleInjectors.registerMaker("AmbientInjector",AmbientIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("SolarWindInjector",SolarWindIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("FlowInjector",FlowIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("IonosphereInjector",IonosphereIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("ChapmanIonosphereInjector",ChapmanIonosphereIonCreator) == false) { success = false; }
    if (objectFactories.particleInjectors.registerMaker("ExosphereInjector",ExosphereIonCreator) == false) { success = false; }
    if (objectFactories.particlePropagators.registerMaker("BorisBuneman",BBMaker<PARTICLE>) == false) {success = false;}
-   
+
    return success;
 }
 
 bool registerDataOperators() {
    bool success = true;
    DataOperatorContainer& doc = corsair::getObjectWrapper().dataOperatorContainer;
-   //if(doc.registerOperator(new MPIRank) == false)          { success = false; }
-   if(doc.registerOperator(new CellIDOP) == false)         { success = false; }
-   //if(doc.registerOperator(new LoadOP) == false)           { success = false; }
-   if(doc.registerOperator(new UserDataOP) == false)       { success = false; }
-   if(doc.registerOperator(new ParticleOperator) == false) { success = false; }
+   //if (doc.registerOperator(new MPIRank) == false)          { success = false; }
+   if (doc.registerOperator(new CellIDOP) == false)         { success = false; }
+   //if (doc.registerOperator(new LoadOP) == false)           { success = false; }
+   if (doc.registerOperator(new UserDataOP) == false)       { success = false; }
+   if (doc.registerOperator(new ParticleOperator) == false) { success = false; }
    return success;
 }

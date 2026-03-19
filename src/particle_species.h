@@ -39,11 +39,11 @@ struct Species {
    bool accelerate;
    bool outIncludeInPlasma;
    std::string outStr;
-   
+
    bool finalize();
    std::string getName() const;
    const std::string& getSpeciesType() const;
    bool readParameters(Simulation& sim,SimulationClasses& simClasses,ConfigReader& cr,const std::string& name);   
 };
-   
+
 #endif

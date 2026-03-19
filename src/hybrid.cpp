@@ -23,7 +23,7 @@ using namespace std;
 
 // Init static variables:
 
-// new variable handling TBD
+// TBD: new variable handling
 //map< string , HybridVariable<Real> > Hybrid::varReal;
 //map< string , HybridVariable<bool> > Hybrid::varBool;
 
@@ -51,9 +51,7 @@ pargrid::DataID Hybrid::dataNodeBID;
 pargrid::DataID Hybrid::dataNodeJID;
 pargrid::DataID Hybrid::dataNodeUeID;
 pargrid::DataID Hybrid::dataNodeJiID;
-#ifdef USE_RESISTIVITY
 pargrid::DataID Hybrid::dataNodeEtaID;
-#endif
 
 // grid constraint counters
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
@@ -78,25 +76,29 @@ pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
 #endif
 #ifdef USE_DETECTORS
 // detector: particle
-pargrid::DataID Hybrid::dataDetectorParticleFlagID;
+pargrid::DataID Hybrid::dataDetectorCellParticleFlagID;
 Real Hybrid::detParticleStartTime;
 Real Hybrid::detParticleEndTime;
 Real Hybrid::N_detParticleMaxFileLines;
 Real Hybrid::detParticleWriteInterval;
+bool Hybrid::detParticleRecordImpacts = false;
 Real Hybrid::detParticleTimestepCnt;
 Real Hybrid::detParticleFileLineCnt;
+bool Hybrid::detCellParticleEnabled = false;
 bool Hybrid::detParticleRecording = false;
-vector<Real> Hybrid::detParticleOutput;
+vector<Real> Hybrid::detCellParticleData;
+vector<Real> Hybrid::detImpactParticleData;
 // detector: bulk parameters
-pargrid::DataID Hybrid::dataDetectorBulkParamFlagID;
+pargrid::DataID Hybrid::dataDetectorCellBulkParamFlagID;
 Real Hybrid::detBulkParamStartTime;
 Real Hybrid::detBulkParamEndTime;
 Real Hybrid::N_detBulkParamMaxFileLines;
 Real Hybrid::detBulkParamWriteInterval;
 Real Hybrid::detBulkParamTimestepCnt;
 Real Hybrid::detBulkParamFileLineCnt;
+bool Hybrid::detBulkParamEnabled = false;
 bool Hybrid::detBulkParamRecording = false;
-vector<Real> Hybrid::detBulkParamOutput;
+vector<Real> Hybrid::detCellBulkParamData;
 #endif
 
 // bit masks to check the existence of +x, -x, +y, -y, +z, -z neighbour cell
@@ -107,9 +109,18 @@ uint32_t Hybrid::Y_NEG_EXISTS;
 uint32_t Hybrid::Z_POS_EXISTS;
 uint32_t Hybrid::Z_NEG_EXISTS;
 
-int Hybrid::logInterval;
+unsigned int Hybrid::logInterval = UINT_MAX;
+unsigned int Hybrid::mainLogDiagnosticsInterval = UINT_MAX;
 bool Hybrid::includeInnerCellsInFieldLog;
-bool Hybrid::writeMainLogEntriesAfterSaveStep = true;
+bool Hybrid::writeMainLogDiagnosticsAfterLogStep = true;
+Real Hybrid::simDataIntervalIntegerOriginal;
+Real Hybrid::dataSaveAllTimestepsStartTime;
+Real Hybrid::dataSaveAllTimestepsEndTime;
+unsigned int Hybrid::saveReducedStateInterval = 0;
+unsigned int Hybrid::saveReducedStateNstride = 10;
+bool Hybrid::saveReducedStateParticles = false;
+bool Hybrid::saveParticles = false;
+unsigned int Hybrid::saveParticlesNstride = 10;
 Real Hybrid::dx;
 Real Hybrid::dV;
 Real Hybrid::R_object;
@@ -137,18 +148,16 @@ bool Hybrid::includeConstantB0InFaradaysLaw = false;
 #endif
 Real Hybrid::electronTemperature;
 Real Hybrid::electronPressureCoeff;
-Real Hybrid::swMacroParticlesCellPerDt;
+Real Hybrid::upstreamMacroPleRatio;
 bool Hybrid::useGravity;
 int Hybrid::Efilter;
 Real Hybrid::EfilterNodeGaussSigma;
 Real Hybrid::EfilterNodeGaussCoeffs[4];
-#ifdef USE_RESISTIVITY
 Real Hybrid::resistivityEta;
 Real Hybrid::resistivityR2;
 vector<Real> Hybrid::resistivitySphericalEta;
 vector<Real> Hybrid::resistivitySphericalR2;
 Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
-#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
 OuterBoundaryZone Hybrid::outerBoundaryZone;
 #endif

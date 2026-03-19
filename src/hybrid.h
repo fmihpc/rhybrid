@@ -32,8 +32,17 @@
 
 template<class T> T sqr(const T& x) { return x*x; }
 template<class T> T cube(const T& x) { return x*x*x; }
-template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type vecsqr(const T& x) { return sqr(x[0])+sqr(x[1])+sqr(x[2]); }
+template<class T> T vecsqr(const T& x,const T& y) { return sqr(x) + sqr(y); }
+template<class T> T vecsqr(const T& x,const T& y,const T& z) { return sqr(x) + sqr(y) + sqr(z); }
+template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type vecsqr(const T& x) { return sqr(x[0]) + sqr(x[1]) + sqr(x[2]); }
 template<class T> typename std::remove_reference<decltype(std::declval<T>()[0])>::type normvec(const T& x) { using std::sqrt; return sqrt(vecsqr(x)); }
+
+// forced termination (this should never be needed, but is here until all calls to it have become obsolete)
+inline void forceExit(Simulation& sim,SimulationClasses& simClasses) {
+   simClasses.logger << std::endl << "(doExit): UNRECOVERABLE ERROR, IMMEDIATE EXIT" << std::endl << write;
+   MPI_Abort(sim.comm,1);
+   exit(1);
+}
 
 // convert Real to string with given precicion
 inline std::string real2str(Real x,unsigned int prec) {
@@ -52,11 +61,20 @@ inline std::string int2str(int x,unsigned int N) {
     return ss.str();
 }
 
-// convert string velocity vector cfg variable to Real vector
-inline bool convertConfigFileVariableVelocity(std::string velStr,std::vector<Real>& vel) {
-   // check velocity format: (Ux,Uy,Uz)
+// convert string to bool
+inline bool str2bool(const std::string boolStr,bool& res) {
+   if (boolStr.compare("0") != 0 && boolStr.compare("1") != 0 && boolStr.compare("true") != 0 && boolStr.compare("false") != 0 && boolStr.compare("True") != 0 && boolStr.compare("False") != 0) {
+      return false;
+   }
+   std::stringstream(boolStr) >> res;
+   return true;
+}
+
+// convert string to 3d Real vector
+inline bool str2RealVector3D(std::string velStr,std::vector<Real>& vel) {
+   // check string format of a 3d vector, which should be: (Ux,Uy,Uz)
    bool velStrOk = true;
-   if(count(velStr.begin(),velStr.end(),'(') != 1 ||
+   if (count(velStr.begin(),velStr.end(),'(') != 1 ||
       count(velStr.begin(),velStr.end(),')') != 1 ||
       count(velStr.begin(),velStr.end(),',') != 2 ||
       velStr.find_first_not_of("(),+-0123456789.e ") != std::string::npos) {
@@ -75,8 +93,50 @@ inline bool convertConfigFileVariableVelocity(std::string velStr,std::vector<Rea
    std::stringstream ss(velStrEdit);
    while (ss >> vtmp) { vel.push_back(vtmp); }
    // check velocity format: (Ux,Uy,Uz)
-   if(vel.size() != 3) { velStrOk = false; }
+   if (vel.size() != 3) { velStrOk = false; }
    return velStrOk;
+}
+
+// convert string to Real vector
+inline bool str2RealVector(std::string realStr,std::vector<Real>& res) {
+   bool realStrOk = true;
+   if (realStr.find_first_not_of("+-0123456789.e ") != std::string::npos) {
+      realStrOk = false;
+   }
+   // convert string to Reals
+   res.clear();
+   Real resTmp;
+   std::stringstream ss(realStr);
+   while (ss >> resTmp) { res.push_back(resTmp); }
+   return realStrOk;
+}
+
+// convert string to unsigned int vector
+inline bool str2UIntVector(std::string intStr,std::vector<unsigned int>& res) {
+   bool intStrOk = true;
+   if (intStr.find_first_not_of("0123456789 ") != std::string::npos) {
+      intStrOk = false;
+   }
+   // convert string to ints
+   res.clear();
+   int resTmp;
+   std::stringstream ss(intStr);
+   while (ss >> resTmp) { res.push_back(resTmp); }
+   return intStrOk;
+}
+
+// convert string to bool vector
+inline bool str2BoolVector(std::string boolStr,std::vector<bool>& res) {
+   bool boolStrOk = true;
+   if (boolStr.find_first_not_of("01 ") != std::string::npos) {
+      boolStrOk = false;
+   }
+   // convert string to bools
+   res.clear();
+   bool resTmp;
+   std::stringstream ss(boolStr);
+   while (ss >> resTmp) { res.push_back( static_cast<bool>(resTmp) ); }
+   return boolStrOk;
 }
 
 // cross product of 3D vectors
@@ -88,24 +148,26 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
 
 #ifdef USE_OUTER_BOUNDARY_ZONE
 struct OuterBoundaryZone {
-   int typeEta=0,typeMinRhoQi=0;
-   Real sizeEta=0.0,sizeMinRhoQi=0.0,minRhoQi=0.0,eta=0.0;
+   int typeMinRhoQi=0;
+   Real sizeMinRhoQi=0.0,minRhoQi=0.0;
    bool constUe = false;
 };
 #endif
 
-// new variable handling TBD
+// TBD: new variable handling
 /*template<typename T>
 struct HybridVariable {
    std::string name = "";
    std::string type = "";
    std::size_t vectorDim = 0;
-   pargrid::DataID id = pargrid::INVALID_DATAID;
+   pargrid::DataID dataID = pargrid::INVALID_DATAID;
+   pargrid::StencilID stencilID = pargrid::INVALID_STENCILID;
    T* ptr = NULL;
+   //T* const constPtr = NULL;
 };*/
 
 struct Hybrid {
-   // new variable handling TBD
+   // TBD: new variable handling
    //static std::map< std::string, HybridVariable<Real> > varReal;
    //static std::map< std::string, HybridVariable<bool> > varBool;
 
@@ -133,10 +195,7 @@ struct Hybrid {
    static pargrid::DataID dataNodeJID;
    static pargrid::DataID dataNodeUeID;
    static pargrid::DataID dataNodeJiID;
-
-#ifdef USE_RESISTIVITY
    static pargrid::DataID dataNodeEtaID;
-#endif
 
    // grid constraint counters
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
@@ -161,25 +220,29 @@ struct Hybrid {
 #endif
 #ifdef USE_DETECTORS
    // detector: particles
-   static pargrid::DataID dataDetectorParticleFlagID;
+   static pargrid::DataID dataDetectorCellParticleFlagID;
    static Real detParticleStartTime;
    static Real detParticleEndTime;
    static Real N_detParticleMaxFileLines;
    static Real detParticleWriteInterval;
+   static bool detParticleRecordImpacts;
    static Real detParticleTimestepCnt;
    static Real detParticleFileLineCnt;
+   static bool detCellParticleEnabled;
    static bool detParticleRecording;
-   static std::vector<Real> detParticleOutput;
+   static std::vector<Real> detCellParticleData;
+   static std::vector<Real> detImpactParticleData;
    // detector: bulk parameters
-   static pargrid::DataID dataDetectorBulkParamFlagID;
+   static pargrid::DataID dataDetectorCellBulkParamFlagID;
    static Real detBulkParamStartTime;
    static Real detBulkParamEndTime;
    static Real N_detBulkParamMaxFileLines;
    static Real detBulkParamWriteInterval;
    static Real detBulkParamTimestepCnt;
    static Real detBulkParamFileLineCnt;
+   static bool detBulkParamEnabled;
    static bool detBulkParamRecording;
-   static std::vector<Real> detBulkParamOutput;
+   static std::vector<Real> detCellBulkParamData;
 #endif
 
    // bit masks
@@ -190,9 +253,18 @@ struct Hybrid {
    static uint32_t Z_POS_EXISTS;
    static uint32_t Z_NEG_EXISTS;
 
-   static int logInterval;
+   static unsigned int logInterval;
+   static unsigned int mainLogDiagnosticsInterval;
+   static bool writeMainLogDiagnosticsAfterLogStep;
    static bool includeInnerCellsInFieldLog;
-   static bool writeMainLogEntriesAfterSaveStep;
+   static Real simDataIntervalIntegerOriginal;
+   static Real dataSaveAllTimestepsStartTime;
+   static Real dataSaveAllTimestepsEndTime;
+   static unsigned int saveReducedStateInterval;
+   static unsigned int saveReducedStateNstride;
+   static bool saveReducedStateParticles;
+   static bool saveParticles;
+   static unsigned int saveParticlesNstride;
    static Real dx;
    static Real dV;
    static Real R_object;
@@ -212,13 +284,11 @@ struct Hybrid {
    static Real minRhoQi;
    static Real maxE2;
    static Real maxVw;
-#ifdef USE_RESISTIVITY
    static Real resistivityEta;
    static Real resistivityR2;
    static std::vector<Real> resistivitySphericalEta;
    static std::vector<Real> resistivitySphericalR2;
    static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
-#endif
 #ifdef USE_OUTER_BOUNDARY_ZONE
    static OuterBoundaryZone outerBoundaryZone;
 #endif
@@ -230,7 +300,7 @@ struct Hybrid {
    static bool useAdiabaticElectronPressure;
    static Real electronTemperature;
    static Real electronPressureCoeff;
-   static Real swMacroParticlesCellPerDt;
+   static Real upstreamMacroPleRatio;
    static bool useGravity;
    static int Efilter;
    static Real EfilterNodeGaussSigma;
