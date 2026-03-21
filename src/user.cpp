@@ -998,6 +998,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add faceB array to ParGrid!" << endl << write;
       return false;
    }
+   Hybrid::dataFaceB0ID = simClasses.pargrid.addUserData<Real>("faceB0",block::SIZE*3);
+   if (Hybrid::dataFaceB0ID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add faceB0 array to ParGrid!" << endl << write;
+      return false;
+   }
    Hybrid::dataFaceJID = simClasses.pargrid.addUserData<Real>("faceJ",block::SIZE*3);
    if (Hybrid::dataFaceJID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add faceJ array to ParGrid!" << endl << write;
@@ -1018,6 +1023,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataCellBID = simClasses.pargrid.addUserData<Real>("cellB",block::SIZE*3);
    if (Hybrid::dataCellBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellB array to ParGrid!" << endl << write;
+      return false;
+   }
+   Hybrid::dataCellB0ID = simClasses.pargrid.addUserData<Real>("cellB0",block::SIZE*3);
+   if (Hybrid::dataCellB0ID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add cellB0 array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataCellJID = simClasses.pargrid.addUserData<Real>("cellJ",block::SIZE*3);
@@ -1067,6 +1077,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataNodeBID = simClasses.pargrid.addUserData<Real>("nodeB",block::SIZE*3);
    if (Hybrid::dataNodeBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeB array to ParGrid!" << endl << write;
+      return false;
+   }
+   Hybrid::dataNodeB0ID = simClasses.pargrid.addUserData<Real>("nodeB0",block::SIZE*3);
+   if (Hybrid::dataNodeB0ID == simClasses.pargrid.invalidCellID()) {
+      simClasses.logger << "(USER) ERROR: Failed to add nodeB0 array to ParGrid!" << endl << write;
       return false;
    }
    Hybrid::dataNodeJID = simClasses.pargrid.addUserData<Real>("nodeJ",block::SIZE*3);
@@ -1169,6 +1184,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataFaceBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add faceB data transfer!" << endl << write; return false;
    }
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataFaceB0ID,pargrid::DEFAULT_STENCIL) == false) {
+      simClasses.logger << "(USER) ERROR: Failed to add faceB0 data transfer!" << endl << write; return false;
+   }
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataFaceJID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add faceJ data transfer!" << endl << write; return false;
    }
@@ -1185,6 +1203,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellB data transfer!" << endl << write; return false;
+   }
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellB0ID,pargrid::DEFAULT_STENCIL) == false) {
+      simClasses.logger << "(USER) ERROR: Failed to add cellB0 data transfer!" << endl << write; return false;
    }
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellJID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellJ data transfer!" << endl << write; return false;
@@ -1220,6 +1241,9 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeB data transfer!" << endl << write; return false;
    }
+   if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeB0ID,pargrid::DEFAULT_STENCIL) == false) {
+      simClasses.logger << "(USER) ERROR: Failed to add nodeB0 data transfer!" << endl << write; return false;
+   }
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataNodeJID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add nodeJ data transfer!" << endl << write; return false;
    }
@@ -1231,12 +1255,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 
    Real* faceB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
+   Real* faceB0              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceB0ID));
    Real* faceJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceJID));
    Real* cellRhoQi           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiID));
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    Real* cellRhoQiBg         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiBgID));
 #endif
    Real* cellB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellBID));
+   Real* cellB0              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellB0ID));
    Real* cellJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellJID));
    Real* cellUe              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellUeID));
    Real* cellJi              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellJiID));
@@ -1246,6 +1272,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real* nodeRhoQi           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeRhoQiID));
    Real* nodeE               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeEID));
    Real* nodeB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeBID));
+   Real* nodeB0              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeB0ID));
    Real* nodeJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJID));
    Real* nodeUe              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeUeID));
    Real* nodeJi              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataNodeJiID));
@@ -1975,14 +2002,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // initialize cell arrays with an initial state if simulation was not restarted
    if (sim.restarted == false) {
       for (size_t i=0; i<vectorArraySize; ++i) { faceB[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { faceB0[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { faceJ[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellB[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { cellB0[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellJ[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellUe[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellJi[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { cellEp[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { nodeE[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { nodeB[i] = 0.0; }
+      for (size_t i=0; i<vectorArraySize; ++i) { nodeB0[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { nodeJ[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { nodeUe[i] = 0.0; }
       for (size_t i=0; i<vectorArraySize; ++i) { nodeJi[i] = 0.0; }
@@ -2536,12 +2566,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // set parameters written in vlsv files
    Hybrid::outputCellParams = {
       {"faceB",false},
+      {"face0",false},
       {"faceJ",false},
       {"cellRhoQi",false},
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
       {"cellRhoQiBg",false},
 #endif
       {"cellB",false},
+      {"cellB0",false},
       {"cellJ",false},
       {"cellUe",false},
       {"cellJi",false},
@@ -2549,6 +2581,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"nodeRhoQi",false},
       {"nodeE",false},
       {"nodeB",false},
+      {"nodeB0",false},
       {"nodeJ",false},
       {"nodeUe",false},
       {"nodeJi",false},
@@ -2734,12 +2767,14 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
       simClasses.logger << "(USER) removed ParGrid array: " << p.second.name << endl;
    }*/
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataFaceB0ID)              == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiBgID)         == false) { success = false; }
 #endif
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellBID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataCellB0ID)              == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellJID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellUeID)              == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellJiID)              == false) { success = false; }
@@ -2753,6 +2788,7 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeRhoQiID)           == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeEID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeBID)               == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataNodeB0ID)              == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeJID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeUeID)              == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataNodeJiID)              == false) { success = false; }

@@ -29,6 +29,7 @@ using namespace std;
 
 // face data
 pargrid::DataID Hybrid::dataFaceBID;
+pargrid::DataID Hybrid::dataFaceB0ID;
 pargrid::DataID Hybrid::dataFaceJID;
 
 // cell data
@@ -37,6 +38,7 @@ pargrid::DataID Hybrid::dataCellRhoQiID;
 pargrid::DataID Hybrid::dataCellRhoQiBgID;
 #endif
 pargrid::DataID Hybrid::dataCellBID;
+pargrid::DataID Hybrid::dataCellB0ID;
 pargrid::DataID Hybrid::dataCellJID;
 pargrid::DataID Hybrid::dataCellUeID;
 pargrid::DataID Hybrid::dataCellJiID;
@@ -48,6 +50,7 @@ pargrid::DataID Hybrid::dataCellExosphereID;
 pargrid::DataID Hybrid::dataNodeRhoQiID;
 pargrid::DataID Hybrid::dataNodeEID;
 pargrid::DataID Hybrid::dataNodeBID;
+pargrid::DataID Hybrid::dataNodeB0ID;
 pargrid::DataID Hybrid::dataNodeJID;
 pargrid::DataID Hybrid::dataNodeUeID;
 pargrid::DataID Hybrid::dataNodeJiID;

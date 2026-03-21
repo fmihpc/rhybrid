@@ -173,6 +173,7 @@ struct Hybrid {
 
    // face data
    static pargrid::DataID dataFaceBID;
+   static pargrid::DataID dataFaceB0ID;
    static pargrid::DataID dataFaceJID;
 
    // cell data
@@ -181,6 +182,7 @@ struct Hybrid {
    static pargrid::DataID dataCellRhoQiBgID;
 #endif
    static pargrid::DataID dataCellBID;
+   static pargrid::DataID dataCellB0ID;
    static pargrid::DataID dataCellJID;
    static pargrid::DataID dataCellUeID;
    static pargrid::DataID dataCellJiID;
@@ -192,6 +194,7 @@ struct Hybrid {
    static pargrid::DataID dataNodeRhoQiID;
    static pargrid::DataID dataNodeEID;
    static pargrid::DataID dataNodeBID;
+   static pargrid::DataID dataNodeB0ID;
    static pargrid::DataID dataNodeJID;
    static pargrid::DataID dataNodeUeID;
    static pargrid::DataID dataNodeJiID;
