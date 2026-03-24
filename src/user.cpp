@@ -64,10 +64,16 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
        for (size_t p=0;p<particleLists.size();++p) { if (particleLists[p]->applyBoundaryConditions() == false) { success = false; } }
        Hybrid::filterParticlesAfterRestartDone = true;
    }
-   // logging: main, field, particles
-   if (sim.atDataSaveStep == true) {
-
+   // write simulation state at all timesteps
+   if (Hybrid::dataSaveAllTimestepsStartTime >= 0 && Hybrid::dataSaveAllTimestepsEndTime > 0) {
+      if (sim.t >= Hybrid::dataSaveAllTimestepsStartTime && sim.t <= Hybrid::dataSaveAllTimestepsEndTime) {
+	 sim.dataIntervalInteger = 1;
+      }
+      else {
+	 sim.dataIntervalInteger = Hybrid::simDataIntervalIntegerOriginal;
+      }
    }
+   // logging: main, field, particles
    if (Hybrid::mainLogDiagnosticsInterval > 0) {
       if ((sim.timestep)%(Hybrid::mainLogDiagnosticsInterval) == 0.0) {
 	 Hybrid::writeMainLogDiagnosticsAfterLogStep = true;
@@ -81,19 +87,22 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
             if (sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
          }
          // broadcast failed flag from master to all PEs (note: this should be handled on a higher level like corsair / int main)
-         MPI_Bcast(&masterFailed,1,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
+         MPI_Bcast(&masterFailed,1,MPI_INT,sim.MASTER_RANK,sim.comm);
          if (masterFailed > 0) {
             success = false;
          }
       }
    }
 #ifdef USE_DETECTORS
-   if (sim.t >= Hybrid::detParticleStartTime && sim.t <= Hybrid::detParticleEndTime && Hybrid::detParticleFileLineCnt < Hybrid::N_detParticleMaxFileLines) {
-      Hybrid::detParticleRecording = true;
-      Hybrid::detParticleTimestepCnt++;
+   if (Hybrid::detCellParticleEnabled == true || Hybrid::detParticleRecordImpacts == true) {
+      if (sim.t >= Hybrid::detParticleStartTime && sim.t <= Hybrid::detParticleEndTime && Hybrid::detParticleFileLineCnt < Hybrid::N_detParticleMaxFileLines) {
+	 Hybrid::detParticleRecording = true;
+	 Hybrid::detParticleTimestepCnt++;
+      }
+      else { Hybrid::detParticleRecording = false; }
    }
    else { Hybrid::detParticleRecording = false; }
-   if (sim.t >= Hybrid::detBulkParamStartTime && sim.t <= Hybrid::detBulkParamEndTime && Hybrid::detBulkParamFileLineCnt < Hybrid::N_detBulkParamMaxFileLines) {
+   if (Hybrid::detBulkParamEnabled == true && sim.t >= Hybrid::detBulkParamStartTime && sim.t <= Hybrid::detBulkParamEndTime && Hybrid::detBulkParamFileLineCnt < Hybrid::N_detBulkParamMaxFileLines) {
       Hybrid::detBulkParamRecording = true;
       Hybrid::detBulkParamTimestepCnt++;
    }
@@ -101,13 +110,13 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    // set repartitioning off if detectors are recording
    if (Hybrid::detParticleRecording == true || Hybrid::detBulkParamRecording == true) {
       if (sim.repartitionCheckInterval > 0) {
-	 simClasses.logger << "(RHYBRID) DETECTORS: detectors recording, setting repartitioning off" << endl;
+	 simClasses.logger << "(RHYBRID) DETECTORS: recording started, setting repartitioning off" << endl << write;
       }
       sim.repartitionCheckInterval = -100;
    }
    else {
       if (sim.repartitionCheckInterval < 0 && Hybrid::repartitionCheckIntervalTmp > 0) {
-	 simClasses.logger << "(RHYBRID) DETECTORS: detectors not recording anymore, setting repartitioning back on" << endl;
+	 simClasses.logger << "(RHYBRID) DETECTORS: recording stopped, setting repartitioning back on" << endl << write;
       }
       sim.repartitionCheckInterval = Hybrid::repartitionCheckIntervalTmp;
    }
@@ -132,14 +141,14 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
 #ifdef USE_DETECTORS
    if (Hybrid::detParticleRecording == true) {
       if (Hybrid::detParticleTimestepCnt >= Hybrid::detParticleWriteInterval) {
-	 if (writeDetectorParticle(sim,simClasses) == false) { success = false; }
+	 if (writeDetectorParticleOutput(sim,simClasses) == false) { success = false; }
 	 Hybrid::detParticleTimestepCnt = 0;
       }
    }
    if (Hybrid::detBulkParamRecording == true) {
-      if (recordDetectorBulkParam(sim,simClasses) == false) { success = false; }
+      if (recordCellDetectorBulkParamData(sim,simClasses) == false) { success = false; }
       if (Hybrid::detBulkParamTimestepCnt >= Hybrid::detBulkParamWriteInterval) {
-	 if (writeDetectorBulkParam(sim,simClasses) == false) { success = false; }
+	 if (writeDetectorBulkParamOutput(sim,simClasses) == false) { success = false; }
 	 Hybrid::detBulkParamTimestepCnt = 0;
       }
    }
@@ -167,7 +176,7 @@ bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,Confi
    simClasses.logger << "(RHYBRID) ERROR: Cannot define USE_B_INITIAL and USE_B_CONSTANT in the same time" << endl << write;
    return false;
 #endif
-   simClasses.logger << "(RHYBRID) Compile information and Makefile options: " << endl;
+   simClasses.logger << "(RHYBRID) Compile information and Makefile options of this binary:" << endl;
 #ifdef COMPILEINFO
    simClasses.logger << COMPILEINFO << endl;
 #endif
@@ -181,59 +190,98 @@ bool userEarlyInitialization(Simulation& sim,SimulationClasses& simClasses,Confi
    return true;
 }
 
-// read an ascii file in a two dimensional vector of reals
-vector< vector<Real> > readRealsFromFile(string fn) {
+// read an ascii file with arbitrary numbers on each line and return them as a vector of Real vectors
+vector< vector<Real> > readRealsFromFile(Simulation& sim,SimulationClasses& simClasses,string fileName) {
    vector< vector<Real> > result;
-   string tmpstr;
-   ifstream in(fn);
-   while ( getline(in,tmpstr) ) {
-      istringstream buff(tmpstr);
+   string tmpStr;
+   ifstream inputFromCoordinateFile(fileName);
+   if (inputFromCoordinateFile.good() == false) {
+      simClasses.logger << "(readRealsFromFile) ERROR: failed opening file " << fileName  << endl << write;
+      return result;
+   }
+   simClasses.logger << "(readRealsFromFile) reading: " << fileName << " ... ";
+   size_t cnt = 0;
+   while ( getline(inputFromCoordinateFile,tmpStr) ) {
+      // skip if line is empty
+      if (tmpStr.empty() == true) { continue; }
+      // skip if line has only whitespaces
+      const bool tmpStrOnlyWhiteSpaces = all_of(tmpStr.begin(),tmpStr.end(),[](unsigned char c) { return isspace(c); });
+      if (tmpStrOnlyWhiteSpaces == true) { continue; }
+      // skip if the first non-whitespace character is a comment character #
+      bool tmpStrIsComment = false;
+      for (unsigned char c : tmpStr) {
+	 if (isspace(c) == false) {
+	    if (c == '#') { tmpStrIsComment = true; break; }
+	 }
+      }
+      if (tmpStrIsComment == true) { continue; }
+      istringstream buff(tmpStr);
       vector<Real> line((istream_iterator<Real>(buff)),istream_iterator<Real>());
       result.push_back(line);
+      cnt++;
    }
-   in.close();
+   simClasses.logger << "done, read total of " << cnt << " lines" << endl;
+   inputFromCoordinateFile.close();
    return result;
 }
 
-// check orbit read from a file
-bool checkOrbit(vector< vector<Real> > xyz) {
-   if (xyz.size() <= 0) { return false; }
+// check a vector has only 3D coordinates and has at least one element
+bool checkCoordinateVector(Simulation& sim,SimulationClasses& simClasses,vector< vector<Real> > xyz) {
+   if (xyz.size() <= 0) {
+      simClasses.logger << "(checkCoordinateVector) ERROR: zero coordinates found" << endl << write;
+      return false;
+   }
    for (unsigned int i = 0; i < xyz.size(); ++i) {
-      if (xyz[i].size() != 3) { return false; }
+      if (xyz[i].size() != 3) {
+	 simClasses.logger << "(checkCoordinateVector) ERROR: expected three coordinates per line (" << xyz[i].size() << ")" << endl << write;
+	 return false;
+      }
    }
    return true;
 }
 
-// broadcast 2d vector from master to all PEs
-bool MPI_BcastFromMaster2DVector(Simulation& sim,vector< vector<Real> >& d) {
-   decltype(d.size()) NN[2];
+// broadcast a vector of vector<Real>'s from master to all PEs
+bool mpiDistrVecVecReal(Simulation& sim,SimulationClasses& simClasses,vector< vector<Real> >& d) {
+   // size variable needs to be integer for MPI transfer
+   // NN[0] = number of vector<Real> elements = number of rows
+   // NN[1] = number of Reals in the first row (usually 3 here in the case of coordinates)
+   int NN[2] = {0,0};
+   // only master has the proper vector d at this point
    if (sim.mpiRank == sim.MASTER_RANK) {
-      NN[0]=d.size();
-      if (NN[0] > 0) { NN[1]=d[0].size(); }
-      else { return false; }
-      // check that all vector rows have same number of columns
-      for (decltype(d.size()) i=0;i<NN[0];i++) {
-         if (d[i].size() != NN[1]) { return false; }
-      }
-   }
-   // distribute orbit coordinates read by master to all processes
-   MPI_Bcast(NN,2,MPI_Type<int>(),sim.MASTER_RANK,sim.comm);
-   Real* buff = new Real[NN[1]];
-   for (decltype(d.size()) i=0;i<NN[0];i++) {
-      if (sim.mpiRank == sim.MASTER_RANK) {
-	 for (decltype(d.size()) j=0;j<NN[1];j++) {
-	    buff[j] = d[i][j];
-	 }
-      }
-      MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-      if (sim.mpiRank != sim.MASTER_RANK) {
-	 d.push_back(vector<Real>());
-	 for (decltype(d.size()) j=0;j<NN[1];j++)  {
-	    d[i].push_back(buff[j]);
+      NN[0] = d.size();
+      // if more that zero rows
+      if (NN[0] > 0) {
+	 // set NN[1] as the number of elements (columns) of the first row
+	 NN[1] = d[0].size();
+	 // check that all all rows have the same number of columns
+	 for (int i=0;i<NN[0];i++) {
+	    if (d[i].size() != static_cast<decltype(d.size())>(NN[1])) {
+	       simClasses.logger << "(mpiDistrVecVecReal) ERROR: d[i].size() != NN[1] (" << d[i].size() << ", " << NN[1] << ")" << endl << write;
+	       return false;
+	    }
 	 }
       }
    }
-   delete[] buff;
+   // first distribute the size variable from master to all PEs (note: this has to be done on all PEs)
+   MPI_Bcast(NN,2,MPI_INT,sim.MASTER_RANK,sim.comm);
+   // if d on master has elements (>0), distribute d to all PEs
+   if (NN[0] > 0) {
+      Real* buff = new Real[NN[1]];
+      for (int i=0;i<NN[0];i++) {
+	 // create sending buffer on master
+	 if (sim.mpiRank == sim.MASTER_RANK) {
+	    for (int j=0;j<NN[1];j++) { buff[j] = d[i][j]; }
+	 }
+	 // start transfer
+	 MPI_Bcast(buff,NN[1],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
+	 // construct vector from the received buffer on non-master PEs
+	 if (sim.mpiRank != sim.MASTER_RANK) {
+	    d.push_back(vector<Real>());
+	    for (int j=0;j<NN[1];j++)  { d[i].push_back(buff[j]); }
+	 }
+      }
+      delete[] buff;
+   }
    return true;
 }
 
@@ -320,7 +368,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      }
    if ( (cellSize[0] != cellSize[1]) || (cellSize[0] != cellSize[2]) || (cellSize[1] != cellSize[2]) ) {
       simClasses.logger << "(RHYBRID) ERROR: Only cube shaped cells allowed (dx = " << cellSize[0]/1e3 << " km, dy = " << cellSize[1]/1e3 << " km, dz = " << cellSize[2]/1e3 << " km)" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    Hybrid::dx=cellSize[0];
@@ -336,6 +384,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.main_log_diagnostics_interval","Logging interval of diagnostics quantities in the main log in units of time step [dt] (unsigned int)",UINT_MAX);
    cr.add("Hybrid.includeInnerCellsInFieldLog","Include cells inside the inner field boundary in the field log [-] (bool)",false);
    cr.add("Hybrid.output_parameters","Parameters to write in output files (string)",string(""));
+   cr.add("Hybrid.data_save_all_timesteps_t_start","Simulation time to set data_save_interval to 1 (saving simulation state at every timestep starts) (float)",-1.0);
+   cr.add("Hybrid.data_save_all_timesteps_t_end","Simulation time to set data_save_interval back to original (saving simulation state at every timestep ends) (float)",-1.0);
    cr.add("Hybrid.save_reduced_state_interval","Interval of reduced state saving in units of time step [dt] (unsigned int)",0);
    cr.add("Hybrid.save_reduced_state_Nstride","Write every Nstride'th cell in reduced state output (unsigned int)",10);
    cr.add("Hybrid.save_reduced_state_include_particles","Include particles in reduced state output [-] (bool)",false);
@@ -373,6 +423,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (Hybrid::mainLogDiagnosticsInterval == UINT_MAX) { Hybrid::mainLogDiagnosticsInterval = 100; } // default if not given in cfg file
    cr.get("Hybrid.includeInnerCellsInFieldLog",Hybrid::includeInnerCellsInFieldLog);
    cr.get("Hybrid.output_parameters",outputParams);
+   cr.get("Hybrid.data_save_all_timesteps_t_start",Hybrid::dataSaveAllTimestepsStartTime);
+   cr.get("Hybrid.data_save_all_timesteps_t_end",Hybrid::dataSaveAllTimestepsEndTime);
    cr.get("Hybrid.save_reduced_state_interval",Hybrid::saveReducedStateInterval);
    cr.get("Hybrid.save_reduced_state_Nstride",Hybrid::saveReducedStateNstride);
    cr.get("Hybrid.save_reduced_state_include_particles",Hybrid::saveReducedStateParticles);
@@ -390,7 +442,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	// if not correct format
 	if (velStrOk == false) {
 	   simClasses.logger << "(RHYBRID) ERROR: bad format of fieldObstacleUe vector (" << fieldObstacleUeStr << ")" << endl << write;
-	   exit(1);
+	   forceExit(sim,simClasses);
 	   return false;
 	}
 	Hybrid::fieldObstacleUe[0] = vel[0];
@@ -431,7 +483,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    else {
       simClasses.logger << "(RHYBRID) ERROR: Bad Hybrid.electron_pressure input value (" << useElectronPressureInput << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    if (Hybrid::useElectronPressureElectricField == false) {
@@ -466,12 +518,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    vector<bool> selectionBoundaryCellB;
    if (str2BoolVector(inputStrBoundaryCellB,selectionBoundaryCellB) == false) {
       simClasses.logger << "(RHYBRID) ERROR: bad format of IMF.BoundaryCellB vector, correct format: +x -x +y -y +z -z, where the six values are bools 0/1 (" << inputStrBoundaryCellB << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    if(selectionBoundaryCellB.size() != 6) {
       simClasses.logger << "(RHYBRID) ERROR: wrong number of values in IMF.BoundaryCellB vector, correct format: +x -x +y -y +z -z, where the six values are bools 0/1 (" << inputStrBoundaryCellB << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    for(size_t i=0;i<6;++i) { Hybrid::IMFBoundaryCellB[i] = selectionBoundaryCellB[i]; }
@@ -479,12 +531,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    vector<bool> selectionBoundaryFaceB;
    if (str2BoolVector(inputStrBoundaryFaceB,selectionBoundaryFaceB) == false) {
       simClasses.logger << "(RHYBRID) ERROR: bad format of IMF.BoundaryFaceB vector, correct format: +x -x +y -y +z -z, where the six values are bools 0/1 (" << inputStrBoundaryFaceB << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    if(selectionBoundaryFaceB.size() != 6) {
       simClasses.logger << "(RHYBRID) ERROR: wrong number of values in IMF.BoundaryFaceB vector, correct format: +x -x +y -y +z -z, where the six values are bools 0/1 (" << inputStrBoundaryFaceB << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    for(size_t i=0;i<6;++i) { Hybrid::IMFBoundaryFaceB[i] = selectionBoundaryFaceB[i]; }
@@ -538,7 +590,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dipMinR2 = sqr(Hybrid::dipMinR2);
    if (setMagneticFieldProfile(magneticFieldProfileName) == false) {
       simClasses.logger << "(RHYBRID) ERROR: unknown name of a magnetic field profile (" << magneticFieldProfileName << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
 #endif
@@ -723,7 +775,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Quadrupole coefficient = " << Hybrid::coeffQuad << endl
      << "Dipole surface B = " << Hybrid::dipSurfB/1e-9 << " nT" << endl
      << "Dipole surface R = " << Hybrid::dipSurfR/1e3 << " km = " << Hybrid::dipSurfR/Hybrid::dx << " dx" << endl
-     << "Minimum R = " << sqrt(Hybrid::dipMinR2)/1e3 << " km = " << sqrt(Hybrid::dipMinR2)/Hybrid::dx << " dx" << endl 
+     << "Minimum R = " << sqrt(Hybrid::dipMinR2)/1e3 << " km = " << sqrt(Hybrid::dipMinR2)/Hybrid::dx << " dx" << endl
      << "x = " << Hybrid::xDip/1e3 << " km = " << Hybrid::xDip/Hybrid::dx << " dx" << endl
      << "y = " << Hybrid::yDip/1e3 << " km = " << Hybrid::yDip/Hybrid::dx << " dx" << endl
      << "z = " << Hybrid::zDip/1e3 << " km = " << Hybrid::zDip/Hybrid::dx << " dx" << endl
@@ -732,10 +784,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // check that equal number of mirror dipole coordinates is given
    if (Hybrid::xDipMirror.size() != Hybrid::yDipMirror.size() || Hybrid::xDipMirror.size() != Hybrid::zDipMirror.size() || Hybrid::yDipMirror.size() != Hybrid::zDipMirror.size()) {
       simClasses.logger << "(RHYBRID) ERROR: mirror dipole coordinate arrays should be the same size (" << Hybrid::xDipMirror.size() << ", " << Hybrid::yDipMirror.size() << "," << Hybrid::zDipMirror.size() << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
-   simClasses.logger << "Mirror dipole coordinates: " << endl;
+   simClasses.logger << "Mirror dipole coordinates:" << endl;
    for (size_t i=0;i<Hybrid::xDipMirror.size();i++) {
       simClasses.logger
 	<< "x_mirror_" << i << " = " << Hybrid::xDipMirror[i]/1e3 << " km = " << Hybrid::xDipMirror[i]/Hybrid::dx << " dx" << endl
@@ -762,8 +814,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "Include cells inside the inner field boundary in the field log = " << Hybrid::includeInnerCellsInFieldLog << endl
      << "Diagnostics interval in main log = " << Hybrid::mainLogDiagnosticsInterval*sim.dt << " s = " << Hybrid::mainLogDiagnosticsInterval << " dt" << endl << endl;
 
-   simClasses.logger << "(RHYBRID) Configuring: particle populations" << endl << write;
-
    // read particle populations: uniform
    vector<string> uniformPopulations;
    cr.addComposed("Hybrid.particle.population.uniform","Names of uniform particle populations (string)");
@@ -781,23 +831,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 }
       }
    } while (erased == true);
-   // read particle populations: ambient
-   vector<string> ambientPopulations;
-   cr.addComposed("Hybrid.particle.population.ambient","Names of ambient particle populations (string)");
-   cr.parse();
-   cr.get("Hybrid.particle.population.ambient",ambientPopulations);
-   // erase empty entries
-   erased = false;
-   do {
-      erased = false;
-      for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
-	 if ((*it).size() == 0) {
-	    ambientPopulations.erase(it);
-	    erased = true;
-	    break;
-	 }
-      }
-   } while (erased == true);
+   // initialise help variable (determined in particle_injector.cpp)
+   Hybrid::upstreamMacroPleRatio = 0;
    // read particle populations: solar wind
    vector<string> solarwindPopulations;
    cr.addComposed("Hybrid.particle.population.solarwind","Names of solar wind particle populations (string)");
@@ -867,7 +902,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       }
    } while (erased == true);
    // number of all, ionospheric and exospheric particle populations
-   Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + ambientPopulations.size() + solarwindPopulations.size() + flowPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
+   Hybrid::N_populations = static_cast<unsigned int>( uniformPopulations.size() + solarwindPopulations.size() + flowPopulations.size() + ionospherePopulations.size() + exospherePopulations.size() );
    const size_t N_uniformPopulations = uniformPopulations.size();
    const size_t N_solarWindPopulations = solarwindPopulations.size();
    const size_t N_flowPopulations = flowPopulations.size();
@@ -1116,13 +1151,14 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 #endif
 #ifdef USE_DETECTORS
-   Hybrid::dataDetectorParticleFlagID = simClasses.pargrid.addUserData<bool>("detPleFlag",1);
-   if (Hybrid::dataDetectorParticleFlagID == simClasses.pargrid.invalidCellID()) {
+   // cell detector flag
+   Hybrid::dataDetectorCellParticleFlagID = simClasses.pargrid.addUserData<bool>("detPleFlag",1);
+   if (Hybrid::dataDetectorCellParticleFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add detPleFlag array to ParGrid!" << endl << write;
       return false;
    }
-   Hybrid::dataDetectorBulkParamFlagID = simClasses.pargrid.addUserData<bool>("detBlkFlag",1);
-   if (Hybrid::dataDetectorBulkParamFlagID == simClasses.pargrid.invalidCellID()) {
+   Hybrid::dataDetectorCellBulkParamFlagID = simClasses.pargrid.addUserData<bool>("detBlkFlag",1);
+   if (Hybrid::dataDetectorCellBulkParamFlagID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add detBlkFlag array to ParGrid!" << endl << write;
       return false;
    }
@@ -1231,104 +1267,133 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 
 #ifdef USE_DETECTORS
-   // detector: particles
-   simClasses.logger << "(RHYBRID) Configuring: detectors" << endl << write;
-   bool* detPleFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorParticleFlagID));
+   simClasses.logger
+     << "(RHYBRID) Configuring detectors" << endl << endl
+     << "(DETECTORS: PARTICLES)" << endl;
+   bool* detPleFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorCellParticleFlagID));
    Hybrid::detParticleFileLineCnt = 0;
-   vector<string> detParticleOrbitFiles;
-   cr.add("DetectorParticle.t_start","Simulation time to start particle detector recording (real)",-1);
-   cr.add("DetectorParticle.t_end","Simulation time to end particle detector recording (real)",-1);
+   vector<string> detCellParticleCoordinateFiles;
+   cr.add("DetectorParticle.t_start","Simulation time to start particle detectors (float)",-1);
+   cr.add("DetectorParticle.t_end","Simulation time to stop particle detectors (float)",-1);
+   cr.add("DetectorParticle.max_detections","Maximum number of recorded particles by all detectors (float)",1e5);
+   cr.add("DetectorParticle.write_interval_timestep","Interval to write particles from detectors to file in time steps (float)",10);
    cr.add("DetectorParticle.record_impacting_particles","Record particles impacting the inner boundary [-] (bool)",false);
-   cr.add("DetectorParticle.max_detections","Maximum number of recorded particles by all detectors (real)",1e5);
-   cr.add("DetectorParticle.write_interval_timestep","Write interval of particle detector file in time steps (real)",10);
-   cr.addComposed("DetectorParticle.orbitfile","Names of orbit file(s) for particle detectors (string)");
+   cr.addComposed("DetectorParticle.coordinate_file","Name(s) of coordinate file(s) for particle cell detector (string)");
    cr.parse();
    cr.get("DetectorParticle.t_start",Hybrid::detParticleStartTime);
    cr.get("DetectorParticle.t_end",Hybrid::detParticleEndTime);
-   cr.get("DetectorParticle.record_impacting_particles",Hybrid::detParticleRecordImpacts);
    cr.get("DetectorParticle.max_detections",Hybrid::N_detParticleMaxFileLines);
    cr.get("DetectorParticle.write_interval_timestep",Hybrid::detParticleWriteInterval);
-   cr.get("DetectorParticle.orbitfile",detParticleOrbitFiles);
+   cr.get("DetectorParticle.record_impacting_particles",Hybrid::detParticleRecordImpacts);
+   cr.get("DetectorParticle.coordinate_file",detCellParticleCoordinateFiles);
    simClasses.logger
-     << "(RHYBRID) DETECTORS: recording particles at t = " << Hybrid::detParticleStartTime << " ... " << Hybrid::detParticleEndTime << " s" << endl
-     << "(RHYBRID) DETECTORS: record particles impacting the inner boundary = " << Hybrid::detParticleRecordImpacts << endl
-     << "(RHYBRID) DETECTORS: maximum number of recorded particles: " << Hybrid::N_detParticleMaxFileLines << endl
-     << "(RHYBRID) DETECTORS: writing interval of particle detector: " << Hybrid::detParticleWriteInterval << " time steps" << endl;
-   vector< vector<Real> > detParticleOrbitCoordinates;
-   // only master reads orbit coordinates from files
+     << "recording particles between t = " << Hybrid::detParticleStartTime << " ... " << Hybrid::detParticleEndTime << " s" << endl
+     << "maximum number of recorded particles: " << Hybrid::N_detParticleMaxFileLines << endl
+     << "writing interval of particle detector: " << Hybrid::detParticleWriteInterval << " time steps" << endl
+     << "record particles impacting the inner boundary = " << Hybrid::detParticleRecordImpacts << endl
+     << "coordinate files for cell detectors to record particles:" << endl;
+   // list file names
+   if (detCellParticleCoordinateFiles.empty() == true) { simClasses.logger << "\t none" << endl; }
+   else {
+      for (vector<string>::iterator it=detCellParticleCoordinateFiles.begin(); it!=detCellParticleCoordinateFiles.end(); ++it) {
+	 simClasses.logger << "\t" << *it << endl;
+      }
+   }
+   vector< vector<Real> > detCellParticleCoordinates;
+   // only master reads coordinates of detector cells from files
    if (sim.mpiRank==sim.MASTER_RANK) {
-      simClasses.logger << "(RHYBRID) DETECTORS: reading spacecraft orbit file(s) for particle detector: " << endl;
-      for (vector<string>::iterator it=detParticleOrbitFiles.begin(); it!=detParticleOrbitFiles.end(); ++it) {
-         simClasses.logger << *it << endl;
+      simClasses.logger << "Reading coordinate files" << endl;
+      for (vector<string>::iterator it=detCellParticleCoordinateFiles.begin(); it!=detCellParticleCoordinateFiles.end(); ++it) {
          vector< vector<Real> > tmpCrd;
-	 simClasses.logger << "reading: " << *it << endl;
-         tmpCrd = readRealsFromFile(*it);
-         if (checkOrbit(tmpCrd) == false) {
-            simClasses.logger << "(RHYBRID) DETECTORS: ERROR: bad orbit file (" << *it << ")" << endl << write;
-	    exit(1);
+         tmpCrd = readRealsFromFile(sim,simClasses,*it);
+	 if (tmpCrd.size() <= 0) {
+	    simClasses.logger << "ERROR: no coordinates found (" << *it << ")" << endl << write;
+	    forceExit(sim,simClasses);
+            return false;
+	 }
+         if (checkCoordinateVector(sim,simClasses,tmpCrd) == false) {
+            simClasses.logger << "ERROR: bad coordinate file (" << *it << ")" << endl << write;
+	    forceExit(sim,simClasses);
             return false;
          }
-         detParticleOrbitCoordinates.insert(detParticleOrbitCoordinates.end(),tmpCrd.begin(),tmpCrd.end());
+	 else {
+	    simClasses.logger << "coordinate file ok (" << *it << ")" << endl;
+	 }
+         detCellParticleCoordinates.insert(detCellParticleCoordinates.end(),tmpCrd.begin(),tmpCrd.end());
       }
-      simClasses.logger << "(RHYBRID) DETECTORS: Total of " << detParticleOrbitCoordinates.size() << " orbit points read for particle detector" << endl;
+      simClasses.logger << "Read total of " << detCellParticleCoordinates.size() << " coordinate points for the cell detector of particles" << endl;
    }
-   // if orbit files and coordinates found, distribute them from master to all PEs
-   if (detParticleOrbitCoordinates.size() > 0) {
-      if (MPI_BcastFromMaster2DVector(sim,detParticleOrbitCoordinates) == false) {
-	 simClasses.logger << "(RHYBRID) DETECTORS: ERROR: failed to distribute orbit coordinates to all MPI PEs (particle detector)" << endl << write;
-	 exit(1);
-	 return false;
-      }
+   // distribute coordinates from master to all PEs (if any, but this has to be called by all PEs anyway)
+   simClasses.logger << "Distributing cell detector coordinates to all processes" << endl;
+   if (mpiDistrVecVecReal(sim,simClasses,detCellParticleCoordinates) == false) {
+      simClasses.logger << "ERROR: failed to distribute coordinates to all MPI PEs (cell detector for particles)" << endl << write;
+      forceExit(sim,simClasses);
+      return false;
    }
    int N_detParticleCells = 0;
-   // detector: bulk parameters
-   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
+   simClasses.logger << endl << "(DETECTORS: BULK PARAMETERS)" << endl;
+   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorCellBulkParamFlagID));
    Hybrid::detBulkParamFileLineCnt = 0;
-   vector<string> detBulkParamOrbitFiles;
-   cr.add("DetectorBulkParameter.t_start","Simulation time to start bulk parameter detector recording (real)",-1);
-   cr.add("DetectorBulkParameter.t_end","Simulation time to end bulk parameter detector recording (real)",-1);
-   cr.add("DetectorBulkParameter.max_detections","Maximum number of recorded bulk parameter values by all detectors (real)",1e5);
-   cr.add("DetectorBulkParameter.write_interval_timestep","Write interval of bulk parameter detector file in time steps (real)",10);
-   cr.addComposed("DetectorBulkParameter.orbitfile","Names of orbit file(s) for bulk parameter detector (string)");
+   vector<string> detCellBulkParamCoordinateFiles;
+   cr.add("DetectorBulkParameter.t_start","Simulation time to start bulk parameter detectors (float)",-1);
+   cr.add("DetectorBulkParameter.t_end","Simulation time to stop bulk parameter detectors (float)",-1);
+   cr.add("DetectorBulkParameter.max_detections","Maximum number of recorded bulk parameter values by all detectors (float)",1e5);
+   cr.add("DetectorBulkParameter.write_interval_timestep","Write interval of bulk parameter detector file in time steps (float)",10);
+   cr.addComposed("DetectorBulkParameter.coordinate_file","Name(s) of coordinate file(s) for bulk parameter cell detector (string)");
    cr.parse();
    cr.get("DetectorBulkParameter.t_start",Hybrid::detBulkParamStartTime);
    cr.get("DetectorBulkParameter.t_end",Hybrid::detBulkParamEndTime);
    cr.get("DetectorBulkParameter.max_detections",Hybrid::N_detBulkParamMaxFileLines);
    cr.get("DetectorBulkParameter.write_interval_timestep",Hybrid::detBulkParamWriteInterval);
-   cr.get("DetectorBulkParameter.orbitfile",detBulkParamOrbitFiles);
-   simClasses.logger << endl
-     << "(RHYBRID) DETECTORS: recording bulk parameters at t = " << Hybrid::detBulkParamStartTime << " ... " << Hybrid::detBulkParamEndTime << " s" << endl
-     << "(RHYBRID) DETECTORS: maximum number of recorded bulk parameter values: " << Hybrid::N_detBulkParamMaxFileLines << endl
-     << "(RHYBRID) DETECTORS: writing interval of bulk parameter detector: " << Hybrid::detBulkParamWriteInterval << " time steps" << endl;
-   vector< vector<Real> > detBulkParamOrbitCoordinates;
-   // only master reads orbit coordinates from files
+   cr.get("DetectorBulkParameter.coordinate_file",detCellBulkParamCoordinateFiles);
+   simClasses.logger
+     << "recording bulk parameters between t = " << Hybrid::detBulkParamStartTime << " ... " << Hybrid::detBulkParamEndTime << " s" << endl
+     << "maximum number of recorded bulk parameter values: " << Hybrid::N_detBulkParamMaxFileLines << endl
+     << "writing interval of bulk parameter detector: " << Hybrid::detBulkParamWriteInterval << " time steps" << endl
+     << "coordinate files for cell detectors to record particles:" << endl;
+   // list file names
+   if (detCellBulkParamCoordinateFiles.empty() == true) { simClasses.logger << "\t none" << endl; }
+   else {
+      for (vector<string>::iterator it=detCellBulkParamCoordinateFiles.begin(); it!=detCellBulkParamCoordinateFiles.end(); ++it) {
+	 simClasses.logger << "\t" << *it << endl;
+      }
+   }
+   vector< vector<Real> > detCellBulkParamCoordinates;
+   // only master reads coordinates of detector cells from files
    if (sim.mpiRank==sim.MASTER_RANK) {
-      simClasses.logger << "(RHYBRID) DETECTORS: reading spacecraft orbit file(s) for bulk parameter detector:" << endl;
-      for (vector<string>::iterator it=detBulkParamOrbitFiles.begin(); it!=detBulkParamOrbitFiles.end(); ++it) {
-	 simClasses.logger << *it << endl;
+      simClasses.logger << "Reading coordinate files" << endl;
+      for (vector<string>::iterator it=detCellBulkParamCoordinateFiles.begin(); it!=detCellBulkParamCoordinateFiles.end(); ++it) {
          vector< vector<Real> > tmpCrd;
-	 simClasses.logger << "reading: " << *it << endl;
-         tmpCrd = readRealsFromFile(*it);
-         if (checkOrbit(tmpCrd) == false) {
-            simClasses.logger << "(RHYBRID) DETECTORS: ERROR: bad orbit file (" << *it << ")" << endl << write;
-	    exit(1);
+         tmpCrd = readRealsFromFile(sim,simClasses,*it);
+	 if (tmpCrd.size() <= 0) {
+	    simClasses.logger << "ERROR: no coordinates found (" << *it << ")" << endl << write;
+	    forceExit(sim,simClasses);
+            return false;
+	 }
+         if (checkCoordinateVector(sim,simClasses,tmpCrd) == false) {
+            simClasses.logger << "ERROR: bad coordinate file (" << *it << ")" << endl << write;
+	    forceExit(sim,simClasses);
             return false;
          }
-         detBulkParamOrbitCoordinates.insert(detBulkParamOrbitCoordinates.end(),tmpCrd.begin(),tmpCrd.end());
+	 else {
+	    simClasses.logger << "coordinate file ok (" << *it << ")" << endl;
+	 }
+	 detCellBulkParamCoordinates.insert(detCellBulkParamCoordinates.end(),tmpCrd.begin(),tmpCrd.end());
       }
-      simClasses.logger << "(RHYBRID) DETECTORS: Total of " << detBulkParamOrbitCoordinates.size() << " orbit points read for bulk parameter detector" << endl;
+      simClasses.logger << "Read total of " << detCellBulkParamCoordinates.size() << " coordinate points for the cell detector of bulk parameters" << endl;
    }
-   // if orbit files and coordinates found, distribute them from master to all PEs
-   if (detBulkParamOrbitCoordinates.size() > 0) {
-      if (MPI_BcastFromMaster2DVector(sim,detBulkParamOrbitCoordinates) == false) {
-	 simClasses.logger << "(RHYBRID) DETECTORS: ERROR: failed to distribute orbit coordinates to all MPI PEs (bulk parameter detector)" << endl << write;
-	 exit(1);
-	 return false;
-      }
+   // distribute coordinates from master to all PEs (if any, but this has to be called by all PEs anyway)
+   simClasses.logger << "Distributing cell detector coordinates to all processes" << endl;
+   if (mpiDistrVecVecReal(sim,simClasses,detCellBulkParamCoordinates) == false) {
+      simClasses.logger << "ERROR: failed to distribute coordinates to all MPI PEs (cell detector for bulk parameters)" << endl << write;
+      forceExit(sim,simClasses);
+      return false;
    }
    int N_detBulkParamCells = 0;
+   simClasses.logger << write;
 #endif
 
+   simClasses.logger << "(RHYBRID) Configuring: particle populations" << endl;
    // Intialize ionospheric and exospheric injector cell arrays (have to be done before particle list initializations) if simulation was not restarted
    if (sim.restarted == false) {
       const size_t ionoArraySize   = simClasses.pargrid.getNumberOfAllCells()*block::SIZE*Hybrid::N_ionospherePopulations;
@@ -1341,14 +1406,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    for (vector<string>::iterator it=uniformPopulations.begin(); it!=uniformPopulations.end(); ++it) {
       simClasses.logger << endl << "(RHYBRID) Initializing a uniform particle population: " << *it << endl;
       if (checkInjectorName(simClasses,cr,*it,"UniformInjector") == false) { return false; }
-      particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
-      if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
-      Hybrid::populationNames.push_back(*it);
-   }
-   // initialize particle lists: ambient
-   for (vector<string>::iterator it=ambientPopulations.begin(); it!=ambientPopulations.end(); ++it) {
-      simClasses.logger << endl << "(RHYBRID) Initializing an ambient particle population: " << *it << endl;
-      if (checkInjectorName(simClasses,cr,*it,"AmbientInjector") == false) { return false; }
       particleLists.push_back(new ParticleListHybrid<Species,Particle<Real> >);
       if (particleLists[particleLists.size()-1]->initialize(sim,simClasses,cr,objectFactories,*it) == false) { return false; }
       Hybrid::populationNames.push_back(*it);
@@ -1719,7 +1776,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
    if (Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
-      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi2/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt" << endl;
+      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi2/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt = " << 0.9*Hybrid::dx/sim.dt/1e3 << " km/s" << endl;
       Hybrid::maxVi2 = 0.9*Hybrid::dx/sim.dt;
    }
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
@@ -1746,24 +1803,24 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    vector<unsigned int> etaBoundarySizes;
    if (str2UIntVector(inputStrEtaBoundarySizes,etaBoundarySizes) == false) {
       simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundarySizes vector, correct format: -x +x -y +y -z +z, where the six values are unsigned ints (" << inputStrEtaBoundarySizes << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    if(etaBoundarySizes.size() != 6) {
       simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundarySizes vector, correct format: -x +x -y +y -z +z, where the six values are unsigned ints (" << inputStrEtaBoundarySizes << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    // parse etaBoundaryCoeffs string
    vector<Real> etaBoundaryCoeffs;
    if (str2RealVector(inputStrEtaBoundaryCoeffs,etaBoundaryCoeffs) == false) {
       simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are reals (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    if(etaBoundaryCoeffs.size() != 6) {
       simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are reals (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
    Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
@@ -1792,7 +1849,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // set resistivity profile after all its parameters are parsed
    if (setResistivityProfile(simClasses,resProfileName,resValueUnit,resValue,resSphericalValue,resistivityGridUnit,Ubulk) == false) {
       simClasses.logger << "(RHYBRID) ERROR: setting resistivity profile failed (" << resProfileName << ")" << endl << write;
-      exit(1);
+      forceExit(sim,simClasses);
       return false;
    }
 
@@ -1909,7 +1966,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "dx/min(td_min) = " << dx_per_td_min/1e3 << " km/s = " << dx_per_td_min/dx_per_dt << " dx/dt" << endl
      << "summedSignalSpeed = " << summedSignalSpeed/1e3 << " km/s = " << summedSignalSpeed/dx_per_dt << " dx/dt" << endl
      << "summedFullConstraintedSignalSpeed = " << summedFullConstraintedSignalSpeed/1e3 << " km/s = " << summedFullConstraintedSignalSpeed/dx_per_dt << " dx/dt" << endl
-     << endl;
+     << endl << write;
 
    // number local cells of scalar and vector variables in this process
    const size_t scalarArraySize = simClasses.pargrid.getNumberOfAllCells()*block::SIZE;
@@ -1944,7 +2001,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 
 #ifdef USE_DETECTORS
-      // variable to record cellid and cell centroid coordinates for output
+      // variables to record cellids and cell centroid coordinates for detectors
       vector< vector<Real> > detParticleCellIDXYZ;
       vector< vector<Real> > detBulkParamCellIDXYZ;
 #endif
@@ -1955,6 +2012,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 innerFlagParticle[b] = false;
          innerFlagCellEp[b] = false;
 #ifdef USE_DETECTORS
+	 // cell detector flags: if true particles and/or bulk parameters are recorded in this cell
          detPleFlag[b] = false;
 	 detBlkFlag[b] = false;
 #endif
@@ -2116,6 +2174,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             }
 #endif
 #ifdef USE_DETECTORS
+	    // flag detector cells
             const Real xmin = xCellCenter - 0.5*Hybrid::dx;
             const Real xmax = xCellCenter + 0.5*Hybrid::dx;
             const Real ymin = yCellCenter - 0.5*Hybrid::dx;
@@ -2123,10 +2182,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real zmin = zCellCenter - 0.5*Hybrid::dx;
             const Real zmax = zCellCenter + 0.5*Hybrid::dx;
 	    // detector: particles
-            for (unsigned int i=0;i<detParticleOrbitCoordinates.size();++i) {
-               const Real xi = detParticleOrbitCoordinates[i][0];
-               const Real yi = detParticleOrbitCoordinates[i][1];
-               const Real zi = detParticleOrbitCoordinates[i][2];
+            for (unsigned int i=0;i<detCellParticleCoordinates.size();++i) {
+               const Real xi = detCellParticleCoordinates[i][0];
+               const Real yi = detCellParticleCoordinates[i][1];
+               const Real zi = detCellParticleCoordinates[i][2];
                if ( (xi >= xmin && xi <= xmax) && (yi >= ymin && yi <= ymax) && (zi >= zmin && zi <= zmax) ) {
                   detPleFlag[b] = true;
                   N_detParticleCells += 1;
@@ -2136,10 +2195,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
                }
             }
 	    // detector: bulk parameters
-            for (unsigned int i=0;i<detBulkParamOrbitCoordinates.size();++i) {
-               const Real xi = detBulkParamOrbitCoordinates[i][0];
-               const Real yi = detBulkParamOrbitCoordinates[i][1];
-               const Real zi = detBulkParamOrbitCoordinates[i][2];
+            for (unsigned int i=0;i<detCellBulkParamCoordinates.size();++i) {
+               const Real xi = detCellBulkParamCoordinates[i][0];
+               const Real yi = detCellBulkParamCoordinates[i][1];
+               const Real zi = detCellBulkParamCoordinates[i][2];
                if ( (xi >= xmin && xi <= xmax) && (yi >= ymin && yi <= ymax) && (zi >= zmin && zi <= zmax) ) {
                   detBlkFlag[b] = true;
                   N_detBulkParamCells += 1;
@@ -2152,107 +2211,131 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 }
       }
 #ifdef USE_DETECTORS
-      // sum N_detParticleCells of all PEs
+      // detector particle: sum the number of particle detector cells from all MPI PEs and broadcast it
       int N_detParticleCellsGlobalSum = 0;
-      MPI_Reduce(&N_detParticleCells,&N_detParticleCellsGlobalSum,1,MPI_Type<int>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-      // send (cellid,x,y,z) rows from PEs to master (this could be optimized using MPI_Gatherv)
-      MPI_Barrier(sim.comm);
-      if (sim.mpiRank != sim.MASTER_RANK) {
-         for (unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
-            if (detParticleCellIDXYZ[i].size() != 4) {
-               simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error with cell indices and coordinates row" << endl << write;
-	       exit(1);
-               return false;
-            }
-            MPI_Send(&detParticleCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
-         }
-      }
-      if (sim.mpiRank == sim.MASTER_RANK) {
-	 if (N_detParticleCellsGlobalSum < N_detParticleCells) {
-	    simClasses.logger << "(RHYBRID) DETECTORS: ERROR: N_detParticleCellsGlobalSum < N_detParticleCells" << endl << write;
-	    exit(1);
-	    return false;
+      MPI_Reduce(&N_detParticleCells,&N_detParticleCellsGlobalSum,1,MPI_INT,MPI_SUM,sim.MASTER_RANK,sim.comm);
+      MPI_Bcast(&N_detParticleCellsGlobalSum,1,MPI_INT,sim.MASTER_RANK,sim.comm);
+      // if detector cells exist
+      if (N_detParticleCellsGlobalSum > 0) {
+	 simClasses.logger << "(RHYBRID) DETECTORS: recording particles in " << N_detParticleCellsGlobalSum << " cells (detector cells)" << endl;
+	 Hybrid::detCellParticleEnabled = true;
+	 // send (cellid,x,y,z) rows from PEs to master (this could be optimized using MPI_Gatherv)
+	 MPI_Barrier(sim.comm);
+	 if (sim.mpiRank != sim.MASTER_RANK) {
+	    for (unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
+	       if (detParticleCellIDXYZ[i].size() != 4) {
+		  simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error with cell indices and coordinates row" << endl << write;
+		  forceExit(sim,simClasses);
+		  return false;
+	       }
+	       MPI_Send(&detParticleCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
+	    }
 	 }
-         unsigned int N_rowsToReceive = N_detParticleCellsGlobalSum - N_detParticleCells;
-         for (unsigned int i = 0;i<N_rowsToReceive;++i) {
-            vector<Real> tmpRecv;
-            tmpRecv.resize(4);
-            MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
-            detParticleCellIDXYZ.push_back(tmpRecv);
-         }
+	 if (sim.mpiRank == sim.MASTER_RANK) {
+	    if (N_detParticleCellsGlobalSum < N_detParticleCells) {
+	       simClasses.logger << "(RHYBRID) DETECTORS: ERROR: N_detParticleCellsGlobalSum < N_detParticleCells" << endl << write;
+	       forceExit(sim,simClasses);
+	       return false;
+	    }
+	    unsigned int N_rowsToReceive = N_detParticleCellsGlobalSum - N_detParticleCells;
+	    for (unsigned int i = 0;i<N_rowsToReceive;++i) {
+	       vector<Real> tmpRecv;
+	       tmpRecv.resize(4);
+	       MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
+	       detParticleCellIDXYZ.push_back(tmpRecv);
+	    }
+	 }
+	 MPI_Barrier(sim.comm);
+	 if (sim.mpiRank == sim.MASTER_RANK) {
+	    // write detector cell indices in a file
+	    string fileName = "det_ple_cell_indices.dat";
+	    simClasses.logger << "(RHYBRID) DETECTORS: writing index file for the particle cell detector (" << fileName << ")" << endl;
+	    ofstream detParticleCellIndicesFile;
+	    detParticleCellIndicesFile.open(fileName,ios_base::out);
+	    detParticleCellIndicesFile.precision(6);
+	    detParticleCellIndicesFile << scientific;
+	    detParticleCellIndicesFile << "% cellid x y z" << endl;
+	    sort(detParticleCellIDXYZ.begin(), detParticleCellIDXYZ.end(), [](const vector<Real>& a, const vector<Real>& b) { return a[0] < b[0]; });
+	    for (unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
+	       if (detParticleCellIDXYZ[i].size() != 4) {
+		  simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
+		  forceExit(sim,simClasses);
+		  return false;
+	       }
+	       detParticleCellIndicesFile << static_cast<long long>(detParticleCellIDXYZ[i][0]) << " " << detParticleCellIDXYZ[i][1] << " " << detParticleCellIDXYZ[i][2] << " " << detParticleCellIDXYZ[i][3] << endl;
+	    }
+	    detParticleCellIndicesFile << flush;
+	    detParticleCellIndicesFile.close();
+	 }
       }
-      MPI_Barrier(sim.comm);
-      if (sim.mpiRank == sim.MASTER_RANK) {
-         simClasses.logger << "(RHYBRID) DETECTORS: recording particles in " << N_detParticleCellsGlobalSum << " cells" << endl;
-         // write detector cell indices in a file
-         ofstream detParticleCellIndicesFile;
-         detParticleCellIndicesFile.open("det_ple_cell_indices.dat",ios_base::out);
-         detParticleCellIndicesFile.precision(6);
-         detParticleCellIndicesFile << scientific;
-         detParticleCellIndicesFile << "% cellid x y z" << endl;
-	 sort(detParticleCellIDXYZ.begin(), detParticleCellIDXYZ.end(), [](const vector<Real>& a, const vector<Real>& b) { return a[0] < b[0]; });
-         for (unsigned int i = 0;i<detParticleCellIDXYZ.size();++i) {
-            if (detParticleCellIDXYZ[i].size() != 4) {
-               simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
-	       exit(1);
-               return false;
-            }
-            detParticleCellIndicesFile << static_cast<long long>(detParticleCellIDXYZ[i][0]) << " " << detParticleCellIDXYZ[i][1] << " " << detParticleCellIDXYZ[i][2] << " " << detParticleCellIDXYZ[i][3] << endl;
-         }
-         detParticleCellIndicesFile << flush;
-         detParticleCellIndicesFile.close();
+      else {
+	 simClasses.logger << "(RHYBRID) DETECTORS: no detector cells found for particles, not recording" << endl;
+	 Hybrid::detCellParticleEnabled = false;
       }
+      simClasses.logger << write;
 
-      // sum N_detBulkParamCells of all PEs
+      // sum the number of bulk parameter detector cells from all MPI PEs and broadcast it
       int N_detBulkParamCellsGlobalSum = 0;
-      MPI_Reduce(&N_detBulkParamCells,&N_detBulkParamCellsGlobalSum,1,MPI_Type<int>(),MPI_SUM,sim.MASTER_RANK,sim.comm);
-      // send (cellid,x,y,z) rows from PEs to master (this could be optimized using MPI_Gatherv)
-      MPI_Barrier(sim.comm);
-      if (sim.mpiRank != sim.MASTER_RANK) {
-         for (unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
-            if (detBulkParamCellIDXYZ[i].size() != 4) {
-               simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error with cell indices and coordinates row" << endl << write;
-	       exit(1);
-               return false;
-            }
-            MPI_Send(&detBulkParamCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
-         }
-      }
-      if (sim.mpiRank == sim.MASTER_RANK) {
-	 if (N_detBulkParamCellsGlobalSum < N_detBulkParamCells) {
-	    simClasses.logger << "(RHYBRID) DETECTORS: ERROR: N_detBulkParamCellsGlobalSum < N_detBulkParamCells" << endl << write;
-	    exit(1);
-	    return false;
+      MPI_Reduce(&N_detBulkParamCells,&N_detBulkParamCellsGlobalSum,1,MPI_INT,MPI_SUM,sim.MASTER_RANK,sim.comm);
+      MPI_Bcast(&N_detBulkParamCellsGlobalSum,1,MPI_INT,sim.MASTER_RANK,sim.comm);
+      // if detector cells exist
+      if (N_detBulkParamCellsGlobalSum > 0) {
+	 simClasses.logger << "(RHYBRID) DETECTORS: recording bulk parameters in " << N_detBulkParamCellsGlobalSum << " cells (detector cells)" << endl;
+	 Hybrid::detBulkParamEnabled = true;
+	 // send (cellid,x,y,z) rows from PEs to master (this could be optimized using MPI_Gatherv)
+	 MPI_Barrier(sim.comm);
+	 if (sim.mpiRank != sim.MASTER_RANK) {
+	    for (unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
+	       if (detBulkParamCellIDXYZ[i].size() != 4) {
+		  simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error with cell indices and coordinates row" << endl << write;
+		  forceExit(sim,simClasses);
+		  return false;
+	       }
+	       MPI_Send(&detBulkParamCellIDXYZ[i][0],4,MPI_Type<Real>(),sim.MASTER_RANK,0,sim.comm);
+	    }
 	 }
-         unsigned int N_rowsToReceive = N_detBulkParamCellsGlobalSum - N_detBulkParamCells;
-         for (unsigned int i = 0;i<N_rowsToReceive;++i) {
-            vector<Real> tmpRecv;
-            tmpRecv.resize(4);
-            MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
-            detBulkParamCellIDXYZ.push_back(tmpRecv);
-         }
+	 if (sim.mpiRank == sim.MASTER_RANK) {
+	    if (N_detBulkParamCellsGlobalSum < N_detBulkParamCells) {
+	       simClasses.logger << "(RHYBRID) DETECTORS: ERROR: N_detBulkParamCellsGlobalSum < N_detBulkParamCells" << endl << write;
+	       forceExit(sim,simClasses);
+	       return false;
+	    }
+	    unsigned int N_rowsToReceive = N_detBulkParamCellsGlobalSum - N_detBulkParamCells;
+	    for (unsigned int i = 0;i<N_rowsToReceive;++i) {
+	       vector<Real> tmpRecv;
+	       tmpRecv.resize(4);
+	       MPI_Recv(&tmpRecv[0],4,MPI_Type<Real>(),MPI_ANY_SOURCE,0,sim.comm,MPI_STATUS_IGNORE);
+	       detBulkParamCellIDXYZ.push_back(tmpRecv);
+	    }
+	 }
+	 MPI_Barrier(sim.comm);
+	 if (sim.mpiRank == sim.MASTER_RANK) {
+	    // write detector cell indices in a file
+	    string fileName = "det_blk_cell_indices.dat";
+	    simClasses.logger << "(RHYBRID) DETECTORS: writing index file for the bulk parameter cell detector (" << fileName << ")" << endl;
+	    ofstream detBulkParamCellIndicesFile;
+	    detBulkParamCellIndicesFile.open(fileName,ios_base::out);
+	    detBulkParamCellIndicesFile.precision(6);
+	    detBulkParamCellIndicesFile << scientific;
+	    detBulkParamCellIndicesFile << "% cellid x y z" << endl;
+	    sort(detBulkParamCellIDXYZ.begin(), detBulkParamCellIDXYZ.end(), [](const vector<Real>& a, const vector<Real>& b) { return a[0] < b[0]; });
+	    for (unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
+	       if (detBulkParamCellIDXYZ[i].size() != 4) {
+		  simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
+		  forceExit(sim,simClasses);
+		  return false;
+	       }
+	       detBulkParamCellIndicesFile << static_cast<long long>(detBulkParamCellIDXYZ[i][0]) << " " << detBulkParamCellIDXYZ[i][1] << " " << detBulkParamCellIDXYZ[i][2] << " " << detBulkParamCellIDXYZ[i][3] << endl;
+	    }
+	    detBulkParamCellIndicesFile << flush;
+	    detBulkParamCellIndicesFile.close();
+	 }
       }
-      MPI_Barrier(sim.comm);
-      if (sim.mpiRank == sim.MASTER_RANK) {
-         simClasses.logger << "(RHYBRID) DETECTORS: recording bulk parameters in " << N_detBulkParamCellsGlobalSum << " cells" << endl;
-         // write detector cell indices in a file
-         ofstream detBulkParamCellIndicesFile;
-         detBulkParamCellIndicesFile.open("det_blk_cell_indices.dat",ios_base::out);
-         detBulkParamCellIndicesFile.precision(6);
-         detBulkParamCellIndicesFile << scientific;
-         detBulkParamCellIndicesFile << "% cellid x y z" << endl;
-	 sort(detBulkParamCellIDXYZ.begin(), detBulkParamCellIDXYZ.end(), [](const vector<Real>& a, const vector<Real>& b) { return a[0] < b[0]; });
-         for (unsigned int i = 0;i<detBulkParamCellIDXYZ.size();++i) {
-            if (detBulkParamCellIDXYZ[i].size() != 4) {
-               simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when creating cell indices file" << endl << write;
-	       exit(1);
-               return false;
-            }
-            detBulkParamCellIndicesFile << static_cast<long long>(detBulkParamCellIDXYZ[i][0]) << " " << detBulkParamCellIDXYZ[i][1] << " " << detBulkParamCellIDXYZ[i][2] << " " << detBulkParamCellIDXYZ[i][3] << endl;
-         }
-         detBulkParamCellIndicesFile << flush;
-         detBulkParamCellIndicesFile.close();
+      else {
+	 simClasses.logger << "(RHYBRID) DETECTORS: no detector cells found for bulk parameters, not recording" << endl;
+	 Hybrid::detBulkParamEnabled = false;
       }
+      simClasses.logger << write;
 #endif
 #ifdef USE_B_INITIAL
 #ifndef USE_SHOCKTUBE_TEST_CONFIGURATION
@@ -2527,12 +2610,33 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "minor store amount   = " << sim.restartMinorFileAmount << endl
      << "file name prefix     = " << sim.restartFilenamePrefix << endl
      << "do restart = " << sim.restarted << endl << endl;
-   
+
    simClasses.logger << "(SIMULATION STATE OUTPUT)" << endl;
    Real stateSaveInterval = 0.0;
    if (sim.dataIntervalIsTime == true) { stateSaveInterval = sim.dataIntervalFloat; }
    else { stateSaveInterval = static_cast<Real>(sim.dataIntervalInteger)*sim.dt; }
-   simClasses.logger << "Interval = " << stateSaveInterval << " s = " << stateSaveInterval/sim.dt << " dt" << endl << endl;
+   simClasses.logger << "Save interval of state files = " << stateSaveInterval << " s = " << stateSaveInterval/sim.dt << " dt" << endl;
+   if (Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
+      simClasses.logger << "WARNING: Hybrid.save_particles_Nstride should be > 0, setting as 10" << endl;
+      Hybrid::saveParticlesNstride = 10;
+   }
+   simClasses.logger
+     << "Include particles in state files = " << Hybrid::saveParticles << endl
+     << "Striding cells for particles with Nstride = " << Hybrid::saveParticlesNstride << endl;
+   Hybrid::simDataIntervalIntegerOriginal = sim.dataIntervalInteger;
+   if (Hybrid::dataSaveAllTimestepsStartTime > Hybrid::dataSaveAllTimestepsEndTime) {
+      simClasses.logger << "ERROR: should be: Hybrid.data_save_all_timesteps_t_start < Hybrid.data_save_all_timesteps_t_end (" << Hybrid::dataSaveAllTimestepsStartTime << ", " << Hybrid::dataSaveAllTimestepsEndTime << ")" << endl;
+      return false;
+   }
+   if (Hybrid::dataSaveAllTimestepsStartTime < 0 || Hybrid::dataSaveAllTimestepsEndTime <= 0) {
+      Hybrid::dataSaveAllTimestepsStartTime = -1;
+      Hybrid::dataSaveAllTimestepsEndTime = -1;
+   }
+   simClasses.logger
+     << "Starting time for saving states at all timesteps = " << Hybrid::dataSaveAllTimestepsStartTime << " s = " << Hybrid::dataSaveAllTimestepsStartTime/sim.dt << " dt" << endl
+     << "Ending time for saving states at all timesteps   = " << Hybrid::dataSaveAllTimestepsEndTime   << " s = " << Hybrid::dataSaveAllTimestepsEndTime/sim.dt   << " dt"  << endl
+     << "Number of states to be saved at all timesteps    = " << round((Hybrid::dataSaveAllTimestepsEndTime - Hybrid::dataSaveAllTimestepsStartTime)/sim.dt) << endl << endl;
+
    // process output parameter selection
    if (Hybrid::outputCellParams.size() > 0 && outputParams.length() > 0) {
       istringstream iss(outputParams);
@@ -2589,14 +2693,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	 return false;
       }
    }
-   if (Hybrid::saveParticles == true && Hybrid::saveParticlesNstride <= 0) {
-      simClasses.logger << "WARNING Hybrid.save_particles_Nstride should be > 0, setting as 10" << endl << endl;
-      Hybrid::saveParticlesNstride = 10;
-   }
-   simClasses.logger
-     << "Particles in state output:" << endl
-     << "Save particles = " << Hybrid::saveParticles << endl
-     << "Nstride        = " << Hybrid::saveParticlesNstride << " (include particles in every Nstride'th cell)" << endl << endl;
 
    simClasses.logger << "(REDUCED SIMULATION STATE OUTPUT)" << endl;
    if (Hybrid::saveReducedStateInterval > 0 && Hybrid::saveReducedStateNstride <= 0) {
@@ -2676,8 +2772,8 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if (simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagNodeID) == false) { success = false; }
 #endif
 #ifdef USE_DETECTORS
-   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorParticleFlagID)  == false) { success = false; }
-   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorBulkParamFlagID) == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorCellParticleFlagID)  == false) { success = false; }
+   if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorCellBulkParamFlagID) == false) { success = false; }
 #endif
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellAverageBID)        == false) { success = false; }

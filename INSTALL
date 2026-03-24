@@ -54,30 +54,49 @@ mkdir testrun
 cd testrun
 OMPI_MCA_io=^ompio mpirun -n 4 ../corsair_rhybrid --runconfig=${HOME}/bin/rhybrid/examples/mars.cfg
 
-# plot particle and field logs as PDF files
-PATH=${PATH}:~/bin/rhybrid/tools/ rhb_log2pdf_all.sh lin
-evince field.pdf pop*.pdf
+# check run finished ok:
+grep "(MAIN) Exiting simulation after successful run." logfile.txt
 
-# use Analysator to study simulation outputs
-export PYTHONPATH=$PYTHONPATH:~/bin/analysator
+# POST-PROCESSING EXAMPLES
 
-# visualisation
-python ~/bin/rhybrid/tools/plotter_example_testrun.py
-eog testrun.png
+# study source *.sh and *.py files for more details
 
-# interpolate variables in selected points
-python ~/bin/rhybrid/tools/interpolate_points.py
-eog testrun_interpolate_points*.png
+mkdir -p ~/bin/corsair/testrun/analysis/
+cd ~/bin/corsair/testrun/analysis/
+cp -p ~/bin/rhybrid/tools/* ./
 
-# construct time series in a point
-python ~/bin/rhybrid/tools/create_time_series_point.py
-cat time_series_testrun01.dat
+# create PDFs of field and particle population log files
+./rhb_log2pdf_all.sh lin ../
+ls field.pdf pop*.pdf
 
-# create a new file with derived parameters
-python ~/bin/rhybrid/tools/create_derived_parameters.py
-ls *derived*.vlsv
+# Python examples using Analysator
 
-# propagate test particles in E and B fiels from testrun
-python ~/bin/rhybrid/tools/trace_test_particle.py
-eog testrun_trace_test_particle_*.png
+export PYTHONPATH=$PYTHONPATH:~/bin/analysator/
 
+# create videos of 2d pseudocolor slices
+
+# individual frames
+mkdir -p png/
+python plotter_rhybrid_2d_slice.py 2 ../ "run1" 3390e3 0 4000
+# put together a video
+ffmpeg -framerate 5 -pattern_type glob -i './png/Hsw_ave_n_*.png' -c:v libx264 -crf 18 -pix_fmt yuv420p -vf scale=1920:-2 Hsw_ave_n.mp4
+ffmpeg -framerate 5 -pattern_type glob -i './png/B_ave_*.png' -c:v libx264 -crf 18 -pix_fmt yuv420p -vf scale=1920:-2 B_ave.mp4
+ffmpeg -framerate 5 -pattern_type glob -i './png/B_state*.png' -c:v libx264 -crf 18 -pix_fmt yuv420p -vf scale=1920:-2 B.mp4
+ls png/*.png
+ls Hsw_ave_n.mp4 B_ave.mp4 B.mp4
+
+# convert a VLSV file in to a VTK XML format
+python vlsv_to_vtk.py ../state00004000.vlsv
+ls state00004000.vti
+
+# trace test particles
+python trace_test_particles.py ../state00004000.vlsv cellB cellUe cellEp 3390e3
+ls trace_test_particles_*.png
+
+# create time series in a point
+python create_time_series_point.py ../ cellB,n_H+sw_ave,n_O+_ave,cellUe,v_H+sw_ave 10e6 1e6 1e6
+ls time_series.dat
+
+# create interpolation along a set of points (trajectory)
+python create_interpolation_along_trajectory.py ../state00004000.vlsv cellB,n_H+sw_ave,v_H+sw_ave,T_H+sw,cellUe,cellEp 3390e3
+ls create_interpolation_along_trajectory_*.png

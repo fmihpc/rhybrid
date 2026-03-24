@@ -32,15 +32,15 @@
 
 using namespace std;
 
-// ascii output writer for particle detector
-bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
+// ascii output writer for particles from the cell detector and the impact detector
+bool writeCellDetectorParticles(Simulation& sim,SimulationClasses& simClasses,const vector<Real>& detParticleData,string fileNamePrefix) {
    // gather all recorded particles on master and write in file
-   int N_linesLocal = Hybrid::detParticleOutput.size();
+   int N_linesLocal = detParticleData.size();
    vector<int> N_linesGlobal(sim.mpiProcesses);
-   MPI_Allgather(&N_linesLocal,1,MPI_Type<int>(),&N_linesGlobal[0],1,MPI_Type<int>(),sim.comm);
+   MPI_Allgather(&N_linesLocal,1,MPI_INT,&N_linesGlobal[0],1,MPI_INT,sim.comm);
    int N_linesTotal = accumulate(N_linesGlobal.begin(),N_linesGlobal.end(),0);
-   vector<Real> detParticleOutputGlobal(N_linesTotal);
-   // create displacement vector for detParticleOutputGlobal
+   vector<Real> detParticleDataGlobal(N_linesTotal);
+   // create displacement vector for detParticleDataGlobal
    int displ[sim.mpiProcesses];
    if (sim.mpiRank == sim.MASTER_RANK) {
       int sum = 0;
@@ -50,44 +50,45 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
       }
    }
    // gather in master
-   MPI_Gatherv(&Hybrid::detParticleOutput[0],N_linesLocal,MPI_Type<Real>(),&detParticleOutputGlobal[0],&N_linesGlobal[0],&displ[0],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
+   MPI_Gatherv(&detParticleData[0],N_linesLocal,MPI_Type<Real>(),&detParticleDataGlobal[0],&N_linesGlobal[0],&displ[0],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
    // master writes
    if (sim.mpiRank == sim.MASTER_RANK) {
       if (Hybrid::detParticleFileLineCnt <= Hybrid::N_detParticleMaxFileLines) {
-	 if (detParticleOutputGlobal.size() % DETECTOR_PARTICLE_FILE_VARIABLES != 0) {
+	 if (detParticleDataGlobal.size() % DETECTOR_PARTICLE_FILE_VARIABLES != 0) {
 	    simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when writing a particle detector file" << endl << write;
 	    return false;
 	 }
+	 if (detParticleDataGlobal.size() < 1) { return true; }
 	 ofstream particleFile;
-	 string particleFileName = string("det_ple_") + int2str(sim.timestep,7) + string(".dat");
+	 string particleFileName = fileNamePrefix + int2str(sim.timestep,7) + string(".dat");
 	 particleFile.open(particleFileName,ios_base::app);
 	 particleFile.precision(6);
 	 particleFile << scientific;
 	 unsigned long fileLineCnt = 0;
 	 particleFile << "% t popid cellid x y z vx vy vz" << endl;
-	 for (unsigned int i=0;i<detParticleOutputGlobal.size();i+=DETECTOR_PARTICLE_FILE_VARIABLES) {
+	 for (unsigned int i=0;i<detParticleDataGlobal.size();i+=DETECTOR_PARTICLE_FILE_VARIABLES) {
 	    particleFile.precision(6);
 	    particleFile
-	      << detParticleOutputGlobal[i+0] << " "                             // 01 t
-	      << static_cast<unsigned int>(detParticleOutputGlobal[i+1]) << " "  // 02 popid
-	      << static_cast<unsigned int>(detParticleOutputGlobal[i+2]) << " "; // 03 blockid
+	      << detParticleDataGlobal[i+0] << " "                             // 01 t
+	      << static_cast<unsigned int>(detParticleDataGlobal[i+1]) << " "  // 02 popid
+	      << static_cast<unsigned int>(detParticleDataGlobal[i+2]) << " "; // 03 blockid
 	    particleFile.precision(4);
 	    particleFile
-	      << detParticleOutputGlobal[i+3] << " "                             // 04 x
-	      << detParticleOutputGlobal[i+4] << " "                             // 05 y
-	      << detParticleOutputGlobal[i+5] << " "                             // 06 z
-	      << detParticleOutputGlobal[i+6] << " "                             // 07 vx
-	      << detParticleOutputGlobal[i+7] << " "                             // 08 vy
-	      << detParticleOutputGlobal[i+8] << endl;                           // 09 vz
-	      /*<< detParticleOutputGlobal[i+2] << " "                           // weight
-	      << detParticleOutputGlobal[i+7] << " "                             // ini: t
-	      << static_cast<unsigned int>(detParticleOutputGlobal[i+8]) << " "  // ini: block id
-	      << detParticleOutputGlobal[i+9] << " "                             // ini: x
-	      << detParticleOutputGlobal[i+10] << " "                            // ini: y
-	      << detParticleOutputGlobal[i+11] << " "                            // ini: z
-	      << detParticleOutputGlobal[i+12] << " "                            // ini: vx
-	      << detParticleOutputGlobal[i+13] << " "                            // ini: vy
-	      << detParticleOutputGlobal[i+14] << endl;                          // ini: vz*/
+	      << detParticleDataGlobal[i+3] << " "                             // 04 x
+	      << detParticleDataGlobal[i+4] << " "                             // 05 y
+	      << detParticleDataGlobal[i+5] << " "                             // 06 z
+	      << detParticleDataGlobal[i+6] << " "                             // 07 vx
+	      << detParticleDataGlobal[i+7] << " "                             // 08 vy
+	      << detParticleDataGlobal[i+8] << endl;                           // 09 vz
+	      /*<< detParticleDataGlobal[i+2] << " "                           // weight
+	      << detParticleDataGlobal[i+7] << " "                             // ini: t
+	      << static_cast<unsigned int>(detParticleDataGlobal[i+8]) << " "  // ini: block id
+	      << detParticleDataGlobal[i+9] << " "                             // ini: x
+	      << detParticleDataGlobal[i+10] << " "                            // ini: y
+	      << detParticleDataGlobal[i+11] << " "                            // ini: z
+	      << detParticleDataGlobal[i+12] << " "                            // ini: vx
+	      << detParticleDataGlobal[i+13] << " "                            // ini: vy
+	      << detParticleDataGlobal[i+14] << endl;                          // ini: vz*/
 	    fileLineCnt++;
 	 }
 	 particleFile << flush;
@@ -100,14 +101,32 @@ bool writeDetectorParticle(Simulation& sim,SimulationClasses& simClasses) {
    }
    MPI_Barrier(sim.comm);
    MPI_Bcast(&Hybrid::detParticleFileLineCnt,1,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-   // empty particle output list
-   Hybrid::detParticleOutput.clear();
    return true;
 }
 
-bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
+// write particles recorded by all detectors to files
+bool writeDetectorParticleOutput(Simulation& sim,SimulationClasses& simClasses) {
    bool success = true;
-   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorBulkParamFlagID));
+   if (Hybrid::detCellParticleEnabled == true) {
+      // write particles from the cell detector
+      success = writeCellDetectorParticles(sim,simClasses,Hybrid::detCellParticleData,"det_cell_ple_");
+      // empty particle output list of the cell detector
+      Hybrid::detCellParticleData.clear();
+   }
+   if (Hybrid::detParticleRecordImpacts == true) {
+      // write particles from the impact detector
+      success = writeCellDetectorParticles(sim,simClasses,Hybrid::detImpactParticleData,"det_impact_ple_");
+      // empty particle output list of the impact detector
+      Hybrid::detImpactParticleData.clear();
+   }
+   simClasses.logger << endl << write;
+   return success;
+}
+
+// store bulk parameter data from cell detectors to be written in files later
+bool recordCellDetectorBulkParamData(Simulation& sim,SimulationClasses& simClasses) {
+   bool success = true;
+   bool* detBlkFlag = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataDetectorCellBulkParamFlagID));
    Real* cellRhoQi = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
    Real* cellB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellBID);
    Real* cellJ = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellJID);
@@ -122,24 +141,24 @@ bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 	 const int n3 = n*3;
 	 // record bulk parameters in flagged cells
 	 if (detBlkFlag[n] == true && Hybrid::detBulkParamRecording == true) {
-	    Hybrid::detBulkParamOutput.push_back( static_cast<Real>(sim.t)    ); // 1. t
-	    Hybrid::detBulkParamOutput.push_back( static_cast<Real>(globalID) ); // 2. cellid
-	    Hybrid::detBulkParamOutput.push_back( cellRhoQi[n] ); //  3. rhoqi
-	    Hybrid::detBulkParamOutput.push_back( cellB[n3+0]  ); //  4. Bx
-	    Hybrid::detBulkParamOutput.push_back( cellB[n3+1]  ); //  5. By
-	    Hybrid::detBulkParamOutput.push_back( cellB[n3+2]  ); //  6. Bz
-	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+0]  ); //  7. Jx
-	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+1]  ); //  8. Jy
-	    Hybrid::detBulkParamOutput.push_back( cellJ[n3+2]  ); //  9. Jz
-	    Hybrid::detBulkParamOutput.push_back( cellUe[n3+0] ); // 10. Uex
-	    Hybrid::detBulkParamOutput.push_back( cellUe[n3+1] ); // 11. Uey
-	    Hybrid::detBulkParamOutput.push_back( cellUe[n3+2] ); // 12. Uez
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+0] ); // 13. Jix
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+1] ); // 14. Jiy
-	    Hybrid::detBulkParamOutput.push_back( cellJi[n3+2] ); // 15. Jiz
-	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+0]  ); // 16. Ex(node)
-	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+1]  ); // 17. Ey(node)
-	    Hybrid::detBulkParamOutput.push_back( nodeE[n3+2]  ); // 18. Ez(node)
+	    Hybrid::detCellBulkParamData.push_back( static_cast<Real>(sim.t)    ); // 1. t
+	    Hybrid::detCellBulkParamData.push_back( static_cast<Real>(globalID) ); // 2. cellid
+	    Hybrid::detCellBulkParamData.push_back( cellRhoQi[n] ); //  3. rhoqi
+	    Hybrid::detCellBulkParamData.push_back( cellB[n3+0]  ); //  4. Bx
+	    Hybrid::detCellBulkParamData.push_back( cellB[n3+1]  ); //  5. By
+	    Hybrid::detCellBulkParamData.push_back( cellB[n3+2]  ); //  6. Bz
+	    Hybrid::detCellBulkParamData.push_back( cellJ[n3+0]  ); //  7. Jx
+	    Hybrid::detCellBulkParamData.push_back( cellJ[n3+1]  ); //  8. Jy
+	    Hybrid::detCellBulkParamData.push_back( cellJ[n3+2]  ); //  9. Jz
+	    Hybrid::detCellBulkParamData.push_back( cellUe[n3+0] ); // 10. Uex
+	    Hybrid::detCellBulkParamData.push_back( cellUe[n3+1] ); // 11. Uey
+	    Hybrid::detCellBulkParamData.push_back( cellUe[n3+2] ); // 12. Uez
+	    Hybrid::detCellBulkParamData.push_back( cellJi[n3+0] ); // 13. Jix
+	    Hybrid::detCellBulkParamData.push_back( cellJi[n3+1] ); // 14. Jiy
+	    Hybrid::detCellBulkParamData.push_back( cellJi[n3+2] ); // 15. Jiz
+	    Hybrid::detCellBulkParamData.push_back( nodeE[n3+0]  ); // 16. Ex(node)
+	    Hybrid::detCellBulkParamData.push_back( nodeE[n3+1]  ); // 17. Ey(node)
+	    Hybrid::detCellBulkParamData.push_back( nodeE[n3+2]  ); // 18. Ez(node)
 	 }
       }
    }
@@ -147,14 +166,14 @@ bool recordDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
 }
 
 // ascii output writer for bulk parameter detector
-bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
+bool writeDetectorBulkParamOutput(Simulation& sim,SimulationClasses& simClasses) {
    // gather all recorded bulk values on master and write in file
-   int N_linesLocal = Hybrid::detBulkParamOutput.size();
+   int N_linesLocal = Hybrid::detCellBulkParamData.size();
    vector<int> N_linesGlobal(sim.mpiProcesses);
-   MPI_Allgather(&N_linesLocal,1,MPI_Type<int>(),&N_linesGlobal[0],1,MPI_Type<int>(),sim.comm);
+   MPI_Allgather(&N_linesLocal,1,MPI_INT,&N_linesGlobal[0],1,MPI_INT,sim.comm);
    int N_linesTotal = accumulate(N_linesGlobal.begin(),N_linesGlobal.end(),0);
-   vector<Real> detBulkParamOutputGlobal(N_linesTotal);
-   // create displacement vector for detBulkParamOutputGlobal
+   vector<Real> detCellBulkParamDataGlobal(N_linesTotal);
+   // create displacement vector for detCellBulkParamDataGlobal
    int displ[sim.mpiProcesses];
    if (sim.mpiRank == sim.MASTER_RANK) {
       int sum = 0;
@@ -164,41 +183,42 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
       }
    }
    // gather in master
-   MPI_Gatherv(&Hybrid::detBulkParamOutput[0],N_linesLocal,MPI_Type<Real>(),&detBulkParamOutputGlobal[0],&N_linesGlobal[0],&displ[0],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
+   MPI_Gatherv(&Hybrid::detCellBulkParamData[0],N_linesLocal,MPI_Type<Real>(),&detCellBulkParamDataGlobal[0],&N_linesGlobal[0],&displ[0],MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
    // master writes
    if (sim.mpiRank == sim.MASTER_RANK) {
       if (Hybrid::detBulkParamFileLineCnt <= Hybrid::N_detBulkParamMaxFileLines) {
-	 if (detBulkParamOutputGlobal.size() % DETECTOR_BULK_PARAMETER_FILE_VARIABLES != 0) {
+	 if (detCellBulkParamDataGlobal.size() % DETECTOR_BULK_PARAMETER_FILE_VARIABLES != 0) {
 	    simClasses.logger << "(RHYBRID) DETECTORS: ERROR: error when writing a bulk parameter detector file" << endl << write;
 	    return false;
 	 }
+	 if (detCellBulkParamDataGlobal.size() < 1) { return true; }
 	 ofstream bulkParamFile;
-	 string bulkParamFileName = string("det_blk_") + int2str(sim.timestep,7) + string(".dat");
+	 string bulkParamFileName = string("det_cell_blk_") + int2str(sim.timestep,7) + string(".dat");
 	 bulkParamFile.open(bulkParamFileName,ios_base::app);
 	 bulkParamFile.precision(6);
 	 bulkParamFile << scientific;
 	 unsigned long fileLineCnt = 0;
 	 bulkParamFile << "% t cellid rhoqi Bx By Bz Jx Jy Jz Uex Uey Uez Jix Jiy Jiz Ex(node) Ey(node) Ez(node)" << endl;
-	 for (unsigned int i=0;i<detBulkParamOutputGlobal.size();i+=DETECTOR_BULK_PARAMETER_FILE_VARIABLES) {
+	 for (unsigned int i=0;i<detCellBulkParamDataGlobal.size();i+=DETECTOR_BULK_PARAMETER_FILE_VARIABLES) {
 	    bulkParamFile
-	      << detBulkParamOutputGlobal[i+0] << " "
-	      << static_cast<unsigned int>(detBulkParamOutputGlobal[i+1]) << " "
-	      << detBulkParamOutputGlobal[i+2] << " "
-	      << detBulkParamOutputGlobal[i+3] << " "
-	      << detBulkParamOutputGlobal[i+4] << " "
-	      << detBulkParamOutputGlobal[i+5] << " "
-	      << detBulkParamOutputGlobal[i+6] << " "
-	      << detBulkParamOutputGlobal[i+7] << " "
-	      << detBulkParamOutputGlobal[i+8] << " "
-	      << detBulkParamOutputGlobal[i+9] << " "
-	      << detBulkParamOutputGlobal[i+10] << " "
-	      << detBulkParamOutputGlobal[i+11] << " "
-	      << detBulkParamOutputGlobal[i+12] << " "
-	      << detBulkParamOutputGlobal[i+13] << " "
-	      << detBulkParamOutputGlobal[i+14] << " "
-	      << detBulkParamOutputGlobal[i+15] << " "
-	      << detBulkParamOutputGlobal[i+16] << " "
-	      << detBulkParamOutputGlobal[i+17] << endl;
+	      << detCellBulkParamDataGlobal[i+0] << " "
+	      << static_cast<unsigned int>(detCellBulkParamDataGlobal[i+1]) << " "
+	      << detCellBulkParamDataGlobal[i+2] << " "
+	      << detCellBulkParamDataGlobal[i+3] << " "
+	      << detCellBulkParamDataGlobal[i+4] << " "
+	      << detCellBulkParamDataGlobal[i+5] << " "
+	      << detCellBulkParamDataGlobal[i+6] << " "
+	      << detCellBulkParamDataGlobal[i+7] << " "
+	      << detCellBulkParamDataGlobal[i+8] << " "
+	      << detCellBulkParamDataGlobal[i+9] << " "
+	      << detCellBulkParamDataGlobal[i+10] << " "
+	      << detCellBulkParamDataGlobal[i+11] << " "
+	      << detCellBulkParamDataGlobal[i+12] << " "
+	      << detCellBulkParamDataGlobal[i+13] << " "
+	      << detCellBulkParamDataGlobal[i+14] << " "
+	      << detCellBulkParamDataGlobal[i+15] << " "
+	      << detCellBulkParamDataGlobal[i+16] << " "
+	      << detCellBulkParamDataGlobal[i+17] << endl;
 	    fileLineCnt++;
 	 }
 	 bulkParamFile << flush;
@@ -211,8 +231,9 @@ bool writeDetectorBulkParam(Simulation& sim,SimulationClasses& simClasses) {
    }
    MPI_Barrier(sim.comm);
    MPI_Bcast(&Hybrid::detBulkParamFileLineCnt,1,MPI_Type<Real>(),sim.MASTER_RANK,sim.comm);
-   // empty particle output list
-   Hybrid::detBulkParamOutput.clear();
+   // empty bulk parameter output list
+   Hybrid::detCellBulkParamData.clear();
+   simClasses.logger << endl << write;
    return true;
 }
 

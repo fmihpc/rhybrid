@@ -1,7 +1,32 @@
 # create derived variables from a VLSV file and write a new file with them
 import os
-import analysator as alr
-import numpy as np
+import sys
+from pathlib import Path
+import argparse
+try:
+ import analysator as alr
+except ModuleNotFoundError as err:
+ print("Analysator not found: " + str(err))
+ sys.exit()
+try:
+ import numpy as np
+except ModuleNotFoundError as err:
+ print("NumPy not found: " + str(err))
+ sys.exit()
+
+# parse input arguments
+parser = argparse.ArgumentParser("create_derived_parameters.py")
+parser.add_argument("input_file",help="Input VLSV file",type=Path)
+parser.add_argument("output_file",help="Output VLSV file",type=Path)
+args = parser.parse_args()
+input_file = str(args.input_file) #input_file = './state00004000.vlsv'
+output_file = str(args.output_file) #output_file = './state00004000_derived_parameters.vlsv'
+if Path(input_file).is_file() == False:
+ print('ERROR: input file does not exist (' + input_file + ')')
+ sys.exit()
+if Path(output_file).is_file() == True:
+ print('ERROR: output file already exists (' + output_file + ')')
+ sys.exit()
 
 # constants
 mp = 1.672621716e-27
@@ -10,11 +35,8 @@ mO = 2.6567625437e-26
 mO2 = 5.3135250874e-26
 mu0 = 1.25663706e-6
 
-#fn = os.path.join(os.getenv('HOME'),'bin/corsair/testrun/state00004000')
-fn = 'state00004000'
-
 # open and create a VLSV file reader
-vr = alr.vlsvfile.VlsvReader(fn + '.vlsv')
+vr = alr.vlsvfile.VlsvReader(input_file)
 
 # example: list all variables in the file
 #print('===== VARIABLES IN ' + fn + '.vlsv')
@@ -41,7 +63,7 @@ rhom = mp*nHsw + mHe*nHesw + mO*nO + mO2*nO2 + mp*nHpla
 vA = Btot/np.sqrt(mu0*rhom)
 
 # open and create a VLSV file writer
-writer = alr.vlsvfile.VlsvWriter(vr,fn + '_derived_parameters.vlsv', copy_meshes=['SpatialGrid'])
+writer = alr.vlsvfile.VlsvWriter(vr,output_file, copy_meshes=['SpatialGrid'])
 
 # write original variables
 writer.copy_variables(vr,varlist=['CellID','v_tot','n_tot'])
@@ -51,3 +73,4 @@ varinfo = alr.calculations.VariableInfo(rhom,name='rhom',units='')
 writer.write_variable_info(varinfo,'SpatialGrid',1)
 varinfo = alr.calculations.VariableInfo(vA,name='vA',units='')
 writer.write_variable_info(varinfo,'SpatialGrid',1)
+

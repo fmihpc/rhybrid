@@ -77,35 +77,35 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    bool* outerBoundaryFlagNode   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagNodeID);
 #endif
 
-   if (faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; exit(1);}
-   if (faceJ               == NULL) {cerr << "ERROR: obtained NULL faceJ array!"        << endl; exit(1);}
-   if (cellRhoQi           == NULL) {cerr << "ERROR: obtained NULL cellRhoQi array!"    << endl; exit(1);}
-   if (cellB               == NULL) {cerr << "ERROR: obtained NULL cellB array!"        << endl; exit(1);}
-   if (cellJ               == NULL) {cerr << "ERROR: obtained NULL cellJ array!"        << endl; exit(1);}
-   if (cellUe              == NULL) {cerr << "ERROR: obtained NULL cellUe array!"       << endl; exit(1);}
-   if (cellJi              == NULL) {cerr << "ERROR: obtained NULL cellJi array!"       << endl; exit(1);}
-   if (cellEp              == NULL) {cerr << "ERROR: obtained NULL cellEp array!"       << endl; exit(1);}
-   if (nodeRhoQi           == NULL) {cerr << "ERROR: obtained NULL nodeRhoQi array!"    << endl; exit(1);}
-   if (nodeE               == NULL) {cerr << "ERROR: obtained NULL nodeE array!"        << endl; exit(1);}
-   if (nodeB               == NULL) {cerr << "ERROR: obtained NULL nodeB array!"        << endl; exit(1);}
-   if (nodeJ               == NULL) {cerr << "ERROR: obtained NULL nodeJ array!"        << endl; exit(1);}
-   if (nodeUe              == NULL) {cerr << "ERROR: obtained NULL nodeUe array!"       << endl; exit(1);}
-   if (nodeJi              == NULL) {cerr << "ERROR: obtained NULL nodeJi array!"       << endl; exit(1);}
-   if (nodeEta             == NULL) {cerr << "ERROR: obtained NULL nodeEta array!"      << endl; exit(1);}
+   if (faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; forceExit(sim,simClasses);}
+   if (faceJ               == NULL) {cerr << "ERROR: obtained NULL faceJ array!"        << endl; forceExit(sim,simClasses);}
+   if (cellRhoQi           == NULL) {cerr << "ERROR: obtained NULL cellRhoQi array!"    << endl; forceExit(sim,simClasses);}
+   if (cellB               == NULL) {cerr << "ERROR: obtained NULL cellB array!"        << endl; forceExit(sim,simClasses);}
+   if (cellJ               == NULL) {cerr << "ERROR: obtained NULL cellJ array!"        << endl; forceExit(sim,simClasses);}
+   if (cellUe              == NULL) {cerr << "ERROR: obtained NULL cellUe array!"       << endl; forceExit(sim,simClasses);}
+   if (cellJi              == NULL) {cerr << "ERROR: obtained NULL cellJi array!"       << endl; forceExit(sim,simClasses);}
+   if (cellEp              == NULL) {cerr << "ERROR: obtained NULL cellEp array!"       << endl; forceExit(sim,simClasses);}
+   if (nodeRhoQi           == NULL) {cerr << "ERROR: obtained NULL nodeRhoQi array!"    << endl; forceExit(sim,simClasses);}
+   if (nodeE               == NULL) {cerr << "ERROR: obtained NULL nodeE array!"        << endl; forceExit(sim,simClasses);}
+   if (nodeB               == NULL) {cerr << "ERROR: obtained NULL nodeB array!"        << endl; forceExit(sim,simClasses);}
+   if (nodeJ               == NULL) {cerr << "ERROR: obtained NULL nodeJ array!"        << endl; forceExit(sim,simClasses);}
+   if (nodeUe              == NULL) {cerr << "ERROR: obtained NULL nodeUe array!"       << endl; forceExit(sim,simClasses);}
+   if (nodeJi              == NULL) {cerr << "ERROR: obtained NULL nodeJi array!"       << endl; forceExit(sim,simClasses);}
+   if (nodeEta             == NULL) {cerr << "ERROR: obtained NULL nodeEta array!"      << endl; forceExit(sim,simClasses);}
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-   if (gridCounterCellMaxUe    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxUe array!"    << endl; exit(1);}
-   if (gridCounterCellMaxVi    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxVi array!"    << endl; exit(1);}
-   if (gridCounterCellMinRhoQi == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMinRhoQi array!" << endl; exit(1);}
-   if (gridCounterNodeMaxE     == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxE array!"     << endl; exit(1);}
-   if (gridCounterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxVw array!"    << endl; exit(1);}
+   if (gridCounterCellMaxUe    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxUe array!"    << endl; forceExit(sim,simClasses);}
+   if (gridCounterCellMaxVi    == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMaxVi array!"    << endl; forceExit(sim,simClasses);}
+   if (gridCounterCellMinRhoQi == NULL) {cerr << "ERROR: obtained NULL gridCounterCellMinRhoQi array!" << endl; forceExit(sim,simClasses);}
+   if (gridCounterNodeMaxE     == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxE array!"     << endl; forceExit(sim,simClasses);}
+   if (gridCounterNodeMaxVw    == NULL) {cerr << "ERROR: obtained NULL gridCounterNodeMaxVw array!"    << endl; forceExit(sim,simClasses);}
 #endif
-   if (innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; exit(1);}
-   if (innerFlagParticle   == NULL) {cerr << "ERROR: obtained NULL innerFlagParticle array!" << endl; exit(1);}
-   if (innerFlagCellEp     == NULL) {cerr << "ERROR: obtained NULL innerFlagCellEp array!" << endl; exit(1);}
-   if (innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; exit(1);}
+   if (innerFlag           == NULL) {cerr << "ERROR: obtained NULL innerFlag array!"    << endl; forceExit(sim,simClasses);}
+   if (innerFlagParticle   == NULL) {cerr << "ERROR: obtained NULL innerFlagParticle array!" << endl; forceExit(sim,simClasses);}
+   if (innerFlagCellEp     == NULL) {cerr << "ERROR: obtained NULL innerFlagCellEp array!" << endl; forceExit(sim,simClasses);}
+   if (innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; forceExit(sim,simClasses);}
 #ifdef USE_OUTER_BOUNDARY_ZONE
-   if (outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; exit(1);}
-   if (outerBoundaryFlagNode == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlagNode array!"<< endl; exit(1);}
+   if (outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; forceExit(sim,simClasses);}
+   if (outerBoundaryFlagNode == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlagNode array!"<< endl; forceExit(sim,simClasses);}
 #endif
    // get block vectors
    const vector<pargrid::CellID>& innerBlocks = simClasses.pargrid.getInnerCells(pargrid::DEFAULT_STENCIL);
@@ -165,7 +165,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #ifdef WRITE_GRID_TEMPORAL_AVERAGES
    // add cellB to cellAverageB and increase average counter
    Real* cellAverageB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageBID);
-   if (cellAverageB == NULL) { cerr << "ERROR: obtained NULL cellAverageB array!" << endl; exit(1); }
+   if (cellAverageB == NULL) { cerr << "ERROR: obtained NULL cellAverageB array!" << endl; forceExit(sim,simClasses); }
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
       const int n = (b*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
@@ -1313,14 +1313,15 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
       }
 
       // cell centroid local dimensionless coordinates
-      const Real xCell111 = -0.5; const Real yCell111 = -0.5; const Real zCell111 = -0.5;
-      const Real xCell112 = -0.5; const Real yCell112 = -0.5; const Real zCell112 = +0.5;
-      const Real xCell121 = -0.5; const Real yCell121 = +0.5; const Real zCell121 = -0.5;
-      const Real xCell211 = +0.5; const Real yCell211 = -0.5; const Real zCell211 = -0.5;
-      const Real xCell122 = -0.5; const Real yCell122 = +0.5; const Real zCell122 = +0.5;
-      const Real xCell221 = +0.5; const Real yCell221 = +0.5; const Real zCell221 = -0.5;
-      const Real xCell212 = +0.5; const Real yCell212 = -0.5; const Real zCell212 = +0.5;
-      const Real xCell222 = +0.5; const Real yCell222 = +0.5; const Real zCell222 = +0.5;
+      const Real
+         xCell111 = -0.5, yCell111 = -0.5, zCell111 = -0.5,
+         xCell112 = -0.5, yCell112 = -0.5, zCell112 = +0.5,
+         xCell121 = -0.5, yCell121 = +0.5, zCell121 = -0.5,
+         xCell211 = +0.5, yCell211 = -0.5, zCell211 = -0.5,
+         xCell122 = -0.5, yCell122 = +0.5, zCell122 = +0.5,
+         xCell221 = +0.5, yCell221 = +0.5, zCell221 = -0.5,
+         xCell212 = +0.5, yCell212 = -0.5, zCell212 = +0.5,
+         xCell222 = +0.5, yCell222 = +0.5, zCell222 = +0.5;
 
       // weighting factors for the eight cells around the node
       const Real w111 = 1/sqrt(sqr(xCell111-xUpwind) + sqr(yCell111-yUpwind) + sqr(zCell111-zUpwind));
@@ -1897,8 +1898,8 @@ void setupGetFields(Simulation& sim,SimulationClasses& simClasses) {
    profile::start("setupGetFields",setupGetFieldsID);
    Real* faceB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataFaceBID);
    //Real* nodeE = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataNodeEID);
-   if (faceB == NULL) {cerr << "ERROR: obtained NULL faceB array!" << endl; exit(1);}
-   //if (nodeE == NULL) {cerr << "ERROR: obtained NULL nodeE array!" << endl; exit(1);}
+   if (faceB == NULL) {cerr << "ERROR: obtained NULL faceB array!" << endl; forceExit(sim,simClasses);}
+   //if (nodeE == NULL) {cerr << "ERROR: obtained NULL nodeE array!" << endl; forceExit(sim,simClasses);}
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceBID);
    //simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::varReal["faceB_"].dataID); // TBD: new variable handling
    //simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);

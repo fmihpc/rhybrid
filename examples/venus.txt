@@ -1,0 +1,48 @@
+# Post processing examples for venus.cfg (see also ../INSTALL)
+
+cd ~/your/venus_test_run/
+
+# check run finished ok:
+grep "(MAIN) Exiting simulation after successful run." logfile.txt
+
+# study source *.sh and *.py files for more details
+
+mkdir -p ~/your/venus_test_run/analysis/
+cd ~/your/venus_test_run/analysis/
+cp -p ~/bin/rhybrid/tools/* ./
+
+# create PDFs of field and particle population log files
+./rhb_log2pdf_all.sh lin ../
+ls field.pdf pop*.pdf
+
+# Python examples using Analysator
+
+export PYTHONPATH=$PYTHONPATH:~/bin/analysator/
+
+# create videos of 2d pseudocolor slices
+
+# individual frames
+mkdir -p png/
+python plotter_rhybrid_2d_slice.py 2 ../ "run1" 6051.8e3 0 20000
+# put together a video
+ffmpeg -framerate 5 -pattern_type glob -i './png/Hsw_n_*.png' -c:v libx264 -crf 18 -pix_fmt yuv420p -vf scale=1920:-2 Hsw_n.mp4
+ffmpeg -framerate 5 -pattern_type glob -i './png/B_*.png' -c:v libx264 -crf 18 -pix_fmt yuv420p -vf scale=1920:-2 B.mp4
+ls Hsw_n.mp4 B.mp4
+
+# convert a VLSV file in to a VTK XML format
+python vlsv_to_vtk.py ../state00020000.vlsv
+ls state00020000.vti
+
+# trace test particles
+python trace_test_particles.py ../state00020000.vlsv cellB cellUe cellEp 6051.8e3
+ls trace_test_particles_*.png
+
+# create time series in a point
+python create_time_series_point.py ../ cellB,n_H+sw,T_H+sw,n_O+,cellUe,v_H+sw 10e6 1e6 1e6
+ls time_series.dat
+
+# create interpolation along a set of points (trajectory)
+python create_interpolation_along_trajectory.py ../state00020000.vlsv cellB,n_H+sw,v_H+sw,T_H+sw,cellUe,cellEp 6051.8e3
+ls create_interpolation_along_trajectory_*.png
+
+

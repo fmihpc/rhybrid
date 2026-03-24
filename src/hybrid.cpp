@@ -76,26 +76,29 @@ pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
 #endif
 #ifdef USE_DETECTORS
 // detector: particle
-pargrid::DataID Hybrid::dataDetectorParticleFlagID;
+pargrid::DataID Hybrid::dataDetectorCellParticleFlagID;
 Real Hybrid::detParticleStartTime;
 Real Hybrid::detParticleEndTime;
-bool Hybrid::detParticleRecordImpacts = false;
 Real Hybrid::N_detParticleMaxFileLines;
 Real Hybrid::detParticleWriteInterval;
+bool Hybrid::detParticleRecordImpacts = false;
 Real Hybrid::detParticleTimestepCnt;
 Real Hybrid::detParticleFileLineCnt;
+bool Hybrid::detCellParticleEnabled = false;
 bool Hybrid::detParticleRecording = false;
-vector<Real> Hybrid::detParticleOutput;
+vector<Real> Hybrid::detCellParticleData;
+vector<Real> Hybrid::detImpactParticleData;
 // detector: bulk parameters
-pargrid::DataID Hybrid::dataDetectorBulkParamFlagID;
+pargrid::DataID Hybrid::dataDetectorCellBulkParamFlagID;
 Real Hybrid::detBulkParamStartTime;
 Real Hybrid::detBulkParamEndTime;
 Real Hybrid::N_detBulkParamMaxFileLines;
 Real Hybrid::detBulkParamWriteInterval;
 Real Hybrid::detBulkParamTimestepCnt;
 Real Hybrid::detBulkParamFileLineCnt;
+bool Hybrid::detBulkParamEnabled = false;
 bool Hybrid::detBulkParamRecording = false;
-vector<Real> Hybrid::detBulkParamOutput;
+vector<Real> Hybrid::detCellBulkParamData;
 #endif
 
 // bit masks to check the existence of +x, -x, +y, -y, +z, -z neighbour cell
@@ -110,6 +113,9 @@ unsigned int Hybrid::logInterval = UINT_MAX;
 unsigned int Hybrid::mainLogDiagnosticsInterval = UINT_MAX;
 bool Hybrid::includeInnerCellsInFieldLog;
 bool Hybrid::writeMainLogDiagnosticsAfterLogStep = true;
+Real Hybrid::simDataIntervalIntegerOriginal;
+Real Hybrid::dataSaveAllTimestepsStartTime;
+Real Hybrid::dataSaveAllTimestepsEndTime;
 unsigned int Hybrid::saveReducedStateInterval = 0;
 unsigned int Hybrid::saveReducedStateNstride = 10;
 bool Hybrid::saveReducedStateParticles = false;
@@ -142,7 +148,7 @@ bool Hybrid::includeConstantB0InFaradaysLaw = false;
 #endif
 Real Hybrid::electronTemperature;
 Real Hybrid::electronPressureCoeff;
-Real Hybrid::swMacroParticlesCellPerDt;
+Real Hybrid::upstreamMacroPleRatio;
 bool Hybrid::useGravity;
 int Hybrid::Efilter;
 Real Hybrid::EfilterNodeGaussSigma;
