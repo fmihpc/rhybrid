@@ -72,10 +72,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    bool* innerFlagNode       = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagNodeID);
    bool* innerFlagParticle   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagParticleID);
    bool* innerFlagCellEp     = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataInnerFlagCellEpID);
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   bool* outerBoundaryFlag   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
-   bool* outerBoundaryFlagNode   = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagNodeID);
-#endif
 
    if (faceB               == NULL) {cerr << "ERROR: obtained NULL faceB array!"        << endl; forceExit(sim,simClasses);}
    if (faceJ               == NULL) {cerr << "ERROR: obtained NULL faceJ array!"        << endl; forceExit(sim,simClasses);}
@@ -103,10 +99,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    if (innerFlagParticle   == NULL) {cerr << "ERROR: obtained NULL innerFlagParticle array!" << endl; forceExit(sim,simClasses);}
    if (innerFlagCellEp     == NULL) {cerr << "ERROR: obtained NULL innerFlagCellEp array!" << endl; forceExit(sim,simClasses);}
    if (innerFlagNode       == NULL) {cerr << "ERROR: obtained NULL innerFlagNode array!"<< endl; forceExit(sim,simClasses);}
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   if (outerBoundaryFlag   == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlag array!"<< endl; forceExit(sim,simClasses);}
-   if (outerBoundaryFlagNode == NULL) {cerr << "ERROR: obtained NULL outerBoundaryFlagNode array!"<< endl; forceExit(sim,simClasses);}
-#endif
    // get block vectors
    const vector<pargrid::CellID>& innerBlocks = simClasses.pargrid.getInnerCells(pargrid::DEFAULT_STENCIL);
    const vector<pargrid::CellID>& boundaryBlocks = simClasses.pargrid.getBoundaryCells(pargrid::DEFAULT_STENCIL);
@@ -288,9 +280,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::start("field propag",profPropagFieldID);
    for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       calcCellUe(cellJ,cellJi,cellRhoQi,cellUe,innerFlag,
-#ifdef USE_OUTER_BOUNDARY_ZONE
-		 outerBoundaryFlag,
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 		 gridCounterCellMaxUe,
 #endif
@@ -327,9 +316,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::start("field propag",profPropagFieldID);
    for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
       calcNodeUe(nodeRhoQi,nodeJi,nodeJ,nodeUe,innerFlagNode,
-#ifdef USE_OUTER_BOUNDARY_ZONE
-		 outerBoundaryFlagNode,
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 		 gridCounterCellMaxUe,
 #endif
@@ -1354,9 +1340,6 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
 
 // calculate cellUe
 void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,
-#ifdef USE_OUTER_BOUNDARY_ZONE
-		bool* outerBoundaryFlag,
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 		Real* gridCounterCellMaxUe,
 #endif
@@ -1373,13 +1356,6 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 	 cellUe[n3+2] = Hybrid::fieldObstacleUe[2];
 	 continue;
       }
-#ifdef USE_OUTER_BOUNDARY_ZONE
-      if (outerBoundaryFlag[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
-	 cellUe[n3+0] = -Hybrid::upstreamBulkU;
-	 cellUe[n3+1] = cellUe[n3+2] = 0.0;
-	 continue;
-      }
-#endif
       // calc Ue = (J - Ji)/rhoqi
       for (int l=0;l<3;++l) {
 	 if (fabs(cellRhoQi[n]) > 0) {
@@ -1546,9 +1522,6 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 }
 
 void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,
-#ifdef USE_OUTER_BOUNDARY_ZONE
-		bool* outerBoundaryFlagNode,
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 		Real* gridCounterCellMaxUe,
 #endif
@@ -1575,13 +1548,6 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
 	 nodeUe[n3+2] = Hybrid::fieldObstacleUe[2];
 	 continue;
       }
-#ifdef USE_OUTER_BOUNDARY_ZONE
-      if (outerBoundaryFlagNode[n] == true && Hybrid::outerBoundaryZone.constUe == true) {
-	 nodeUe[n3+0] = -Hybrid::upstreamBulkU;
-	 nodeUe[n3+1] = nodeUe[n3+2] = 0.0;
-	 continue;
-      }
-#endif
       // check min nodeRhoQi
       if (nodeRhoQi[n] < Hybrid::minRhoQi) {
 	 nodeRhoQi[n] = Hybrid::minRhoQi;

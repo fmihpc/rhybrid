@@ -106,10 +106,6 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagNodeID,    "innerFlagNode",       N_blocks,1);
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagParticleID,"innerFlagParticle",   N_blocks,1);
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagCellEpID,  "innerFlagCellEp",     N_blocks,1);
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   writeCellDataVariableBool(spatMeshName,Hybrid::dataOuterBoundaryFlagID,"outerBoundaryFlag",   N_blocks,1);
-   writeCellDataVariableBool(spatMeshName,Hybrid::dataOuterBoundaryFlagNodeID,"outerBoundaryFlagNode",   N_blocks,1);
-#endif
    // write production rates of ionosphere populations
    if (Hybrid::outputCellParams["prod_rate_iono"] == true) {
       Real* const cellIonosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellIonosphereID));

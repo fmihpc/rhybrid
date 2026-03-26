@@ -940,10 +940,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataInnerFlagNodeID       = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagParticleID   = simClasses.pargrid.invalidDataID();
    Hybrid::dataInnerFlagCellEpID     = simClasses.pargrid.invalidDataID();
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   Hybrid::dataOuterBoundaryFlagID   = simClasses.pargrid.invalidDataID();
-   Hybrid::dataOuterBoundaryFlagNodeID = simClasses.pargrid.invalidDataID();
-#endif
 
    // id of a stencil used for particle accumulation into grid
    Hybrid::accumulationStencilID = sim.inverseStencilID;
@@ -983,9 +979,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    //addVarBool(sim,simClasses,"innerFlagNode_",1,sIDEmpty);
    //addVarBool(sim,simClasses,"innerFlagParticle_",1,sIDEmpty);
    //addVarBool(sim,simClasses,"innerFlagCellEp_",1,sIDEmpty);
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   //addVarBool(sim,simClasses,"outerBoundaryFlag_",1,sIDEmpty);
-#endif
 #ifdef USE_DETECTORS
    //addVarBool(sim,simClasses,"detPleFlag_",1,sIDEmpty);
 #endif
@@ -1138,18 +1131,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add innerFlagCellEp array to ParGrid!" << endl << write;
       return false;
    }
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   Hybrid::dataOuterBoundaryFlagID = simClasses.pargrid.addUserData<bool>("outerBoundaryFlag",1);
-   if (Hybrid::dataOuterBoundaryFlagID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlag array to ParGrid!" << endl << write;
-      return false;
-   }
-   Hybrid::dataOuterBoundaryFlagNodeID = simClasses.pargrid.addUserData<bool>("outerBoundaryFlagNode",1);
-   if (Hybrid::dataOuterBoundaryFlagNodeID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add outerBoundaryFlagNode array to ParGrid!" << endl << write;
-      return false;
-   }
-#endif
 #ifdef USE_DETECTORS
    // cell detector flag
    Hybrid::dataDetectorCellParticleFlagID = simClasses.pargrid.addUserData<bool>("detPleFlag",1);
@@ -1261,10 +1242,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    bool* innerFlagNode       = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagNodeID));
    bool* innerFlagParticle   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagParticleID));
    bool* innerFlagCellEp     = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataInnerFlagCellEpID));
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   bool* outerBoundaryFlag   = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagID));
-   bool* outerBoundaryFlagNode = reinterpret_cast<bool*>(simClasses.pargrid.getUserData(Hybrid::dataOuterBoundaryFlagNodeID));
-#endif
 
 #ifdef USE_DETECTORS
    simClasses.logger
@@ -1782,73 +1759,63 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
    Hybrid::maxVi = sqrt(Hybrid::maxVi2);
 
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   string inputStrEtaBoundarySizes = "0 0 0 0 0 0";
-   string inputStrEtaBoundaryCoeffs = "0 0 0 0 0 0";
-   cr.add("OuterBoundaryZone.etaBoundarySizes","descr",string("0 0 0 0 0 0"));
-   cr.add("OuterBoundaryZone.etaBoundaryCoeffs","descr",string("0 0 0 0 0 0"));
-   cr.add("OuterBoundaryZone.typeMinRhoQi","Type of the outer boundary zone for minRhoQi: 0 = not used, 1 = full walls, 2 = all edges except +x edges [-] (int)",0);
-   cr.add("OuterBoundaryZone.sizeMinRhoQi","Size of the outer boundary zone for minRhoQi [dx] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.minRhoQi","Minimum value of ion charge density in the outer boundary zone [C/m^3] (float)",defaultValue);
-   cr.add("OuterBoundaryZone.constUe","Set constant, upstream Ue in the boundary zone [-] (bool)",false);
-   simClasses.logger << "(RHYBRID) Configuring: outer boundary zone" << endl;
-   cr.parse();
-   cr.get("OuterBoundaryZone.etaBoundarySizes",inputStrEtaBoundarySizes);
-   cr.get("OuterBoundaryZone.etaBoundaryCoeffs",inputStrEtaBoundaryCoeffs);
-   cr.get("OuterBoundaryZone.typeMinRhoQi",Hybrid::outerBoundaryZone.typeMinRhoQi);
-   cr.get("OuterBoundaryZone.sizeMinRhoQi",Hybrid::outerBoundaryZone.sizeMinRhoQi);
-   cr.get("OuterBoundaryZone.minRhoQi",Hybrid::outerBoundaryZone.minRhoQi);
-   cr.get("OuterBoundaryZone.constUe",Hybrid::outerBoundaryZone.constUe);
-   // parse etaBoundarySizes string
-   vector<unsigned int> etaBoundarySizes;
-   if (str2UIntVector(inputStrEtaBoundarySizes,etaBoundarySizes) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundarySizes vector, correct format: -x +x -y +y -z +z, where the six values are unsigned ints (" << inputStrEtaBoundarySizes << ")" << endl << write;
-      forceExit(sim,simClasses);
-      return false;
-   }
-   if(etaBoundarySizes.size() != 6) {
-      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundarySizes vector, correct format: -x +x -y +y -z +z, where the six values are unsigned ints (" << inputStrEtaBoundarySizes << ")" << endl << write;
-      forceExit(sim,simClasses);
-      return false;
-   }
-   // parse etaBoundaryCoeffs string
-   vector<Real> etaBoundaryCoeffs;
-   if (str2RealVector(inputStrEtaBoundaryCoeffs,etaBoundaryCoeffs) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: bad format of OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are reals (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
-      forceExit(sim,simClasses);
-      return false;
-   }
-   if(etaBoundaryCoeffs.size() != 6) {
-      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in OuterBoundaryZone.etaBoundaryCoeffs vector, correct format: -x +x -y +y -z +z, where the six values are reals (" << inputStrEtaBoundaryCoeffs << ")" << endl << write;
-      forceExit(sim,simClasses);
-      return false;
-   }
-   Hybrid::outerBoundaryZone.sizeMinRhoQi *= Hybrid::dx;
-#endif
+   // configure resistivity
 
-   string resProfileName = "";
-   string resValueUnit = "";
-   Real resValue = 0.0;
-   vector<Real> resSphericalValue;
+   string resistivityProfileName = "";
+   string resistivityValueUnit = "";
+   Real resistivityValue = 0.0;
+   vector<Real> resistivitySphericalValue;
+   string resistivityInputStrBoundaryCells = "0 0 0 0 0 0";
+   string resistivityInputStrBoundaryCoeffs = "0 0 0 0 0 0";
    cr.add("Resistivity.profile_name","Resistivity profile name [-] (string)",string(""));
    cr.add("Resistivity.value_unit","Unit and quantity used to define value of resistivity [SI/grid/td/Rm/URm] (string)",string(""));
    cr.add("Resistivity.value","Parameter value used to define the value of resistivity [] (float)",defaultValue);
    cr.add("Resistivity.R","Radius of the super conducting sphere [m] (float)",defaultValue);
    cr.addComposed("Resistivity.value_spherical","Parameter values used to define the resistivity values of spherical shells [] (float vector)");
    cr.addComposed("Resistivity.R_spherical","Radii of spherical resistivity shells [m] (float vector)");
+   cr.add("Resistivity.outer_boundary_cells","Number of cells at outer boundaries where resistivity is multiplied by outer_boundary_coeffs (six unsigned ints: +x -x +y -y +z -z)",string("0 0 0 0 0 0"));
+   cr.add("Resistivity.outer_boundary_coeffs","Coefficients of resistivity at outer boundary cells (six floats: +x -x +y -y +z -z)",string("0 0 0 0 0 0"));
    simClasses.logger << "(RHYBRID) Configuring: resistivity" << endl << write;
    cr.parse();
-   cr.get("Resistivity.profile_name",resProfileName);
-   cr.get("Resistivity.value_unit",resValueUnit);
-   cr.get("Resistivity.value",resValue);
+   cr.get("Resistivity.profile_name",resistivityProfileName);
+   cr.get("Resistivity.value_unit",resistivityValueUnit);
+   cr.get("Resistivity.value",resistivityValue);
    cr.get("Resistivity.R",Hybrid::resistivityR2);
-   cr.get("Resistivity.value_spherical",resSphericalValue);
+   cr.get("Resistivity.value_spherical",resistivitySphericalValue);
    cr.get("Resistivity.R_spherical",Hybrid::resistivitySphericalR2);
-   Real resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
+   cr.get("Resistivity.outer_boundary_cells",resistivityInputStrBoundaryCells);
+   cr.get("Resistivity.outer_boundary_coeffs",resistivityInputStrBoundaryCoeffs);
+
+   // grid unit of resistivity: mu0*dx^2/dt
+   const Real resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
 
    // set resistivity profile after all its parameters are parsed
-   if (setResistivityProfile(simClasses,resProfileName,resValueUnit,resValue,resSphericalValue,resistivityGridUnit,Ubulk) == false) {
-      simClasses.logger << "(RHYBRID) ERROR: setting resistivity profile failed (" << resProfileName << ")" << endl << write;
+   if (setResistivityProfile(simClasses,resistivityProfileName,resistivityValueUnit,resistivityValue,resistivitySphericalValue,resistivityGridUnit,Ubulk) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: setting resistivity profile failed (" << resistivityProfileName << ")" << endl << write;
+      forceExit(sim,simClasses);
+      return false;
+   }
+
+   // parse resistivityInputStrBoundaryCells and resistivityInputStrBoundaryCoeffs strings (outer boundary resistivity)
+   vector<unsigned int> resistivityBoundaryCells; // number of cells at outer boundary where eta is multiplied by resistivityBoundaryCoeffs
+   vector<Real> resistivityBoundaryCoeffs; // coefficients of eta at outer boundary cells defined by resistivityBoundaryCells
+   if (str2UIntVector(resistivityInputStrBoundaryCells,resistivityBoundaryCells) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: bad format of Resistivity.outer_boundary_cells vector, correct format: +x -x +y -y +z -z, where the six values are unsigned ints (" << resistivityInputStrBoundaryCells << ")" << endl << write;
+      forceExit(sim,simClasses);
+      return false;
+   }
+   if(resistivityBoundaryCells.size() != 6) {
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in Resistivity.outer_boundary_cells vector, correct format: +x -x +y -y +z -z, where the six values are unsigned ints (" << resistivityInputStrBoundaryCells << ")" << endl << write;
+      forceExit(sim,simClasses);
+      return false;
+   }
+   if (str2RealVector(resistivityInputStrBoundaryCoeffs,resistivityBoundaryCoeffs) == false) {
+      simClasses.logger << "(RHYBRID) ERROR: bad format of Resistivity.outer_boundary_coeffs vector, correct format: +x -x +y -y +z -z, where the six values are reals (" << resistivityInputStrBoundaryCoeffs << ")" << endl << write;
+      forceExit(sim,simClasses);
+      return false;
+   }
+   if(resistivityBoundaryCoeffs.size() != 6) {
+      simClasses.logger << "(RHYBRID) ERROR: wrong number of values in Resistivity.outer_boundary_coeffs vector, correct format: +x -x +y -y +z -z, where the six values are reals (" << resistivityInputStrBoundaryCoeffs << ")" << endl << write;
       forceExit(sim,simClasses);
       return false;
    }
@@ -1858,7 +1825,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    simClasses.logger
      << "(RESISTIVITY)" << endl
-     << "Resistivity profile = " << resProfileName << endl
+     << "Resistivity profile = " << resistivityProfileName << endl
      << "eta = " << Hybrid::resistivityEta << " Ohm m = " << Hybrid::resistivityEta/resistivityGridUnit << " mu0*dx^2/dt" << endl;
    if (Hybrid::resistivityEta != 0) {
       const Real td_min = constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivityEta;
@@ -1920,21 +1887,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    else {
       simClasses.logger << "none" << endl;
    }
-   simClasses.logger << endl;
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   simClasses.logger
-     << "(OUTER BOUNDARY ZONE)" << endl
-     << "eta size (-x +x -y +y -z +z) [dx] ="; for (auto aa: etaBoundarySizes) { simClasses.logger << " " << aa; }
+   simClasses.logger << "number of outer boundary cells (+x -x +y -y +z -z) =";
+   for (auto aa: resistivityBoundaryCells) { simClasses.logger << " " << aa; }
    simClasses.logger
      << endl
-     << "eta coefficients (-x +x -y +y -z +z) ="; for (auto aa: etaBoundaryCoeffs) { simClasses.logger << " " << aa; }
-   simClasses.logger
-     << endl
-     << "type (minRhoQi)  = " << Hybrid::outerBoundaryZone.typeMinRhoQi << endl
-     << "size (minRhoQi)  = " << Hybrid::outerBoundaryZone.sizeMinRhoQi/(Hybrid::dx + 1e-30) << " dx" << endl
-     << "minRhoQi(obzone) = " << Hybrid::outerBoundaryZone.minRhoQi << " C/m^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::outerBoundaryZone.minRhoQi/(rhoq + 1e-30) << " rhoqi(undisturbed solar wind)" << endl
-     << endl;
-#endif
+     << "coefficients of eta at outer boundary cells (+x -x +y -y +z -z) =";
+   for (auto aa: resistivityBoundaryCoeffs) { simClasses.logger << " " << aa; }
+   simClasses.logger << endl << endl;
 
    // log constraint values
    const Real dx_per_dt = Hybrid::dx/sim.dt;
@@ -2050,129 +2009,35 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
             cellRhoQiBg[n] = getBackgroundChargeDensity(simClasses,bgChargeDensityProfileName,xCellCenter,yCellCenter,zCellCenter,bgChargeDensityArgs);
 #endif
-            //nodeRhoQi[n] = exp(-sqrt(rNode2)/Hybrid::R_object);
-#ifdef USE_OUTER_BOUNDARY_ZONE
-	    // set outer boundary zone resistivity
-	    // -x
-	    if ((etaBoundarySizes[0] > 0) && (xNode < (sim.x_min + Hybrid::dx*etaBoundarySizes[0]*1.01) )) {
-	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[0];
-	    }
+            //nodeRhoQi[n] = exp(-sqrt(rNode2)/Hybrid::R_object); // RHBTESTS
+
+	    // multiply eta at outer boundary cells if number of cells > 0
+
 	    // +x
-	    if ((etaBoundarySizes[1] > 0) && (xNode > (sim.x_max - Hybrid::dx*etaBoundarySizes[1]*0.99))) {
-	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[1];
+	    if ((resistivityBoundaryCells[0] > 0) && (xNode > (sim.x_max - Hybrid::dx*resistivityBoundaryCells[0]*0.99))) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*resistivityBoundaryCoeffs[0];
 	    }
-	    // -y
-	    if ((etaBoundarySizes[2] > 0) && (yNode < (sim.y_min + Hybrid::dx*etaBoundarySizes[2]*1.01))) {
-	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[2];
+	    // -x
+	    if ((resistivityBoundaryCells[1] > 0) && (xNode < (sim.x_min + Hybrid::dx*resistivityBoundaryCells[1]*1.01) )) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*resistivityBoundaryCoeffs[1];
 	    }
 	    // +y
-	    if ((etaBoundarySizes[3] > 0) && (yNode > (sim.y_max - Hybrid::dx*etaBoundarySizes[3]*0.99))) {
-	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[3];
+	    if ((resistivityBoundaryCells[2] > 0) && (yNode > (sim.y_max - Hybrid::dx*resistivityBoundaryCells[2]*0.99))) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*resistivityBoundaryCoeffs[2];
 	    }
-	    // -z
-	    if ((etaBoundarySizes[4] > 0) && (zNode < (sim.z_min + Hybrid::dx*etaBoundarySizes[4]*1.01))) {
-	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[4];
+	    // -y
+	    if ((resistivityBoundaryCells[3] > 0) && (yNode < (sim.y_min + Hybrid::dx*resistivityBoundaryCells[3]*1.01))) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*resistivityBoundaryCoeffs[3];
 	    }
 	    // +z
-	    if ((etaBoundarySizes[5] > 0) && (zNode > (sim.z_max - Hybrid::dx*etaBoundarySizes[5]*0.99))) {
-	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*etaBoundaryCoeffs[5];
+	    if ((resistivityBoundaryCells[4] > 0) && (zNode > (sim.z_max - Hybrid::dx*resistivityBoundaryCells[4]*0.99))) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*resistivityBoundaryCoeffs[4];
 	    }
-            const Real bZone = Hybrid::outerBoundaryZone.sizeMinRhoQi; // boundary zone
-            if (Hybrid::outerBoundaryZone.typeMinRhoQi == 0) {
-               outerBoundaryFlag[n] = false;
-	       outerBoundaryFlagNode[n] = false;
-            }
-            else if (Hybrid::outerBoundaryZone.typeMinRhoQi == 1) {
-               // all walls
-               if (xCellCenter < (sim.x_min + bZone) || xCellCenter > (sim.x_max - bZone) ||
-                  yCellCenter < (sim.y_min + bZone) || yCellCenter > (sim.y_max - bZone) ||
-                  zCellCenter < (sim.z_min + bZone) || zCellCenter > (sim.z_max - bZone)) {
-                  outerBoundaryFlag[n] = true;
-               }
-               else { outerBoundaryFlag[n] = false; }
-	       if (xNode < (sim.x_min + bZone) || xNode > (sim.x_max - bZone) ||
-                  yNode < (sim.y_min + bZone) || yNode > (sim.y_max - bZone) ||
-                  zNode < (sim.z_min + bZone) || zNode > (sim.z_max - bZone)) {
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else { outerBoundaryFlagNode[n] = false; }
-            }
-            else if (Hybrid::outerBoundaryZone.typeMinRhoQi == 2) {
-               // all edges except +x
-               if ( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter < (sim.y_min + bZone)) ) {
-                  // (-x,-y) edge
-                  outerBoundaryFlag[n] = true;
-               }
-               else if ( (xCellCenter < (sim.x_min + bZone)) && (yCellCenter > (sim.y_max - bZone)) ) {
-                  // (-x,+y) edge
-                  outerBoundaryFlag[n] = true;
-               }
-               else if ( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
-                  // (-x,-z) edge
-                  outerBoundaryFlag[n] = true;
-               }
-               else if ( (xCellCenter < (sim.x_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
-                  // (-x,+z) edge
-                  outerBoundaryFlag[n] = true;
-               }
-               else if ( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
-                  // (-y,-z) edge
-                  outerBoundaryFlag[n] = true;
-               }
-               else if ( (yCellCenter < (sim.y_min + bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
-                  // (-y,+z) edge
-                  outerBoundaryFlag[n] = true;
-               }
-               else if ( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter < (sim.z_min + bZone)) ) {
-                  // (+y,-z) edge
-                  outerBoundaryFlag[n] = true;
-               }
-               else if ( (yCellCenter > (sim.y_max - bZone)) && (zCellCenter > (sim.z_max - bZone)) ) {
-                  // (+y,+z) edge
-                  outerBoundaryFlag[n] = true;
-               }
-               else { outerBoundaryFlag[n] = false; }
-	       // node
-               // all edges except +x
-               if ( (xNode < (sim.x_min + bZone)) && (yNode < (sim.y_min + bZone)) ) {
-                  // (-x,-y) edge
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else if ( (xNode < (sim.x_min + bZone)) && (yNode > (sim.y_max - bZone)) ) {
-                  // (-x,+y) edge
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else if ( (xNode < (sim.x_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
-                  // (-x,-z) edge
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else if ( (xNode < (sim.x_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
-                  // (-x,+z) edge
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else if ( (yNode < (sim.y_min + bZone)) && (zNode < (sim.z_min + bZone)) ) {
-                  // (-y,-z) edge
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else if ( (yNode < (sim.y_min + bZone)) && (zNode > (sim.z_max - bZone)) ) {
-                  // (-y,+z) edge
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else if ( (yNode > (sim.y_max - bZone)) && (zNode < (sim.z_min + bZone)) ) {
-                  // (+y,-z) edge
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else if ( (yNode > (sim.y_max - bZone)) && (zNode > (sim.z_max - bZone)) ) {
-                  // (+y,+z) edge
-                  outerBoundaryFlagNode[n] = true;
-               }
-               else { outerBoundaryFlagNode[n] = false; }
-            }
-            else {
-	       simClasses.logger << "(RHYBRID) ERROR: unknown type of an outer boundary zone for minRhoQi (" << Hybrid::outerBoundaryZone.typeMinRhoQi << ")" << endl << write;
-               return false;
-            }
-#endif
+	    // -z
+	    if ((resistivityBoundaryCells[5] > 0) && (zNode < (sim.z_min + Hybrid::dx*resistivityBoundaryCells[5]*1.01))) {
+	       nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode)*resistivityBoundaryCoeffs[5];
+	    }
+
 #ifdef USE_DETECTORS
 	    // flag detector cells
             const Real xmin = xCellCenter - 0.5*Hybrid::dx;
@@ -2564,10 +2429,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"innerFlagNode",false},
       {"innerFlagParticle",false},
       {"innerFlagCellEp",false},
-#ifdef USE_OUTER_BOUNDARY_ZONE
-      {"outerBoundaryFlag",false},
-      {"outerBoundaryFlagNode",false},
-#endif
       {"prod_rate_iono",false},
       {"prod_rate_exo",false},
       {"cellBAverage",false},
@@ -2767,10 +2628,6 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if (simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagFieldID)      == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagParticleID)   == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataInnerFlagCellEpID)     == false) { success = false; }
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   if (simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagID)   == false) { success = false; }
-   if (simClasses.pargrid.removeUserData(Hybrid::dataOuterBoundaryFlagNodeID) == false) { success = false; }
-#endif
 #ifdef USE_DETECTORS
    if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorCellParticleFlagID)  == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataDetectorCellBulkParamFlagID) == false) { success = false; }
