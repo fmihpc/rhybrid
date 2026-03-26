@@ -263,9 +263,6 @@ bool Accumulator::addRemoteUpdates() {
    if (myOrderNumber != N_accumulators-1) { return success; }
    Real* cellJi    = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellJiID);
    Real* cellRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiID);
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   Real* cellRhoQiBg = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiBgID);
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
    Real* gridCounterCellMinRhoQi = simClasses->pargrid.getUserDataStatic<Real>(Hybrid::dataGridCounterCellMinRhoQiID);
 #endif
@@ -324,9 +321,6 @@ bool Accumulator::addRemoteUpdates() {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
 	 cellRhoQi[n] /= Hybrid::dV;
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-         cellRhoQi[n] += cellRhoQiBg[n];
-#endif
 	 if (cellRhoQi[n] < Hybrid::minRhoQi) {
 	    cellRhoQi[n] = Hybrid::minRhoQi;
 #ifdef USE_GRID_CONSTRAINT_COUNTERS

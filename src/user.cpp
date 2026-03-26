@@ -43,9 +43,6 @@
 #include "magnetic_field.h"
 #endif
 #include "detectors.h"
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-#include "background_charge_density.h"
-#endif
 
 using namespace std;
 
@@ -595,21 +592,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
 #endif
 
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   BackgroundChargeDensityArgs bgChargeDensityArgs;
-   string bgChargeDensityProfileName = "";
-   cr.add("BackgroundChargeDensity.profile_name","Background ion charge density profile name [-] (string)",string(""));
-   cr.add("BackgroundChargeDensity.R","Radius of the background ion charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.r0","r0 of the background ion charge density [m] (float)",defaultValue);
-   cr.add("BackgroundChargeDensity.rhoQi0","rhoQi0 of the background ion charge density [C/m^3] (float)",defaultValue);
-   simClasses.logger << "(RHYBRID) Configuring: background charge density" << endl << write;
-   cr.parse();
-   cr.get("BackgroundChargeDensity.profile_name",bgChargeDensityProfileName);
-   cr.get("BackgroundChargeDensity.R",bgChargeDensityArgs.R);
-   cr.get("BackgroundChargeDensity.r0",bgChargeDensityArgs.r0);
-   cr.get("BackgroundChargeDensity.rhoQi0",bgChargeDensityArgs.rhoQi0);
-#endif
-
    if (Hybrid::logInterval <= 0) { Hybrid::logInterval = 0; }
    if (logPrecision < 1) { logPrecision = 1; }
    if (Hybrid::mainLogDiagnosticsInterval > 0 && Hybrid::mainLogDiagnosticsInterval < Hybrid::logInterval) {
@@ -797,15 +779,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger << endl;
 #endif
 
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   simClasses.logger
-     << "(BACKGROUND ION CHARGE DENSITY)" << endl
-     << "Density profile = " << bgChargeDensityProfileName << endl
-     << "R      = " << bgChargeDensityArgs.R/1e3 << " km = " << bgChargeDensityArgs.R/Hybrid::R_object << " R_object = " << bgChargeDensityArgs.R/Hybrid::dx << " dx = " << (bgChargeDensityArgs.R - Hybrid::R_object)/1e3 << " km + R_object" << endl
-     << "r0     = " << bgChargeDensityArgs.r0/1e3 << " km = " << bgChargeDensityArgs.r0/Hybrid::dx << " dx" << endl
-     << "rhoQi0 = " << bgChargeDensityArgs.rhoQi0 << " C/m^3 = " << bgChargeDensityArgs.rhoQi0/1e6/constants::CHARGE_ELEMENTARY << " qe/cm^3" << endl << endl;
-#endif
-
    simClasses.logger
      << "(LOGGING)" << endl
      << "Particle and field logs" << endl
@@ -912,9 +885,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Hybrid::dataFaceBID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataFaceJID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellRhoQiID           = simClasses.pargrid.invalidDataID();
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   Hybrid::dataCellRhoQiBgID         = simClasses.pargrid.invalidDataID();
-#endif
    Hybrid::dataCellBID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellJID               = simClasses.pargrid.invalidDataID();
    Hybrid::dataCellUeID              = simClasses.pargrid.invalidDataID();
@@ -952,9 +922,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);*/
 #ifndef USE_EDGE_J
    //addVarReal(sim,simClasses,"faceJ_",3,sID);
-#endif
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   //addVarReal(sim,simClasses,"cellRhoQiBg_",1,sID);
 #endif
    //addVarReal(sim,simClasses,"cellB_",3,sID);
    //addVarReal(sim,simClasses,"cellJ_",3,sID);
@@ -1001,13 +968,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQi array to ParGrid!" << endl << write;
       return false;
    }
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   Hybrid::dataCellRhoQiBgID = simClasses.pargrid.addUserData<Real>("cellRhoQiBg",block::SIZE*1);
-   if (Hybrid::dataCellRhoQiBgID == simClasses.pargrid.invalidCellID()) {
-      simClasses.logger << "(USER) ERROR: Failed to add cellRhoQiBg array to ParGrid!" << endl << write;
-      return false;
-   }
-#endif
    Hybrid::dataCellBID = simClasses.pargrid.addUserData<Real>("cellB",block::SIZE*3);
    if (Hybrid::dataCellBID == simClasses.pargrid.invalidCellID()) {
       simClasses.logger << "(USER) ERROR: Failed to add cellB array to ParGrid!" << endl << write;
@@ -1159,11 +1119,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiID,Hybrid::accumulationStencilID) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellRhoQi data transfer 2!" << endl << write; return false;
    }
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellRhoQiBgID,pargrid::DEFAULT_STENCIL) == false) {
-      simClasses.logger << "(USER) ERROR: Failed to add cellRhoQiBg data transfer!" << endl << write; return false;
-   }
-#endif
    if (simClasses.pargrid.addDataTransfer(Hybrid::dataCellBID,pargrid::DEFAULT_STENCIL) == false) {
       simClasses.logger << "(USER) ERROR: Failed to add cellB data transfer!" << endl << write; return false;
    }
@@ -1214,9 +1169,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    Real* faceB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceBID));
    Real* faceJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataFaceJID));
    Real* cellRhoQi           = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiID));
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   Real* cellRhoQiBg         = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellRhoQiBgID));
-#endif
    Real* cellB               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellBID));
    Real* cellJ               = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellJID));
    Real* cellUe              = reinterpret_cast<Real*>(simClasses.pargrid.getUserData(Hybrid::dataCellUeID));
@@ -1948,9 +1900,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       for (size_t i=0; i<scalarArraySize; ++i) { nodeEta[i] = 0.0; }
       for (size_t i=0; i<scalarArraySize; ++i) { nodeRhoQi[i] = 0.0; }
       for (size_t i=0; i<scalarArraySize; ++i) { cellRhoQi[i] = 0.0; }
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-      for (size_t i=0; i<scalarArraySize; ++i) { cellRhoQiBg[i] = 0.0; }
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
       for (size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxUe[i] = 0.0; }
       for (size_t i=0; i<scalarArraySize; ++i) { gridCounterCellMaxVi[i] = 0.0; }
@@ -2006,9 +1955,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    if (rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0; // RHBTESTS */ }
 	    else                                  { innerFlagNode[n] = false; }
             nodeEta[n] = getResistivity(sim,simClasses,xNode,yNode,zNode);
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-            cellRhoQiBg[n] = getBackgroundChargeDensity(simClasses,bgChargeDensityProfileName,xCellCenter,yCellCenter,zCellCenter,bgChargeDensityArgs);
-#endif
             //nodeRhoQi[n] = exp(-sqrt(rNode2)/Hybrid::R_object); // RHBTESTS
 
 	    // multiply eta at outer boundary cells if number of cells > 0
@@ -2403,9 +2349,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"faceB",false},
       {"faceJ",false},
       {"cellRhoQi",false},
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-      {"cellRhoQiBg",false},
-#endif
       {"cellB",false},
       {"cellJ",false},
       {"cellUe",false},
@@ -2597,9 +2540,6 @@ bool userFinalization(Simulation& sim,SimulationClasses& simClasses,vector<Parti
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceBID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataFaceJID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiID)           == false) { success = false; }
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   if (simClasses.pargrid.removeUserData(Hybrid::dataCellRhoQiBgID)         == false) { success = false; }
-#endif
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellBID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellJID)               == false) { success = false; }
    if (simClasses.pargrid.removeUserData(Hybrid::dataCellUeID)              == false) { success = false; }

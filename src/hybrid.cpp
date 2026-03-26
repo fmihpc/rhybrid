@@ -33,9 +33,6 @@ pargrid::DataID Hybrid::dataFaceJID;
 
 // cell data
 pargrid::DataID Hybrid::dataCellRhoQiID;
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-pargrid::DataID Hybrid::dataCellRhoQiBgID;
-#endif
 pargrid::DataID Hybrid::dataCellBID;
 pargrid::DataID Hybrid::dataCellJID;
 pargrid::DataID Hybrid::dataCellUeID;

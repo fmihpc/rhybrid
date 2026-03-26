@@ -169,9 +169,6 @@ struct Hybrid {
 
    // cell data
    static pargrid::DataID dataCellRhoQiID;
-#ifdef USE_BACKGROUND_CHARGE_DENSITY
-   static pargrid::DataID dataCellRhoQiBgID;
-#endif
    static pargrid::DataID dataCellBID;
    static pargrid::DataID dataCellJID;
    static pargrid::DataID dataCellUeID;
