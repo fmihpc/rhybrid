@@ -146,14 +146,6 @@ inline void cross(const Real a[3], const Real b[3], Real result[3]) {
    result[2] = a[0]*b[1] - a[1]*b[0];
 }
 
-#ifdef USE_OUTER_BOUNDARY_ZONE
-struct OuterBoundaryZone {
-   int typeMinRhoQi=0;
-   Real sizeMinRhoQi=0.0,minRhoQi=0.0;
-   bool constUe = false;
-};
-#endif
-
 // TBD: new variable handling
 /*template<typename T>
 struct HybridVariable {
@@ -217,10 +209,6 @@ struct Hybrid {
    static pargrid::DataID dataInnerFlagNodeID;
    static pargrid::DataID dataInnerFlagParticleID;
    static pargrid::DataID dataInnerFlagCellEpID;
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   static pargrid::DataID dataOuterBoundaryFlagID;
-   static pargrid::DataID dataOuterBoundaryFlagNodeID;
-#endif
 #ifdef USE_DETECTORS
    // detector: particles
    static pargrid::DataID dataDetectorCellParticleFlagID;
@@ -292,9 +280,6 @@ struct Hybrid {
    static std::vector<Real> resistivitySphericalEta;
    static std::vector<Real> resistivitySphericalR2;
    static Real (*resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   static OuterBoundaryZone outerBoundaryZone;
-#endif
    static bool useHallElectricField;
 #ifdef USE_B_CONSTANT
    static bool includeConstantB0InFaradaysLaw;

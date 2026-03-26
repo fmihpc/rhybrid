@@ -234,10 +234,6 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
 #ifdef USE_BACKGROUND_CHARGE_DENSITY
    Real* cellRhoQiBg = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellRhoQiBgID);
 #endif
-#ifdef USE_OUTER_BOUNDARY_ZONE
-   bool* outerBoundaryFlag = simClasses.pargrid.getUserDataStatic<bool>(Hybrid::dataOuterBoundaryFlagID);
-   const Real minRhoMOuterBoundaryZone = Hybrid::outerBoundaryZone.minRhoQi*constants::MASS_PROTON/constants::CHARGE_ELEMENTARY; // assume outer boundary density minimum is protons
-#endif
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
       for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
@@ -246,16 +242,7 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
 	 cellRhoM[n] += cellRhoQiBg[n]*constants::MASS_PROTON/constants::CHARGE_ELEMENTARY; // assume background density is protons
 #endif
 	 // implement minimum densities in total mass density
-#ifdef USE_OUTER_BOUNDARY_ZONE
-	 if (outerBoundaryFlag[n] == true) {
-	    if (cellRhoM[n] < minRhoMOuterBoundaryZone) { cellRhoM[n] = minRhoMOuterBoundaryZone; }
-	 }
-	 else {
-	    if (cellRhoM[n] < minRhoMGlobal) { cellRhoM[n] = minRhoMGlobal; }
-	 }
-#else
 	 if (cellRhoM[n] < minRhoMGlobal) { cellRhoM[n] = minRhoMGlobal; }
-#endif
       }
    }
 }

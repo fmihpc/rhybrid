@@ -35,9 +35,6 @@ void node2Cell(Real* nodeData,Real* cellData,Simulation& sim,SimulationClasses& 
 void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID,const size_t vectorDim = 3);
 void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* innerFlag,
-#ifdef USE_OUTER_BOUNDARY_ZONE
-bool* outerBoundaryFlag,
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 Real* gridCounterCellMaxUe,
 #endif
@@ -53,9 +50,6 @@ Real* gridCounterNodeMaxVw,
 #endif
 Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID);
 void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* innerFlag,
-#ifdef USE_OUTER_BOUNDARY_ZONE
-bool* outerBoundaryFlagNode,
-#endif
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 Real* gridCounterCellMaxUe,
 #endif

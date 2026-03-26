@@ -73,10 +73,6 @@ pargrid::DataID Hybrid::dataInnerFlagFieldID;
 pargrid::DataID Hybrid::dataInnerFlagNodeID;
 pargrid::DataID Hybrid::dataInnerFlagParticleID;
 pargrid::DataID Hybrid::dataInnerFlagCellEpID;
-#ifdef USE_OUTER_BOUNDARY_ZONE
-pargrid::DataID Hybrid::dataOuterBoundaryFlagID;
-pargrid::DataID Hybrid::dataOuterBoundaryFlagNodeID;
-#endif
 #ifdef USE_DETECTORS
 // detector: particle
 pargrid::DataID Hybrid::dataDetectorCellParticleFlagID;
@@ -161,9 +157,6 @@ Real Hybrid::resistivityR2;
 vector<Real> Hybrid::resistivitySphericalEta;
 vector<Real> Hybrid::resistivitySphericalR2;
 Real (*Hybrid::resistivityProfilePtr)(Simulation& sim,SimulationClasses&,const Real x,const Real y,const Real z);
-#ifdef USE_OUTER_BOUNDARY_ZONE
-OuterBoundaryZone Hybrid::outerBoundaryZone;
-#endif
 Real Hybrid::IMFBx;
 Real Hybrid::IMFBy;
 Real Hybrid::IMFBz;
