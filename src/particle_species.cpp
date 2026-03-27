@@ -24,7 +24,7 @@
 using namespace std;
 
 bool Species::finalize() {
-   return true;   
+   return true;
 }
 
 std::string Species::getName() const {
@@ -53,7 +53,6 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
    cr.add(name+".accumulate","Whether accumulate the species or not (bool).",1);
    cr.add(name+".accelerate","Whether accelerate the species or not (bool).",1);
    cr.add(name+".output_str","Output field (string).",string("-"));
-   cr.add(name+".output_plasma","Whether include the species in total plasma variables (bool).",1);
    cr.parse();
    cr.get(name+".mass_unit",m_unit);
    cr.get(name+".charge_unit",q_unit);
@@ -63,7 +62,6 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
    cr.get(name+".accumulate",accumulate);
    cr.get(name+".accelerate",accelerate);
    cr.get(name+".output_str",outStr);
-   cr.get(name+".output_plasma",outIncludeInPlasma);
 
    // Check input parameters for sanity:
    Real charge = simClasses.constants.get(q_unit);
@@ -99,12 +97,11 @@ bool Species::readParameters(Simulation& sim,SimulationClasses& simClasses,Confi
      << "(SPECIES) Created a particle species " << name << endl
      << "popid = " << popid << endl
      << "q = " << q << " C = " << q/constants::CHARGE_ELEMENTARY << " e" << endl
-     << "m = " << m << " kg = " << m/constants::MASS_PROTON << " mp" << endl 
+     << "m = " << m << " kg = " << m/constants::MASS_PROTON << " mp" << endl
      << "obstacle   = " << ((R2_obstacle > 0.0) ? sqrt(R2_obstacle)/1e3 : R2_obstacle) << " km = " << ((R2_obstacle > 0.0) ? sqrt(R2_obstacle)/Hybrid::dx : R2_obstacle) << " dx" << endl
-     << "accumulate = " << accumulate << endl 
+     << "accumulate = " << accumulate << endl
      << "accelerate = " << accelerate << endl
-     << "output str = " << outStr << endl
-     << "output in plasma = " << outIncludeInPlasma << endl;
+     << "output str = " << outStr << endl;
 
    return success;
 }

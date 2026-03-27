@@ -66,7 +66,7 @@ vA = Btot/np.sqrt(mu0*rhom)
 writer = alr.vlsvfile.VlsvWriter(vr,output_file, copy_meshes=['SpatialGrid'])
 
 # write original variables
-writer.copy_variables(vr,varlist=['CellID','v_tot','n_tot'])
+writer.copy_variables(vr,varlist=['CellID','cellBAverage','n_H+sw_ave'])
 
 # write new derived variables
 varinfo = alr.calculations.VariableInfo(rhom,name='rhom',units='')

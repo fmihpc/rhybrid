@@ -194,8 +194,6 @@ vector<string> Hybrid::outputPopVarStr;
 vector<int> Hybrid::outputPopVarId;
 // ids (=popid-1) of particle populations included in each output particle variable
 vector< vector<unsigned int> > Hybrid::outputPopVarIdVector;
-// popids of particle populations included in the total plasma variables
-vector<unsigned int> Hybrid::outputPlasmaPopId;
 // output cell variables
 map<string,bool> Hybrid::outputCellParams;
 

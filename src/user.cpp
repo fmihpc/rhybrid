@@ -1375,9 +1375,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // population output configurations
    for (unsigned int i=0;i<particleLists.size();++i) {
       const Species* species = reinterpret_cast<const Species*>(particleLists[i]->getSpecies());
-      if (species->outIncludeInPlasma == true) {
-         Hybrid::outputPlasmaPopId.push_back(i);
-      }
       if (species->outStr == string("tot")) {
          simClasses.logger << "(USER) ERROR: Particle species cannot have output_str = tot (" << species->name << ")" << endl << write;
          return false;
@@ -1409,7 +1406,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
        (Hybrid::N_populations   != Hybrid::populationNames.size()) ||
        (Hybrid::N_populations   != Hybrid::outputPopVarId.size()) ||
        (Hybrid::N_populations    < Hybrid::N_outputPopVars) ||
-       (Hybrid::N_populations    < Hybrid::outputPlasmaPopId.size()) ||
        (Hybrid::N_outputPopVars != Hybrid::outputPopVarIdVector.size()) ) {
       simClasses.logger << "(RHYBRID) ERROR: Something went wrong in particle list initialization" << endl << write;
       return false;
@@ -1431,22 +1427,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	      simClasses.logger << Hybrid::populationNames[i] << " ";
 	   }
 	}
-	simClasses.logger << endl;
-	simClasses.logger << "tot plasma (snapshot): ";
-	for (unsigned int i=0;i<Hybrid::outputPlasmaPopId.size();++i) {
-	   simClasses.logger << Hybrid::populationNames[Hybrid::outputPlasmaPopId[i]] << " ";
-	}
-	simClasses.logger << endl;
-	simClasses.logger << "tot plasma (average): ";
-	for (unsigned int i=0;i<Hybrid::N_outputPopVars;++i) {
-	   simClasses.logger << Hybrid::outputPopVarStr[i] << " ";
-	}
 	simClasses.logger << endl << endl;
      }
 
    // undisturbed bulk parameters needed further below
    Real ne=0.0,rhoq=0.0,Ubulk=0.0,vA=0.0,vs=0.0,vms=0.0,Econv=0.0,vExB=0.0,vw=0.0;
-   // determine different plasma parameters write them in the main log
+   // determine different plasma parameters and write them in the main log
      {
 	// calculate bulk parameters as average from all solar wind populations
 	diagnostics::PlasmaParametersBulk ppBulkSolarWind;
@@ -2364,18 +2350,13 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"prod_rate_exo",false},
       {"cellBAverage",false},
       {"n_ave",false},
-      {"n_tot_ave",false},
       {"v_ave",false},
-      {"v_tot_ave",false},
       {"cellDivB",false},
       {"cellNPles",false},
       {"cellB0",false},
       {"n",false},
       {"T",false},
       {"v",false},
-      {"n_tot",false},
-      {"T_tot",false},
-      {"v_tot",false},
       {"MPI_rank",false},
       {"Load",false}
    };
@@ -2462,7 +2443,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    simClasses.logger << endl;
 #ifndef WRITE_GRID_TEMPORAL_AVERAGES
-   if (Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true || Hybrid::outputCellParams["n_tot_ave"] == true || Hybrid::outputCellParams["v_tot_ave"] == true) {
+   if (Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true || Hybrid::outputCellParams["cellBAverage"] == true) {
       simClasses.logger << "WARNING: Average output parameters selected but WRITE_GRID_TEMPORAL_AVERAGES not defined in Makefile" << endl;
    }
 #endif
