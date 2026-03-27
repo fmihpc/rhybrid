@@ -399,7 +399,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
    cr.add("Hybrid.terminateLimitMaxB","Maximum magnitude of magnetic field above which a simulation run is terminated [T] (float)",defaultValue);
-   cr.add("Hybrid.minRhoQi","Global minimum value of ion charge density [C/m^3] (float)",defaultValue);
+   cr.add("Hybrid.min_ion_charge_density_relative","Minimum value of ion charge density as a fraction of upstream value [-] (float)",defaultValue);
    cr.add("Hybrid.maxE","Maximum value of node electric field [V/m] (float)",defaultValue);
    cr.add("Hybrid.maxVw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
    cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
@@ -454,7 +454,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
    cr.get("Hybrid.maxVi",Hybrid::maxVi2);
    cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
-   cr.get("Hybrid.minRhoQi",Hybrid::minRhoQi);
+   cr.get("Hybrid.min_ion_charge_density_relative",Hybrid::minRhoQi);
    cr.get("Hybrid.maxE",Hybrid::maxE2);
    if (Hybrid::maxE2 > 0) { Hybrid::maxE2 = sqr(Hybrid::maxE2); }
    else { Hybrid::maxE2 = 0; }
@@ -1430,8 +1430,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	simClasses.logger << endl << endl;
      }
 
-   // undisturbed bulk parameters needed further below
-   Real ne=0.0,rhoq=0.0,Ubulk=0.0,vA=0.0,vs=0.0,vms=0.0,Econv=0.0,vExB=0.0,vw=0.0;
+   // undisturbed bulk parameters needed further below (derived from either: solar wind populations, flow popuations, or uniform populations)
+   Real
+     upstreamElectronDensity = 0.0,
+     upstreamIonChargeDensity = 0.0,
+     upstreamBulkSpeed = 0.0,
+     upstreamAlfvenSpeed = 0.0,
+     upstreamSoundSpeed = 0.0,
+     upstreamMagnetosonicSpeed = 0.0,
+     upstreamConvectionElectricField = 0.0,
+     upstreamExBSpeed = 0.0,
+     upstreamWhistlerSpeed = 0.0;
    // determine different plasma parameters and write them in the main log
      {
 	// calculate bulk parameters as average from all solar wind populations
@@ -1488,15 +1497,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	     << "\t |vExB| = " << ppBulkSolarWind.vExBtot/1e3 << " km/s" << endl
 	     << "\t vpui_max = 2*|vExB| = " << ppBulkSolarWind.vpui/1e3 << " km/s" << endl
 	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkSolarWind.vw/1e3 << " km/s" << endl << endl;
-	   ne = ppBulkSolarWind.ne;
-	   rhoq = ppBulkSolarWind.rhoq;
-	   Ubulk = ppBulkSolarWind.Ubulktot;
-	   vA = ppBulkSolarWind.vA;
-	   vs = ppBulkSolarWind.vs;
-	   vms = ppBulkSolarWind.vms;
-	   Econv = ppBulkSolarWind.Ectot;
-	   vExB = ppBulkSolarWind.vExBtot;
-	   vw = ppBulkSolarWind.vw;
+	   upstreamElectronDensity = ppBulkSolarWind.ne;
+	   upstreamIonChargeDensity = ppBulkSolarWind.rhoq;
+	   upstreamBulkSpeed = ppBulkSolarWind.Ubulktot;
+	   upstreamAlfvenSpeed = ppBulkSolarWind.vA;
+	   upstreamSoundSpeed = ppBulkSolarWind.vs;
+	   upstreamMagnetosonicSpeed = ppBulkSolarWind.vms;
+	   upstreamConvectionElectricField = ppBulkSolarWind.Ectot;
+	   upstreamExBSpeed = ppBulkSolarWind.vExBtot;
+	   upstreamWhistlerSpeed = ppBulkSolarWind.vw;
 	}
 	// if flow populations present, write undisturbed flow plasma bulk parameters in the log
 	if (N_flowPopulations > 0) {
@@ -1519,15 +1528,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	     << "\t vpui_max = 2*|vExB| = " << ppBulkFlow.vpui/1e3 << " km/s" << endl
 	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkFlow.vw/1e3 << " km/s" << endl << endl;
 	   if (N_solarWindPopulations < 1) {
-	      ne = ppBulkFlow.ne;
-	      rhoq = ppBulkFlow.rhoq;
-	      Ubulk = ppBulkFlow.Ubulktot;
-	      vA = ppBulkFlow.vA;
-	      vs = ppBulkFlow.vs;
-	      vms = ppBulkFlow.vms;
-	      Econv = ppBulkFlow.Ectot;
-	      vExB = ppBulkFlow.vExBtot;
-	      vw = ppBulkFlow.vw;
+	      upstreamElectronDensity = ppBulkFlow.ne;
+	      upstreamIonChargeDensity = ppBulkFlow.rhoq;
+	      upstreamBulkSpeed = ppBulkFlow.Ubulktot;
+	      upstreamAlfvenSpeed = ppBulkFlow.vA;
+	      upstreamSoundSpeed = ppBulkFlow.vs;
+	      upstreamMagnetosonicSpeed = ppBulkFlow.vms;
+	      upstreamConvectionElectricField = ppBulkFlow.Ectot;
+	      upstreamExBSpeed = ppBulkFlow.vExBtot;
+	      upstreamWhistlerSpeed = ppBulkFlow.vw;
 	   }
 	}
 	// if uniform populations present, write undisturbed uniform plasma bulk parameters in the log
@@ -1551,15 +1560,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	     << "\t vpui_max = 2*|vExB| = " << ppBulkUniform.vpui/1e3 << " km/s" << endl
 	     << "\t vw_max = 2*pi*B/(mu0*ne*qe*dx)  = " << ppBulkUniform.vw/1e3 << " km/s" << endl << endl;
 	   if (N_solarWindPopulations < 1 && N_flowPopulations < 1) {
-	      ne = ppBulkUniform.ne;
-	      rhoq = ppBulkUniform.rhoq;
-	      Ubulk = ppBulkUniform.Ubulktot;
-	      vA = ppBulkUniform.vA;
-	      vs = ppBulkUniform.vs;
-	      vms = ppBulkUniform.vms;
-	      Econv = ppBulkUniform.Ectot;
-	      vExB = ppBulkUniform.vExBtot;
-	      vw = ppBulkUniform.vw;
+	      upstreamElectronDensity = ppBulkUniform.ne;
+	      upstreamIonChargeDensity = ppBulkUniform.rhoq;
+	      upstreamBulkSpeed = ppBulkUniform.Ubulktot;
+	      upstreamAlfvenSpeed = ppBulkUniform.vA;
+	      upstreamSoundSpeed = ppBulkUniform.vs;
+	      upstreamMagnetosonicSpeed = ppBulkUniform.vms;
+	      upstreamConvectionElectricField = ppBulkUniform.Ectot;
+	      upstreamExBSpeed = ppBulkUniform.vExBtot;
+	      upstreamWhistlerSpeed = ppBulkUniform.vw;
 	   }
 	}
 	// if solar wind populations present (or no uniform populations), write single particle parameters in undisturbed solar wind plasma in the log
@@ -1667,11 +1676,11 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      } // close: determine different plasma parameters write them in the main log
 
    // set bulk speed
-   Hybrid::upstreamBulkU = Ubulk;
+   Hybrid::upstreamBulkU = upstreamBulkSpeed;
 
    // set initial flow through
-   if (Ubulk > 0 && Hybrid::initialFlowThroughPeriod > 0) {
-      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/Ubulk;
+   if (upstreamBulkSpeed > 0 && Hybrid::initialFlowThroughPeriod > 0) {
+      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/upstreamBulkSpeed;
       Hybrid::initialFlowThrough = true;
    }
    else {
@@ -1681,8 +1690,8 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 
    // set adiabatic electron pressure coefficient with gamma = 2
    if (Hybrid::useAdiabaticElectronPressure == true) {
-      if (ne > 0) {
-	 Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( ne * sqr(constants::CHARGE_ELEMENTARY) );
+      if (upstreamElectronDensity > 0) {
+	 Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( upstreamElectronDensity * sqr(constants::CHARGE_ELEMENTARY) );
       }
       else {
 	 Hybrid::electronPressureCoeff = 0.0;
@@ -1696,6 +1705,15 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    }
    Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
    Hybrid::maxVi = sqrt(Hybrid::maxVi2);
+
+   if (Hybrid::minRhoQi < 0) { Hybrid::minRhoQi = 0; }
+   else {
+      if (Hybrid::minRhoQi >= 0.5) {
+	 simClasses.logger << "(RHYBRID) WARNING: minimum ion charge density (Hybrid.min_ion_charge_density_relative) very large (" << Hybrid::minRhoQi << " times the upstream ion charge density)" << endl;
+      }
+      // convert the value Hybrid::minRhoQi read from a config file (a fraction of upstream charge density) to SI units (C/m^3)
+      Hybrid::minRhoQi *= upstreamIonChargeDensity;
+   }
 
    // configure resistivity
 
@@ -1728,7 +1746,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    const Real resistivityGridUnit = constants::PERMEABILITY*sqr(Hybrid::dx)/sim.dt;
 
    // set resistivity profile after all its parameters are parsed
-   if (setResistivityProfile(simClasses,resistivityProfileName,resistivityValueUnit,resistivityValue,resistivitySphericalValue,resistivityGridUnit,Ubulk) == false) {
+   if (setResistivityProfile(simClasses,resistivityProfileName,resistivityValueUnit,resistivityValue,resistivitySphericalValue,resistivityGridUnit,upstreamBulkSpeed) == false) {
       simClasses.logger << "(RHYBRID) ERROR: setting resistivity profile failed (" << resistivityProfileName << ")" << endl << write;
       forceExit(sim,simClasses);
       return false;
@@ -1771,7 +1789,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       simClasses.logger
 	<< "td_min = mu0*dx^2/eta = " << td_min << " s = " << td_min/sim.dt << " dt" << endl
 	<< "dx/td_min = " << Hybrid::dx/td_min/1e3 << " km/s" << endl
-	<< "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivityEta << endl;
+	<< "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*upstreamBulkSpeed/Hybrid::resistivityEta << endl;
    }
    else {
       simClasses.logger
@@ -1811,7 +1829,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    simClasses.logger
 	      << "\t td_min = mu0*dx^2/eta = " << td_min_shell << " s = " << td_min_shell/sim.dt << " dt" << endl
 	      << "\t dx/td_min = " << Hybrid::dx/td_min_shell/1e3 << " km/s" << endl
-	      << "\t Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*Ubulk/Hybrid::resistivitySphericalEta[i] << endl;
+	      << "\t Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = " << constants::PERMEABILITY*Hybrid::dx*upstreamBulkSpeed/Hybrid::resistivitySphericalEta[i] << endl;
 	 }
 	 else {
 	    simClasses.logger
@@ -1837,29 +1855,29 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    const Real dx_per_dt = Hybrid::dx/sim.dt;
    simClasses.logger
      << "(CONSTRAINTS)" << endl
-     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * Ubulk/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/|Ubulk|" << endl
-     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(Ubulk + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxUe2)/dx_per_dt << " dx/dt"  << endl
-     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(Ubulk + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxVi2)/dx_per_dt << " dx/dt" << endl
-     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(Ubulk + 1e-30) << " |Ubulk| = " << Hybrid::maxVw/dx_per_dt << " dx/dt" << endl
-     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(Econv + 1e-30) << " |Econv|" << endl
+     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * upstreamBulkSpeed/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/|Ubulk|" << endl
+     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxUe2)/dx_per_dt << " dx/dt"  << endl
+     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxVi2)/dx_per_dt << " dx/dt" << endl
+     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << Hybrid::maxVw/dx_per_dt << " dx/dt" << endl
+     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(upstreamConvectionElectricField + 1e-30) << " |Econv|" << endl
      << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
-     << "minRhoQi (global) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(rhoq + 1e-30) << " rhoq" << endl << endl;
+     << "minIonChargeDensity (minRhoQi) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(upstreamIonChargeDensity + 1e-30) << " rhoq" << endl << endl;
 
    // evaluate and log CFL conditions from individual signal speeds and all summed together
    const Real dx_per_td_min = Hybrid::dx/td_min_smallest;
-   const Real summedSignalSpeed = Ubulk + vms + 2*vExB + vw + dx_per_td_min;
-   const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + sqrt(Hybrid::maxVi2) + Hybrid::maxVw + vms + dx_per_td_min;
+   const Real summedSignalSpeed = upstreamBulkSpeed + upstreamMagnetosonicSpeed + 2*upstreamExBSpeed + upstreamWhistlerSpeed + dx_per_td_min;
+   const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + sqrt(Hybrid::maxVi2) + Hybrid::maxVw + upstreamMagnetosonicSpeed + dx_per_td_min;
    simClasses.logger
      << "(COURANT-FRIEDRICHS-LEWY (CFL) CONDITION)" << endl
      << "dx = " << Hybrid::dx/1e3 << " km = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
      << "dt = " << sim.dt << " s = " << sim.dt/1e-3 << " ms" << endl
      << "dx/dt = " << dx_per_dt/1e3 << " km/s" << endl
-     << "Ubulk = " << Ubulk/1e3 << " km/s = " << Ubulk/dx_per_dt << " dx/dt" << endl
-     << "vA = " << vA/1e3 << " km/s = " << vA/dx_per_dt << " dx/dt" << endl
-     << "vs = " << vs/1e3 << " km/s = " << vs/dx_per_dt << " dx/dt" << endl
-     << "vms = " << vms/1e3 << " km/s = " << vms/dx_per_dt << " dx/dt" << endl
-     << "2*|vExB| = " << 2*vExB/1e3 << " km/s = " << 2*vExB/dx_per_dt << " dx/dt" << endl
-     << "vw = " << vw/1e3 << " km/s = " << vw/dx_per_dt << " dx/dt" << endl
+     << "Ubulk = " << upstreamBulkSpeed/1e3 << " km/s = " << upstreamBulkSpeed/dx_per_dt << " dx/dt" << endl
+     << "vA = " << upstreamAlfvenSpeed/1e3 << " km/s = " << upstreamAlfvenSpeed/dx_per_dt << " dx/dt" << endl
+     << "vs = " << upstreamSoundSpeed/1e3 << " km/s = " << upstreamSoundSpeed/dx_per_dt << " dx/dt" << endl
+     << "vms = " << upstreamMagnetosonicSpeed/1e3 << " km/s = " << upstreamMagnetosonicSpeed/dx_per_dt << " dx/dt" << endl
+     << "2*|vExB| = " << 2*upstreamExBSpeed/1e3 << " km/s = " << 2*upstreamExBSpeed/dx_per_dt << " dx/dt" << endl
+     << "vw = " << upstreamWhistlerSpeed/1e3 << " km/s = " << upstreamWhistlerSpeed/dx_per_dt << " dx/dt" << endl
      << "dx/min(td_min) = " << dx_per_td_min/1e3 << " km/s = " << dx_per_td_min/dx_per_dt << " dx/dt" << endl
      << "summedSignalSpeed = " << summedSignalSpeed/1e3 << " km/s = " << summedSignalSpeed/dx_per_dt << " dx/dt" << endl
      << "summedFullConstraintedSignalSpeed = " << summedFullConstraintedSignalSpeed/1e3 << " km/s = " << summedFullConstraintedSignalSpeed/dx_per_dt << " dx/dt" << endl
