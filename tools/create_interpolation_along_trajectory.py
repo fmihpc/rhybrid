@@ -84,9 +84,11 @@ Ncols = vars_intpol.shape[1]
 Nc = 0
 plt.clf()
 plt.close()
-plt.figure(figsize=(15,10))
+plt.figure(figsize=(3*Ny_sub/1.5,3*Ny_sub))
 for var in var_list:
  plt.subplot(Ny_sub,Nx_sub,Nsub); Nsub = Nsub + 1;
+ if Nsub == 2:
+  plt.title('variables interpolated along trajectory')
  dim = vr.read_variable_vectorsize(var)
  if dim == 1:
   vp = vars_intpol[:,Nc]; Nc = Nc + 1
@@ -136,6 +138,7 @@ ax.axes.set_zlim3d(zmin=zmin/Rp,zmax=zmax/Rp)
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')
+ax.set_title('trajectory')
 
 ax.set_box_aspect([1,1,1])
 

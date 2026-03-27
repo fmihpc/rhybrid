@@ -2354,6 +2354,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       {"cellDivB",false},
       {"cellNPles",false},
       {"cellB0",false},
+      {"ne",false},
       {"n",false},
       {"T",false},
       {"v",false},

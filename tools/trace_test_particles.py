@@ -195,28 +195,40 @@ print('total number of particle propagations/field interpolations: ' + str(bb_st
 
 # plotting
 
+Nx_sub = 1
+Ny_sub = 6
+
 # time series
-plt.figure(figsize=(10,10))
+plt.figure(figsize=(3*Ny_sub/1.5,3*Ny_sub))
 for ii in range(len(r)):
- plt.subplot(6,1,1)
+ plt.subplot(Ny_sub,Nx_sub,1)
  plt.plot(t[ii],r[ii][:,0]/Rp)
  plt.ylabel('x')
- plt.subplot(6,1,2)
+ plt.grid()
+ plt.subplot(Ny_sub,Nx_sub,2)
  plt.plot(t[ii],r[ii][:,1]/Rp)
  plt.ylabel('y')
- plt.subplot(6,1,3)
+ plt.grid()
+ plt.subplot(Ny_sub,Nx_sub,3)
  plt.plot(t[ii],r[ii][:,2]/Rp)
  plt.ylabel('z')
- plt.subplot(6,1,4)
+ plt.grid()
+ plt.subplot(Ny_sub,Nx_sub,4)
  plt.plot(t[ii],v[ii][:,0]/1e3)
  plt.ylabel('vx')
- plt.subplot(6,1,5)
+ plt.grid()
+ plt.subplot(Ny_sub,Nx_sub,5)
  plt.plot(t[ii],v[ii][:,1]/1e3)
  plt.ylabel('vy')
- plt.subplot(6,1,6)
+ plt.grid()
+ plt.subplot(Ny_sub,Nx_sub,6)
  plt.plot(t[ii],v[ii][:,2]/1e3)
  plt.ylabel('vz')
+ plt.grid()
  plt.xlabel('t [s]')
+
+plt.subplot(Ny_sub,Nx_sub,1)
+plt.title('variables along test particle trajectories')
 
 if save_figures == True:
  plt.savefig('trace_test_particles_time_series.png')
@@ -249,6 +261,7 @@ for ii in range(len(r)):
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')
+ax.set_title('test particle trajectories')
 
 if save_figures == True:
  plt.savefig('trace_test_particles_trajectories.png')

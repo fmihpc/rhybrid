@@ -75,6 +75,7 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
       attribs["type"] = "celldata";
       if (simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,p.second.vectorDim,p.second.ptr) == false) { success = false; }
    }*/
+   // writing of ParGrid arrays selected by a user
    writeCellDataVariable(spatMeshName,Hybrid::dataFaceBID,                "faceB",               N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataFaceJID,                "faceJ",               N_blocks,3);
    writeCellDataVariable(spatMeshName,Hybrid::dataCellRhoQiID,            "cellRhoQi",           N_blocks,1);
@@ -103,6 +104,23 @@ bool UserDataOP::writeData(const std::string& spatMeshName,const std::vector<Par
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagNodeID,    "innerFlagNode",       N_blocks,1);
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagParticleID,"innerFlagParticle",   N_blocks,1);
    writeCellDataVariableBool(spatMeshName,Hybrid::dataInnerFlagCellEpID,  "innerFlagCellEp",     N_blocks,1);
+
+   // writing of outputs derived from ParGrid arrays
+
+   // electron number density
+   if (Hybrid::outputCellParams["n_ave"] == true || Hybrid::outputCellParams["v_ave"] == true) {
+      Real* const cellRhoQi = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellRhoQiID));
+      vector<Real> ne;
+      for (pargrid::CellID b=0; b<simClasses->pargrid.getNumberOfLocalCells(); ++b) {
+	 for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
+	    const int n = (b*block::SIZE+block::index(i,j,k));
+	    ne.push_back(cellRhoQi[n]/constants::CHARGE_ELEMENTARY);
+	 }
+      }
+      attribs["name"] = string("ne");
+      if (simClasses->vlsv.writeArray("VARIABLE",attribs,arraySize,1,&(ne[0])) == false) { success = false; }
+   }
+
    // write production rates of ionosphere populations
    if (Hybrid::outputCellParams["prod_rate_iono"] == true) {
       Real* const cellIonosphere = reinterpret_cast<Real*>(simClasses->pargrid.getUserData(Hybrid::dataCellIonosphereID));
