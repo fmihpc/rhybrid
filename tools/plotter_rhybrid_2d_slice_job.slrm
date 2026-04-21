@@ -14,42 +14,58 @@
 #SBATCH --exclusive
 ##SBATCH --dependency=afterany:NNNN
 set -euo pipefail
-cd $SLURM_SUBMIT_DIR
-echo $SLURM_JOB_ID >jobid.txt 2>&1
+#set -u
+trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND" >&2' ERR
+trap 'echo "SCRIPT EXITING"' EXIT
+cd "$SLURM_SUBMIT_DIR"
+echo "$SLURM_JOB_ID" >jobid.txt
 
-folder_analysator=/PATH/TO/ANALYSATOR/
+folder_analysator="/PATH/TO/ANALYSATOR/"
 
 #export OMP_NUM_THREADS=80
 
-folder_vlsv_files=../vlsv/
-file_main_log=../logfile.txt
+folder_vlsv_files="../vlsv/"
+file_main_log="../logfile.txt"
 str_run_descr="run"
 str_cmd_srun="srun -N 1 -n 1"
 
-echo "Time stamp: " $(date -R)
+echo "Time stamp: $(date -R)"
 echo ""
 echo "(SLRM) PLOTTING SCRIPT: START"
 echo ""
 
-echo "Current folder: " $(pwd)
-echo "Plotting VLSV files from: " $folder_vlsv_files
-echo "Run main log file: " $file_main_log
-echo "Run description string: " $str_run_descr
+echo "Current folder: $(pwd)"
+echo "Plotting VLSV files from: $folder_vlsv_files"
+echo "Run main log file: $file_main_log"
+echo "Run description string: $str_run_descr"
 
-# find first and last saved time step of VLSV files in run folder
-timestep_start_global=$(find "$folder_vlsv_files/"state*.vlsv -type f -printf '%T+ %p\n' |head -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |bc)
-timestep_end_global=$(find "$folder_vlsv_files/"state*.vlsv -type f -printf '%T+ %p\n' |tail -1 |cut -f 2 -d ' ' |grep -Eo "[0-9]{8}" |sed 's/^0*//')
+# find first and last saved time step of VLSV state files
+shopt -s nullglob
+files=("$folder_vlsv_files"/state*.vlsv)
+timestep_first_all=$(printf "%s\n" "${files[@]}" \
+  | sed -E 's/.*state([0-9]+)\.vlsv/\1/' \
+  | sort -n | head -1)
+timestep_last_all=$(printf "%s\n" "${files[@]}" \
+  | sed -E 's/.*state([0-9]+)\.vlsv/\1/' \
+  | sort -n | tail -1)
+if [[ -z "$timestep_first_all" || -z "$timestep_last_all" ]]; then
+  echo "ERROR: no state*.vlsv files found in $folder_vlsv_files" >&2
+  exit 1
+fi
+# remove zero-padding
+timestep_first_all=$((10#$timestep_first_all))
+timestep_last_all=$((10#$timestep_last_all))
 
 # force first and last saved time step
-#timestep_start_global=51464
-#timestep_end_global=51465
+#timestep_first_all=0
+#timestep_last_all=14000
 
-echo "First state*.vlsv file time step: " $timestep_start_global
-echo "Last state*.vlsv file time step: " $timestep_end_global
+echo "First state*.vlsv file time step: $timestep_first_all"
+echo "Last state*.vlsv file time step: $timestep_last_all"
 
 # parse object radius from logfile.txt
 R_object=$(grep "R_object  =" "$file_main_log" |cut -f 4 -d ' '|xargs)"e3"
-echo "Object radius: " $R_object "m"
+echo "Object radius: $R_object m"
 
 module load StdEnv
 module load gcc/11.3.0
@@ -60,14 +76,14 @@ module load python-data/3.10-24.04
 
 mkdir -p png/
 
-export PYTHONPATH=$PYTHONPATH:$folder_analysator
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$folder_analysator"
 
 # number of nodes
 if [ -z "$SLURM_JOB_NUM_NODES" ]
 then
  N_nodes=1
 else
- N_nodes=$SLURM_JOB_NUM_NODES
+ N_nodes="$SLURM_JOB_NUM_NODES"
 fi
 
 # number of cores per node
@@ -75,18 +91,18 @@ if [ -z "$SLURM_CPUS_PER_TASK" ]
 then
  N_cpu_cores=1
 else
- N_cpu_cores=$SLURM_CPUS_PER_TASK
+ N_cpu_cores="$SLURM_CPUS_PER_TASK"
 fi
 
-echo "N_nodes = " $N_nodes
-echo "N_cpu_cores = " $N_cpu_cores
+echo "N_nodes = $N_nodes"
+echo "N_cpu_cores = $N_cpu_cores"
 echo ""
 
 # get header information from the first VLSV file with N_cpu_cores = -1 argument
 str_cmd_python_header="plotter_rhybrid_2d_slice.py -1 $folder_vlsv_files "
 echo "(SLRM) HEADER INFORMATION"
 echo ""
-echo $str_cmd_srun python $str_cmd_python_header
+echo "$str_cmd_srun python $str_cmd_python_header"
 $str_cmd_srun python $str_cmd_python_header
 wait
 
@@ -96,10 +112,10 @@ echo "(SLRM) CREATING FIGURE FRAMES"
 echo ""
 if [[ $N_nodes -eq 1 ]]
 then
- echo $str_cmd_srun python $str_cmd_python $timestep_start_global $timestep_end_global $timestep_start_global $timestep_end_global
- $str_cmd_srun python $str_cmd_python $timestep_start_global $timestep_end_global $timestep_start_global $timestep_end_global
+ echo "$str_cmd_srun python $str_cmd_python $timestep_first_all $timestep_last_all $timestep_first_all $timestep_last_all"
+ $str_cmd_srun python $str_cmd_python $timestep_first_all $timestep_last_all $timestep_first_all $timestep_last_all
 else
-  nn=$(( ( $timestep_end_global - $timestep_start_global ) / $N_nodes ))
+  nn=$(( ( $timestep_last_all - $timestep_first_all ) / $N_nodes ))
   #str_node_names=$(scontrol show hostnames $SLURM_JOB_NODELIST)
   #str_node_names_minus_one=$(echo $str_node_names |cut -f 1-$(( $N_nodes - 1 )) -d ' ')
   #str_node_names_last=$(echo $str_node_names |cut -f $N_nodes -d ' ')
@@ -108,17 +124,17 @@ else
   for ii in $( seq 0 $(( $N_nodes - 2 )) )
   do
    # first and last saved time step for this process
-   timestep_start_proc=$(( $timestep_start_global + $ii * $nn ))
-   timestep_end_proc=$(( $timestep_start_global + ( $ii + 1 ) * $nn - 1 ))
-   echo $str_cmd_srun python $str_cmd_python $timestep_start_proc $timestep_end_proc $timestep_start_global $timestep_end_global
-   #$str_cmd_srun --nodelist=$nname python $str_cmd_python $timestep_start_proc $timestep_end_proc $timestep_start_global $timestep_end_global &
-   $str_cmd_srun python $str_cmd_python $timestep_start_proc $timestep_end_proc $timestep_start_global $timestep_end_global &
+   timestep_first_proc=$(( $timestep_first_all + $ii * $nn ))
+   timestep_last_proc=$(( $timestep_first_all + ( $ii + 1 ) * $nn - 1 ))
+   echo "$str_cmd_srun python $str_cmd_python $timestep_first_proc $timestep_last_proc $timestep_first_all $timestep_last_all"
+   #$str_cmd_srun --nodelist=$nname python $str_cmd_python $timestep_first_proc $timestep_last_proc $timestep_first_all $timestep_last_all &
+   $str_cmd_srun python $str_cmd_python $timestep_first_proc $timestep_last_proc $timestep_first_all $timestep_last_all &
    #srun -N 1 -n 1 hostname&
    #ii=$(( $ii + 1 ))
   done
  #srun -N 1 -n 1 hostname&
- echo $str_cmd_srun python $str_cmd_python $(( $timestep_end_proc + 1 )) $timestep_end_global $timestep_start_global $timestep_end_global
- $str_cmd_srun python $str_cmd_python $(( $timestep_end_proc + 1 )) $timestep_end_global $timestep_start_global $timestep_end_global &
+ echo "$str_cmd_srun python $str_cmd_python $(( $timestep_last_proc + 1 )) $timestep_last_all $timestep_first_all $timestep_last_all"
+ $str_cmd_srun python $str_cmd_python $(( $timestep_last_proc + 1 )) $timestep_last_all $timestep_first_all $timestep_last_all &
 fi
 wait
 
@@ -136,8 +152,8 @@ names_parameters=$(find png/ -type f -name "*state*.vlsv.png" | sed 's/_state[0-
 
 for param in $names_parameters
 do
- name_parameter_base=$(basename $param)
- echo "Compiling: " $name_parameter_base.mp4
+ name_parameter_base=$(basename "$param")
+ echo "Compiling: ${name_parameter_base}.mp4"
  $str_cmd_srun ffmpeg -framerate 20 -y -an -pattern_type glob -i ${param}_'*.png' -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 3 -qp 24 -vf scale=1900:-2 mp4/$name_parameter_base.mp4 &
 done
 
@@ -147,7 +163,7 @@ wait
 count=$(/usr/bin/lfs find png/*.png 2>/dev/null |/bin/wc -l)
 if [ $count != 0 ]
 then
- echo "$count png/*.png files found, deleting"
+ echo "${count} png/*.png files found, deleting"
  /usr/bin/lfs find png/ -name "*.png" -t f > rmlist.txt
  /bin/sed -e 's:^:/bin/rm -v :' rmlist.txt > rmlist.sh
  /bin/sh rmlist.sh
@@ -162,7 +178,7 @@ echo ""
 echo "(SLRM) PLOTTING SCRIPT: FINISHED"
 
 echo ""
-echo "Time stamp: " $(date -R)
+echo "Time stamp: $(date -R)"
 
 #wait
 #seff -d $SLURM_JOB_ID >seff.txt 2>&1
