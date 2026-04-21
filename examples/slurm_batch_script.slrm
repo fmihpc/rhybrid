@@ -1,0 +1,18 @@
+#!/bin/bash -l
+# Example Slurm batch script for RHybrid
+#SBATCH --job-name=MY_RUN_NAME
+#SBATCH --account=YOUR_PROJECT_HERE
+#SBATCH --time=01:00:00
+#SBATCH --partition=YOUR_QUEUE_HERE
+#SBATCH --nodes=10
+#SBATCH --ntasks-per-node=20
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=100G
+##SBATCH --exclusive # if needed
+set -euo pipefail
+cd $SLURM_SUBMIT_DIR
+echo $SLURM_JOB_ID >jobid.txt 2>&1
+#module load package # load here needed modules in your HPC environment
+export OMPI_MCA_io=^ompio # workaround OpenMPI I/O bug (if needed)
+srun ./rhybrid --runconfig=myrun.cfg
+# after completion run get_post_job_statistic.sh to get information on resource usage
