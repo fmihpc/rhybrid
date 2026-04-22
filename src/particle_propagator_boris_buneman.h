@@ -105,7 +105,7 @@ template<class PARTICLE>
       // E = -Ue x B
       crossProduct(B,Ue,E);
       // E = -Ue x B - grad(pe)/(qe*ne)
-      if (Hybrid::useElectronPressureElectricField == true) {
+      if (Hybrid::useElectronPressure == true) {
          for (unsigned int i=0;i<3;++i) { E[i] += Ep[i]; }
       }
       Real tx,ty,tz,sx,sy,sz,dvx,dvy,dvz,vmx,vmy,vmz,v0x,v0y,v0z,vpx,vpy,vpz,qmideltT2,t2,b2;

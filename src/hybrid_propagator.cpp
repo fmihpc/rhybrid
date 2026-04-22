@@ -418,7 +418,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::stop();
 
    // calculated cellEp
-   if (Hybrid::useElectronPressureElectricField == true) {
+   if (Hybrid::useElectronPressure == true) {
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeRhoQiID);
       profile::start("intpol",profIntpolID);
       for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { calcCellEp(nodeRhoQi,cellRhoQi,innerFlagCellEp,cellEp,sim,simClasses,innerBlocks[b]); }
@@ -1721,14 +1721,12 @@ void calcCellEp(Real* nodeRhoQi,Real* cellRhoQi,bool* innerFlagCellEp,Real* cell
       const Real yCellGradRhoQi = (yPosFaceRhoQi - yNegFaceRhoQi)/Hybrid::dx;
       const Real zCellGradRhoQi = (zPosFaceRhoQi - zNegFaceRhoQi)/Hybrid::dx;
       // calculate electron pressure term of the electric field
-      // adiabatic electrons
-      if (Hybrid::useAdiabaticElectronPressure == true) {
+      if (Hybrid::useIsothermalElectrons == false) { // stiff polytropic case (gamma = 2)
          cellEp[n3+0] = -Hybrid::electronPressureCoeff*xCellGradRhoQi;
          cellEp[n3+1] = -Hybrid::electronPressureCoeff*yCellGradRhoQi;
          cellEp[n3+2] = -Hybrid::electronPressureCoeff*zCellGradRhoQi;
       }
-      else {
-         // isothermal electrons
+      else { // isothermal case (gamma = 1)
          if (fabs(cellRhoQi[n]) > 0) {
             cellEp[n3+0] = -Hybrid::electronPressureCoeff*xCellGradRhoQi/cellRhoQi[n];
             cellEp[n3+1] = -Hybrid::electronPressureCoeff*yCellGradRhoQi/cellRhoQi[n];
@@ -1887,7 +1885,7 @@ void getFields(Real* r,Real* B,Real* Ue,Real* Ep,Simulation& sim,SimulationClass
    //face2r(r,Hybrid::varReal["faceB_"].ptr,sim,simClasses,blockID,B); // TBD: new variable handling
    //node2r(r,nodeE,sim,simClasses,blockID,E); // this does not work, instead NGP Ue need to be used
    cell2r(r,cellUe,sim,simClasses,blockID,Ue);
-   if (Hybrid::useElectronPressureElectricField == true) {
+   if (Hybrid::useElectronPressure == true) {
       cell2r(r,cellEp,sim,simClasses,blockID,Ep);
    }
 }

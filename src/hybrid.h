@@ -256,7 +256,6 @@ struct Hybrid {
    static Real R2_fieldObstacle;
    static Real fieldObstacleUe[3];
    static Real R2_particleObstacle;
-   static Real R2_cellEpObstacle;
    static Real upstreamBulkU;
    static Real M_object;
    static Real GMdt;
@@ -278,10 +277,12 @@ struct Hybrid {
 #ifdef USE_B_CONSTANT
    static bool includeConstantB0InFaradaysLaw;
 #endif
-   static bool useElectronPressureElectricField;
-   static bool useAdiabaticElectronPressure;
+   static bool useElectronPressure;
    static Real electronTemperature;
+   static unsigned int electronGamma;
    static Real electronPressureCoeff;
+   static bool useIsothermalElectrons;
+   static Real R2_zeroElectronPressure;
    static Real upstreamMacroPleRatio;
    static bool useGravity;
    static int Efilter;

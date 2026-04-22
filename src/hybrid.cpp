@@ -120,7 +120,6 @@ Real Hybrid::R_object;
 Real Hybrid::R2_fieldObstacle;
 Real Hybrid::fieldObstacleUe[3];
 Real Hybrid::R2_particleObstacle;
-Real Hybrid::R2_cellEpObstacle;
 Real Hybrid::upstreamBulkU;
 Real Hybrid::M_object;
 Real Hybrid::GMdt;
@@ -134,13 +133,15 @@ Real Hybrid::minRhoQi;
 Real Hybrid::maxE2;
 Real Hybrid::maxVw;
 bool Hybrid::useHallElectricField;
-bool Hybrid::useElectronPressureElectricField;
-bool Hybrid::useAdiabaticElectronPressure;
+bool Hybrid::useElectronPressure;
+Real Hybrid::electronTemperature;
+unsigned int Hybrid::electronGamma;
+Real Hybrid::electronPressureCoeff;
+bool Hybrid::useIsothermalElectrons;
+Real Hybrid::R2_zeroElectronPressure;
 #ifdef USE_B_CONSTANT
 bool Hybrid::includeConstantB0InFaradaysLaw = false;
 #endif
-Real Hybrid::electronTemperature;
-Real Hybrid::electronPressureCoeff;
 Real Hybrid::upstreamMacroPleRatio;
 bool Hybrid::useGravity;
 int Hybrid::Efilter;

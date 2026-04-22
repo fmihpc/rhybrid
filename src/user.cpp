@@ -282,6 +282,20 @@ bool mpiDistrVecVecReal(Simulation& sim,SimulationClasses& simClasses,vector< ve
    return true;
 }
 
+// radius squared to a long string representation for the main log
+string r2ToStr(const Real R2) {
+   stringstream ss;
+   if (R2 <= 0) { ss << "0"; }
+   else {
+      ss
+	<< sqrt(R2)/1e3 << " km = "
+	<< sqrt(R2)/Hybrid::R_object << " R_object = "
+	<< sqrt(R2)/Hybrid::dx << " dx = "
+	<< (sqrt(R2) - Hybrid::R_object)/1e3 << " km + R_object";
+   }
+   return ss.str();
+}
+
 // gaussian distribution
 Real getGaussianDistr(Real x,Real sigma) {
    if (sigma > 0) {
@@ -392,8 +406,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.R_fieldObstacle","Radius of inner field boundary [m] (float)",defaultValue);
    cr.add("Hybrid.fieldObstacleUe","Ue velocity vector (Uex,Uey,Uez) inside the inner boundary [m/s] (float,float,float)",string("(0,0,0)"));
    cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
-   cr.add("Hybrid.R_cellEpObstacle","Radius of inner boundary for zero electron pressure electric field [m] (float)",defaultValue);
-   cr.add("Hybrid.gravity","Use gravitational acceleration [-] (bool)",false);
+   cr.add("Hybrid.use_gravity","Use gravitational acceleration [-] (bool)",false);
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
    cr.add("Hybrid.initialFlowThroughPeriodFactor","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
    cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
@@ -402,12 +415,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.min_ion_charge_density_relative","Minimum value of ion charge density as a fraction of upstream value [-] (float)",defaultValue);
    cr.add("Hybrid.maxE","Maximum value of node electric field [V/m] (float)",defaultValue);
    cr.add("Hybrid.maxVw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
-   cr.add("Hybrid.hall_term","Use Hall term in the electric field [-] (bool)",true);
+   cr.add("Hybrid.use_hall_term","Use Hall term in Ohm's law [-] (bool)",true);
 #ifdef USE_B_CONSTANT
-   cr.add("Hybrid.include_B0_faraday","Include the constant B0 term in Faraday's law [-] (bool)",false);
+   cr.add("Hybrid.include_B0_faraday","Include constant B0 term in Faraday's law [-] (bool)",false);
 #endif
-   cr.add("Hybrid.electron_pressure","Use electron pressure term in the electric field [0: none (pressureless electron fluid), 1: isothermal electron fluid, 2: adiabatic electron fluid] (int)",0);
-   cr.add("Hybrid.Te","Temperature of isothermal electrons or upstream temperature of adiabatic electrons [K] (float)",defaultValue);
    cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
    cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
    simClasses.logger << "(RHYBRID) Configuring: general hybrid simulation settings" << endl << write;
@@ -446,53 +457,23 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	Hybrid::fieldObstacleUe[1] = vel[1];
 	Hybrid::fieldObstacleUe[2] = vel[2];
      }
-   cr.get("Hybrid.R_cellEpObstacle",Hybrid::R2_cellEpObstacle);
-   cr.get("Hybrid.gravity",Hybrid::useGravity);
+   cr.get("Hybrid.use_gravity",Hybrid::useGravity);
    cr.get("Hybrid.M_object",Hybrid::M_object);
    Hybrid::GMdt = constants::GRAVITY*Hybrid::M_object*sim.dt; // constant for gravitational acceleration
    cr.get("Hybrid.initialFlowThroughPeriodFactor",Hybrid::initialFlowThroughPeriod);
    cr.get("Hybrid.maxUe",Hybrid::maxUe2);
-   cr.get("Hybrid.maxVi",Hybrid::maxVi2);
+   cr.get("Hybrid.maxVi",Hybrid::maxVi);
    cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
    cr.get("Hybrid.min_ion_charge_density_relative",Hybrid::minRhoQi);
    cr.get("Hybrid.maxE",Hybrid::maxE2);
    if (Hybrid::maxE2 > 0) { Hybrid::maxE2 = sqr(Hybrid::maxE2); }
    else { Hybrid::maxE2 = 0; }
    cr.get("Hybrid.maxVw",Hybrid::maxVw);
-   cr.get("Hybrid.hall_term",Hybrid::useHallElectricField);
+   cr.get("Hybrid.use_hall_term",Hybrid::useHallElectricField);
 #ifdef USE_B_CONSTANT
    cr.get("Hybrid.include_B0_faraday",Hybrid::includeConstantB0InFaradaysLaw);
 #endif
-   int useElectronPressureInput = 0;
-   cr.get("Hybrid.electron_pressure",useElectronPressureInput);
-   cr.get("Hybrid.Te",Hybrid::electronTemperature);
-   if (useElectronPressureInput == 0) {
-      Hybrid::useElectronPressureElectricField = false;
-      Hybrid::useAdiabaticElectronPressure = false;
-   }
-   else if (useElectronPressureInput == 1) {
-      Hybrid::useElectronPressureElectricField = true;
-      Hybrid::useAdiabaticElectronPressure = false;
-   }
-   else if (useElectronPressureInput == 2) {
-      Hybrid::useElectronPressureElectricField = true;
-      Hybrid::useAdiabaticElectronPressure = true;
-   }
-   else {
-      simClasses.logger << "(RHYBRID) ERROR: Bad Hybrid.electron_pressure input value (" << useElectronPressureInput << ")" << endl << write;
-      forceExit(sim,simClasses);
-      return false;
-   }
-   if (Hybrid::useElectronPressureElectricField == false) {
-      Hybrid::electronTemperature = 0.0;
-      Hybrid::electronPressureCoeff = 0.0;
-   }
-   else {
-      if (Hybrid::useAdiabaticElectronPressure == false) {
-         // isothermal electrons
-         Hybrid::electronPressureCoeff = constants::BOLTZMANN*Hybrid::electronTemperature/constants::CHARGE_ELEMENTARY;
-      }
-   }
+
    cr.get("Hybrid.Efilter",Hybrid::Efilter);
    cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
 
@@ -603,8 +584,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    else { Hybrid::R2_fieldObstacle = -1; }
    if (Hybrid::R2_particleObstacle > 0) { Hybrid::R2_particleObstacle = sqr(Hybrid::R2_particleObstacle); }
    else { Hybrid::R2_particleObstacle = -1; }
-   if (Hybrid::R2_cellEpObstacle > 0) { Hybrid::R2_cellEpObstacle = sqr(Hybrid::R2_cellEpObstacle); }
-   else { Hybrid::R2_cellEpObstacle = -1; }
    const long nx = sim.x_blocks*block::WIDTH_X;
    const long ny = sim.y_blocks*block::WIDTH_Y;
    const long nz = sim.z_blocks*block::WIDTH_Z;
@@ -644,56 +623,16 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    simClasses.logger
      << "(BASIC PARAMETERS)" << endl
      << "R_object  = " << Hybrid::R_object/1e3 << " km = " << Hybrid::R_object/Hybrid::dx << " dx" << endl
-     << "Using spherical inner boundary" << endl
-     << "R_fieldObstacle = ";
-   if (Hybrid::R2_fieldObstacle > 0) {
-      simClasses.logger
-	<< sqrt(Hybrid::R2_fieldObstacle)/1e3 << " km = "
-	<< sqrt(Hybrid::R2_fieldObstacle)/Hybrid::R_object << " R_object = "
-        << sqrt(Hybrid::R2_fieldObstacle)/Hybrid::dx << " dx = "
-	<< (sqrt(Hybrid::R2_fieldObstacle) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
-   }
-   else { simClasses.logger << Hybrid::R2_fieldObstacle << "" << endl; }
-   simClasses.logger << "Ue(r <= R_fieldObstacle) = (" << Hybrid::fieldObstacleUe[0]/1e3 << "," << Hybrid::fieldObstacleUe[1]/1e3 << "," << Hybrid::fieldObstacleUe[2]/1e3 << ") km/s" << endl;
-   simClasses.logger << "R_particleObstacle = ";
-   if (Hybrid::R2_particleObstacle > 0) {
-      simClasses.logger
-	<< sqrt(Hybrid::R2_particleObstacle)/1e3 << " km = "
-	<< sqrt(Hybrid::R2_particleObstacle)/Hybrid::R_object << " R_object = "
-        << sqrt(Hybrid::R2_particleObstacle)/Hybrid::dx << " dx = "
-	<< (sqrt(Hybrid::R2_particleObstacle) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
-   }
-   simClasses.logger << "R_cellEpObstacle = ";
-   if (Hybrid::R2_cellEpObstacle > 0) {
-      simClasses.logger
-	<< sqrt(Hybrid::R2_cellEpObstacle)/1e3 << " km = "
-	<< sqrt(Hybrid::R2_cellEpObstacle)/Hybrid::R_object << " R_object = "
-        << sqrt(Hybrid::R2_cellEpObstacle)/Hybrid::dx << " dx = " 
-	<< (sqrt(Hybrid::R2_cellEpObstacle) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
-   }
-   else { simClasses.logger << Hybrid::R2_particleObstacle << "" << endl; }
-   simClasses.logger
-     << "Gravitational acceleration = " << Hybrid::useGravity << endl
-     << "M_object  = " << Hybrid::M_object     << " kg" << endl
-     << "Hall term = " << Hybrid::useHallElectricField << endl;
+     << "R_fieldObstacle = " << r2ToStr(Hybrid::R2_fieldObstacle) << endl
+     << "Ue(r <= R_fieldObstacle) = (" << Hybrid::fieldObstacleUe[0]/1e3 << "," << Hybrid::fieldObstacleUe[1]/1e3 << "," << Hybrid::fieldObstacleUe[2]/1e3 << ") km/s" << endl
+     << "R_particleObstacle = " << r2ToStr(Hybrid::R2_particleObstacle) << endl
+     << "Using gravity = " << Hybrid::useGravity << endl
+     << "M_object  = " << Hybrid::M_object << " kg" << endl
+     << "Using Hall term = " << Hybrid::useHallElectricField << endl << endl;
 #ifdef USE_B_CONSTANT
-   simClasses.logger << "Include constant B0 term in Faraday's law = " << Hybrid::includeConstantB0InFaradaysLaw << endl;
+   simClasses.logger << "Include constant B0 term in Faraday's law = " << Hybrid::includeConstantB0InFaradaysLaw << endl << endl;
 #endif
-     simClasses.logger
-     << "Electron pressure term = ";
-   if (Hybrid::useElectronPressureElectricField == false) {
-      simClasses.logger << "none" << endl;
-   }
-   else {
-      if (Hybrid::useAdiabaticElectronPressure == true) {
-         simClasses.logger << "adiabatic (gamma = 2)" << endl;
-      }
-      else {
-         simClasses.logger << "isothermal" << endl;
-      }
-   }
    simClasses.logger
-     << "Te = " << Hybrid::electronTemperature << " K = " << Hybrid::electronTemperature/constants::EV_TO_KELVIN << " eV" << endl << endl
      << "(UPSTREAM IMF)" << endl
      << "Bx  = " << Hybrid::IMFBx/1e-9 << " nT" << endl
      << "By  = " << Hybrid::IMFBy/1e-9 << " nT" << endl
@@ -752,12 +691,12 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "dBx  = " << Hybrid::dBx/1e-9 << " nT" << endl
      << "dBy  = " << Hybrid::dBy/1e-9 << " nT" << endl
      << "dBz  = " << Hybrid::dBz/1e-9 << " nT" << endl
-     << "Laminar flow around sphere R = " << sqrt(Hybrid::laminarR2)/1e3 << " km = " << sqrt(Hybrid::laminarR2)/Hybrid::dx << " dx" << endl
+     << "Laminar flow around sphere R = " << r2ToStr(Hybrid::laminarR2) << endl
      << "Dipole coefficient = " << Hybrid::coeffDip << endl
      << "Quadrupole coefficient = " << Hybrid::coeffQuad << endl
      << "Dipole surface B = " << Hybrid::dipSurfB/1e-9 << " nT" << endl
      << "Dipole surface R = " << Hybrid::dipSurfR/1e3 << " km = " << Hybrid::dipSurfR/Hybrid::dx << " dx" << endl
-     << "Minimum R = " << sqrt(Hybrid::dipMinR2)/1e3 << " km = " << sqrt(Hybrid::dipMinR2)/Hybrid::dx << " dx" << endl
+     << "Minimum R = " << r2ToStr(Hybrid::dipMinR2) << endl
      << "x = " << Hybrid::xDip/1e3 << " km = " << Hybrid::xDip/Hybrid::dx << " dx" << endl
      << "y = " << Hybrid::yDip/1e3 << " km = " << Hybrid::yDip/Hybrid::dx << " dx" << endl
      << "z = " << Hybrid::zDip/1e3 << " km = " << Hybrid::zDip/Hybrid::dx << " dx" << endl
@@ -1687,26 +1626,24 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       Hybrid::initialFlowThroughPeriod = -100;
       Hybrid::initialFlowThrough = false;
    }
-
-   // set adiabatic electron pressure coefficient with gamma = 2
-   if (Hybrid::useAdiabaticElectronPressure == true) {
-      if (upstreamElectronDensity > 0) {
-	 Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( upstreamElectronDensity * sqr(constants::CHARGE_ELEMENTARY) );
-      }
-      else {
-	 Hybrid::electronPressureCoeff = 0.0;
-      }
+   if (Hybrid::maxUe2 < 0) {
+      simClasses.logger << "(RHYBRID) WARNING: maximum electron speed (Hybrid.maxUe) negative (" << Hybrid::maxUe2 << "), setting as 1e10 m/s" << endl;
+      Hybrid::maxUe2 = 1e10;
    }
-
    Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
-   if (Hybrid::maxVi2 > Hybrid::dx/sim.dt) {
-      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi2/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt = " << 0.9*Hybrid::dx/sim.dt/1e3 << " km/s" << endl;
-      Hybrid::maxVi2 = 0.9*Hybrid::dx/sim.dt;
+   if (Hybrid::maxVi < 0) {
+      simClasses.logger << "(RHYBRID) WARNING: maximum ion speed (Hybrid.maxVi) negative (" << Hybrid::maxVi << "), setting as 1e10 m/s" << endl;
+      Hybrid::maxVi = 1e10;
    }
-   Hybrid::maxVi2 = sqr(Hybrid::maxVi2);
-   Hybrid::maxVi = sqrt(Hybrid::maxVi2);
-
-   if (Hybrid::minRhoQi < 0) { Hybrid::minRhoQi = 0; }
+   if (Hybrid::maxVi > Hybrid::dx/sim.dt) {
+      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt = " << 0.9*Hybrid::dx/sim.dt/1e3 << " km/s" << endl;
+      Hybrid::maxVi = 0.9*Hybrid::dx/sim.dt;
+   }
+   Hybrid::maxVi2 = sqr(Hybrid::maxVi);
+   if (Hybrid::minRhoQi < 0) {
+      simClasses.logger << "(RHYBRID) WARNING: minimum ion charge density (Hybrid.min_ion_charge_density_relative) negative (" << Hybrid::minRhoQi << "), setting as zero" << endl;
+      Hybrid::minRhoQi = 0;
+   }
    else {
       if (Hybrid::minRhoQi >= 0.5) {
 	 simClasses.logger << "(RHYBRID) WARNING: minimum ion charge density (Hybrid.min_ion_charge_density_relative) very large (" << Hybrid::minRhoQi << " times the upstream ion charge density)" << endl;
@@ -1714,6 +1651,50 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
       // convert the value Hybrid::minRhoQi read from a config file (a fraction of upstream charge density) to SI units (C/m^3)
       Hybrid::minRhoQi *= upstreamIonChargeDensity;
    }
+   simClasses.logger << "(ELECTRON PRESSURE)" << endl;
+   cr.add("ElectronPressure.use_electron_pressure","Use electron pressure term in Ohm's law (bool)",true);
+   cr.add("ElectronPressure.temperature","Electron temperature [K] (float)",defaultValue);
+   cr.add("ElectronPressure.closure_gamma","Polytropic index used in electron fluid closure [1: isothermal, 2: stiff polytropic] (unsigned int)",2);
+   cr.add("ElectronPressure.R_zero","Radius of inner boundary for zero electron pressure electric field [m] (float)",defaultValue);
+   cr.parse();
+   cr.get("ElectronPressure.use_electron_pressure",Hybrid::useElectronPressure);
+   cr.get("ElectronPressure.temperature",Hybrid::electronTemperature);
+   cr.get("ElectronPressure.closure_gamma",Hybrid::electronGamma);
+   cr.get("ElectronPressure.R_zero",Hybrid::R2_zeroElectronPressure);
+   if (Hybrid::useElectronPressure == true) {
+      if (Hybrid::electronTemperature < 0) {
+	 simClasses.logger << "(RHYBRID) WARNING: ElectronPressure.temperature < 0, setting as zero" << endl << write;
+	 Hybrid::electronTemperature = 0;
+      }
+      if (Hybrid::electronGamma == 1) { // isothermal electrons (gamma = 1)
+	 Hybrid::useIsothermalElectrons = true;
+         Hybrid::electronPressureCoeff = constants::BOLTZMANN*Hybrid::electronTemperature/constants::CHARGE_ELEMENTARY;
+      }
+      else if (Hybrid::electronGamma == 2) { // stiff polytropic electrons (gamma = 2)
+	 Hybrid::useIsothermalElectrons = false;
+	 if (upstreamElectronDensity > 0) {
+	    Hybrid::electronPressureCoeff = 2.0*constants::BOLTZMANN*Hybrid::electronTemperature/( upstreamElectronDensity * sqr(constants::CHARGE_ELEMENTARY) );
+	 }
+	 else { Hybrid::electronPressureCoeff = 0.0; }
+      }
+      else {
+	 simClasses.logger << "(RHYBRID) ERROR: only ElectronPressure.closure_gamma 1 (isothermal) or 2 (stiff polytropic) supported (" << Hybrid::electronGamma << ")" << endl << write;
+	 forceExit(sim,simClasses);
+	 return false;
+      }
+   }
+   else { // no electron pressure
+      Hybrid::electronTemperature = 0.0;
+      Hybrid::electronPressureCoeff = 0.0;
+   }
+   if (Hybrid::R2_zeroElectronPressure > 0) { Hybrid::R2_zeroElectronPressure = sqr(Hybrid::R2_zeroElectronPressure); }
+   else { Hybrid::R2_zeroElectronPressure = 0; }
+   simClasses.logger
+     << "Using electron pressure = " << Hybrid::useElectronPressure << endl
+     << "Temperature = Te0 = " << Hybrid::electronTemperature << " K = " << Hybrid::electronTemperature/constants::EV_TO_KELVIN << " eV" << endl
+     << "Electron closure gamma (polytropic index) = " << Hybrid::electronGamma << " " << ((Hybrid::electronGamma == 1) ? "(isothermal)" : "(stiff polytropic)") << endl
+     << "Electron pressure coeff = " << ((Hybrid::useIsothermalElectrons == true) ? "kB*Te0/qe" : "2*kB*Te0/(ne0*qe) (where Te0 and ne0 are upstream values)") << " = " << Hybrid::electronPressureCoeff << endl
+     << "Radius of zero pressure = " << r2ToStr(Hybrid::R2_zeroElectronPressure) << endl << endl;
 
    // configure resistivity
 
@@ -1798,10 +1779,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	<< "Rm_min = mu0*dx*Ubulk/eta = Ubulk/(dx/td_min) = infinity" << endl;
    }
    simClasses.logger
-     << "R = " << sqrt(Hybrid::resistivityR2)/1e3 << " km = "
-     << sqrt(Hybrid::resistivityR2)/Hybrid::R_object << " R_object = "
-     << sqrt(Hybrid::resistivityR2)/Hybrid::dx << " dx = "
-     << (sqrt(Hybrid::resistivityR2) - Hybrid::R_object)/1e3 << " km + R_object" << endl;
+     << "R = " << r2ToStr(Hybrid::resistivityR2) << endl;
    simClasses.logger << "Parameters of spherical resistivity shells:" << endl;
    if (Hybrid::resistivitySphericalEta.size() > 0) {
       for (size_t i=0;i<Hybrid::resistivitySphericalEta.size();i++) {
@@ -1810,18 +1788,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	   << "\t Rmin = ";
 	 if (i == 0) { simClasses.logger << "0" << endl; }
 	 else {
-	    simClasses.logger
-	      << sqrt(Hybrid::resistivitySphericalR2[i-1])/1e3 << " km = "
-	      << sqrt(Hybrid::resistivitySphericalR2[i-1])/Hybrid::R_object << " R_object = "
-	      << sqrt(Hybrid::resistivitySphericalR2[i-1])/Hybrid::dx << " dx" << endl;
+	    simClasses.logger << r2ToStr(Hybrid::resistivitySphericalR2[i-1]) << endl;
 	 }
 	 simClasses.logger
-	   << "\t Rmax = "
-	   << sqrt(Hybrid::resistivitySphericalR2[i])/1e3 << " km = "
-	   << sqrt(Hybrid::resistivitySphericalR2[i])/Hybrid::R_object << " R_object = "
-	   << sqrt(Hybrid::resistivitySphericalR2[i])/Hybrid::dx << " dx";
-	 simClasses.logger
-	   << endl
+	   << "\t Rmax = " << r2ToStr(Hybrid::resistivitySphericalR2[i]) << endl
 	   << "\t eta = " << Hybrid::resistivitySphericalEta[i] << " Ohm m = " << Hybrid::resistivitySphericalEta[i]/resistivityGridUnit << " mu0*dx^2/dt" << endl;
 	 if (Hybrid::resistivitySphericalEta[i] != 0) {
 	    const Real td_min_shell = constants::PERMEABILITY*sqr(Hybrid::dx)/Hybrid::resistivitySphericalEta[i];
@@ -1857,7 +1827,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "(CONSTRAINTS)" << endl
      << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * upstreamBulkSpeed/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/|Ubulk|" << endl
      << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxUe2)/dx_per_dt << " dx/dt"  << endl
-     << "maxVi = " << sqrt(Hybrid::maxVi2)/1e3 << " km/s = " << sqrt(Hybrid::maxVi2)/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxVi2)/dx_per_dt << " dx/dt" << endl
+     << "maxVi = " << Hybrid::maxVi/1e3 << " km/s = " << Hybrid::maxVi/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << Hybrid::maxVi/dx_per_dt << " dx/dt" << endl
      << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << Hybrid::maxVw/dx_per_dt << " dx/dt" << endl
      << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(upstreamConvectionElectricField + 1e-30) << " |Econv|" << endl
      << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
@@ -1866,7 +1836,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // evaluate and log CFL conditions from individual signal speeds and all summed together
    const Real dx_per_td_min = Hybrid::dx/td_min_smallest;
    const Real summedSignalSpeed = upstreamBulkSpeed + upstreamMagnetosonicSpeed + 2*upstreamExBSpeed + upstreamWhistlerSpeed + dx_per_td_min;
-   const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + sqrt(Hybrid::maxVi2) + Hybrid::maxVw + upstreamMagnetosonicSpeed + dx_per_td_min;
+   const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + Hybrid::maxVi + Hybrid::maxVw + upstreamMagnetosonicSpeed + dx_per_td_min;
    simClasses.logger
      << "(COURANT-FRIEDRICHS-LEWY (CFL) CONDITION)" << endl
      << "dx = " << Hybrid::dx/1e3 << " km = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl
@@ -1944,7 +1914,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 	    else                              { innerFlagField[n] = false; }
 	    const Real rp2 = sqr(sqrt(r2) - 0.5*sqrt(3)*Hybrid::dx);
 	    if (rp2 < Hybrid::R2_particleObstacle) { innerFlagParticle[b] = true; }
-            if (rp2 < Hybrid::R2_cellEpObstacle) { innerFlagCellEp[b] = true; }
+            if (rp2 < Hybrid::R2_zeroElectronPressure) { innerFlagCellEp[b] = true; }
 	    const Real rNode2 = sqr(xNode) + sqr(yNode) + sqr(zNode);
 	    if (rNode2 < Hybrid::R2_fieldObstacle) { innerFlagNode[n] = true; /*nodeE[n*3+1] = 1.0; // RHBTESTS */ }
 	    else                                  { innerFlagNode[n] = false; }
