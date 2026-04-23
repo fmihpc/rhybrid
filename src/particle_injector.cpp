@@ -34,11 +34,11 @@ const size_t N_MC_points = 1000;
 
 /* \brief Probabilistic Real2int rounding
  *
- * probround(x) (x >= 0) gives either floor(x) or ceil(x), with probability
- * depending on which one is closer. For example, probround(2.3) gives 2
+ * probRound(x) (x >= 0) gives either floor(x) or ceil(x), with probability
+ * depending on which one is closer. For example, probRound(2.3) gives 2
  * with 70% probability and 3 with 30% probability.
  */
-int probround(SimulationClasses& simClasses,Real x) {
+int probRound(SimulationClasses& simClasses,Real x) {
    if (x <= 0) { return 0; }
    const int f = static_cast<int>(floor(x));
    const Real r = simClasses.random.uniform();
@@ -56,8 +56,7 @@ int probround(SimulationClasses& simClasses,Real x) {
  *  where r2 = x^2 + y^2. Then, x*fac and y*fac are two Gaussian
  *  random numbers.
  */
-Real gaussrnd(SimulationClasses& simClasses)
-{
+Real sampleGaussian(SimulationClasses& simClasses) {
    static Real saved;
    static bool is_saved = false;
    Real x,y,r2,fac,result;
@@ -95,7 +94,7 @@ Real gaussrnd(SimulationClasses& simClasses)
  * to (-x0) so that more and more trials are needed. Therefore, avoid calling
  * the function with x0 < -10.
  */
-Real derivgaussrnd(Real x0,SimulationClasses& simClasses)
+Real sampleDerivGaussian(Real x0,SimulationClasses& simClasses)
 {
    Real x,majorant,pdf;
    const Real
@@ -106,7 +105,7 @@ Real derivgaussrnd(Real x0,SimulationClasses& simClasses)
      d = sqr(x0-xm),
      cxm = c*xm;
 restart:
-   x = xm + gaussrnd(simClasses);
+   x = xm + sampleGaussian(simClasses);
    if (x < 0) { goto restart; }
    majorant = cxm*exp(-0.5*(sqr(x-xm) + d));
    pdf = c*x*exp(-0.5*sqr(x-x0));
@@ -207,8 +206,8 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
 	  yCellGlobal < ymin || yCellGlobal > ymax ||
 	  zCellGlobal < zmin || zCellGlobal > zmax) { continue; }
       //if (xCellGlobal < xmin || xCellGlobal > xmax || yCellGlobal < ymin) { continue; }
-      const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell);
-      //const int N_injectCell = probround(*simClasses,N_macroParticlesPerCell*(1.5 + sin( 10.0*xCellGlobal/(sim->x_max - sim->x_min) ))); // RHBTESTS: init uniform population with sine wave in density
+      const int N_injectCell = probRound(*simClasses,N_macroParticlesPerCell);
+      //const int N_injectCell = probRound(*simClasses,N_macroParticlesPerCell*(1.5 + sin( 10.0*xCellGlobal/(sim->x_max - sim->x_min) ))); // RHBTESTS: init uniform population with sine wave in density
       if (N_injectCell <= 0) { continue; }
       for (int s = 0;s<N_injectCell;s++) {
 	 const Real
@@ -231,9 +230,9 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::X] = xinj[s];
       particles[p].state[particle::Y] = yinj[s];
       particles[p].state[particle::Z] = zinj[s];
-      particles[p].state[particle::VX] = velocity[0] + vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VY] = velocity[1] + vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VZ] = velocity[2] + vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VX] = velocity[0] + vth*sampleGaussian(*simClasses);
+      particles[p].state[particle::VY] = velocity[1] + vth*sampleGaussian(*simClasses);
+      particles[p].state[particle::VZ] = velocity[2] + vth*sampleGaussian(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
 /*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
@@ -460,9 +459,9 @@ void InjectorSolarWind::initParticleCrdVelXPos(Real blockSize[3],Real& x,Real& y
    x = 0;
    y = simClasses->random.uniform()*blockSize[1];
    z = simClasses->random.uniform()*blockSize[2];
-   vx = -vth*derivgaussrnd(U/vth,*simClasses);
-   vy = vth*gaussrnd(*simClasses);
-   vz = vth*gaussrnd(*simClasses);
+   vx = -vth*sampleDerivGaussian(U/vth,*simClasses);
+   vy = vth*sampleGaussian(*simClasses);
+   vz = vth*sampleGaussian(*simClasses);
 }
 
 // initialize position and velocity of a new solar wind particle at negative x outer boundary
@@ -470,9 +469,9 @@ void InjectorSolarWind::initParticleCrdVelXNeg(Real blockSize[3],Real& x,Real& y
    x = blockSize[0];
    y = simClasses->random.uniform()*blockSize[1];
    z = simClasses->random.uniform()*blockSize[2];
-   vx = +vth*derivgaussrnd(U/vth,*simClasses);
-   vy = vth*gaussrnd(*simClasses);
-   vz = vth*gaussrnd(*simClasses);
+   vx = +vth*sampleDerivGaussian(U/vth,*simClasses);
+   vy = vth*sampleGaussian(*simClasses);
+   vz = vth*sampleGaussian(*simClasses);
 }
 
 // initialize position and velocity of a new solar wind particle at positive y outer boundary
@@ -480,9 +479,9 @@ void InjectorSolarWind::initParticleCrdVelYPos(Real blockSize[3],Real& x,Real& y
    x = simClasses->random.uniform()*blockSize[0];
    y = 0;
    z = simClasses->random.uniform()*blockSize[2];
-   vx = vth*gaussrnd(*simClasses);
-   vy = -vth*derivgaussrnd(U/vth,*simClasses);
-   vz = vth*gaussrnd(*simClasses);
+   vx = vth*sampleGaussian(*simClasses);
+   vy = -vth*sampleDerivGaussian(U/vth,*simClasses);
+   vz = vth*sampleGaussian(*simClasses);
 }
 
 // initialize position and velocity of a new solar wind particle at negative y outer boundary
@@ -490,9 +489,9 @@ void InjectorSolarWind::initParticleCrdVelYNeg(Real blockSize[3],Real& x,Real& y
    x = simClasses->random.uniform()*blockSize[0];
    y = blockSize[1];
    z = simClasses->random.uniform()*blockSize[2];
-   vx = vth*gaussrnd(*simClasses);
-   vy = +vth*derivgaussrnd(U/vth,*simClasses);
-   vz = vth*gaussrnd(*simClasses);
+   vx = vth*sampleGaussian(*simClasses);
+   vy = +vth*sampleDerivGaussian(U/vth,*simClasses);
+   vz = vth*sampleGaussian(*simClasses);
 }
 
 // initialize position and velocity of a new solar wind particle at positive z outer boundary
@@ -500,9 +499,9 @@ void InjectorSolarWind::initParticleCrdVelZPos(Real blockSize[3],Real& x,Real& y
    x = simClasses->random.uniform()*blockSize[0];
    y = simClasses->random.uniform()*blockSize[1];
    z = 0;
-   vx = vth*gaussrnd(*simClasses);
-   vy = vth*gaussrnd(*simClasses);
-   vz = -vth*derivgaussrnd(U/vth,*simClasses);
+   vx = vth*sampleGaussian(*simClasses);
+   vy = vth*sampleGaussian(*simClasses);
+   vz = -vth*sampleDerivGaussian(U/vth,*simClasses);
 }
 
 // initialize position and velocity of a new solar wind particle at negative z outer boundary
@@ -510,9 +509,9 @@ void InjectorSolarWind::initParticleCrdVelZNeg(Real blockSize[3],Real& x,Real& y
    x = simClasses->random.uniform()*blockSize[0];
    y = simClasses->random.uniform()*blockSize[1];
    z = blockSize[2];
-   vx = vth*gaussrnd(*simClasses);
-   vy = vth*gaussrnd(*simClasses);
-   vz = +vth*derivgaussrnd(U/vth,*simClasses);
+   vx = vth*sampleGaussian(*simClasses);
+   vy = vth*sampleGaussian(*simClasses);
+   vz = +vth*sampleDerivGaussian(U/vth,*simClasses);
 }
 
 bool InjectorSolarWind::inject(pargrid::DataID speciesDataID,unsigned int* N_particles) {
@@ -541,9 +540,8 @@ bool InjectorSolarWind::injectParticles(pargrid::CellID blockID,const Species& s
 #endif*/
    Real blockSize[3];
    getBlockSize(*simClasses,*sim,blockID,blockSize);
-   // probround
-   const int N_inject = probround(*simClasses,N_macroParticlesPerCellPerDt);
-   //const int N_inject = probround(*simClasses,N_macroParticlesPerCellPerDt*(1.5 + sin(20.0*sim->t/(sim->maximumTimesteps*sim->dt)))); // RHBTESTS: inject sine wave in the solar wind density from the front wall
+   const int N_inject = probRound(*simClasses,N_macroParticlesPerCellPerDt);
+   //const int N_inject = probRound(*simClasses,N_macroParticlesPerCellPerDt*(1.5 + sin(20.0*sim->t/(sim->maximumTimesteps*sim->dt)))); // RHBTESTS: inject sine wave in the solar wind density from the front wall
    if (N_inject <= 0) { return true; }
    // Make room for new particles:
    const pargrid::ArraySizetype oldSize = wrapper.size()[blockID];
@@ -765,8 +763,7 @@ bool InjectorFlow::inject(pargrid::DataID speciesDataID,unsigned int* N_particle
 bool InjectorFlow::injectParticles(pargrid::CellID blockID,const Species& species,unsigned int* N_particles,pargrid::DataWrapper<Particle<Real> >& wrapper) {
    Real blockSize[3];
    getBlockSize(*simClasses,*sim,blockID,blockSize);
-   // probround
-   const int N_inject = probround(*simClasses,N_macroParticlesPerCell);
+   const int N_inject = probRound(*simClasses,N_macroParticlesPerCell);
    if (N_inject <= 0) { return true; }
    // Make room for new particles:
    const pargrid::ArraySizetype oldSize = wrapper.size()[blockID];
@@ -778,9 +775,9 @@ bool InjectorFlow::injectParticles(pargrid::CellID blockID,const Species& specie
       particles[p].state[particle::X] = simClasses->random.uniform()*blockSize[0];
       particles[p].state[particle::Y] = simClasses->random.uniform()*blockSize[1];
       particles[p].state[particle::Z] = simClasses->random.uniform()*blockSize[2];
-      particles[p].state[particle::VX] = velocity[0] + vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VY] = velocity[1] + vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VZ] = velocity[2] + vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VX] = velocity[0] + vth*sampleGaussian(*simClasses);
+      particles[p].state[particle::VY] = velocity[1] + vth*sampleGaussian(*simClasses);
+      particles[p].state[particle::VZ] = velocity[2] + vth*sampleGaussian(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
       // inject counter
       Hybrid::logCounterParticleInject[species.popid-1] += w;
@@ -985,7 +982,7 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
    for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const size_t nIono = n*Hybrid::N_ionospherePopulations + N_ionoPop;
-      const int N_injectCell = probround(*simClasses,cellIonosphere[nIono]);
+      const int N_injectCell = probRound(*simClasses,cellIonosphere[nIono]);
       if (N_injectCell <= 0) { return true; }
       const Real
 	xCell = (i+0.5)*Hybrid::dx,
@@ -1016,9 +1013,9 @@ bool InjectorIonosphere::injectParticles(pargrid::CellID blockID,const Species& 
 	x = xBlock + xinj[s],
 	y = yBlock + yinj[s],
 	z = zBlock + zinj[s];
-      Real vx = vth*gaussrnd(*simClasses);
-      Real vy = vth*gaussrnd(*simClasses);
-      Real vz = vth*gaussrnd(*simClasses);
+      Real vx = vth*sampleGaussian(*simClasses);
+      Real vy = vth*sampleGaussian(*simClasses);
+      Real vz = vth*sampleGaussian(*simClasses);
       // make sure that velocity is upwards
       if (vx*x + vy*y + vz*z < 0) {
          vx = -vx;
@@ -1282,7 +1279,7 @@ bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Sp
    for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const size_t nIono = n*Hybrid::N_ionospherePopulations + N_ionoPop;
-      const int N_injectCell = probround(*simClasses,cellIonosphere[nIono]);
+      const int N_injectCell = probRound(*simClasses,cellIonosphere[nIono]);
       if (N_injectCell <= 0) { return true; }
       const Real
 	xCell = crd[b3+0] +(i+0.5)*Hybrid::dx,
@@ -1329,9 +1326,9 @@ bool InjectorChapmanIonosphere::injectParticles(pargrid::CellID blockID,const Sp
 	y = yinj[s],
 	z = zinj[s];
       Real
-	vx = vth*gaussrnd(*simClasses),
-	vy = vth*gaussrnd(*simClasses),
-	vz = vth*gaussrnd(*simClasses);
+	vx = vth*sampleGaussian(*simClasses),
+	vy = vth*sampleGaussian(*simClasses),
+	vz = vth*sampleGaussian(*simClasses);
       // make sure that velocity is upwards
       if (vx*x + vy*y + vz*z < 0) {
          vx = -vx;
@@ -1535,7 +1532,7 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
    for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const size_t nExo = n*Hybrid::N_exospherePopulations + N_exoPop;
-      const int N_injectCell = probround(*simClasses,cellExosphere[nExo]);
+      const int N_injectCell = probRound(*simClasses,cellExosphere[nExo]);
       if (N_injectCell <= 0) { return true; }
       const Real
 	xCell = (i+0.5)*Hybrid::dx,
@@ -1570,9 +1567,9 @@ bool InjectorExosphere::injectParticles(pargrid::CellID blockID,const Species& s
       particles[p].state[particle::X] = xinj[s];
       particles[p].state[particle::Y] = yinj[s];
       particles[p].state[particle::Z] = zinj[s];
-      particles[p].state[particle::VX] = vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VY] = vth*gaussrnd(*simClasses);
-      particles[p].state[particle::VZ] = vth*gaussrnd(*simClasses);
+      particles[p].state[particle::VX] = vth*sampleGaussian(*simClasses);
+      particles[p].state[particle::VY] = vth*sampleGaussian(*simClasses);
+      particles[p].state[particle::VZ] = vth*sampleGaussian(*simClasses);
       particles[p].state[particle::WEIGHT] = w;
 /*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];

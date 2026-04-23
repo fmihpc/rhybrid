@@ -63,7 +63,7 @@ bool BorisBuneman<PARTICLE>::finalize() {return true;}
 template<class PARTICLE>
   void BorisBuneman<PARTICLE>::propagate(const Real xBlock,const Real yBlock,const Real zBlock,pargrid::CellID blockID,const Species& species,PARTICLE& particle,pargrid::CellID globalID) {
    bool accelerate = species.accelerate;
-   if ( (simClasses->pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) || (Hybrid::initialFlowThrough == true) ) {
+   if ( (simClasses->pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) || (Hybrid::useInitialFlowThrough == true) ) {
       accelerate = false;
    }
    /*if (accelerate == true) {
@@ -80,8 +80,8 @@ template<class PARTICLE>
       particle.state[particle::VZ] += beta*( dUxb[2] + dUxbxb[2] );
 
       const Real v2 = sqr(particle.state[particle::VX]) + sqr(particle.state[particle::VY]) + sqr(particle.state[particle::VZ]);
-      if (v2 > Hybrid::maxVi2) {
-	 const Real norm = sqrt(Hybrid::maxVi2/v2);
+      if (v2 > Hybrid::maxIonSpeed2) {
+	 const Real norm = sqrt(Hybrid::maxIonSpeed2/v2);
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
 	 particle.state[particle::VZ] *= norm;
@@ -144,8 +144,8 @@ template<class PARTICLE>
 	 }
       }
       const Real v2 = sqr(particle.state[particle::VX]) + sqr(particle.state[particle::VY]) + sqr(particle.state[particle::VZ]);
-      if (v2 > Hybrid::maxVi2) {
-	 const Real norm = sqrt(Hybrid::maxVi2/v2);
+      if (v2 > Hybrid::maxIonSpeed2) {
+	 const Real norm = sqrt(Hybrid::maxIonSpeed2/v2);
 	 particle.state[particle::VX] *= norm;
 	 particle.state[particle::VY] *= norm;
 	 particle.state[particle::VZ] *= norm;

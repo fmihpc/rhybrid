@@ -230,7 +230,7 @@ void logCalcParticle(Simulation& sim,SimulationClasses& simClasses,std::vector<L
    }
    for (size_t i=0; i<cellRhoM.size(); ++i) { cellRhoM[i] /= Hybrid::dV; }
    // implement minimum densities in total mass density
-   const Real minRhoMGlobal = Hybrid::minRhoQi*constants::MASS_PROTON/constants::CHARGE_ELEMENTARY; // assume global density minimum is protons
+   const Real minRhoMGlobal = Hybrid::minIonChargeDensity*constants::MASS_PROTON/constants::CHARGE_ELEMENTARY; // assume global density minimum is protons
    for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) {
       for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
@@ -765,9 +765,13 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
 	 if (maxUe_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum ion speed: Ue_max/(dx/dt) > 0.9 ("    << maxUe_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
 	 if (maxVA_dxdt > 0.9) { simClasses.logger << "(RHYBRID) WARNING: Maximum Alfven speed: Va_max/(dx/dt) > 0.9 (" << maxVA_dxdt << ") (time step = " << sim.timestep << ", time = " << sim.t << ")" << std::endl << write; }
       }
-      if (maxBGlobal > Hybrid::terminateLimitMaxB) {
+      if (maxBGlobal > Hybrid::maxBStopRun) {
          success = false;
-	 if (sim.mpiRank == sim.MASTER_RANK) { simClasses.logger << "(RHYBRID) CONSTRAINT: maximum |B| for run termination reached (maxBGlobal = " << maxBGlobal/1e-9 << " nT) (time step = " << sim.timestep << ", time = " << sim.t << "), exiting." << std::endl << write; }
+	 if (sim.mpiRank == sim.MASTER_RANK) {
+	    simClasses.logger
+	      << "(RHYBRID) CONSTRAINT: maximum B reached ("
+	      << maxBGlobal/1e-9 << " nT >" << Hybrid::maxBStopRun/1e-9 << " nT) at time step = "
+	      << sim.timestep << " (time = " << sim.t << "), stopping run" << std::endl << write; }
       }
    }
 

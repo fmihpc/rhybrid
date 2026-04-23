@@ -79,7 +79,7 @@ bool ParticleBoundaryCondHybrid<SPECIES,PARTICLE>::apply(pargrid::DataID particl
 	       const Real w = particles[current].state[particle::WEIGHT];
 	       // check coordinates, velocities and weight: remove if the particle is corrupted
 	       if (x < 0 || y < 0 || z < 0 || x > bs[0] || y > bs[1] || z > bs[2] ||
-		  fabs(vx) > Hybrid::maxVi || fabs(vy) > Hybrid::maxVi || fabs(vz) > Hybrid::maxVi ||
+		  fabs(vx) > Hybrid::maxIonSpeed || fabs(vy) > Hybrid::maxIonSpeed || fabs(vz) > Hybrid::maxIonSpeed ||
 		  w != this->weight ||
 		  std::isnan(x) == true || std::isnan(y) == true || std::isnan(z) == true ||
 		  std::isnan(vx) == true || std::isnan(vy) == true || std::isnan(vz) == true ||

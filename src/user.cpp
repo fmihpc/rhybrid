@@ -48,11 +48,12 @@ using namespace std;
 
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
    bool success = true;
-   if (Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::initialFlowThrough == true) {
+   // if enabled, propagate particles with their initial velocities until Hybrid::initialFlowThroughPeriod is reached
+   if (Hybrid::initialFlowThroughPeriod < sim.t && Hybrid::useInitialFlowThrough == true) {
       static bool switchOffDone = false;
       if (switchOffDone == false) {
-         simClasses.logger << "(RHYBRID) initialFlowThroughPeriod reached, switching initial flow through off..." << endl;
-         Hybrid::initialFlowThrough = false;
+         simClasses.logger << "(RHYBRID) number of initial flow-throughs reached, switching off" << endl;
+         Hybrid::useInitialFlowThrough = false;
          switchOffDone = true;
       }
    }
@@ -66,9 +67,7 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
       if (sim.t >= Hybrid::dataSaveAllTimestepsStartTime && sim.t <= Hybrid::dataSaveAllTimestepsEndTime) {
 	 sim.dataIntervalInteger = 1;
       }
-      else {
-	 sim.dataIntervalInteger = Hybrid::simDataIntervalIntegerOriginal;
-      }
+      else { sim.dataIntervalInteger = Hybrid::simDataIntervalIntegerOriginal; }
    }
    // logging: main, field, particles
    if (Hybrid::mainLogDiagnosticsInterval > 0) {
@@ -78,16 +77,14 @@ bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleList
    }
    if (Hybrid::logInterval > 0) {
       if ((sim.timestep)%(Hybrid::logInterval) == 0.0) {
-         int masterFailed = 0; // check for failure of the master PE for run termination
+         int masterFailed = 0; // if master failed, signal all PEs
          if (diagnostics::logWriteParticleField(sim,simClasses,particleLists) == false) {
             success = false;
             if (sim.mpiRank==sim.MASTER_RANK) { masterFailed = 1; }
          }
          // broadcast failed flag from master to all PEs (note: this should be handled on a higher level like corsair / int main)
          MPI_Bcast(&masterFailed,1,MPI_INT,sim.MASTER_RANK,sim.comm);
-         if (masterFailed > 0) {
-            success = false;
-         }
+         if (masterFailed > 0) { success = false; }
       }
    }
 #ifdef USE_DETECTORS
@@ -296,14 +293,10 @@ string r2ToStr(const Real R2) {
    return ss.str();
 }
 
-// gaussian distribution
+// simple unnormalised gaussian distribution
 Real getGaussianDistr(Real x,Real sigma) {
-   if (sigma > 0) {
-      return exp( -0.5*sqr(x/sigma) );
-   }
-   else {
-      return -1.0;
-   }
+   if (sigma > 0) { return exp( -0.5*sqr(x/sigma) ); }
+   else { return -1.0; }
 }
 
 // TBD: new variable handling
@@ -408,19 +401,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.add("Hybrid.R_particleObstacle","Radius of inner particle boundary [m] (float)",defaultValue);
    cr.add("Hybrid.use_gravity","Use gravitational acceleration [-] (bool)",false);
    cr.add("Hybrid.M_object","Mass of simulated object [kg] (float)",defaultValue);
-   cr.add("Hybrid.initialFlowThroughPeriodFactor","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
-   cr.add("Hybrid.maxUe","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
-   cr.add("Hybrid.maxVi","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
-   cr.add("Hybrid.terminateLimitMaxB","Maximum magnitude of magnetic field above which a simulation run is terminated [T] (float)",defaultValue);
-   cr.add("Hybrid.min_ion_charge_density_relative","Minimum value of ion charge density as a fraction of upstream value [-] (float)",defaultValue);
-   cr.add("Hybrid.maxE","Maximum value of node electric field [V/m] (float)",defaultValue);
-   cr.add("Hybrid.maxVw","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
    cr.add("Hybrid.use_hall_term","Use Hall term in Ohm's law [-] (bool)",true);
 #ifdef USE_B_CONSTANT
    cr.add("Hybrid.include_B0_faraday","Include constant B0 term in Faraday's law [-] (bool)",false);
 #endif
-   cr.add("Hybrid.Efilter","E filtering number [-] (int)",static_cast<int>(0));
-   cr.add("Hybrid.EfilterNodeGaussSigma","E filtering number [dx] (float)",defaultValue);
    simClasses.logger << "(RHYBRID) Configuring: general hybrid simulation settings" << endl << write;
    cr.parse();
    unsigned int logPrecision = 10;
@@ -460,22 +444,10 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    cr.get("Hybrid.use_gravity",Hybrid::useGravity);
    cr.get("Hybrid.M_object",Hybrid::M_object);
    Hybrid::GMdt = constants::GRAVITY*Hybrid::M_object*sim.dt; // constant for gravitational acceleration
-   cr.get("Hybrid.initialFlowThroughPeriodFactor",Hybrid::initialFlowThroughPeriod);
-   cr.get("Hybrid.maxUe",Hybrid::maxUe2);
-   cr.get("Hybrid.maxVi",Hybrid::maxVi);
-   cr.get("Hybrid.terminateLimitMaxB",Hybrid::terminateLimitMaxB);
-   cr.get("Hybrid.min_ion_charge_density_relative",Hybrid::minRhoQi);
-   cr.get("Hybrid.maxE",Hybrid::maxE2);
-   if (Hybrid::maxE2 > 0) { Hybrid::maxE2 = sqr(Hybrid::maxE2); }
-   else { Hybrid::maxE2 = 0; }
-   cr.get("Hybrid.maxVw",Hybrid::maxVw);
    cr.get("Hybrid.use_hall_term",Hybrid::useHallElectricField);
 #ifdef USE_B_CONSTANT
    cr.get("Hybrid.include_B0_faraday",Hybrid::includeConstantB0InFaradaysLaw);
 #endif
-
-   cr.get("Hybrid.Efilter",Hybrid::Efilter);
-   cr.get("Hybrid.EfilterNodeGaussSigma",Hybrid::EfilterNodeGaussSigma);
 
    // IMF parameters
    string inputStrBoundaryCellB = "1 0 0 0 0 0";
@@ -650,34 +622,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
      << "faceB (+x -x +y -y +z -z) ="; for (size_t i = 0;i<6;++i) { simClasses.logger << " " << Hybrid::IMFBoundaryFaceB[i]; }
    simClasses.logger << endl << endl;
 
-   if (Hybrid::Efilter < 0) { Hybrid::Efilter = 0; }
-   if (Hybrid::EfilterNodeGaussSigma <= 0) { Hybrid::EfilterNodeGaussSigma = 0; }
-   else {
-      // determined gaussian smoothing coefficients
-      const Real C1 = getGaussianDistr(0.0,Hybrid::EfilterNodeGaussSigma); // 1 node itself to be filtered
-      const Real C2 = getGaussianDistr(1.0,Hybrid::EfilterNodeGaussSigma); // 6 direct neighbors (at dx)
-      const Real C3 = getGaussianDistr(sqrt(2.0),Hybrid::EfilterNodeGaussSigma); // 12 near diagonal neighbors (at sqrt(2)*dx)
-      const Real C4 = getGaussianDistr(sqrt(3.0),Hybrid::EfilterNodeGaussSigma); // 8 far diagonal neighbors (at sqrt(3)*dx)
-      const Real Csum = 1.0*C1 + 6.0*C2 + 12.0*C3 + 8.0*C4; // normalization such that sum_i C_i = 1 over all 27 nodes
-      Hybrid::EfilterNodeGaussCoeffs[0] = C1/Csum;
-      Hybrid::EfilterNodeGaussCoeffs[1] = C2/Csum;
-      Hybrid::EfilterNodeGaussCoeffs[2] = C3/Csum;
-      Hybrid::EfilterNodeGaussCoeffs[3] = C4/Csum;
-   }
-   simClasses.logger
-     << "(FILTERING)" << endl
-     << "Number of E intpol smoothings = " << Hybrid::Efilter << " (node2cell2node interpolation technique)" << endl
-     << "Sigma of E gaussian smoothing = " << Hybrid::EfilterNodeGaussSigma << " dx (gaussian average technique)" << endl;
-   if (Hybrid::EfilterNodeGaussSigma > 0) {
-      simClasses.logger
-        //<< "Number of E gaussian smoothings = " << Hybrid::EfilterNodeGaussN << " (gaussian average technique)" << endl;
-        << "Kernel coefficients: " << endl
-        << "C1 = " << Hybrid::EfilterNodeGaussCoeffs[0] << " (d = 0)" << endl
-        << "C2 = " << Hybrid::EfilterNodeGaussCoeffs[1] << " (d = 1dx)" << endl
-        << "C3 = " << Hybrid::EfilterNodeGaussCoeffs[2] << " (d = sqrt(2)dx)" << endl
-        << "C4 = " << Hybrid::EfilterNodeGaussCoeffs[3] << " (d = sqrt(3)dx)" << endl;
-   }
-   simClasses.logger << endl;
 #if defined(USE_B_INITIAL) || defined(USE_B_CONSTANT)
    simClasses.logger
      << "(INTRINSIC MAGNETIC FIELD)" << endl
@@ -1617,40 +1561,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    // set bulk speed
    Hybrid::upstreamBulkU = upstreamBulkSpeed;
 
-   // set initial flow through
-   if (upstreamBulkSpeed > 0 && Hybrid::initialFlowThroughPeriod > 0) {
-      Hybrid::initialFlowThroughPeriod *= (sim.x_max - sim.x_min)/upstreamBulkSpeed;
-      Hybrid::initialFlowThrough = true;
-   }
-   else {
-      Hybrid::initialFlowThroughPeriod = -100;
-      Hybrid::initialFlowThrough = false;
-   }
-   if (Hybrid::maxUe2 < 0) {
-      simClasses.logger << "(RHYBRID) WARNING: maximum electron speed (Hybrid.maxUe) negative (" << Hybrid::maxUe2 << "), setting as 1e10 m/s" << endl;
-      Hybrid::maxUe2 = 1e10;
-   }
-   Hybrid::maxUe2 = sqr(Hybrid::maxUe2);
-   if (Hybrid::maxVi < 0) {
-      simClasses.logger << "(RHYBRID) WARNING: maximum ion speed (Hybrid.maxVi) negative (" << Hybrid::maxVi << "), setting as 1e10 m/s" << endl;
-      Hybrid::maxVi = 1e10;
-   }
-   if (Hybrid::maxVi > Hybrid::dx/sim.dt) {
-      simClasses.logger << "(RHYBRID) WARNING: maxVi = " << Hybrid::maxVi/1e3 << " km/s > dx/dt, setting maxVi = 0.9*dx/dt = " << 0.9*Hybrid::dx/sim.dt/1e3 << " km/s" << endl;
-      Hybrid::maxVi = 0.9*Hybrid::dx/sim.dt;
-   }
-   Hybrid::maxVi2 = sqr(Hybrid::maxVi);
-   if (Hybrid::minRhoQi < 0) {
-      simClasses.logger << "(RHYBRID) WARNING: minimum ion charge density (Hybrid.min_ion_charge_density_relative) negative (" << Hybrid::minRhoQi << "), setting as zero" << endl;
-      Hybrid::minRhoQi = 0;
-   }
-   else {
-      if (Hybrid::minRhoQi >= 0.5) {
-	 simClasses.logger << "(RHYBRID) WARNING: minimum ion charge density (Hybrid.min_ion_charge_density_relative) very large (" << Hybrid::minRhoQi << " times the upstream ion charge density)" << endl;
-      }
-      // convert the value Hybrid::minRhoQi read from a config file (a fraction of upstream charge density) to SI units (C/m^3)
-      Hybrid::minRhoQi *= upstreamIonChargeDensity;
-   }
    simClasses.logger << "(ELECTRON PRESSURE)" << endl;
    cr.add("ElectronPressure.use_electron_pressure","Use electron pressure term in Ohm's law (bool)",true);
    cr.add("ElectronPressure.temperature","Electron temperature [K] (float)",defaultValue);
@@ -1821,22 +1731,104 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    for (auto aa: resistivityBoundaryCoeffs) { simClasses.logger << " " << aa; }
    simClasses.logger << endl << endl;
 
+   Real N_initialFlowThroughs = 0.0;
+   Real smoothingSigmaE = 0.0;
+   simClasses.logger << "(CONSTRAINTS)" << endl;
+   cr.add("Constraints.max_ion_velocity","Maximum magnitude of ion velocity [m/s] (float)",defaultValue);
+   cr.add("Constraints.max_electron_velocity","Maximum magnitude of electron velocity [m/s] (float)",defaultValue);
+   cr.add("Constraints.min_ion_charge_density_relative","Minimum value of ion charge density as a fraction of upstream value [-] (float)",defaultValue);
+   cr.add("Constraints.max_electric_field","Maximum value of node electric field [V/m] (float)",defaultValue);
+   cr.add("Constraints.max_whistler_velocity","Maximum value of whistler wave speed [m/s] (float)",defaultValue);
+   cr.add("Constraints.max_magnetic_field_stop_run","Maximum magnetic field at which a run is stopped [T] (float)",defaultValue);
+   cr.add("Constraints.initial_flow_throughs","How many times the flow crosses from xmax to xmin before the Lorentz force is enabled [-] (float)",defaultValue);
+   cr.add("Constraints.electric_field_linear_smoothing_number","Number of linear nodal electric field smoothings per timestep [-] (int)",static_cast<int>(0));
+   cr.add("Constraints.electric_field_smoothing_gauss_sigma","Length scale of gaussian smoothing of nodal electric field [dx] (float)",defaultValue);
+   cr.parse();
+   cr.get("Constraints.max_ion_velocity",Hybrid::maxIonSpeed);
+   cr.get("Constraints.max_electron_velocity",Hybrid::maxElectronSpeed2);
+   cr.get("Constraints.min_ion_charge_density_relative",Hybrid::minIonChargeDensity);
+   cr.get("Constraints.max_electric_field",Hybrid::maxElectricField2);
+   cr.get("Constraints.max_whistler_velocity",Hybrid::maxWhistlerSpeed);
+   cr.get("Constraints.max_magnetic_field_stop_run",Hybrid::maxBStopRun);
+   cr.get("Constraints.initial_flow_throughs",N_initialFlowThroughs);
+   cr.get("Constraints.electric_field_linear_smoothing_number",Hybrid::N_linearSmoothingsNodeE);
+   cr.get("Constraints.electric_field_smoothing_gauss_sigma",smoothingSigmaE);
+   // set initial flow through
+   if (upstreamBulkSpeed > 0 && N_initialFlowThroughs > 0) {
+      Hybrid::initialFlowThroughPeriod = N_initialFlowThroughs*(sim.x_max - sim.x_min)/upstreamBulkSpeed;
+      Hybrid::useInitialFlowThrough = true;
+   }
+   else {
+      Hybrid::initialFlowThroughPeriod = -100;
+      Hybrid::useInitialFlowThrough = false;
+   }
+      if (Hybrid::maxElectronSpeed2 < 0) {
+      simClasses.logger << "(RHYBRID) WARNING: maximum electron speed (Constraints.max_electron_velocity) negative (" << Hybrid::maxElectronSpeed2 << "), setting as 1e10 m/s" << endl;
+      Hybrid::maxElectronSpeed2 = 1e10;
+   }
+   Hybrid::maxElectronSpeed2 = sqr(Hybrid::maxElectronSpeed2);
+   if (Hybrid::maxIonSpeed < 0) {
+      simClasses.logger << "(RHYBRID) WARNING: maximum ion speed (Constraints.max_ion_velocity) negative (" << Hybrid::maxIonSpeed << "), setting as 1e10 m/s" << endl;
+      Hybrid::maxIonSpeed = 1e10;
+   }
+   if (Hybrid::maxIonSpeed > Hybrid::dx/sim.dt) {
+      simClasses.logger << "(RHYBRID) WARNING: Constraints.max_ion_velocity = " << Hybrid::maxIonSpeed/1e3 << " km/s > dx/dt, setting at 0.9*dx/dt = " << 0.9*Hybrid::dx/sim.dt/1e3 << " km/s" << endl;
+      Hybrid::maxIonSpeed = 0.9*Hybrid::dx/sim.dt;
+   }
+   Hybrid::maxIonSpeed2 = sqr(Hybrid::maxIonSpeed);
+   if (Hybrid::minIonChargeDensity < 0) {
+      simClasses.logger << "(RHYBRID) WARNING: minimum ion charge density (Constraints.min_ion_charge_density_relative) negative (" << Hybrid::minIonChargeDensity << "), setting as zero" << endl;
+      Hybrid::minIonChargeDensity = 0;
+   }
+   else {
+      if (Hybrid::minIonChargeDensity >= 0.5) {
+	 simClasses.logger << "(RHYBRID) WARNING: minimum ion charge density (Constraints.min_ion_charge_density_relative) very large (" << Hybrid::minIonChargeDensity << " times the upstream ion charge density)" << endl;
+      }
+      // convert the value Hybrid::minIonChargeDensity read from a config file (a fraction of upstream charge density) to SI units (C/m^3)
+      Hybrid::minIonChargeDensity *= upstreamIonChargeDensity;
+   }
+   if (Hybrid::maxElectricField2 > 0) { Hybrid::maxElectricField2 = sqr(Hybrid::maxElectricField2); }
+   else { Hybrid::maxElectricField2 = 0; }
+
+   if (Hybrid::N_linearSmoothingsNodeE < 0) { Hybrid::N_linearSmoothingsNodeE = 0; }
+   if (smoothingSigmaE <= 0) { Hybrid::useGaussianSmoothingNodeE = false; }
+   else {
+      Hybrid::useGaussianSmoothingNodeE = true;
+      // determined gaussian smoothing coefficients
+      const Real C1 = getGaussianDistr(0.0,smoothingSigmaE); // 1 node itself to be filtered
+      const Real C2 = getGaussianDistr(1.0,smoothingSigmaE); // 6 direct neighbors (at dx)
+      const Real C3 = getGaussianDistr(sqrt(2.0),smoothingSigmaE); // 12 near diagonal neighbors (at sqrt(2)*dx)
+      const Real C4 = getGaussianDistr(sqrt(3.0),smoothingSigmaE); // 8 far diagonal neighbors (at sqrt(3)*dx)
+      const Real Csum = 1.0*C1 + 6.0*C2 + 12.0*C3 + 8.0*C4; // normalization such that sum_i C_i = 1 over all 27 nodes
+      Hybrid::gaussianSmoothingCoeffsNodeE[0] = C1/Csum;
+      Hybrid::gaussianSmoothingCoeffsNodeE[1] = C2/Csum;
+      Hybrid::gaussianSmoothingCoeffsNodeE[2] = C3/Csum;
+      Hybrid::gaussianSmoothingCoeffsNodeE[3] = C4/Csum;
+   }
+
    // log constraint values
    const Real dx_per_dt = Hybrid::dx/sim.dt;
    simClasses.logger
-     << "(CONSTRAINTS)" << endl
-     << "initialFlowThroughPeriod = " << Hybrid::initialFlowThroughPeriod << " s = " << Hybrid::initialFlowThroughPeriod * upstreamBulkSpeed/(sim.x_max - sim.x_min + 1e-30) << " (xmax-xmin)/|Ubulk|" << endl
-     << "maxUe = " << sqrt(Hybrid::maxUe2)/1e3 << " km/s = " << sqrt(Hybrid::maxUe2)/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxUe2)/dx_per_dt << " dx/dt"  << endl
-     << "maxVi = " << Hybrid::maxVi/1e3 << " km/s = " << Hybrid::maxVi/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << Hybrid::maxVi/dx_per_dt << " dx/dt" << endl
-     << "maxVw = " << Hybrid::maxVw/1e3 << " km/s = " << Hybrid::maxVw/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << Hybrid::maxVw/dx_per_dt << " dx/dt" << endl
-     << "maxE  = " << sqrt(Hybrid::maxE2) << " V/m = " << sqrt(Hybrid::maxE2)/(upstreamConvectionElectricField + 1e-30) << " |Econv|" << endl
-     << "terminateLimitMaxB = " << Hybrid::terminateLimitMaxB/1e-9 << " nT" << endl
-     << "minIonChargeDensity (minRhoQi) = " << Hybrid::minRhoQi << " C/m^3 = " << Hybrid::minRhoQi/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minRhoQi/(upstreamIonChargeDensity + 1e-30) << " rhoq" << endl << endl;
+     << "Maximum ion speed = " << Hybrid::maxIonSpeed/1e3 << " km/s = " << Hybrid::maxIonSpeed/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << Hybrid::maxIonSpeed/dx_per_dt << " dx/dt" << endl
+     << "Maximum electron speed  = " << sqrt(Hybrid::maxElectronSpeed2)/1e3 << " km/s = " << sqrt(Hybrid::maxElectronSpeed2)/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << sqrt(Hybrid::maxElectronSpeed2)/dx_per_dt << " dx/dt"  << endl
+     << "Minimum ion charge density = " << Hybrid::minIonChargeDensity << " C/m^3 = " << Hybrid::minIonChargeDensity/(1e6*constants::CHARGE_ELEMENTARY) << " e/cm^3 = " << Hybrid::minIonChargeDensity/(upstreamIonChargeDensity + 1e-30) << " rhoq" << endl
+     << "Maximum electric field  = " << sqrt(Hybrid::maxElectricField2) << " V/m = " << sqrt(Hybrid::maxElectricField2)/(upstreamConvectionElectricField + 1e-30) << " |Econv|" << endl
+     << "Maximum whistler wave speed = " << Hybrid::maxWhistlerSpeed/1e3 << " km/s = " << Hybrid::maxWhistlerSpeed/(upstreamBulkSpeed + 1e-30) << " |Ubulk| = " << Hybrid::maxWhistlerSpeed/dx_per_dt << " dx/dt" << endl
+     << "Maximum magnetic field at which a run is stopped = " << Hybrid::maxBStopRun/1e-9 << " nT" << endl
+     << "Initial flow-throughs = N_ft = " << N_initialFlowThroughs << " (initial flow-through period = N_ft * (xmax-xmin)/|Ubulk| = " << Hybrid::initialFlowThroughPeriod << " s)" << endl
+     << "Cycles of linear nodal electric field smoothings = " << Hybrid::N_linearSmoothingsNodeE << " (node2cell2node interpolation)" << endl
+     << "Length scale (sigma) of nodal electric field smoothing = " << smoothingSigmaE << " dx "
+     << "(gaussian average with kernel coefficients: "
+     << "C1(d=0) = " << Hybrid::gaussianSmoothingCoeffsNodeE[0] << ", "
+     << "C2(d=1) = " << Hybrid::gaussianSmoothingCoeffsNodeE[1] << ", "
+     << "C3(d=sqrt(2)) = " << Hybrid::gaussianSmoothingCoeffsNodeE[2] << ", "
+     << "C4(d=sqrt(3)) = " << Hybrid::gaussianSmoothingCoeffsNodeE[3] << ", "
+     << "where d = distance of a neighbouring node in dx)"<< endl << endl;
 
    // evaluate and log CFL conditions from individual signal speeds and all summed together
    const Real dx_per_td_min = Hybrid::dx/td_min_smallest;
    const Real summedSignalSpeed = upstreamBulkSpeed + upstreamMagnetosonicSpeed + 2*upstreamExBSpeed + upstreamWhistlerSpeed + dx_per_td_min;
-   const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxUe2) + Hybrid::maxVi + Hybrid::maxVw + upstreamMagnetosonicSpeed + dx_per_td_min;
+   const Real summedFullConstraintedSignalSpeed = sqrt(Hybrid::maxElectronSpeed2) + Hybrid::maxIonSpeed + Hybrid::maxWhistlerSpeed + upstreamMagnetosonicSpeed + dx_per_td_min;
    simClasses.logger
      << "(COURANT-FRIEDRICHS-LEWY (CFL) CONDITION)" << endl
      << "dx = " << Hybrid::dx/1e3 << " km = " << Hybrid::dx/Hybrid::R_object << " R_object" << endl

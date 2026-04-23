@@ -321,8 +321,8 @@ bool Accumulator::addRemoteUpdates() {
 	 const int n = (b*block::SIZE+block::index(i,j,k));
 	 const int n3 = n*3;
 	 cellRhoQi[n] /= Hybrid::dV;
-	 if (cellRhoQi[n] < Hybrid::minRhoQi) {
-	    cellRhoQi[n] = Hybrid::minRhoQi;
+	 if (cellRhoQi[n] < Hybrid::minIonChargeDensity) {
+	    cellRhoQi[n] = Hybrid::minIonChargeDensity;
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 	    gridCounterCellMinRhoQi[n]++;
 #endif

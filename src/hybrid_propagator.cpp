@@ -352,7 +352,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::stop();
 
    // nodeE filter
-   for (int i=0;i<Hybrid::Efilter;i++) {
+   for (int i=0;i<Hybrid::N_linearSmoothingsNodeE;i++) {
       // node->cell E
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       profile::start("intpol",profIntpolID);
@@ -369,7 +369,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
       profile::start("MPI waits",mpiWaitID);
       simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
       profile::stop();
-      neumannCell(cellJ,sim,simClasses,exteriorBlocks,3); 
+      neumannCell(cellJ,sim,simClasses,exteriorBlocks,3);
       // cell->node E
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
       profile::start("intpol",profIntpolID);
@@ -390,7 +390,7 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
       }
    }
    // nodeE gaussian filter
-   if (Hybrid::EfilterNodeGaussSigma > 0) {
+   if (Hybrid::useGaussianSmoothingNodeE == true) {
       simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeEID);
       const size_t N = simClasses.pargrid.getNumberOfAllCells()*simClasses.pargrid.getUserDataStaticElements(Hybrid::dataNodeEID);
@@ -1130,10 +1130,10 @@ void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses&
    Real* aa = new Real[s*vectorDim] {initVal}; // temp array
    fetchData(nodeDataOld,aa,simClasses,blockID,vectorDim);
    // coefficients
-   const Real C1 = Hybrid::EfilterNodeGaussCoeffs[0]; // node itself
-   const Real C2 = Hybrid::EfilterNodeGaussCoeffs[1]; // direct neighbors (distance = dx)
-   const Real C3 = Hybrid::EfilterNodeGaussCoeffs[2]; // diagonal neighbors (distance = sqrt(2)*dx)
-   const Real C4 = Hybrid::EfilterNodeGaussCoeffs[3]; // diagonal neighbors (distance = sqrt(3)*dx)
+   const Real C1 = Hybrid::gaussianSmoothingCoeffsNodeE[0]; // node itself
+   const Real C2 = Hybrid::gaussianSmoothingCoeffsNodeE[1]; // direct neighbors (distance = dx)
+   const Real C3 = Hybrid::gaussianSmoothingCoeffsNodeE[2]; // diagonal neighbors (distance = sqrt(2)*dx)
+   const Real C4 = Hybrid::gaussianSmoothingCoeffsNodeE[3]; // diagonal neighbors (distance = sqrt(3)*dx)
    // loop through all nodes in the simulation domain
    for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
@@ -1373,8 +1373,8 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 
       // check max Ue
       const Real Ue2 = sqr(cellUe[n3+0]) + sqr(cellUe[n3+1]) + sqr(cellUe[n3+2]);
-      if (Ue2 > Hybrid::maxUe2) {
-	 const Real norm = sqrt(Hybrid::maxUe2/Ue2);
+      if (Ue2 > Hybrid::maxElectronSpeed2) {
+	 const Real norm = sqrt(Hybrid::maxElectronSpeed2/Ue2);
 	 cellUe[n3+0] *= norm;
 	 cellUe[n3+1] *= norm;
 	 cellUe[n3+2] *= norm;
@@ -1429,10 +1429,10 @@ void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,Re
       nodeE[n3+0] += nodeEta[n]*nodeJ[n3+0];
       nodeE[n3+1] += nodeEta[n]*nodeJ[n3+1];
       nodeE[n3+2] += nodeEta[n]*nodeJ[n3+2];
-      if (Hybrid::maxE2 > 0) {
+      if (Hybrid::maxElectricField2 > 0) {
          const Real E2 = sqr(nodeE[n3+0]) + sqr(nodeE[n3+1]) + sqr(nodeE[n3+2]);
-         if (E2 > Hybrid::maxE2) {
-            Real scaling = sqrt(Hybrid::maxE2/E2);
+         if (E2 > Hybrid::maxElectricField2) {
+            Real scaling = sqrt(Hybrid::maxElectricField2/E2);
             nodeE[n3+0] *= scaling;
             nodeE[n3+1] *= scaling;
             nodeE[n3+2] *= scaling;
@@ -1507,8 +1507,8 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
       if (ne > 0.0 && Hybrid::dx > 0.0) {
 	vw = 2.0*Btot*M_PI/( constants::PERMEABILITY*ne*constants::CHARGE_ELEMENTARY*Hybrid::dx );
       }
-      if (vw > Hybrid::maxVw && Hybrid::maxVw > 0.0) {
-	d = vw/Hybrid::maxVw;
+      if (vw > Hybrid::maxWhistlerSpeed && Hybrid::maxWhistlerSpeed > 0.0) {
+	d = vw/Hybrid::maxWhistlerSpeed;
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
 	gridCounterNodeMaxVw[n]++;
 #endif
@@ -1549,8 +1549,8 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
 	 continue;
       }
       // check min nodeRhoQi
-      if (nodeRhoQi[n] < Hybrid::minRhoQi) {
-	 nodeRhoQi[n] = Hybrid::minRhoQi;
+      if (nodeRhoQi[n] < Hybrid::minIonChargeDensity) {
+	 nodeRhoQi[n] = Hybrid::minIonChargeDensity;
 	 Hybrid::logCounterFieldMinNodeRhoQi++;
       }
       // calc Ue = (J - Ji)/rhoqi
@@ -1570,8 +1570,8 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
 
       // check max Ue
       const Real Ue2 = sqr(nodeUe[n3+0]) + sqr(nodeUe[n3+1]) + sqr(nodeUe[n3+2]);
-      if (Ue2 > Hybrid::maxUe2) {
-	 const Real norm = sqrt(Hybrid::maxUe2/Ue2);
+      if (Ue2 > Hybrid::maxElectronSpeed2) {
+	 const Real norm = sqrt(Hybrid::maxElectronSpeed2/Ue2);
 	 nodeUe[n3+0] *= norm;
 	 nodeUe[n3+1] *= norm;
 	 nodeUe[n3+2] *= norm;
