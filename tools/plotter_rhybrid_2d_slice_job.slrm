@@ -42,16 +42,23 @@ echo "Run description string: $str_run_descr"
 # find first and last saved time step of VLSV state files
 shopt -s nullglob
 files=("$folder_vlsv_files"/state*.vlsv)
-timestep_first_all=$(printf "%s\n" "${files[@]}" \
-  | sed -E 's/.*state([0-9]+)\.vlsv/\1/' \
-  | sort -n | head -1)
-timestep_last_all=$(printf "%s\n" "${files[@]}" \
-  | sed -E 's/.*state([0-9]+)\.vlsv/\1/' \
-  | sort -n | tail -1)
-if [[ -z "$timestep_first_all" || -z "$timestep_last_all" ]]; then
+if ((${#files[@]} == 0)); then
   echo "ERROR: no state*.vlsv files found in $folder_vlsv_files" >&2
   exit 1
 fi
+nums=()
+for f in "${files[@]}"; do
+  [[ $f =~ state([0-9]+)\.vlsv ]] && nums+=("${BASH_REMATCH[1]}")
+done
+OLD_IFS="$IFS"
+IFS=$'\n' timesteps=($(sort -n <<<"${nums[*]}"))
+IFS="$OLD_IFS"
+if ((${#timesteps[@]} == 0)); then
+ echo "ERROR: no valid timestep numbers found" >&2
+ exit 1
+fi
+timestep_first_all=${timesteps[0]}
+timestep_last_all=${timesteps[-1]}
 # remove zero-padding
 timestep_first_all=$((10#$timestep_first_all))
 timestep_last_all=$((10#$timestep_last_all))
