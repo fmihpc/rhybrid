@@ -8,10 +8,11 @@
 #SBATCH --ntasks-per-node=20
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=100G
+#SBATCH --no-requeue # if needed
 ##SBATCH --exclusive # if needed
 set -euo pipefail
 cd $SLURM_SUBMIT_DIR
-echo $SLURM_JOB_ID >jobid.txt 2>&1
+echo "$(date) $SLURM_JOB_ID" >> jobid.txt
 #module load package # load here needed modules in your HPC environment
 export OMPI_MCA_io=^ompio # workaround OpenMPI I/O bug (if needed)
 srun ./rhybrid --runconfig=myrun.cfg
