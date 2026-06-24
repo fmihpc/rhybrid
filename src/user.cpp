@@ -44,6 +44,8 @@
 #endif
 #include "detectors.h"
 
+#define USE_SHOCKTUBE_TEST_CONFIGURATION
+
 using namespace std;
 
 bool propagate(Simulation& sim,SimulationClasses& simClasses,vector<ParticleListBase*>& particleLists) {
@@ -1901,6 +1903,17 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             const Real xNode = crd[b3+0] + (i+1.0)*Hybrid::dx;
 	    const Real yNode = crd[b3+1] + (j+1.0)*Hybrid::dx;
 	    const Real zNode = crd[b3+2] + (k+1.0)*Hybrid::dx;
+#ifdef USE_SHOCKTUBE_TEST_CONFIGURATION
+	    // shocktube setup
+	    if(xCellCenter >= 0.5e5) {
+	       faceB[n*3+1] = 1e-9;
+	    }
+	    else {
+	       faceB[n*3+1] = -1e-9;
+	    }
+	    faceB[n*3+0] = 1.5e-9;
+	    faceB[n*3+2] = 0.0;
+#endif
 	    const Real r2 = sqr(xCellCenter) + sqr(yCellCenter) + sqr(zCellCenter);
 	    if (r2 < Hybrid::R2_fieldObstacle) { innerFlagField[n] = true; }
 	    else                              { innerFlagField[n] = false; }
@@ -2106,6 +2119,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
 #endif
 #ifdef USE_B_INITIAL
       // set initial B
+#ifndef USE_SHOCKTUBE_TEST_CONFIGURATION
       for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) {
          const size_t b3 = 3*b;
          for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
@@ -2141,6 +2155,7 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
             cellB[n*3+2] = B_initial[2];
          }
       }
+#endif
 #endif
    }
 

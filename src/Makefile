@@ -1,9 +1,9 @@
 USE_NODE_UE := true
 USE_EDGE_J := true
-USE_B_INITIAL := true
+USE_B_INITIAL := false
 USE_B_CONSTANT := false
 USE_GRID_CONSTRAINT_COUNTERS := false
-WRITE_GRID_TEMPORAL_AVERAGES := true
+WRITE_GRID_TEMPORAL_AVERAGES := false
 USE_DETECTORS := false
 
 include ../../../Makefile.${ARCH}
