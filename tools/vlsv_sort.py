@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 '''
-Sorts vlsv cell data in-place into ascending cell id order.
+Sorts RHybrid VLSV cell data in-place into ascending cell id order.
 
 Copyright 2026 Finnish Meteorological Institute
 
