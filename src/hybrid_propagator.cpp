@@ -1049,9 +1049,9 @@ void face2Cell(Real* faceData,Real* cellData,Simulation& sim,SimulationClasses& 
    fetchData(faceData,aa,simClasses,blockID,vectorDim);
    for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
-      cellData[n+0] = 0.5*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0] + aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+0]);
-      cellData[n+1] = 0.5*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1] + aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+1]);
-      cellData[n+2] = 0.5*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2] + aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+2]);
+      cellData[n+0] = 0.5*(aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+0] + aa[block::arrayIndex(i+0,j+1,k+1)*vectorDim+0]);
+      cellData[n+1] = 0.5*(aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+1] + aa[block::arrayIndex(i+1,j+0,k+1)*vectorDim+1]);
+      cellData[n+2] = 0.5*(aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+2] + aa[block::arrayIndex(i+1,j+1,k+0)*vectorDim+2]);
    }
 }
 
@@ -1075,14 +1075,14 @@ void cell2Node(Real* cellData,Real* nodeData,Simulation& sim,SimulationClasses& 
    for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
       for (size_t l=0;l<vectorDim;++l) {
-	 nodeData[n+l] = 0.125*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
-				aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l] +
-				aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l] +
-				aa[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l] +
-				aa[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l] +
-				aa[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l] +
-				aa[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l] +
-				aa[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l]);
+	 nodeData[n+l] = 0.125*(aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+l] +
+				aa[block::arrayIndex(i+1,j+1,k+2)*vectorDim+l] +
+				aa[block::arrayIndex(i+1,j+2,k+1)*vectorDim+l] +
+				aa[block::arrayIndex(i+2,j+1,k+1)*vectorDim+l] +
+				aa[block::arrayIndex(i+1,j+2,k+2)*vectorDim+l] +
+				aa[block::arrayIndex(i+2,j+2,k+1)*vectorDim+l] +
+				aa[block::arrayIndex(i+2,j+1,k+2)*vectorDim+l] +
+				aa[block::arrayIndex(i+2,j+2,k+2)*vectorDim+l]);
       }
    }
    delete [] aa; aa = NULL;
@@ -1099,14 +1099,14 @@ void node2Cell(Real* nodeData,Real* cellData,Simulation& sim,SimulationClasses& 
    for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*3;
       for (size_t l=0;l<vectorDim;++l) {
-	 cellData[n+l] = 0.125*(aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
-				aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
-				aa[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l] +
-				aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l] +
-				aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l] +
-				aa[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l] +
-				aa[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l] +
-				aa[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l]);
+	 cellData[n+l] = 0.125*(aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+l] +
+				aa[block::arrayIndex(i+0,j+1,k+1)*vectorDim+l] +
+				aa[block::arrayIndex(i+0,j+0,k+1)*vectorDim+l] +
+				aa[block::arrayIndex(i+1,j+0,k+1)*vectorDim+l] +
+				aa[block::arrayIndex(i+1,j+1,k+0)*vectorDim+l] +
+				aa[block::arrayIndex(i+1,j+0,k+0)*vectorDim+l] +
+				aa[block::arrayIndex(i+0,j+1,k+0)*vectorDim+l] +
+				aa[block::arrayIndex(i+0,j+0,k+0)*vectorDim+l]);
       }
    }
 }
@@ -1139,33 +1139,33 @@ void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses&
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
       for (size_t l=0;l<vectorDim;++l) {
          // electric field component l (x=0,y=1,z=2) at 27 nodes
-         Real nodeEl111 = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l];
-         Real nodeEl110 = aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l];
-         Real nodeEl011 = aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l];
-         Real nodeEl121 = aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l];
-         Real nodeEl211 = aa[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l];
-         Real nodeEl101 = aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l];
-         Real nodeEl112 = aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l];
-         Real nodeEl010 = aa[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l];
-         Real nodeEl100 = aa[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l];
-         Real nodeEl120 = aa[(block::arrayIndex(i+1,j+2,k+0))*vectorDim+l];
-         Real nodeEl210 = aa[(block::arrayIndex(i+2,j+1,k+0))*vectorDim+l];
-         Real nodeEl001 = aa[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l];
-         Real nodeEl021 = aa[(block::arrayIndex(i+0,j+2,k+1))*vectorDim+l];
-         Real nodeEl221 = aa[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l];
-         Real nodeEl201 = aa[(block::arrayIndex(i+2,j+0,k+1))*vectorDim+l];
-         Real nodeEl012 = aa[(block::arrayIndex(i+0,j+1,k+2))*vectorDim+l];
-         Real nodeEl122 = aa[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l];
-         Real nodeEl212 = aa[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l];
-         Real nodeEl102 = aa[(block::arrayIndex(i+1,j+0,k+2))*vectorDim+l];
-         Real nodeEl002 = aa[(block::arrayIndex(i+0,j+0,k+2))*vectorDim+l];
-         Real nodeEl022 = aa[(block::arrayIndex(i+0,j+2,k+2))*vectorDim+l];
-         Real nodeEl202 = aa[(block::arrayIndex(i+2,j+0,k+2))*vectorDim+l];
-         Real nodeEl222 = aa[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l];
-         Real nodeEl000 = aa[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l];
-         Real nodeEl020 = aa[(block::arrayIndex(i+0,j+2,k+0))*vectorDim+l];
-         Real nodeEl200 = aa[(block::arrayIndex(i+2,j+0,k+0))*vectorDim+l];
-         Real nodeEl220 = aa[(block::arrayIndex(i+2,j+2,k+0))*vectorDim+l];
+         Real nodeEl111 = aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+l];
+         Real nodeEl110 = aa[block::arrayIndex(i+1,j+1,k+0)*vectorDim+l];
+         Real nodeEl011 = aa[block::arrayIndex(i+0,j+1,k+1)*vectorDim+l];
+         Real nodeEl121 = aa[block::arrayIndex(i+1,j+2,k+1)*vectorDim+l];
+         Real nodeEl211 = aa[block::arrayIndex(i+2,j+1,k+1)*vectorDim+l];
+         Real nodeEl101 = aa[block::arrayIndex(i+1,j+0,k+1)*vectorDim+l];
+         Real nodeEl112 = aa[block::arrayIndex(i+1,j+1,k+2)*vectorDim+l];
+         Real nodeEl010 = aa[block::arrayIndex(i+0,j+1,k+0)*vectorDim+l];
+         Real nodeEl100 = aa[block::arrayIndex(i+1,j+0,k+0)*vectorDim+l];
+         Real nodeEl120 = aa[block::arrayIndex(i+1,j+2,k+0)*vectorDim+l];
+         Real nodeEl210 = aa[block::arrayIndex(i+2,j+1,k+0)*vectorDim+l];
+         Real nodeEl001 = aa[block::arrayIndex(i+0,j+0,k+1)*vectorDim+l];
+         Real nodeEl021 = aa[block::arrayIndex(i+0,j+2,k+1)*vectorDim+l];
+         Real nodeEl221 = aa[block::arrayIndex(i+2,j+2,k+1)*vectorDim+l];
+         Real nodeEl201 = aa[block::arrayIndex(i+2,j+0,k+1)*vectorDim+l];
+         Real nodeEl012 = aa[block::arrayIndex(i+0,j+1,k+2)*vectorDim+l];
+         Real nodeEl122 = aa[block::arrayIndex(i+1,j+2,k+2)*vectorDim+l];
+         Real nodeEl212 = aa[block::arrayIndex(i+2,j+1,k+2)*vectorDim+l];
+         Real nodeEl102 = aa[block::arrayIndex(i+1,j+0,k+2)*vectorDim+l];
+         Real nodeEl002 = aa[block::arrayIndex(i+0,j+0,k+2)*vectorDim+l];
+         Real nodeEl022 = aa[block::arrayIndex(i+0,j+2,k+2)*vectorDim+l];
+         Real nodeEl202 = aa[block::arrayIndex(i+2,j+0,k+2)*vectorDim+l];
+         Real nodeEl222 = aa[block::arrayIndex(i+2,j+2,k+2)*vectorDim+l];
+         Real nodeEl000 = aa[block::arrayIndex(i+0,j+0,k+0)*vectorDim+l];
+         Real nodeEl020 = aa[block::arrayIndex(i+0,j+2,k+0)*vectorDim+l];
+         Real nodeEl200 = aa[block::arrayIndex(i+2,j+0,k+0)*vectorDim+l];
+         Real nodeEl220 = aa[block::arrayIndex(i+2,j+2,k+0)*vectorDim+l];
 
          // weight coefficients for each node (if the electric field value is exactly
          // zero, the node is excluedd as it should be a boundary node)
@@ -1322,14 +1322,14 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
 
       if (wsum > 0) {
 	 for (size_t l=0;l<vectorDim;++l) {
-	    nodeB[n+l] = (w111*aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
-			  w112*aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+l] +
-			  w121*aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+l] +
-			  w211*aa[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+l] +
-			  w122*aa[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+l] +
-			  w221*aa[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+l] +
-			  w212*aa[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+l] +
-			  w222*aa[(block::arrayIndex(i+2,j+2,k+2))*vectorDim+l])/wsum;
+	    nodeB[n+l] = (w111*aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+l] +
+			  w112*aa[block::arrayIndex(i+1,j+1,k+2)*vectorDim+l] +
+			  w121*aa[block::arrayIndex(i+1,j+2,k+1)*vectorDim+l] +
+			  w211*aa[block::arrayIndex(i+2,j+1,k+1)*vectorDim+l] +
+			  w122*aa[block::arrayIndex(i+1,j+2,k+2)*vectorDim+l] +
+			  w221*aa[block::arrayIndex(i+2,j+2,k+1)*vectorDim+l] +
+			  w212*aa[block::arrayIndex(i+2,j+1,k+2)*vectorDim+l] +
+			  w222*aa[block::arrayIndex(i+2,j+2,k+2)*vectorDim+l])/wsum;
 	 }
       }
       else {
@@ -1471,35 +1471,35 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*vectorDim;
       const Real edgeJx1 =
-        - aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2]
-        + aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1]
-        + aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+2]
-        - aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+1];
+        - aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+2]
+        + aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+1]
+        + aa[block::arrayIndex(i+1,j+2,k+1)*vectorDim+2]
+        - aa[block::arrayIndex(i+1,j+1,k+2)*vectorDim+1];
       const Real edgeJx2 =
-        - aa[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+2]
-        + aa[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+1]
-        + aa[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+2]
-        - aa[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+1];
+        - aa[block::arrayIndex(i+2,j+1,k+1)*vectorDim+2]
+        + aa[block::arrayIndex(i+2,j+1,k+1)*vectorDim+1]
+        + aa[block::arrayIndex(i+2,j+2,k+1)*vectorDim+2]
+        - aa[block::arrayIndex(i+2,j+1,k+2)*vectorDim+1];
       const Real edgeJy1 =
-        + aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2]
-        + aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+0]
-        - aa[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+2]
-        - aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0];
+        + aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+2]
+        + aa[block::arrayIndex(i+1,j+1,k+2)*vectorDim+0]
+        - aa[block::arrayIndex(i+2,j+1,k+1)*vectorDim+2]
+        - aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+0];
       const Real edgeJy2 =
-        + aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+2]
-        + aa[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+0]
-        - aa[(block::arrayIndex(i+2,j+2,k+1))*vectorDim+2]
-        - aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+0];
+        + aa[block::arrayIndex(i+1,j+2,k+1)*vectorDim+2]
+        + aa[block::arrayIndex(i+1,j+2,k+2)*vectorDim+0]
+        - aa[block::arrayIndex(i+2,j+2,k+1)*vectorDim+2]
+        - aa[block::arrayIndex(i+1,j+2,k+1)*vectorDim+0];
       const Real edgeJz1 =
-        - aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1]
-        + aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0]
-        + aa[(block::arrayIndex(i+2,j+1,k+1))*vectorDim+1]
-        - aa[(block::arrayIndex(i+1,j+2,k+1))*vectorDim+0];
+        - aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+1]
+        + aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+0]
+        + aa[block::arrayIndex(i+2,j+1,k+1)*vectorDim+1]
+        - aa[block::arrayIndex(i+1,j+2,k+1)*vectorDim+0];
       const Real edgeJz2 =
-        - aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+1]
-        + aa[(block::arrayIndex(i+1,j+1,k+2))*vectorDim+0]
-        + aa[(block::arrayIndex(i+2,j+1,k+2))*vectorDim+1]
-        - aa[(block::arrayIndex(i+1,j+2,k+2))*vectorDim+0];
+        - aa[block::arrayIndex(i+1,j+1,k+2)*vectorDim+1]
+        + aa[block::arrayIndex(i+1,j+1,k+2)*vectorDim+0]
+        + aa[block::arrayIndex(i+2,j+1,k+2)*vectorDim+1]
+        - aa[block::arrayIndex(i+1,j+2,k+2)*vectorDim+0];
       Real d = 1.0;
       Real vw = 0.0; // fastest whistler signal p. 28 Alho (2016)
       const Real ne = nodeRhoQi[n]/constants::CHARGE_ELEMENTARY;
@@ -1612,33 +1612,33 @@ void faceCurl(Real* nodeData,Real* faceData,bool doFaraday,Simulation& sim,Simul
    for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*vectorDim;
-      Real node1x = aa[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+0];
-      Real node1y = aa[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+1];
-      //Real node1z = aa[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+2];
+      Real node1x = aa[block::arrayIndex(i+0,j+0,k+1)*vectorDim+0];
+      Real node1y = aa[block::arrayIndex(i+0,j+0,k+1)*vectorDim+1];
+      //Real node1z = aa[block::arrayIndex(i+0,j+0,k+1)*vectorDim+2];
 
-      Real node3x = aa[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+0];
-      //Real node3y = aa[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+1];
-      Real node3z = aa[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+2];
+      Real node3x = aa[block::arrayIndex(i+0,j+1,k+0)*vectorDim+0];
+      //Real node3y = aa[block::arrayIndex(i+0,j+1,k+0)*vectorDim+1];
+      Real node3z = aa[block::arrayIndex(i+0,j+1,k+0)*vectorDim+2];
 
-      Real node4x = aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+0];
-      Real node4y = aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+1];
-      Real node4z = aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+2];
+      Real node4x = aa[block::arrayIndex(i+0,j+1,k+1)*vectorDim+0];
+      Real node4y = aa[block::arrayIndex(i+0,j+1,k+1)*vectorDim+1];
+      Real node4z = aa[block::arrayIndex(i+0,j+1,k+1)*vectorDim+2];
 
-      Real node5x = aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+0];
-      Real node5y = aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+1];
-      Real node5z = aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+2];
+      Real node5x = aa[block::arrayIndex(i+1,j+0,k+1)*vectorDim+0];
+      Real node5y = aa[block::arrayIndex(i+1,j+0,k+1)*vectorDim+1];
+      Real node5z = aa[block::arrayIndex(i+1,j+0,k+1)*vectorDim+2];
 
-      //Real node6x = aa[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+0];
-      Real node6y = aa[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+1];
-      Real node6z = aa[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+2];
+      //Real node6x = aa[block::arrayIndex(i+1,j+0,k+0)*vectorDim+0];
+      Real node6y = aa[block::arrayIndex(i+1,j+0,k+0)*vectorDim+1];
+      Real node6z = aa[block::arrayIndex(i+1,j+0,k+0)*vectorDim+2];
 
-      Real node7x = aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+0];
-      Real node7y = aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+1];
-      Real node7z = aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+2];
+      Real node7x = aa[block::arrayIndex(i+1,j+1,k+0)*vectorDim+0];
+      Real node7y = aa[block::arrayIndex(i+1,j+1,k+0)*vectorDim+1];
+      Real node7z = aa[block::arrayIndex(i+1,j+1,k+0)*vectorDim+2];
 
-      Real node8x = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0];
-      Real node8y = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1];
-      Real node8z = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2];
+      Real node8x = aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+0];
+      Real node8y = aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+1];
+      Real node8z = aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+2];
 
       if (doXFace == true) {
 	 Real curlX = 0.5*(+node5z+node6z-node6y-node7y-node7z-node8z+node8y+node5y)/Hybrid::dx;
@@ -1687,35 +1687,35 @@ void calcCellEp(Real* nodeRhoQi,Real* cellRhoQi,bool* innerFlagCellEp,Real* cell
       if (innerFlagCellEp[n] == true) { continue; }
       // node2face interpolation: nodeRhoQi -> faceRhoQi
       const Real xPosFaceRhoQi =
-        0.25*(aa[(block::arrayIndex(i+1,j+1,k+1))] +
-              aa[(block::arrayIndex(i+1,j+1,k+0))] +
-              aa[(block::arrayIndex(i+1,j+0,k+0))] +
-              aa[(block::arrayIndex(i+1,j+0,k+1))]);
+        0.25*(aa[block::arrayIndex(i+1,j+1,k+1))] +
+              aa[block::arrayIndex(i+1,j+1,k+0))] +
+              aa[block::arrayIndex(i+1,j+0,k+0))] +
+              aa[block::arrayIndex(i+1,j+0,k+1))]);
       const Real xNegFaceRhoQi =
-        0.25*(aa[(block::arrayIndex(i+0,j+1,k+1))] +
-              aa[(block::arrayIndex(i+0,j+1,k+0))] +
-              aa[(block::arrayIndex(i+0,j+0,k+0))] +
-              aa[(block::arrayIndex(i+0,j+0,k+1))]);
+        0.25*(aa[block::arrayIndex(i+0,j+1,k+1))] +
+              aa[block::arrayIndex(i+0,j+1,k+0))] +
+              aa[block::arrayIndex(i+0,j+0,k+0))] +
+              aa[block::arrayIndex(i+0,j+0,k+1))]);
       const Real yPosFaceRhoQi =
-        0.25*(aa[(block::arrayIndex(i+1,j+1,k+1))] +
-              aa[(block::arrayIndex(i+1,j+1,k+0))] +
-              aa[(block::arrayIndex(i+0,j+1,k+0))] +
-              aa[(block::arrayIndex(i+0,j+1,k+1))]);
+        0.25*(aa[block::arrayIndex(i+1,j+1,k+1)] +
+              aa[block::arrayIndex(i+1,j+1,k+0)] +
+              aa[block::arrayIndex(i+0,j+1,k+0)] +
+              aa[block::arrayIndex(i+0,j+1,k+1)]);
       const Real yNegFaceRhoQi =
-        0.25*(aa[(block::arrayIndex(i+1,j+0,k+1))] +
-              aa[(block::arrayIndex(i+1,j+0,k+0))] +
-              aa[(block::arrayIndex(i+0,j+0,k+0))] +
-              aa[(block::arrayIndex(i+0,j+0,k+1))]);
+        0.25*(aa[block::arrayIndex(i+1,j+0,k+1)] +
+              aa[block::arrayIndex(i+1,j+0,k+0)] +
+              aa[block::arrayIndex(i+0,j+0,k+0)] +
+              aa[block::arrayIndex(i+0,j+0,k+1)]);
       const Real zPosFaceRhoQi =
-        0.25*(aa[(block::arrayIndex(i+1,j+1,k+1))] +
-              aa[(block::arrayIndex(i+1,j+0,k+1))] +
-              aa[(block::arrayIndex(i+0,j+0,k+1))] +
-              aa[(block::arrayIndex(i+0,j+1,k+1))]);
+        0.25*(aa[block::arrayIndex(i+1,j+1,k+1)] +
+              aa[block::arrayIndex(i+1,j+0,k+1)] +
+              aa[block::arrayIndex(i+0,j+0,k+1)] +
+              aa[block::arrayIndex(i+0,j+1,k+1)]);
       const Real zNegFaceRhoQi =
-        0.25*(aa[(block::arrayIndex(i+1,j+1,k+0))] +
-              aa[(block::arrayIndex(i+1,j+0,k+0))] +
-              aa[(block::arrayIndex(i+0,j+0,k+0))] +
-              aa[(block::arrayIndex(i+0,j+1,k+0))]);
+        0.25*(aa[block::arrayIndex(i+1,j+1,k+0)] +
+              aa[block::arrayIndex(i+1,j+0,k+0)] +
+              aa[block::arrayIndex(i+0,j+0,k+0)] +
+              aa[block::arrayIndex(i+0,j+1,k+0)]);
       // calculate linear gradient of faceRhoQi as a cell volume average
       const Real xCellGradRhoQi = (xPosFaceRhoQi - xNegFaceRhoQi)/Hybrid::dx;
       const Real yCellGradRhoQi = (yPosFaceRhoQi - yNegFaceRhoQi)/Hybrid::dx;
@@ -1772,9 +1772,9 @@ void face2r(Real* r,Real* faceData,Simulation& sim,SimulationClasses& simClasses
    const Real w110z = zFacePos - z;
 
    // linear interpolation between faces
-   result[0] = w111x*aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+0] + w011x*aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+0];
-   result[1] = w111y*aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+1] + w101y*aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+1];
-   result[2] = w111z*aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+2] + w110z*aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+2];
+   result[0] = w111x*aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+0] + w011x*aa[block::arrayIndex(i+0,j+1,k+1)*vectorDim+0];
+   result[1] = w111y*aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+1] + w101y*aa[block::arrayIndex(i+1,j+0,k+1)*vectorDim+1];
+   result[2] = w111z*aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+2] + w110z*aa[block::arrayIndex(i+1,j+1,k+0)*vectorDim+2];
 }
 
 // interpolation from nodes to arbitrary point r (in block's local coordinates)
@@ -1819,14 +1819,14 @@ void node2r(Real* r,Real* nodeData,Simulation& sim,SimulationClasses& simClasses
 
    if (wsum > 0) {
       for (size_t l=0;l<vectorDim;++l) {
-	 result[l] = (w111*aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l] +
-		      w011*aa[(block::arrayIndex(i+0,j+1,k+1))*vectorDim+l] +
-		      w101*aa[(block::arrayIndex(i+1,j+0,k+1))*vectorDim+l] +
-		      w001*aa[(block::arrayIndex(i+0,j+0,k+1))*vectorDim+l] +
-		      w110*aa[(block::arrayIndex(i+1,j+1,k+0))*vectorDim+l] +
-		      w010*aa[(block::arrayIndex(i+0,j+1,k+0))*vectorDim+l] +
-		      w100*aa[(block::arrayIndex(i+1,j+0,k+0))*vectorDim+l] +
-		      w000*aa[(block::arrayIndex(i+0,j+0,k+0))*vectorDim+l])/wsum;
+	 result[l] = (w111*aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+l] +
+		      w011*aa[block::arrayIndex(i+0,j+1,k+1)*vectorDim+l] +
+		      w101*aa[block::arrayIndex(i+1,j+0,k+1)*vectorDim+l] +
+		      w001*aa[block::arrayIndex(i+0,j+0,k+1)*vectorDim+l] +
+		      w110*aa[block::arrayIndex(i+1,j+1,k+0)*vectorDim+l] +
+		      w010*aa[block::arrayIndex(i+0,j+1,k+0)*vectorDim+l] +
+		      w100*aa[block::arrayIndex(i+1,j+0,k+0)*vectorDim+l] +
+		      w000*aa[block::arrayIndex(i+0,j+0,k+0)*vectorDim+l])/wsum;
       }
    }
    else {
@@ -1853,7 +1853,7 @@ void cell2r(Real* r,Real* cellData,Simulation& sim,SimulationClasses& simClasses
    const int k = static_cast<int>(floor(z));
 
    for (size_t l=0;l<vectorDim;++l) {
-      result[l] = aa[(block::arrayIndex(i+1,j+1,k+1))*vectorDim+l];
+      result[l] = aa[block::arrayIndex(i+1,j+1,k+1)*vectorDim+l];
    }
 }
 
