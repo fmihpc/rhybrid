@@ -5,7 +5,6 @@ Ubuntu 22.04.5 LTS (Apr 2, 2025)
 # download source codes
 mkdir ~/bin/
 cd ~/bin/
-git clone https://github.com/fmihpc/analysator
 git clone https://github.com/fmihpc/rhybrid
 git clone https://github.com/fmihpc/corsair
 git clone https://github.com/fmihpc/vlsv
@@ -69,9 +68,7 @@ cp -p ~/bin/rhybrid/tools/* ./
 ./rhb_log2pdf_all.sh lin ../
 ls field.pdf pop*.pdf
 
-# Python examples using Analysator
-
-export PYTHONPATH=$PYTHONPATH:~/bin/analysator/
+# Python examples using RHybridPy
 
 # create videos of 2d pseudocolor slices
 

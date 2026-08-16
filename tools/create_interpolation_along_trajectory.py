@@ -4,9 +4,9 @@ import sys
 from pathlib import Path
 import argparse
 try:
- import analysator as alr
+ import rhybridpy as rhb
 except ModuleNotFoundError as err:
- print('Analysator not found: ' + str(err))
+ print('RHybridPy not found: ' + str(err))
  sys.exit()
 try:
  import numpy as np
@@ -41,7 +41,7 @@ save_figures = True # save figures as png files
 linear_field_interpolation = True # linear or nearest interpolation
 
 # read file
-vr = alr.vlsvfile.VlsvReader(input_file)
+vr = rhb.vlsvfile.VlsvReader(input_file)
 # check variables are found
 for var in var_list:
  if vr.check_variable(var) == False:
@@ -72,7 +72,7 @@ tp = np.linspace(0,1,Npoints)
 points = (np.array([xp,yp,zp])).transpose()
 
 # interpolate
-[crd,cellids,vars_intpol,header] = alr.calculations.vlsv_intpol_points(vr,points,var_list,interpolation_order=linear_field_interpolation)
+[crd,cellids,vars_intpol,header] = rhb.calculations.vlsv_intpol_points(vr,points,var_list,interpolation_order=linear_field_interpolation)
 
 # plotting
 

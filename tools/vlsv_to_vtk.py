@@ -4,9 +4,9 @@ import sys
 from pathlib import Path
 import argparse
 try:
- import analysator as alr
+ import rhybridpy as rhb
 except ModuleNotFoundError as err:
- print('Analysator not found: ' + str(err))
+ print('RHybridPy not found: ' + str(err))
  sys.exit()
 try:
  import numpy as np
@@ -37,7 +37,7 @@ if Path(output_file_mesh).is_file() == True:
 
 print('converting: ' + input_file)
 
-vr = alr.vlsvfile.VlsvReader(input_file)
+vr = rhb.vlsvfile.VlsvReader(input_file)
 # simulation box dimensions
 [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
 [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction

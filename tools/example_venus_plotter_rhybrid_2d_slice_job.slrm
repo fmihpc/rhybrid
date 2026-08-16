@@ -11,7 +11,7 @@
 #SBATCH --mem=185G
 #SBATCH --exclusive
 cd $SLURM_SUBMIT_DIR
-analysatorFolder=/PATH/TO/ANALYSATOR/
+rhybridpyFolder=/PATH/TO/RHYBRIDPY/
 
 #export OMP_NUM_THREADS=80
 
@@ -50,7 +50,7 @@ module load python-data/3.10-24.04
 
 mkdir -p png/
 
-export PYTHONPATH=$PYTHONPATH:$analysatorFolder
+export PYTHONPATH=$PYTHONPATH:$rhybridpyFolder
 
 # number of nodes
 if [ -z "$SLURM_JOB_NUM_NODES" ]

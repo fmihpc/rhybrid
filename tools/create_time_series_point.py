@@ -4,9 +4,9 @@ import sys
 from pathlib import Path
 import argparse
 try:
- import analysator as alr
+ import rhybridpy as rhb
 except ModuleNotFoundError as err:
- print('Analysator not found: ' + str(err))
+ print('RHybridPy not found: ' + str(err))
  sys.exit()
 try:
  import numpy as np
@@ -50,7 +50,7 @@ def create_time_series(folder,var_list,point):
   return False
  files.sort()
  Ntimesteps = len(files)
- vr = alr.vlsvfile.VlsvReader(os.path.join(folder,files[0]))
+ vr = rhb.vlsvfile.VlsvReader(os.path.join(folder,files[0]))
  # check variables are found
  for var in var_list:
   if vr.check_variable(var) == False:
@@ -79,7 +79,7 @@ def create_time_series(folder,var_list,point):
   print('ERROR: point (' + str(point) + ') out of domain (' + str(vr.get_spatial_mesh_extent()) + ')')
   return False
  cid = np.ravel(vr.get_cellid(point))[0]
- vrout = alr.calculations.vlsv_intpol_points(vr,point,var_list)
+ vrout = rhb.calculations.vlsv_intpol_points(vr,point,var_list)
  Nvars = (vrout[2].shape)[1]
  # create header string of output file
  header_string  = 'folder: ' + folder + '\n'
@@ -92,9 +92,9 @@ def create_time_series(folder,var_list,point):
  var_time_series = np.empty((Ntimesteps,Nvars+1))
  var_time_series.fill(np.nan)
  for ii in range(Ntimesteps):
-  vr = alr.vlsvfile.VlsvReader(os.path.join(folder,files[ii]))
+  vr = rhb.vlsvfile.VlsvReader(os.path.join(folder,files[ii]))
   t = vr.read_parameter('time')
-  vrout = alr.calculations.vlsv_intpol_points(vr,point,var_list,interpolation_order=linear_field_interpolation)
+  vrout = rhb.calculations.vlsv_intpol_points(vr,point,var_list,interpolation_order=linear_field_interpolation)
   #if np.isnan(np.min(vrout[2])) == 1:
   # print('ERROR: interpolation did not succeed, output contains nans')
   # return False

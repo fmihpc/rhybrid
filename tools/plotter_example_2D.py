@@ -1,9 +1,9 @@
 import matplotlib
 import matplotlib.pyplot as plt
-import analysator as alr
+import rhybridpy as rhb
 import numpy as np
 
-vr = alr.vlsvfile.VlsvReader('state00004000.vlsv')
+vr = rhb.vlsvfile.VlsvReader('state00004000.vlsv')
 # simulation box dimensions
 [xmin,ymin,zmin,xmax,ymax,zmax] = vr.get_spatial_mesh_extent()
 [mx,my,mz] = vr.get_spatial_mesh_size() # how many blocks per direction

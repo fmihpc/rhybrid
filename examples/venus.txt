@@ -15,9 +15,7 @@ cp -p ~/bin/rhybrid/tools/* ./
 ./rhb_log2pdf_all.sh lin ../
 ls field.pdf pop*.pdf
 
-# Python examples using Analysator
-
-export PYTHONPATH=$PYTHONPATH:~/bin/analysator/
+# Python examples using RHybridPy
 
 # create videos of 2d pseudocolor slices
 

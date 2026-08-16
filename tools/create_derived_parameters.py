@@ -4,9 +4,9 @@ import sys
 from pathlib import Path
 import argparse
 try:
- import analysator as alr
+ import rhybridpy as rhb
 except ModuleNotFoundError as err:
- print("Analysator not found: " + str(err))
+ print("RHybridPy not found: " + str(err))
  sys.exit()
 try:
  import numpy as np
@@ -36,7 +36,7 @@ mO2 = 5.3135250874e-26
 mu0 = 1.25663706e-6
 
 # open and create a VLSV file reader
-vr = alr.vlsvfile.VlsvReader(input_file)
+vr = rhb.vlsvfile.VlsvReader(input_file)
 
 # example: list all variables in the file
 #print('===== VARIABLES IN ' + fn + '.vlsv')
@@ -63,14 +63,14 @@ rhom = mp*nHsw + mHe*nHesw + mO*nO + mO2*nO2 + mp*nHpla
 vA = Btot/np.sqrt(mu0*rhom)
 
 # open and create a VLSV file writer
-writer = alr.vlsvfile.VlsvWriter(vr,output_file, copy_meshes=['SpatialGrid'])
+writer = rhb.vlsvfile.VlsvWriter(vr,output_file, copy_meshes=['SpatialGrid'])
 
 # write original variables
 writer.copy_variables(vr,varlist=['CellID','cellBAverage','n_H+sw_ave'])
 
 # write new derived variables
-varinfo = alr.calculations.VariableInfo(rhom,name='rhom',units='')
+varinfo = rhb.calculations.VariableInfo(rhom,name='rhom',units='')
 writer.write_variable_info(varinfo,'SpatialGrid',1)
-varinfo = alr.calculations.VariableInfo(vA,name='vA',units='')
+varinfo = rhb.calculations.VariableInfo(vA,name='vA',units='')
 writer.write_variable_info(varinfo,'SpatialGrid',1)
 

@@ -5,9 +5,9 @@ from pathlib import Path
 import argparse
 
 try:
- import analysator as alr
+ import rhybridpy as rhb
 except ModuleNotFoundError as err:
- print('Analysator not found: ' + str(err))
+ print('RHybridPy not found: ' + str(err))
  sys.exit()
 try:
  import numpy as np
@@ -51,7 +51,7 @@ max_timesteps = 500
 # constant random seed for reproducibility
 np.random.seed(71)
 
-vr = alr.vlsvfile.VlsvReader(input_file)
+vr = rhb.vlsvfile.VlsvReader(input_file)
 if vr.check_variable(var_name_B) == False:
  print('ERROR: variable name for B (' + var_name_B + ' / ' + input_file + ')')
  exit()
@@ -154,7 +154,7 @@ for ii in range(max_timesteps):
  # interpolate Ue/E and B in particle positions
  var_list = [var_name_B,var_name_Ue,var_name_Ep]
  #varList = [var_name_B,var_name_Ue]
- [crds,cellids,fields,headerstr] = alr.calculations.vlsv_intpol_points(vr,rnow,var_list,interpolation_order=linear_field_interpolation)
+ [crds,cellids,fields,headerstr] = rhb.calculations.vlsv_intpol_points(vr,rnow,var_list,interpolation_order=linear_field_interpolation)
  B = fields[:,0:3]
  Ue = fields[:,3:6]
  Ep = fields[:,6:9]
