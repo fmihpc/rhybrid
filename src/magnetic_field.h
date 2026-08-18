@@ -41,6 +41,15 @@ inline void randomB(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,
    B[2] += Hybrid::IMFBz + ( Hybrid::dBz*simClasses.random.uniformPM() );
 }
 
+inline void shock_tube_B(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
+   B[0] = Hybrid::IMFBx;
+   B[1] = Hybrid::IMFBy;
+   B[2] = Hybrid::IMFBz;
+   if (x < 0) {
+	   B[1] *= -1;
+   }
+}
+
 inline void laminarFlowAroundSphereBx(Simulation& sim,SimulationClasses& simClasses,Real x,Real y,Real z,Real B[3]) {
    const Real r2 = sqr(x) + sqr(y) + sqr(z);
    if (r2 < Hybrid::laminarR2) { return; }
@@ -216,6 +225,9 @@ inline bool setMagneticFieldProfile(std::string name) {
    }
    else if (name.compare("randomB") == 0) {
       Hybrid::magneticFieldProfilePtr = &randomB;
+   }
+   else if (name.compare("shock_tube_B") == 0) {
+      Hybrid::magneticFieldProfilePtr = &shock_tube_B;
    }
    else if (name.compare("laminarFlowAroundSphereBx") == 0) {
       Hybrid::magneticFieldProfilePtr = &laminarFlowAroundSphereBx;
