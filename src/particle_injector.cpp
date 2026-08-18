@@ -233,6 +233,12 @@ bool InjectorUniform::injectParticles(pargrid::CellID blockID,const Species& spe
       particles[p].state[particle::VX] = velocity[0] + vth*sampleGaussian(*simClasses);
       particles[p].state[particle::VY] = velocity[1] + vth*sampleGaussian(*simClasses);
       particles[p].state[particle::VZ] = velocity[2] + vth*sampleGaussian(*simClasses);
+      const double x = xBlock + particles[p].state[particle::X];
+      if (x < 0) {
+         particles[p].state[particle::WEIGHT] = 3*w;
+	  } else {
+         particles[p].state[particle::WEIGHT] = w;
+	  }
       particles[p].state[particle::WEIGHT] = w;
 /*#ifdef USE_DETECTORS
       particles[p].state[particle::INI_CELLID] = simClasses->pargrid.getGlobalIDs()[blockID];
