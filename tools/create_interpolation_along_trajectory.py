@@ -20,6 +20,8 @@ except ModuleNotFoundError as err:
  print('matplotlib not found: ' + str(err))
  sys.exit()
 
+plt.rcParams.update({'font.size': 16})
+
 def list_of_strings(arg):
  return arg.split(',')
 
@@ -76,7 +78,6 @@ points = (np.array([xp,yp,zp])).transpose()
 
 # plotting
 
-plt.rcParams.update({'font.size': 16})
 Nx_sub = 1
 Ny_sub = len(var_list)
 Nsub = 1

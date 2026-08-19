@@ -2,6 +2,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import rhybridpy as rhb
 import numpy as np
+plt.rcParams.update({'font.size': 16})
 
 vr = rhb.vlsvfile.VlsvReader('state00004000.vlsv')
 # simulation box dimensions

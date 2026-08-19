@@ -21,6 +21,8 @@ except ModuleNotFoundError as err:
  print('matplotlib not found: ' + str(err))
  sys.exit()
 
+plt.rcParams.update({'font.size': 16})
+
 # parse input arguments
 parser = argparse.ArgumentParser('trace_test_particles.py')
 parser.add_argument('input_file',help='Input VLSV file',type=Path)
