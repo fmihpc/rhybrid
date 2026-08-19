@@ -86,6 +86,10 @@ ls Hsw_ave_n.mp4 B_ave.mp4 B.mp4
 python vlsv_to_vtk.py ../state00004000.vlsv
 ls state00004000.vti
 
+# trace field lines
+python trace_field_lines.py
+ls trace_field_lines.png
+
 # trace test particles
 python trace_test_particles.py ../state00004000.vlsv cellB cellUe cellEp 3390e3
 ls trace_test_particles_*.png
