@@ -146,7 +146,7 @@ Real expexp(Real x,Real y,Real z,Real r,Real Rp,Real n0,Real Hr,Real Htheta,Real
    return res;
 }
 
-// neutral profile from: Exner+ (2020), Inﬂuence of Mercury's exosphere on the structure of the magnetosphere, J. Geophys. Res., 125, e2019JA027691, doi:10.1029/2019JA027691
+// neutral profile from: Exner+ (2020), Influence of Mercury's exosphere on the structure of the magnetosphere, J. Geophys. Res., 125, e2019JA027691, doi:10.1029/2019JA027691
 Real neutralDensityMercurySodiumExner20(SimulationClasses& simClasses,Real x,Real y,Real z) {
    const Real Rp = constants::DIST_MERCURY_RADIUS;
    const Real r = sqrt(sqr(x) + sqr(y) + sqr(z));

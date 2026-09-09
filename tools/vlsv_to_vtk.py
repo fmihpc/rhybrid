@@ -74,9 +74,9 @@ cellids_sorted = cellids.argsort()
 # reshape 1d VLSV ordering -> 3d (nz,ny,nx)
 cellids = cellids[cellids_sorted].reshape(nz,ny,nx)
 # reorder axes for ImageData from (nz,ny,nx) -> (nx,ny,nz)
-# old axis 0 → z → new axis 2
-# old axis 1 → y → new axis 1
-# old axis 2 → x → new axis 0
+# old axis 0 -> z -> new axis 2
+# old axis 1 -> y -> new axis 1
+# old axis 2 -> x -> new axis 0
 cellids = np.transpose(cellids,(2,1,0))
 grid = pv.ImageData(
  dimensions=np.array(cellids.shape) + 1, # points = cells + 1
