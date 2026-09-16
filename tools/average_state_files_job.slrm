@@ -1,0 +1,119 @@
+#!/bin/bash -l
+#SBATCH --job-name=rhba
+#SBATCH --account=YOUR_PROJECT_HERE
+#SBATCH --time=01:00:00
+#SBATCH --partition=YOUR_QUEUE_HERE
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=6
+#SBATCH --mem=300G
+set -euo pipefail
+cd "$SLURM_SUBMIT_DIR"
+
+folder_vlsv_files="./"
+output_file="example_state_average_0_4000.vlsv"
+timestep_first_text="0"
+timestep_last_text="4000"
+timestep_stride_text="1"
+state_number_width=8
+
+module load StdEnv
+module load gcc/15.2.0
+module load boost
+module load openmpi/5.0.10
+module load python-data/3.12-31.03
+folder_rhybridpy="/PATH/TO/RHYBRIDPY/" # directory containing rhybridpy.py
+WORK_DIR="$SLURM_SUBMIT_DIR/average_state_files_tmp"
+averaging_script="./average_state_files.py"
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$folder_rhybridpy"
+
+for value in \
+    "$timestep_first_text" \
+    "$timestep_last_text" \
+    "$timestep_stride_text"
+do
+    if [[ ! "$value" =~ ^[0-9]+$ ]]; then
+        echo "ERROR: invalid timestep value: $value" >&2
+        exit 1
+    fi
+done
+
+timestep_first=$((10#$timestep_first_text))
+timestep_last=$((10#$timestep_last_text))
+timestep_stride=$((10#$timestep_stride_text))
+
+if (( timestep_stride < 1 || timestep_first > timestep_last )); then
+    echo "ERROR: invalid timestep range or stride" >&2
+    exit 1
+fi
+if (( state_number_width < 1 )); then
+    echo "ERROR: state_number_width must be at least 1" >&2
+    exit 1
+fi
+if [[ ! -f "$averaging_script" ]]; then
+    echo "ERROR: averaging script not found: $averaging_script" >&2
+    exit 1
+fi
+
+mkdir -p "$WORK_DIR"
+cleanup() {
+    rmdir "$WORK_DIR" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+input_files=()
+missing_files=()
+candidate_count=0
+for ((n=timestep_first; n<=timestep_last; n+=timestep_stride)); do
+    ((candidate_count += 1))
+    printf -v file '%s/state%0*d.vlsv' \
+        "$folder_vlsv_files" "$state_number_width" "$n"
+    if [[ -f "$file" ]]; then
+        input_files+=("$file")
+    else
+        missing_files+=("$file")
+    fi
+done
+
+if (( ${#input_files[@]} == 0 )); then
+    echo "ERROR: none of the $candidate_count suggested VLSV files were found" >&2
+    exit 1
+fi
+
+echo "(SLURM) Suggested files: $candidate_count"
+echo "(SLURM) Found files:     ${#input_files[@]}"
+echo "(SLURM) Missing files:   ${#missing_files[@]}"
+echo "(SLURM) First input:     ${input_files[0]}"
+echo "(SLURM) Last input:      ${input_files[-1]}"
+
+# These small context values let average_state_files.py include the suggested
+# range and complete Slurm launch in the human-readable provenance log.
+export AVERAGE_STATE_TIMESTEP_FIRST="$timestep_first"
+export AVERAGE_STATE_TIMESTEP_LAST="$timestep_last"
+export AVERAGE_STATE_TIMESTEP_STRIDE="$timestep_stride"
+export AVERAGE_STATE_NUMBER_WIDTH="$state_number_width"
+export AVERAGE_STATE_INPUT_FOLDER="$folder_vlsv_files"
+export AVERAGE_STATE_LAUNCH_PREFIX="srun --cpu-bind=cores python -u"
+
+average_command=(
+    srun
+    --cpu-bind=cores
+    python
+    -u
+    "$averaging_script"
+    --strategy streaming
+    --workers "$SLURM_CPUS_PER_TASK"
+    --chunk-cells 1000000
+    --work-dir "$WORK_DIR"
+    -o "$output_file"
+    "${input_files[@]}"
+)
+
+echo "(SLURM) AVERAGING: BEGIN"
+"${average_command[@]}"
+echo "(SLURM) AVERAGING: FINISHED"
+echo "(SLURM) Provenance log: ${output_file}.log"
