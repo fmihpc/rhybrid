@@ -24,6 +24,9 @@ Examples
     python average_state_files.py -o average.vlsv \
         --strategy streaming --workers 6 --work-dir "$SLURM_TMPDIR" state*.vlsv
 
+    python average_state_files.py -o average.vlsv \
+        --strategy streaming --workers 6 --input-list input_files.txt
+
 The output inherits mesh information and parameters (including the time
 parameter) from the first input.  Since a temporal average has no unique time,
 interpret or adjust that copied time metadata according to your workflow.
@@ -313,6 +316,21 @@ def _parse_variables(value: str | None) -> list[str] | None:
     if len(names) != len(set(names)):
         raise argparse.ArgumentTypeError("--variables contains duplicates")
     return names
+
+
+def _read_input_list(path: os.PathLike[str] | str) -> list[str]:
+    """Read one input path per line without imposing a command-size limit."""
+    list_path = Path(path).expanduser().resolve()
+    if not list_path.is_file():
+        raise FileNotFoundError(f"Input-list file not found: {list_path}")
+    paths = [
+        line
+        for line in list_path.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
+    if not paths:
+        raise ValueError(f"Input-list file is empty: {list_path}")
+    return paths
 
 
 def _validate_inputs(
@@ -1056,6 +1074,8 @@ def average_state_files_files(
     paths = [Path(path).expanduser().resolve() for path in input_files]
     if not paths:
         raise ValueError("At least one input VLSV file is required")
+    if len(paths) != len(set(paths)):
+        raise ValueError("Input VLSV file list contains duplicates")
     for path in paths:
         if not path.is_file():
             raise FileNotFoundError(path)
@@ -1232,9 +1252,17 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "input_files",
-        nargs="+",
+        nargs="*",
         metavar="INPUT.vlsv",
-        help="input VLSV files; the first file defines output CellID order",
+        help=(
+            "input VLSV files; the first file defines output CellID order; "
+            "use --input-list for very large sets"
+        ),
+    )
+    parser.add_argument(
+        "--input-list",
+        metavar="FILE",
+        help="text file containing one input VLSV path per line",
     )
     parser.add_argument("-o", "--output", required=True, help="output VLSV file")
     parser.add_argument(
@@ -1284,9 +1312,18 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    args = _build_parser().parse_args()
+    parser = _build_parser()
+    args = parser.parse_args()
+    input_files = list(args.input_files)
+    if args.input_list:
+        try:
+            input_files.extend(_read_input_list(args.input_list))
+        except (OSError, ValueError) as error:
+            parser.error(str(error))
+    if not input_files:
+        parser.error("provide INPUT.vlsv arguments or --input-list FILE")
     average_state_files_files(
-        args.input_files,
+        input_files,
         args.output,
         variables=args.variables,
         overwrite=args.force,

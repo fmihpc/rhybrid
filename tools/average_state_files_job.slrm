@@ -58,9 +58,16 @@ if [[ ! -f "$averaging_script" ]]; then
     echo "ERROR: averaging script not found: $averaging_script" >&2
     exit 1
 fi
+if [[ "$folder_vlsv_files" != "/" ]]; then
+    folder_vlsv_files="${folder_vlsv_files%/}"
+fi
 
 mkdir -p "$WORK_DIR"
+input_list_file="$WORK_DIR/input_files_${SLURM_JOB_ID:-$$}.txt"
 cleanup() {
+    if [[ -f "$input_list_file" ]]; then
+        unlink "$input_list_file"
+    fi
     rmdir "$WORK_DIR" 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -90,6 +97,11 @@ echo "(SLURM) Missing files:   ${#missing_files[@]}"
 echo "(SLURM) First input:     ${input_files[0]}"
 echo "(SLURM) Last input:      ${input_files[-1]}"
 
+# Avoid the operating-system argument-size limit for large snapshot sets.
+# Bash printf is a builtin, so writing thousands of array entries here does
+# not itself invoke a command with thousands of arguments.
+printf '%s\n' "${input_files[@]}" > "$input_list_file"
+
 # These small context values let average_state_files.py include the suggested
 # range and complete Slurm launch in the human-readable provenance log.
 export AVERAGE_STATE_TIMESTEP_FIRST="$timestep_first"
@@ -110,7 +122,7 @@ average_command=(
     --chunk-cells 1000000
     --work-dir "$WORK_DIR"
     -o "$output_file"
-    "${input_files[@]}"
+    --input-list "$input_list_file"
 )
 
 echo "(SLURM) AVERAGING: BEGIN"
