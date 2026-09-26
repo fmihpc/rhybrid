@@ -107,13 +107,16 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // zero diagnostic variables
    if (saveStepHappened == true) {
 #ifdef USE_GRID_CONSTRAINT_COUNTERS
-      for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
-	 const int n = (b*block::SIZE+block::index(i,j,k));
-	 gridCounterCellMaxUe[n]=0.0;
-	 gridCounterCellMaxVi[n]=0.0;
-	 gridCounterCellMinRhoQi[n]=0.0;
-         gridCounterNodeMaxE[n]=0.0;
-         gridCounterNodeMaxVw[n]=0.0;
+      for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b)
+      for (int k=0;k<block::WIDTH_Z;++k)
+      for (int j=0;j<block::WIDTH_Y;++j)
+      for (int i=0;i<block::WIDTH_X;++i) {
+         const int n = (b*block::SIZE+block::index(i,j,k));
+         gridCounterCellMaxUe[n]    =
+         gridCounterCellMaxVi[n]    =
+         gridCounterCellMinRhoQi[n] =
+         gridCounterNodeMaxE[n]     =
+         gridCounterNodeMaxVw[n]    = 0.0;
       }
 #endif
       saveStepHappened = false;
@@ -158,7 +161,10 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    // add cellB to cellAverageB and increase average counter
    Real* cellAverageB = simClasses.pargrid.getUserDataStatic<Real>(Hybrid::dataCellAverageBID);
    if (cellAverageB == NULL) { cerr << "ERROR: obtained NULL cellAverageB array!" << endl; forceExit(sim,simClasses); }
-   for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b) for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
+   for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfLocalCells();++b)
+   for (int k=0;k<block::WIDTH_Z;++k)
+   for (int j=0;j<block::WIDTH_Y;++j)
+   for (int i=0;i<block::WIDTH_X;++i) {
       const int n = (b*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
       for (int l=0;l<3;++l) { cellAverageB[n3+l] += cellB[n3+l]; }
@@ -382,11 +388,12 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
       for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJ,nodeE,sim,simClasses,boundaryBlocks[b]); }
       profile::stop();
       // zero cellJ
-      for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfAllCells();++b) for (int k=0;k<block::WIDTH_Z;++k) for (int j=0;j<block::WIDTH_Y;++j) for (int i=0;i<block::WIDTH_X;++i) {
-	 const int n3 = (b*block::SIZE+block::index(i,j,k))*3;
-	 for (int l=0;l<3;++l) {
-	    cellJ[n3+l]  = 0.0;
-	 }
+      for (pargrid::CellID b=0;b<simClasses.pargrid.getNumberOfAllCells();++b)
+      for (int k=0;k<block::WIDTH_Z;++k)
+      for (int j=0;j<block::WIDTH_Y;++j)
+      for (int i=0;i<block::WIDTH_X;++i) {
+         const int n3 = (b*block::SIZE+block::index(i,j,k))*3;
+         for (int l=0;l<3;++l) { cellJ[n3+l] = 0.0; }
       }
    }
    // nodeE gaussian filter
@@ -1199,7 +1206,8 @@ void nodeAvg(Real* nodeDataOld,Real* nodeData,Simulation& sim,SimulationClasses&
          Real C220 = C4; if (nodeEl220 == initVal) { nodeEl220 = 0.0; C220 = 0.0; zeroFound = true; }
          // renormalize if boundary node found
          if (zeroFound == true) {
-            const Real Csum = C111+C110+C011+C121+C211+C101+C112+C010+C100+C120+C210+C001+C021+C221+C201+C012+C122+C212+C102+C002+C022+C202+C222+C000+C020+C200+C220;
+            const Real Csum = C111+C110+C011+C121+C211+C101+C112+C010+C100+C120+C210+C001
+               +C021+C221+C201+C012+C122+C212+C102+C002+C022+C202+C222+C000+C020+C200+C220;
             if (Csum > 0.0) {
                C111 /= Csum;
                C110 /= Csum;
@@ -1281,7 +1289,9 @@ void upwindNodeB(Real* cellB,Real* nodeUe,Real* nodeB,Simulation& sim,Simulation
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
    fetchData(cellB,aa,simClasses,blockID,vectorDim);
-   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k)
+   for (int j=0+dj; j<block::WIDTH_Y; ++j)
+   for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k))*vectorDim;
 
       // upwind displacement vector = (-0.5,0,0) if Ue = 0
@@ -1346,7 +1356,9 @@ void calcCellUe(Real* cellJ,Real* cellJi,Real* cellRhoQi,Real* cellUe,bool* inne
 		Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
 {
    if (simClasses.pargrid.getNeighbourFlags(blockID) != pargrid::ALL_NEIGHBOURS_EXIST) return;
-   for (int k=0; k<block::WIDTH_Z; ++k) for (int j=0; j<block::WIDTH_Y; ++j) for (int i=0; i<block::WIDTH_X; ++i) {
+   for (int k=0; k<block::WIDTH_Z; ++k)
+   for (int j=0; j<block::WIDTH_Y; ++j)
+   for (int i=0; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
       // inner boundary condition for Ue
@@ -1410,7 +1422,9 @@ void calcNodeE(Real* nodeUe,Real* nodeB,Real* nodeEta,Real* nodeJ,Real* nodeE,Re
    const Real* crd = getBlockCoordinateArray(sim,simClasses);
    const size_t b3 = 3*blockID;
 #endif
-   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k)
+   for (int j=0+dj; j<block::WIDTH_Y; ++j)
+   for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*3;
       Real Btot[3];
@@ -1467,7 +1481,9 @@ Simulation& sim,SimulationClasses& simClasses,pargrid::CellID blockID)
    const size_t s = (block::WIDTH_X+2)*(block::WIDTH_Y+2)*(block::WIDTH_Z+2);
    Real aa[s*vectorDim]; // temp array
    fetchData(faceB,aa,simClasses,blockID,vectorDim);
-   for (int k=0+dk; k<block::WIDTH_Z; ++k) for (int j=0+dj; j<block::WIDTH_Y; ++j) for (int i=0+di; i<block::WIDTH_X; ++i) {
+   for (int k=0+dk; k<block::WIDTH_Z; ++k)
+   for (int j=0+dj; j<block::WIDTH_Y; ++j)
+   for (int i=0+di; i<block::WIDTH_X; ++i) {
       const int n = (blockID*block::SIZE+block::index(i,j,k));
       const int n3 = n*vectorDim;
       const Real edgeJx1 =
