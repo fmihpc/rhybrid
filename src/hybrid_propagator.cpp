@@ -1556,11 +1556,9 @@ void calcNodeUe(Real* nodeRhoQi,Real* nodeJi,Real* nodeJ,Real* nodeUe,bool* inne
       // calc Ue = (J - Ji)/rhoqi
       for (int l=0;l<3;++l) {
 	 if (fabs(nodeRhoQi[n]) > 0) {
+            nodeUe[n3+l] = nodeJi[n3+l]/nodeRhoQi[n];
             if (Hybrid::useHallElectricField == true) {
-               nodeUe[n3+l] = -(nodeJ[n3+l] - nodeJi[n3+l])/nodeRhoQi[n];
-            }
-            else {
-               nodeUe[n3+l] = nodeJi[n3+l]/nodeRhoQi[n];
+               nodeUe[n3+l] -= nodeJ[n3+l]/nodeRhoQi[n];
             }
 	 }
 	 else {
