@@ -171,7 +171,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    for (pargrid::CellID b=0; b<simClasses.pargrid.getNumberOfLocalCells(); ++b) { cell2Node(cellB,nodeB,sim,simClasses,b); }
    profile::stop();
 
-#ifdef USE_NODE_UE
    // cell -> node RhoQi and Ji
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
@@ -187,10 +186,8 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellRhoQi,nodeRhoQi,sim,simClasses,boundaryBlocks[b],1); }
    for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJi,nodeJi,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
-#endif
 
    // calculate J
-#ifdef USE_EDGE_J
    neumannFace(faceB,sim,simClasses,exteriorBlocks);
    setIMFFace(faceB,sim,simClasses,exteriorBlocks);
    // TBD: new variable handling
@@ -234,47 +231,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::start("intpol",profIntpolID);
    for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { node2Cell(nodeJ,cellJ,sim,simClasses,boundaryBlocks[b]); }
    profile::stop();
-#else
-   // Ampere: faceJ = curl(nodeB)/mu0
-   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeBID);
-   profile::start("field propag",profPropagFieldID);
-   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { faceCurl(nodeB,faceJ,false,sim,simClasses,innerBlocks[b]); }
-   profile::stop();
-   profile::start("MPI waits",mpiWaitID);
-   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataNodeBID);
-   profile::stop();
-   profile::start("field propag",profPropagFieldID);
-   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { faceCurl(nodeB,faceJ,false,sim,simClasses,boundaryBlocks[b]); }
-   profile::stop();
-
-   // face->cell J
-   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceJID);
-   profile::start("intpol",profIntpolID);
-   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { face2Cell(faceJ,cellJ,sim,simClasses,innerBlocks[b]); }
-   profile::stop();
-   profile::start("MPI waits",mpiWaitID);
-   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataFaceJID);
-   profile::stop();
-   profile::start("intpol",profIntpolID);
-   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { face2Cell(faceJ,cellJ,sim,simClasses,boundaryBlocks[b]); }
-   profile::stop();
-
-   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
-   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
-   neumannCell(cellJ,sim,simClasses,exteriorBlocks,3);
-
-   // cell->node J
-   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
-   profile::start("intpol",profIntpolID);
-   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellJ,nodeJ,sim,simClasses,innerBlocks[b]); }
-   profile::stop();
-   profile::start("MPI waits",mpiWaitID);
-   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJID);
-   profile::stop();
-   profile::start("intpol",profIntpolID);
-   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellJ,nodeJ,sim,simClasses,boundaryBlocks[b]); }
-   profile::stop();
-#endif
 
    // calculate cellUe
    profile::start("field propag",profPropagFieldID);
@@ -297,7 +253,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
    profile::stop();
 
    // calculate nodeUe
-#ifdef USE_NODE_UE
    // cell -> node RhoQi and Ji
    /*simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellRhoQiID);
    simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellJiID);
@@ -321,19 +276,6 @@ bool propagateB(Simulation& sim,SimulationClasses& simClasses,vector<ParticleLis
 #endif
 		 sim,simClasses,b); }
    profile::stop();
-#else
-   // cell->node Ue
-   simClasses.pargrid.startNeighbourExchange(pargrid::DEFAULT_STENCIL,Hybrid::dataCellUeID);
-   profile::start("intpol",profIntpolID);
-   for (pargrid::CellID b=0; b<innerBlocks.size(); ++b) { cell2Node(cellUe,nodeUe,sim,simClasses,innerBlocks[b]); }
-   profile::stop();
-   profile::start("MPI waits",mpiWaitID);
-   simClasses.pargrid.wait(pargrid::DEFAULT_STENCIL,Hybrid::dataCellUeID);
-   profile::stop();
-   profile::start("intpol",profIntpolID);
-   for (pargrid::CellID b=0; b<boundaryBlocks.size(); ++b) { cell2Node(cellUe,nodeUe,sim,simClasses,boundaryBlocks[b]); }
-   profile::stop();
-#endif
 
    // upwind nodeB
    profile::start("field propag",profPropagFieldID);

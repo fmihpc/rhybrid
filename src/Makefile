@@ -1,5 +1,3 @@
-USE_NODE_UE := true
-USE_EDGE_J := true
 USE_B_INITIAL := true
 USE_B_CONSTANT := false
 USE_GRID_CONSTRAINT_COUNTERS := false
@@ -12,14 +10,6 @@ include ../../../Makefile.${ARCH}
 OBJS = detectors.o hybrid.o hybrid_propagator.o operator_userdata.o particle_accumulator.o particle_injector.o particle_species.o register_objects.o user.o
 
 # Set RHybrid compilation options/macros
-
-ifeq ($(USE_NODE_UE),true)
-CXXFLAGS := $(CXXFLAGS) -DUSE_NODE_UE
-endif
-
-ifeq ($(USE_EDGE_J),true)
-CXXFLAGS := $(CXXFLAGS) -DUSE_EDGE_J
-endif
 
 ifeq ($(USE_B_INITIAL),true)
 CXXFLAGS := $(CXXFLAGS) -DUSE_B_INITIAL

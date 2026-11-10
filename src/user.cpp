@@ -803,9 +803,6 @@ bool userLateInitialization(Simulation& sim,SimulationClasses& simClasses,Config
    vector<pargrid::StencilID> sIDEmpty;
    addVarReal(sim,simClasses,"faceB_",3,sID);
    addVarReal(sim,simClasses,"cellRhoQi_",1,sIDAcc);*/
-#ifndef USE_EDGE_J
-   //addVarReal(sim,simClasses,"faceJ_",3,sID);
-#endif
    //addVarReal(sim,simClasses,"cellB_",3,sID);
    //addVarReal(sim,simClasses,"cellJ_",3,sID);
    //addVarReal(sim,simClasses,"cellUe_",3,sID);
