@@ -1,0 +1,197 @@
+#!/bin/bash -l
+#SBATCH --job-name=rhbp
+#SBATCH --account=YOUR_PROJECT_HERE
+#SBATCH --time=01:00:00
+#SBATCH --partition=YOUR_QUEUE_HERE
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=10
+#SBATCH --mem=50G
+set -euo pipefail
+trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND" >&2' ERR
+on_exit() {
+    local status=$?
+    local elapsed=$SECONDS
+    echo
+    if (( status == 0 )); then
+        echo "(SLURM) FINISH: ${script_name:-$SLURM_JOB_NAME}"
+    else
+        echo "(SLURM) FAILED: ${script_name:-$SLURM_JOB_NAME} (exit status $status)" >&2
+    fi
+    echo
+    echo "Time stamp: $(date -R)"
+    printf 'Elapsed time: %02d:%02d:%02d\n' "$((elapsed / 3600))" "$(((elapsed % 3600) / 60))" "$((elapsed % 60))"
+    echo
+}
+trap on_exit EXIT
+SECONDS=0
+cd "$SLURM_SUBMIT_DIR"
+echo "$SLURM_JOB_ID" >jobid.txt
+N_nodes="${SLURM_JOB_NUM_NODES}"
+N_tasks="${SLURM_NTASKS}"
+N_cpus_per_task="${SLURM_CPUS_PER_TASK}"
+# Get original submitted script path.
+if job_info=$(scontrol show job "$SLURM_JOB_ID" 2>/dev/null); then
+    script_path=$(sed -n 's/^[[:space:]]*Command=//p' <<< "$job_info")
+else
+    script_path=""
+fi
+script_name="${script_path##*/}"
+# Fallback if path is unavailable.
+script_name="${script_name:-$SLURM_JOB_NAME}"
+script_path="${script_path:-unknown}"
+echo
+echo "Time stamp: $(date -R)"
+echo
+echo "Script name: $script_name"
+echo "Script path: $script_path"
+echo
+echo "(SLURM) START: $script_name"
+echo
+echo "Current folder: $(pwd)"
+echo
+echo "N_nodes = $N_nodes"
+echo "N_tasks = $N_tasks"
+echo "N_cpus_per_task = $N_cpus_per_task"
+echo
+if (( N_nodes != 1 )); then
+    echo "ERROR: This script supports exactly one Slurm node; allocated $N_nodes nodes." >&2
+    exit 1
+fi
+
+module load StdEnv
+#module load gcc/15.2.0
+#module load boost
+#module load openmpi/5.0.10
+module load python-data/3.12-31.03
+#module load gnuplot/6.0.0
+#module load texlive/20260301
+#module load ffmpeg
+
+folder_vlsv_files="../vlsv/"
+vlsv_pattern="state*.vlsv"
+folder_output="png/"
+folder_rhybridpy="/PATH/TO/RHYBRIDPY/"
+file_main_log="../logfile.txt"
+
+echo "Reading VLSV files: $folder_vlsv_files/$vlsv_pattern"
+echo "Run main log file: $file_main_log"
+
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$folder_rhybridpy"
+mkdir -p "./$folder_output"
+
+# Prevent Python processes from using multiple math-library threads.
+export OMP_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+
+# Find VLSV files
+shopt -s nullglob
+files=("$folder_vlsv_files"/$vlsv_pattern)
+
+if ((${#files[@]} == 0)); then
+    echo "ERROR: no matching VLSV files found in $folder_vlsv_files" >&2
+    exit 1
+fi
+
+echo "Found ${#files[@]} VLSV files."
+
+# Each Slurm job gets its own frame folder.
+frames_dir="${folder_output%/}/job_${SLURM_JOB_ID}"
+if [[ -e "$frames_dir" ]]; then
+    echo "ERROR: job frame directory already exists: $frames_dir" >&2
+    exit 1
+fi
+mkdir -p "$frames_dir" mp4/
+
+# Pass the exact selected paths to Python through a NUL-delimited manifest.
+# Store it inside this job's frame directory, not beside the Slurm job script.
+file_list="$frames_dir/.selected_vlsv_files"
+printf '%s\0' "${files[@]}" > "$file_list"
+
+# Parse object radius (km) from the simulation log, then express it in metres.
+if [[ ! -f "$file_main_log" ]]; then
+    echo "ERROR: simulation log not found: $file_main_log" >&2
+    exit 1
+fi
+radius_km=$(awk '$1 == "R_object" && $2 == "=" {print $3; exit}' "$file_main_log")
+if [[ -z "$radius_km" ]]; then
+    echo "ERROR: could not find R_object in $file_main_log" >&2
+    exit 1
+fi
+R_object="${radius_km}e3"
+echo "Object radius: $R_object m"
+
+# Print metadata for the first selected VLSV file.
+echo
+echo "(SLURM) HEADER INFORMATION"
+python plot_xyz_slices.py \
+    -1 "$folder_vlsv_files" "$R_object" \
+    --file-list "$file_list" --output-dir "$frames_dir"
+
+# Plot precisely the selected files; Python's Pool uses the allocated CPU count.
+echo
+echo "(SLURM) CREATING FIGURE FRAMES"
+python plot_xyz_slices.py \
+    "$N_cpus_per_task" "$folder_vlsv_files" "$R_object" \
+    --file-list "$file_list" --output-dir "$frames_dir"
+# The manifest is no longer needed after plotting. If plotting fails, it
+# remains in the retained frame directory for troubleshooting.
+rm -f -- "$file_list"
+
+echo
+echo "(SLURM) COMPILING VIDEO FILES"
+
+# Detect parameter prefixes only among frames made by this job.
+frames=("$frames_dir"/*_state*.vlsv.png)
+if ((${#frames[@]} == 0)); then
+    echo "ERROR: plotting produced no PNG frames in $frames_dir" >&2
+    exit 1
+fi
+declare -A parameter_names=()
+for frame in "${frames[@]}"; do
+    frame_name="${frame##*/}"
+    if [[ "$frame_name" =~ ^(.+)_state[0-9]+\.vlsv\.png$ ]]; then
+        parameter_names["${BASH_REMATCH[1]}"]=1
+    else
+        echo "ERROR: unexpected PNG frame filename: $frame_name" >&2
+        exit 1
+    fi
+done
+mapfile -t parameters < <(printf '%s\n' "${!parameter_names[@]}" | sort)
+
+# Generate a manual cleanup script.
+cleanup_script="${SLURM_SUBMIT_DIR}/rm_pngs_job_${SLURM_JOB_ID}.sh"
+frames_dir_abs=$(cd -- "$frames_dir" && pwd -P)
+{
+    printf '#!/bin/bash\n'
+    printf '# Delete the PNG frames created by Slurm job %s.\n' "$SLURM_JOB_ID"
+    printf '# This script leaves itself and the directory in place.\n'
+    printf 'set -euo pipefail\n'
+    printf 'cd -- %q\n' "$frames_dir_abs"
+    for frame in "${frames[@]}"; do
+        printf '/bin/rm -fv -- %q\n' "${frame##*/}"
+    done
+} > "$cleanup_script"
+chmod 700 -- "$cleanup_script"
+echo "Manual PNG cleanup script: $cleanup_script (${#frames[@]} files; not executed)"
+
+for param in "${parameters[@]}"; do
+    # Every variable should have one frame per selected input file.
+    param_frames=("$frames_dir"/"${param}"_state*.vlsv.png)
+    if ((${#param_frames[@]} != ${#files[@]})); then
+        echo "ERROR: ${param}: expected ${#files[@]} frames, found ${#param_frames[@]}" >&2
+        exit 1
+    fi
+    echo "Compiling: ${param}.mp4 (${#param_frames[@]} frames)"
+    temp_movie="mp4/.${param}.${SLURM_JOB_ID}.tmp.mp4"
+    ffmpeg -y -framerate 20 -an -pattern_type glob \
+        -i "${frames_dir}/${param}_state*.vlsv.png" \
+        -vcodec libx264 -pix_fmt yuv420p -profile:v baseline -level 4.0 \
+        -qp 24 -vf scale=1900:-2 "$temp_movie"
+    mv -f -- "$temp_movie" "mp4/${param}.mp4"
+done
+
+echo "PNG frames retained in: $frames_dir"
+echo "To remove the frames later: bash \"$cleanup_script\""
+
