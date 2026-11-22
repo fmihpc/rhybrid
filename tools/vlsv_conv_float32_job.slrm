@@ -1,0 +1,133 @@
+#!/bin/bash -l
+#SBATCH --job-name=rhbc
+#SBATCH --account=YOUR_PROJECT_HERE
+#SBATCH --time=01:00:00
+#SBATCH --partition=YOUR_QUEUE_HERE
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=10
+#SBATCH --mem=50G
+set -euo pipefail
+trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND" >&2' ERR
+on_exit() {
+    local status=$?
+    local elapsed=$SECONDS
+    echo
+    if (( status == 0 )); then
+        echo "(SLURM) FINISH: ${script_name:-$SLURM_JOB_NAME}"
+    else
+        echo "(SLURM) FAILED: ${script_name:-$SLURM_JOB_NAME} (exit status $status)" >&2
+    fi
+    echo
+    echo "Time stamp: $(date -R)"
+    printf 'Elapsed time: %02d:%02d:%02d\n' "$((elapsed / 3600))" "$(((elapsed % 3600) / 60))" "$((elapsed % 60))"
+    echo
+}
+trap on_exit EXIT
+SECONDS=0
+cd "$SLURM_SUBMIT_DIR"
+echo "$SLURM_JOB_ID" >jobid.txt
+N_nodes="${SLURM_JOB_NUM_NODES}"
+N_tasks="${SLURM_NTASKS}"
+N_cpus_per_task="${SLURM_CPUS_PER_TASK}"
+# Get original submitted script path.
+if job_info=$(scontrol show job "$SLURM_JOB_ID" 2>/dev/null); then
+    script_path=$(sed -n 's/^[[:space:]]*Command=//p' <<< "$job_info")
+else
+    script_path=""
+fi
+script_name="${script_path##*/}"
+# Fallback if path is unavailable.
+script_name="${script_name:-$SLURM_JOB_NAME}"
+script_path="${script_path:-unknown}"
+echo
+echo "Time stamp: $(date -R)"
+echo
+echo "Script name: $script_name"
+echo "Script path: $script_path"
+echo
+echo "(SLURM) START: $script_name"
+echo
+echo "Current folder: $(pwd)"
+echo
+echo "N_nodes = $N_nodes"
+echo "N_tasks = $N_tasks"
+echo "N_cpus_per_task = $N_cpus_per_task"
+echo
+if (( N_nodes != 1 )); then
+    echo "ERROR: This script supports exactly one Slurm node; allocated $N_nodes nodes." >&2
+    exit 1
+fi
+
+module load StdEnv
+#module load gcc/15.2.0
+#module load boost
+#module load openmpi/5.0.10
+module load python-data/3.12-31.03
+#module load gnuplot/6.0.0
+#module load texlive/20260301
+#module load ffmpeg
+
+folder_vlsv_files="vlsv/"
+vlsv_pattern="state*.vlsv"
+folder_output="vlsv_float32/"
+folder_rhybridpy="/PATH/TO/RHYBRIDPY/"
+
+echo "Reading VLSV files: $folder_vlsv_files/$vlsv_pattern"
+
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$folder_rhybridpy"
+mkdir -p "./$folder_output"
+mkdir -p "$folder_output/logs"
+
+# Prevent individual Python processes from using multiple threads
+export OMP_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+
+# Find VLSV files
+shopt -s nullglob
+files=("$folder_vlsv_files"/$vlsv_pattern)
+
+if ((${#files[@]} == 0)); then
+    echo "ERROR: no matching VLSV files found in $folder_vlsv_files" >&2
+    exit 1
+fi
+
+echo "Found ${#files[@]} VLSV files."
+export folder_output
+
+# Convert files in parallel
+printf '%s\0' "${files[@]}" |
+    xargs -0 -r -n 1 -P "$N_cpus_per_task" bash -c '
+        set -euo pipefail
+
+        f="$1"
+        filename="${f##*/}"
+        output_file="$folder_output/$filename"
+        log_file="$folder_output/logs/${filename%.vlsv}.log"
+
+        # Skip already converted files
+        if [[ -f "$output_file" ]]; then
+            echo "Skipping: $filename (already exists)"
+            exit 0
+        fi
+
+        echo "Processing: $filename"
+
+        # Convert file and redirect stdout and stderr
+        if python vlsv_conv_float32.py "$f" "$output_file" > "$log_file" 2>&1; then
+            echo "Finished: $filename"
+        else
+            echo "ERROR: Conversion failed: $filename (see $log_file)" >&2
+            exit 1
+        fi
+    ' _
+
+# Process files sequentially
+#for f in "${files[@]}"; do
+#    filename=$(basename "$f")
+#    output_file="$folder_output/$filename"
+#    echo srun -N 1 -n 1 python vlsv_conv_float32.py "$f" "$output_file"
+#    srun -N 1 -n 1 python vlsv_conv_float32.py "$f" "$output_file" 
+#done
+
