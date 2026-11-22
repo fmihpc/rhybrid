@@ -1,111 +1,138 @@
 #!/usr/bin/env bash
-jobid=""
-# try to find a slurm-*.out file
-file=$(ls slurm-*.out 2>/dev/null | head -n 1)
-if [[ -n "$file" ]]; then
-    # extract N from slurm-N.out
-    jobid=$(echo "$file" | sed -n 's/^slurm-\([0-9]\+\)\.out$/\1/p')
-elif [[ -f jobid.txt ]]; then
-    # read first line
-    jobid=$(head -n 1 jobid.txt)
-else
-    echo "slurm.*.out nor jobid.txt not found, cannot determine job ID"
-    exit 0
+set -euo pipefail
+trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND" >&2' ERR
+SECONDS=0
+script_name="${BASH_SOURCE[0]##*/}"
+script_path="$(realpath -- "${BASH_SOURCE[0]}")"
+
+# ============================================================
+# Determine Slurm job ID
+# ============================================================
+
+# Use job ID from command-line argument if provided.
+jobid="${1:-}"
+
+if [[ -z "$jobid" ]]; then
+    matches=()
+
+    # Search for slurm-N.out files.
+    for file in slurm-*.out; do
+        if [[ -f "$file" && "$file" =~ ^slurm-([0-9]+)\.out$ ]]; then
+            matches+=("${BASH_REMATCH[1]}")
+        fi
+    done
+
+    if (( ${#matches[@]} == 1 )); then
+        jobid="${matches[0]}"
+
+    elif (( ${#matches[@]} > 1 )); then
+        echo "ERROR: Multiple slurm-N.out files found." >&2
+        echo "Please specify a job ID explicitly." >&2
+        exit 1
+
+    elif [[ -f jobid.txt ]]; then
+        IFS= read -r jobid < jobid.txt || true
+
+    else
+        echo "ERROR: Neither slurm-N.out nor jobid.txt found." >&2
+        exit 1
+    fi
 fi
-# check jobid is numeric
-[[ $jobid =~ ^[0-9]+$ ]] || {
-    echo "error: invalid job ID: $jobid" >&2
+
+# Validate job ID.
+if [[ ! "$jobid" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: Invalid job ID: $jobid" >&2
     exit 1
+fi
+
+# ============================================================
+# Initialize report
+# ============================================================
+
+output_file="resource_usage_${jobid}.txt"
+separator="======================================================================================="
+
+{
+    echo "Time stamp: $(date -R)"
+    echo
+    echo "Script file: $script_path"
+    echo
+    echo "START: $script_name"
+    echo
+    echo "Current folder: $(pwd)"
+    echo "Job ID: $jobid"
+} > "$output_file"
+
+# ============================================================
+# Function: Execute command and log its output
+# ============================================================
+
+run_section() {
+    local title="$1"
+    local status
+    shift
+
+    {
+        echo
+        echo
+        echo "$separator"
+        echo "BEGIN: $title"
+        echo "$separator"
+
+        if "$@"; then
+            :
+        else
+            status=$?
+            echo "WARNING: $title failed with exit status $status"
+        fi
+
+        echo "$separator"
+        echo "END: $title"
+        echo "$separator"
+
+    } >> "$output_file" 2>&1
 }
 
-output_file="resource_usage_$jobid.txt"
-echo "BEGIN : get_post_job_statistic.sh" >$output_file 2>&1
-pwd >>$output_file 2>&1
-date >$output_file 2>&1
-echo "Job ID: $jobid" >>$output_file 2>&1
+# ============================================================
+# Collect Slurm statistics
+# ============================================================
 
-wait
-echo "" >>$output_file 2>&1
-echo "" >>$output_file 2>&1
-wait
+run_section "sacct: basics" \
+    sacct \
+    --format=JobID,State,Elapsed,Submit,Start,End,AllocCPUS,ReqMem \
+    -j "$jobid"
 
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ BEGIN : sacct : basics        ============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-sacct --format=JobID,State,Elapsed,Submit,Start,End,AllocCPUS,ReqMem -j $jobid >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ END : sacct : basics          ============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
+run_section "sacct: details" \
+    sacct \
+    --format=JobID,State,ExitCode,NTasks,MaxRSS,AveRSS,MaxRSSNode,MaxRSSTask \
+    -j "$jobid"
 
-wait
-echo "" >>$output_file 2>1&
-echo "" >>$output_file 2>1&
-wait
+run_section "seff" \
+    seff -d "$jobid"
 
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ BEGIN : sacct : details       ============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-sacct --format=JobID,State,ExitCode,NTasks,MaxRSS,AveRSS,MaxRSSNode,MaxRSSTask -j $jobid >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ END : sacct : details         ============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
+run_section "sacct --long" \
+    sacct --long -j "$jobid"
 
-wait
-echo "" >>$output_file 2>1&
-echo "" >>$output_file 2>1&
-wait
+run_section "sacct --format=ALL" \
+    sacct --format=ALL -j "$jobid"
 
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ BEGIN : seff                  ============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-seff -d $jobid >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ END : seff                    ============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
+run_section "scontrol show job" \
+    scontrol show job "$jobid"
 
-wait
-echo "" >>$output_file 2>&1
-echo "" >>$output_file 2>&1
-wait
+# ============================================================
+# Finish report
+# ============================================================
 
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ BEGIN : sacct --long          ============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-sacct --long -j $jobid >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ END   : sacct --long          ============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
+{
+    echo
+    echo "FINISHED: $script_name"
+    echo
+    echo "Time stamp: $(date -R)"
+    elapsed=$SECONDS
+    printf 'Elapsed time: %02d:%02d:%02d\n' "$((elapsed / 3600))" "$(((elapsed % 3600) / 60))" "$((elapsed % 60))"
+    echo
+} >> "$output_file"
 
-wait
-echo "" >>$output_file 2>&1
-echo "" >>$output_file 2>&1
-wait
+echo "Report saved to: $output_file"
 
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ BEGIN : sacct --format=ALL   =============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-sacct --format=ALL -j $jobid >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ END   : sacct --format=ALL   =============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
 
-wait
-echo "" >>$output_file 2>&1
-echo "" >>$output_file 2>&1
-wait
-
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ BEGIN : scontrol show        =============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-scontrol show job $jobid >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-echo "============================ END   : scontrol show        =============================" >>$output_file 2>&1
-echo "=======================================================================================" >>$output_file 2>&1
-
-wait
-echo "" >>$output_file 2>&1
-echo "" >>$output_file 2>&1
-wait
-
-date >>$output_file 2>&1
-echo "END   : get_post_job_statistic.sh" >>$output_file 2>&1
