@@ -31,6 +31,7 @@ import numpy as np
 import rhybridpy as rhb
 from matplotlib.patches import Wedge
 from scipy.ndimage import gaussian_filter
+from matplotlib.ticker import MaxNLocator, MultipleLocator
 
 matplotlib.rcParams.update({"font.size": 14})
 matplotlib.rcParams["lines.linewidth"] = 2
@@ -290,43 +291,11 @@ def plane_slices(extent, grid, radius):
     return (yz_index, xz_index, xy_index), (x_actual, y_actual, z_actual)
 
 
-def format_number(value, decimals=10):
-    """Format values using rounding."""
-    if decimals == 1:
-        return str(int(round(value * decimals) / decimals))
-    return str(round(value * decimals) / decimals)
-
-
 def format_with_unit(value, unit_string):
     """Format a slice position and its unit for a plot title."""
     if abs(value) > 0:
         return str(round(value * 10) / 10) + unit_string
     return "0"
-
-
-def coordinate_ticks(limits):
-    """Automatic tick-step heuristic."""
-    ranges = (
-        limits[1] - limits[0],
-        limits[3] - limits[2],
-        limits[5] - limits[4],
-    )
-    max_range = max(ranges)
-    max_coordinate = max(abs(limits))
-    max_power = 10 ** np.ceil(np.log10(max_coordinate)) if max_coordinate > 0 else 1
-    step = 1
-    n_ticks = 0
-    for i, j, k in itertools.product(range(1, 100), (1, 2, 5), (-1, 1)):
-        step = max_power / (k * j * i)
-        n_ticks = max_range / step
-        if 5 <= n_ticks <= 15:
-            break
-    if n_ticks < 5 or n_ticks > 15:
-        print(
-            f"WARNING: no good tick step: n={n_ticks}, step={step}",
-            flush=True,
-        )
-    return np.arange(-max_power, max_power, step=step)
 
 
 def detect_settings(reader):
@@ -434,7 +403,7 @@ def configure_panel(setting, mappable, axis, draw_planet):
 
 def draw_figure(
     reader, setting, grid, limits, plane_indices, planes,
-    tick_marks, time_s, sorted_cell_indices,
+    time_s, sorted_cell_indices,
 ):
     """Draw the xz, xy and yz panels for one parameter and timestep."""
     nx, ny, nz = grid
@@ -479,6 +448,15 @@ def draw_figure(
     common_height = max(float(y[1] - y[0]) for _, y in zooms)
     if common_width <= 0 or common_height <= 0:
         raise ValueError("Panel coordinate ranges must be positive")
+    # Choose a nice tick interval based on the largest displayed span.
+    tick_locator = MaxNLocator(
+        nbins=14,
+        steps=[1, 2, 2.5, 5, 10]
+    )
+    tick_values = tick_locator.tick_values(
+        0, max(common_width, common_height)
+    )
+    tick_step = tick_values[1] - tick_values[0]
     visible_limits = tuple(
         (
             (float(x[0] + x[1]) - common_width) / 2,
@@ -489,10 +467,9 @@ def draw_figure(
     for x, y in zooms
     )
     titles = (
-        "3D: $xz$ ($y=$" + format_with_unit(y_actual, "$R_p$") + ")",
-        "$t=$" + format_number(time_s,100000) + " s\n3D: $xy$ ($z=$"
-        + format_with_unit(z_actual, "$R_p$") + ")",
-        "3D: $yz$ ($x=$" + format_with_unit(x_actual, "$R_p$") + ")",
+        "$xz$ ($y=$" + format_with_unit(y_actual, "$R_p$") + ")",
+        "$xy$ ($z=$" + format_with_unit(z_actual, "$R_p$") + ")",
+        "$yz$ ($x=$" + format_with_unit(x_actual, "$R_p$") + ")",
     )
     labels = (("$x$", "$z$"), ("$x$", "$y$"), ("$y$", "$z$"))
     fig, axes = plt.subplots(1, 3, figsize=FIGURE_SIZE, frameon=True, layout="constrained")
@@ -506,19 +483,35 @@ def draw_figure(
                 aspect="equal", origin="lower", interpolation="nearest",
             )
             axis.set_title(titles[index])
+            if index == 1:
+                axis.text(
+                    0.5, 1.12,
+                    f"{time_s:10.4f} s",
+                    transform=axis.transAxes,
+                    ha="center",
+                    va="bottom",
+                    fontfamily="monospace",
+                    fontsize=plt.rcParams["axes.titlesize"],
+                    clip_on=False,
+                )
             axis.set_xlabel(labels[index][0] + " [$R_p$]")
             axis.set_ylabel(labels[index][1] + " [$R_p$]")
-            axis.set_xticks(tick_marks)
+            axis.xaxis.set_major_locator(MultipleLocator(tick_step))
             axis.tick_params("x", labelrotation=X_TICK_ANGLE)
-            axis.set_yticks(tick_marks)
+            axis.yaxis.set_major_locator(MultipleLocator(tick_step))
             axis.axis("scaled")
             x_min, x_max, y_min, y_max = visible_limits[index]
             axis.set_xlim(x_min, x_max)
             axis.set_ylim(y_min, y_max)
             configure_panel(setting, mappable, axis, SHOW_PLANET[index])
-        #fig.tight_layout()
-        colorbar = fig.colorbar(mappable, ax=axes, shrink=0.5)
-        colorbar.ax.set_title(setting["str"])
+        colorbar = fig.colorbar(mappable, ax=axes, shrink=0.45)
+        colorbar.ax.set_title(
+            setting["str"],
+            fontsize=plt.rcParams["font.size"] - 4
+        )
+        colorbar.ax.tick_params(
+            labelsize=plt.rcParams["font.size"] - 4
+        )
         return fig
     except BaseException:
         plt.close(fig)
@@ -535,10 +528,6 @@ def plot_file(path, *, settings, output_dir, radius):
     if sorted_cell_indices.size != np.prod(grid):
         raise ValueError(f"{path.name}: CellID count does not match the grid {grid}")
     plane_indices, planes = plane_slices(extent, grid, radius)
-    tick_marks = coordinate_ticks(
-        limits if np.atleast_1d(AXIS_LIMITS_ZOOM).size != 6
-        else np.asarray(AXIS_LIMITS_ZOOM)
-    )
     time_s = reader.read_parameter("t")
     if time_s is None:
         time_s = reader.read_parameter("time")
@@ -550,7 +539,7 @@ def plot_file(path, *, settings, output_dir, radius):
         )
         fig = draw_figure(
             reader, setting, grid, limits, plane_indices, planes,
-            tick_marks, time_s, sorted_cell_indices,
+            time_s, sorted_cell_indices,
         )
         try:
             filename = f"{setting['filename']}_{path.name}.png"
