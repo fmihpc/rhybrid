@@ -32,7 +32,6 @@ import rhybridpy as rhb
 from matplotlib.patches import Wedge
 from scipy.ndimage import gaussian_filter
 
-# Plot presentation: unchanged from the original three-panel 3D plots.
 matplotlib.rcParams.update({"font.size": 14})
 matplotlib.rcParams["lines.linewidth"] = 2
 
@@ -87,13 +86,13 @@ PLOT_SETTINGS.append({
     "filename": "B",
     "sigma": -1,
 })
-# PLOT_SETTINGS.append({"param": "cellB", "type": "xcomp", "str": "$cellB_x$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "Bx", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellB", "type": "ycomp", "str": "$cellB_y$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "By", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellB", "type": "zcomp", "str": "$cellB_z$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "Bz", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "cellB", "type": "xcomp", "str": "$cellB_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "Bx", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "cellB", "type": "ycomp", "str": "$cellB_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "By", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "cellB", "type": "zcomp", "str": "$cellB_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "Bz", "sigma": -1})
 # PLOT_SETTINGS.append({"param": "faceB", "type": "magnitude", "str": "$|faceB|$ [nT]", "log": 1, "lims": (1e-9, 1000e-9), "unit": 1e-9, "colormap": CMAP_SEQUENTIAL, "filename": "faceB", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "faceB", "type": "xcomp", "str": "$faceB_x$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBx", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "faceB", "type": "ycomp", "str": "$faceB_y$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "faceB", "type": "zcomp", "str": "$faceB_z$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBz", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "faceB", "type": "xcomp", "str": "$faceB_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBx", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "faceB", "type": "ycomp", "str": "$faceB_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBy", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "faceB", "type": "zcomp", "str": "$faceB_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBz", "sigma": -1})
 PLOT_SETTINGS.append({
     "param": "n_H+sw",
     "type": "scalar",
@@ -122,7 +121,7 @@ PLOT_SETTINGS.append({
 # PLOT_SETTINGS.append({"param": "nodeJ", "type": "xcomp", "str": "$J_x$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJx", "sigma": -1})
 # PLOT_SETTINGS.append({"param": "nodeJ", "type": "ycomp", "str": "$J_y$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJy", "sigma": -1})
 # PLOT_SETTINGS.append({"param": "nodeJ", "type": "zcomp", "str": "$J_z$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellUe", "type": "magnitude", "str": "$|U|(e^-)$ [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "e_U", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "cellUe", "type": "magnitude", "str": "$|U|(e^-)$ [km/s]", "log": 0, "lims": (0,600e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "e_U", "sigma": -1})
 # PLOT_SETTINGS.append({"param": "cellUe", "type": "xcomp", "str": "$U_x(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Ux", "sigma": -1})
 # PLOT_SETTINGS.append({"param": "cellUe", "type": "ycomp", "str": "$U_y(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Uy", "sigma": -1})
 # PLOT_SETTINGS.append({"param": "cellUe", "type": "zcomp", "str": "$U_z(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Uz", "sigma": -1})
@@ -158,9 +157,9 @@ PLOT_SETTINGS.append({
     "filename": "B_ave_",
     "sigma": -1,
 })
-# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "xcomp", "str": "$B_x$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_x", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "ycomp", "str": "$B_y$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_y", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "zcomp", "str": "$B_z$ [nT]", "log": 0, "lims": (-100e-9,100e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_z", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "xcomp", "str": "$B_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_x", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "ycomp", "str": "$B_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_y", "sigma": -1})
+# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "zcomp", "str": "$B_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_z", "sigma": -1})
 PLOT_SETTINGS.append({
     "param": "n_H+sw_ave",
     "type": "scalar",
@@ -269,7 +268,6 @@ def read_metadata(reader, radius):
 
 def choose_column(plane, rmin, rmax, n, coord, radius):
     """Choose the grid index nearest the requested slice position."""
-    # Retain the original selection rule and fallback to the domain midpoint.
     requested = plane * radius
     if requested < rmin or requested > rmax:
         requested = (rmin + rmax) / 2
@@ -293,7 +291,7 @@ def plane_slices(extent, grid, radius):
 
 
 def format_number(value, decimals=10):
-    """Format values using the original plot-title rounding convention."""
+    """Format values using rounding."""
     if decimals == 1:
         return str(int(round(value * decimals) / decimals))
     return str(round(value * decimals) / decimals)
@@ -307,7 +305,7 @@ def format_with_unit(value, unit_string):
 
 
 def coordinate_ticks(limits):
-    """Use the original automatic tick-step heuristic."""
+    """Automatic tick-step heuristic."""
     ranges = (
         limits[1] - limits[0],
         limits[3] - limits[2],
@@ -461,8 +459,6 @@ def draw_figure(
             gaussian_filter(panel, sigma=setting["sigma"], mode="constant")
             for panel in panels
         )
-
-    # Keep the original xz, xy, yz panel order and equal-aspect axes.
     extents = (
         (limits[0], limits[1], limits[4], limits[5]),
         (limits[0], limits[1], limits[2], limits[3]),
@@ -477,14 +473,29 @@ def draw_figure(
         (zoom[0:2], zoom[2:4]),
         (zoom[2:4], zoom[4:6]),
     )
+    # All panels share a displayed coordinate span, so their axes have the
+    # same screen dimensions and identical pixels-per-Rp scaling.
+    common_width = max(float(x[1] - x[0]) for x, _ in zooms)
+    common_height = max(float(y[1] - y[0]) for _, y in zooms)
+    if common_width <= 0 or common_height <= 0:
+        raise ValueError("Panel coordinate ranges must be positive")
+    visible_limits = tuple(
+        (
+            (float(x[0] + x[1]) - common_width) / 2,
+            (float(x[0] + x[1]) + common_width) / 2,
+            (float(y[0] + y[1]) - common_height) / 2,
+            (float(y[0] + y[1]) + common_height) / 2,
+        )
+    for x, y in zooms
+    )
     titles = (
         "3D: $xz$ ($y=$" + format_with_unit(y_actual, "$R_p$") + ")",
-        "$t=$" + format_number(time_s) + " s\n3D: $xy$ ($z=$"
+        "$t=$" + format_number(time_s,100000) + " s\n3D: $xy$ ($z=$"
         + format_with_unit(z_actual, "$R_p$") + ")",
         "3D: $yz$ ($x=$" + format_with_unit(x_actual, "$R_p$") + ")",
     )
     labels = (("$x$", "$z$"), ("$x$", "$y$"), ("$y$", "$z$"))
-    fig, axes = plt.subplots(1, 3, figsize=FIGURE_SIZE, frameon=True)
+    fig, axes = plt.subplots(1, 3, figsize=FIGURE_SIZE, frameon=True, layout="constrained")
     try:
         for index, (axis, panel) in enumerate(zip(axes, panels)):
             mappable = axis.imshow(
@@ -501,10 +512,11 @@ def draw_figure(
             axis.tick_params("x", labelrotation=X_TICK_ANGLE)
             axis.set_yticks(tick_marks)
             axis.axis("scaled")
-            axis.set_xlim(zooms[index][0])
-            axis.set_ylim(zooms[index][1])
+            x_min, x_max, y_min, y_max = visible_limits[index]
+            axis.set_xlim(x_min, x_max)
+            axis.set_ylim(y_min, y_max)
             configure_panel(setting, mappable, axis, SHOW_PLANET[index])
-        fig.tight_layout()
+        #fig.tight_layout()
         colorbar = fig.colorbar(mappable, ax=axes, shrink=0.5)
         colorbar.ax.set_title(setting["str"])
         return fig
