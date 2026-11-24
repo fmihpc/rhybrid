@@ -79,7 +79,7 @@ PLOT_SETTINGS = []
 PLOT_SETTINGS.append({
     "param": "cellB",
     "type": "magnitude",
-    "str": "$|cellB|$ [nT]",
+    "str": r"$|cellB|$ [nT]",
     "log": 1,
     "lims": (1e-9, 1000e-9),
     "unit": 1e-9,
@@ -87,17 +87,17 @@ PLOT_SETTINGS.append({
     "filename": "B",
     "sigma": -1,
 })
-# PLOT_SETTINGS.append({"param": "cellB", "type": "xcomp", "str": "$cellB_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "Bx", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellB", "type": "ycomp", "str": "$cellB_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "By", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellB", "type": "zcomp", "str": "$cellB_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "Bz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "faceB", "type": "magnitude", "str": "$|faceB|$ [nT]", "log": 1, "lims": (1e-9, 1000e-9), "unit": 1e-9, "colormap": CMAP_SEQUENTIAL, "filename": "faceB", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "faceB", "type": "xcomp", "str": "$faceB_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBx", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "faceB", "type": "ycomp", "str": "$faceB_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "faceB", "type": "zcomp", "str": "$faceB_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellB", "type": "xcomp", "str": r"$cellB_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "Bx", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellB", "type": "ycomp", "str": r"$cellB_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "By", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellB", "type": "zcomp", "str": r"$cellB_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "Bz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "faceB", "type": "magnitude", "str": r"$|faceB|$ [nT]", "log": 1, "lims": (1e-9, 1000e-9), "unit": 1e-9, "colormap": CMAP_SEQUENTIAL, "filename": "faceB", "sigma": -1})
+PLOT_SETTINGS.append({"param": "faceB", "type": "xcomp", "str": r"$faceB_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBx", "sigma": -1})
+PLOT_SETTINGS.append({"param": "faceB", "type": "ycomp", "str": r"$faceB_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "faceB", "type": "zcomp", "str": r"$faceB_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "faceBz", "sigma": -1})
 PLOT_SETTINGS.append({
     "param": "n_H+sw",
     "type": "scalar",
-    "str": "$n$(H$^{+}_\\mathrm{sw}$) [m$^{-3}$]",
+    "str": r"$n$(H$^{+}_\mathrm{sw}$) [m$^{-3}$]",
     "log": 1,
     "lims": (1e4, 1e9),
     "unit": 1,
@@ -105,52 +105,52 @@ PLOT_SETTINGS.append({
     "filename": "Hsw_n",
     "sigma": -1,
 })
-# PLOT_SETTINGS.append({"param": "n_He++sw", "type": "scalar", "str": "$n$(He$^{++}_\mathrm{sw}$) [m$^{-3}$]", "log": 1, "lims": (0.04*1e4,0.04*1e9), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "n_Na+", "type": "scalar", "str": "$n$(Na$^{+}$) [m$^{-3}$]", "log": 1, "lims": (10,1e10), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Na_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "n_O+", "type": "scalar", "str": "$n$(O$^{+}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "n_O2+", "type": "scalar", "str": "$n$(O$^{+}_\mathrm{2}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O2_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "n_H+planet", "type": "scalar", "str": "$n$(H$^{+}_\mathrm{planet}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hplanet_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "nodeE", "type": "magnitude", "str": "$|E|$ [V/m]", "log": 1, "lims": (0.0001,0.1), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "nodeE", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "nodeE", "type": "xcomp", "str": "$E_x$ [mV/m]", "log": 0, "lims": (-0.02,0.02), "unit": 1e-3, "colormap": CMAP_DIVERGING, "filename": "nodeEx", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "nodeE", "type": "ycomp", "str": "$E_y$ [mV/m]", "log": 0, "lims": (-0.02,0.02), "unit": 1e-3, "colormap": CMAP_DIVERGING, "filename": "nodeEy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "nodeE", "type": "zcomp", "str": "$E_z$ [mV/m]", "log": 0, "lims": (-0.02,0.02), "unit": 1e-3, "colormap": CMAP_DIVERGING, "filename": "nodeEz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellEp", "type": "magnitude", "str": "$|E_p|$ [V/m]", "log": 1, "lims": (1e-6,1e-3), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Ep", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellEp", "type": "xcomp", "str": "$E_{p,x}$ [V/m]", "log": 0, "lims": (-2e-04,2e-04), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "Epx", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellEp", "type": "ycomp", "str": "$E_{p,y}$ [V/m]", "log": 0, "lims": (-2e-04,2e-04), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "Epy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellEp", "type": "zcomp", "str": "$E_{p,z}$ [V/m]", "log": 0, "lims": (-2e-04,2e-04), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "Epz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "nodeJ", "type": "magnitude", "str": "$|J|$ [A/m$^2$]", "log": 1, "lims": (1e-9,1e-6), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "nodeJ", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "nodeJ", "type": "xcomp", "str": "$J_x$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJx", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "nodeJ", "type": "ycomp", "str": "$J_y$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "nodeJ", "type": "zcomp", "str": "$J_z$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellUe", "type": "magnitude", "str": "$|U|(e^-)$ [km/s]", "log": 0, "lims": (0,600e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "e_U", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellUe", "type": "xcomp", "str": "$U_x(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Ux", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellUe", "type": "ycomp", "str": "$U_y(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Uy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellUe", "type": "zcomp", "str": "$U_z(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Uz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_H+sw", "type": "magnitude", "str": "$|U|$(H$^{+}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Hsw_U", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_H+sw", "type": "xcomp", "str": "$U_x$(H$^{+}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_Ux", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_H+sw", "type": "ycomp", "str": "$U_y$(H$^{+}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_Uy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_H+sw", "type": "zcomp", "str": "$U_z$(H$^{+}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_Uz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_He++sw", "type": "magnitude", "str": "$|U|$(He$^{++}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_U", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_He++sw", "type": "xcomp", "str": "$U_x$(He$^{++}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_Ux", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_He++sw", "type": "ycomp", "str": "$U_y$(He$^{++}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_Uy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_He++sw", "type": "zcomp", "str": "$U_z$(He$^{++}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_Uz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_Na+", "type": "magnitude", "str": "$|U|$(Na$^{+}$) [km/s]", "log": 0, "lims": (0,1000e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Na_U", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_Na+", "type": "xcomp", "str": "$U_x$(Na$^{+}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_Ux", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_Na+", "type": "ycomp", "str": "$U_y$(Na$^{+}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_Uy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_Na+", "type": "zcomp", "str": "$U_z$(Na$^{+}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_Uz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "T_H+sw", "type": "scalar", "str": "$T$(H$^{+}_\mathrm{sw}$) [K]", "log": 1, "lims": (1e5,1e8), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hsw_T", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "T_He++sw", "type": "scalar", "str": "$T$(He$^{++}_\mathrm{sw}$) [K]", "log": 1, "lims": (3.5*1e5,3.5*1e8), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_T", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "T_Na+", "type": "scalar", "str": "$T$(Na$^{+}$) [K]", "log": 1, "lims": (1e4,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Na_T", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "T_O+", "type": "scalar", "str": "$T$(O$^{+}$) [K]", "log": 1, "lims": (1e4,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O_T", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "T_O2+", "type": "scalar", "str": "$T$(O$^{+}_\mathrm{2}$) [K]", "log": 1, "lims": (1e4,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O2_T", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "T_H+planet", "type": "scalar", "str": "$T$(H$^{+}_\mathrm{planet}$) [K]", "log": 1, "lims": (1e5,10e6), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hplanet_T", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_He++sw", "type": "scalar", "str": r"$n$(He$^{++}_\mathrm{sw}$) [m$^{-3}$]", "log": 1, "lims": (0.04*1e4,0.04*1e9), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_Na+exo", "type": "scalar", "str": r"$n$(Na$^{+}$) [m$^{-3}$]", "log": 1, "lims": (10,1e10), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Na_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_O+", "type": "scalar", "str": r"$n$(O$^{+}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_O2+", "type": "scalar", "str": r"$n$(O$^{+}_\mathrm{2}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O2_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_H+planet", "type": "scalar", "str": r"$n$(H$^{+}_\mathrm{planet}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hplanet_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "nodeE", "type": "magnitude", "str": r"$|E|$ [V/m]", "log": 1, "lims": (0.0001,0.1), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "nodeE", "sigma": -1})
+PLOT_SETTINGS.append({"param": "nodeE", "type": "xcomp", "str": r"$E_x$ [mV/m]", "log": 0, "lims": (-0.02,0.02), "unit": 1e-3, "colormap": CMAP_DIVERGING, "filename": "nodeEx", "sigma": -1})
+PLOT_SETTINGS.append({"param": "nodeE", "type": "ycomp", "str": r"$E_y$ [mV/m]", "log": 0, "lims": (-0.02,0.02), "unit": 1e-3, "colormap": CMAP_DIVERGING, "filename": "nodeEy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "nodeE", "type": "zcomp", "str": r"$E_z$ [mV/m]", "log": 0, "lims": (-0.02,0.02), "unit": 1e-3, "colormap": CMAP_DIVERGING, "filename": "nodeEz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellEp", "type": "magnitude", "str": r"$|E_p|$ [V/m]", "log": 1, "lims": (1e-6,1e-3), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Ep", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellEp", "type": "xcomp", "str": r"$E_{p,x}$ [V/m]", "log": 0, "lims": (-2e-04,2e-04), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "Epx", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellEp", "type": "ycomp", "str": r"$E_{p,y}$ [V/m]", "log": 0, "lims": (-2e-04,2e-04), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "Epy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellEp", "type": "zcomp", "str": r"$E_{p,z}$ [V/m]", "log": 0, "lims": (-2e-04,2e-04), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "Epz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "nodeJ", "type": "magnitude", "str": r"$|J|$ [A/m$^2$]", "log": 1, "lims": (1e-9,1e-6), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "nodeJ", "sigma": -1})
+PLOT_SETTINGS.append({"param": "nodeJ", "type": "xcomp", "str": r"$J_x$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJx", "sigma": -1})
+PLOT_SETTINGS.append({"param": "nodeJ", "type": "ycomp", "str": r"$J_y$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "nodeJ", "type": "zcomp", "str": r"$J_z$ [A/m$^2$]", "log": 0, "lims": (-3e-7,3e-7), "unit": 1, "colormap": CMAP_DIVERGING, "filename": "nodeJz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellUe", "type": "magnitude", "str": r"$|U|(e^-)$ [km/s]", "log": 0, "lims": (0,600e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "e_U", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellUe", "type": "xcomp", "str": r"$U_x(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Ux", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellUe", "type": "ycomp", "str": r"$U_y(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Uy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellUe", "type": "zcomp", "str": r"$U_z(e^-)$ [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "e_Uz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_H+sw", "type": "magnitude", "str": r"$|U|$(H$^{+}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Hsw_U", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_H+sw", "type": "xcomp", "str": r"$U_x$(H$^{+}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_Ux", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_H+sw", "type": "ycomp", "str": r"$U_y$(H$^{+}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_Uy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_H+sw", "type": "zcomp", "str": r"$U_z$(H$^{+}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_Uz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_He++sw", "type": "magnitude", "str": r"$|U|$(He$^{++}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_U", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_He++sw", "type": "xcomp", "str": r"$U_x$(He$^{++}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_Ux", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_He++sw", "type": "ycomp", "str": r"$U_y$(He$^{++}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_Uy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_He++sw", "type": "zcomp", "str": r"$U_z$(He$^{++}_\mathrm{sw}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_Uz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_Na+exo", "type": "magnitude", "str": r"$|U|$(Na$^{+}$) [km/s]", "log": 0, "lims": (0,1000e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Na_U", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_Na+exo", "type": "xcomp", "str": r"$U_x$(Na$^{+}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_Ux", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_Na+exo", "type": "ycomp", "str": r"$U_y$(Na$^{+}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_Uy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_Na+exo", "type": "zcomp", "str": r"$U_z$(Na$^{+}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_Uz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "T_H+sw", "type": "scalar", "str": r"$T$(H$^{+}_\mathrm{sw}$) [K]", "log": 1, "lims": (1e5,1e8), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hsw_T", "sigma": -1})
+PLOT_SETTINGS.append({"param": "T_He++sw", "type": "scalar", "str": r"$T$(He$^{++}_\mathrm{sw}$) [K]", "log": 1, "lims": (3.5*1e5,3.5*1e8), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_T", "sigma": -1})
+PLOT_SETTINGS.append({"param": "T_Na+exo", "type": "scalar", "str": r"$T$(Na$^{+}$) [K]", "log": 1, "lims": (1e4,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Na_T", "sigma": -1})
+PLOT_SETTINGS.append({"param": "T_O+", "type": "scalar", "str": r"$T$(O$^{+}$) [K]", "log": 1, "lims": (1e4,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O_T", "sigma": -1})
+PLOT_SETTINGS.append({"param": "T_O2+", "type": "scalar", "str": r"$T$(O$^{+}_\mathrm{2}$) [K]", "log": 1, "lims": (1e4,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O2_T", "sigma": -1})
+PLOT_SETTINGS.append({"param": "T_H+planet", "type": "scalar", "str": r"$T$(H$^{+}_\mathrm{planet}$) [K]", "log": 1, "lims": (1e5,10e6), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hplanet_T", "sigma": -1})
 
 # Temporally averaged parameters
 
 PLOT_SETTINGS.append({
     "param": "cellBAverage",
     "type": "magnitude",
-    "str": "$|B|$ [nT]",
+    "str": r"$|B|$ [nT]",
     "log": 1,
     "lims": (1e-9, 1000e-9),
     "unit": 1e-9,
@@ -158,13 +158,13 @@ PLOT_SETTINGS.append({
     "filename": "B_ave_",
     "sigma": -1,
 })
-# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "xcomp", "str": "$B_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_x", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "ycomp", "str": "$B_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_y", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "cellBAverage", "type": "zcomp", "str": "$B_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_z", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellBAverage", "type": "xcomp", "str": r"$B_x$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_x", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellBAverage", "type": "ycomp", "str": r"$B_y$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_y", "sigma": -1})
+PLOT_SETTINGS.append({"param": "cellBAverage", "type": "zcomp", "str": r"$B_z$ [nT]", "log": 0, "lims": (-120e-9,120e-9), "unit": 1e-9, "colormap": CMAP_DIVERGING, "filename": "B_ave_z", "sigma": -1})
 PLOT_SETTINGS.append({
     "param": "n_H+sw_ave",
     "type": "scalar",
-    "str": "$n$(H$^{+}_\\mathrm{sw,ave}$) [m$^{-3}$]",
+    "str": r"$n$(H$^{+}_\mathrm{sw,ave}$) [m$^{-3}$]",
     "log": 1,
     "lims": (1e4, 1e9),
     "unit": 1,
@@ -172,23 +172,23 @@ PLOT_SETTINGS.append({
     "filename": "Hsw_ave_n",
     "sigma": -1,
 })
-# PLOT_SETTINGS.append({"param": "n_He++sw_ave", "type": "scalar", "str": "$n$(He$^{++}_\mathrm{sw,ave}$) [m$^{-3}$]", "log": 1, "lims": (0.04*1e4,0.04*1e9), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_ave_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "n_Na+_ave", "type": "scalar", "str": "$n$(Na$^{+}_\mathrm{ave}$) [m$^{-3}$]", "log": 1, "lims": (10,1e10), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Na_ave_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "n_O+_ave", "type": "scalar", "str": "$n$(O$^{+}_\mathrm{sw,ave}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O_ave_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "n_O2+_ave", "type": "scalar", "str": "$n$(O$^{+}_\mathrm{2,ave}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O2_ave_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "n_H+planet_ave", "type": "scalar", "str": "$n$(H$^{+}_\mathrm{planet,ave}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hplanet_ave_n", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_H+sw_ave", "type": "magnitude", "str": "$|U|$(H$^{+}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Hsw_ave_U", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_H+sw_ave", "type": "xcomp", "str": "$U_x$(H$^{+}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_ave_Ux", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_H+sw_ave", "type": "ycomp", "str": "$U_y$(H$^{+}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_ave_Uy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_H+sw_ave", "type": "zcomp", "str": "$U_z$(H$^{+}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_ave_Uz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_He++sw_ave", "type": "magnitude", "str": "$|U|$(He$^{++}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_ave_U", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_He++sw_ave", "type": "xcomp", "str": "$U_x$(He$^{++}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_ave_Ux", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_He++sw_ave", "type": "ycomp", "str": "$U_y$(He$^{++}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_ave_Uy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_He++sw_ave", "type": "zcomp", "str": "$U_z$(He$^{++}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_ave_Uz", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_Na+_ave", "type": "magnitude", "str": "$|U|$(Na$^{+}_\mathrm{ave}$) [km/s]", "log": 0, "lims": (0,1000e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Na_ave_U", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_Na+_ave", "type": "xcomp", "str": "$U_x$(Na$^{+}_\mathrm{ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_ave_Ux", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_Na+_ave", "type": "ycomp", "str": "$U_y$(Na$^{+}_\mathrm{ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_ave_Uy", "sigma": -1})
-# PLOT_SETTINGS.append({"param": "v_Na+_ave", "type": "zcomp", "str": "$U_z$(Na$^{+}_\mathrm{ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_ave_Uz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_He++sw_ave", "type": "scalar", "str": r"$n$(He$^{++}_\mathrm{sw,ave}$) [m$^{-3}$]", "log": 1, "lims": (0.04*1e4,0.04*1e9), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_ave_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_Na+exo_ave", "type": "scalar", "str": r"$n$(Na$^{+}_\mathrm{ave}$) [m$^{-3}$]", "log": 1, "lims": (10,1e10), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Na_ave_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_O+_ave", "type": "scalar", "str": r"$n$(O$^{+}_\mathrm{sw,ave}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O_ave_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_O2+_ave", "type": "scalar", "str": r"$n$(O$^{+}_\mathrm{2,ave}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "O2_ave_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "n_H+planet_ave", "type": "scalar", "str": r"$n$(H$^{+}_\mathrm{planet,ave}$) [m$^{-3}$]", "log": 1, "lims": (1,1e7), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "Hplanet_ave_n", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_H+sw_ave", "type": "magnitude", "str": r"$|U|$(H$^{+}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Hsw_ave_U", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_H+sw_ave", "type": "xcomp", "str": r"$U_x$(H$^{+}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_ave_Ux", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_H+sw_ave", "type": "ycomp", "str": r"$U_y$(H$^{+}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_ave_Uy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_H+sw_ave", "type": "zcomp", "str": r"$U_z$(H$^{+}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hsw_ave_Uz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_He++sw_ave", "type": "magnitude", "str": r"$|U|$(He$^{++}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (0,700e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Hesw_ave_U", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_He++sw_ave", "type": "xcomp", "str": r"$U_x$(He$^{++}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_ave_Ux", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_He++sw_ave", "type": "ycomp", "str": r"$U_y$(He$^{++}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_ave_Uy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_He++sw_ave", "type": "zcomp", "str": r"$U_z$(He$^{++}_\mathrm{sw,ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Hesw_ave_Uz", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_Na+exo_ave", "type": "magnitude", "str": r"$|U|$(Na$^{+}_\mathrm{ave}$) [km/s]", "log": 0, "lims": (0,1000e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "Na_ave_U", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_Na+exo_ave", "type": "xcomp", "str": r"$U_x$(Na$^{+}_\mathrm{ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_ave_Ux", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_Na+exo_ave", "type": "ycomp", "str": r"$U_y$(Na$^{+}_\mathrm{ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_ave_Uy", "sigma": -1})
+PLOT_SETTINGS.append({"param": "v_Na+exo_ave", "type": "zcomp", "str": r"$U_z$(Na$^{+}_\mathrm{ave}$) [km/s]", "log": 0, "lims": (-600e3,600e3), "unit": 1e3, "colormap": CMAP_DIVERGING, "filename": "Na_ave_Uz", "sigma": -1})
 
 
 def parse_arguments():
@@ -325,10 +325,10 @@ def detect_settings(reader):
         )
 
     # Add custom derived parameters manually if needed (disabled by default):
-    # selected.append({"param": "nvO", "type": "nvO", "str": "$nU$(O$^{+}$) [m$^{-2}$ s$^{-1}$]", "log": 1, "lims": (1e6, 1e11), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "nvO", "sigma": -1})
-    # selected.append({"param": "rho_m", "type": "rho_m", "str": "$\\rho_m$ [$\\mu$g/m$^{3}$]", "log": 1, "lims": (1e-21, 1e-18), "unit": 1e-6, "colormap": CMAP_SEQUENTIAL, "filename": "rho_m", "sigma": -1})
-    # selected.append({"param": "U_bulk", "type": "U_bulk", "str": "$U_\\mathrm{bulk}$ [km/s]", "log": 0, "lims": (0, 600e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "U_bulk", "sigma": -1})
-    # selected.append({"param": "p_B", "type": "p_B", "str": "$p_B$ [Pa]", "log": 1, "lims": (1e-13, 1e-10), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "p_B", "sigma": -1})
+    # selected.append({"param": "nvO", "type": "nvO", "str": r"$nU$(O$^{+}$) [m$^{-2}$ s$^{-1}$]", "log": 1, "lims": (1e6, 1e11), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "nvO", "sigma": -1})
+    # selected.append({"param": "rho_m", "type": "rho_m", "str": r"$\rho_m$ [$\mu$g/m$^{3}$]", "log": 1, "lims": (1e-21, 1e-18), "unit": 1e-6, "colormap": CMAP_SEQUENTIAL, "filename": "rho_m", "sigma": -1})
+    # selected.append({"param": "U_bulk", "type": "U_bulk", "str": r"$U_\mathrm{bulk}$ [km/s]", "log": 0, "lims": (0, 600e3), "unit": 1e3, "colormap": CMAP_SEQUENTIAL, "filename": "U_bulk", "sigma": -1})
+    # selected.append({"param": "p_B", "type": "p_B", "str": r"$p_B$ [Pa]", "log": 1, "lims": (1e-13, 1e-10), "unit": 1, "colormap": CMAP_SEQUENTIAL, "filename": "p_B", "sigma": -1})
     if not selected:
         raise ValueError("No plottable variables found in first selected VLSV file")
     return selected, len(all_variables), vector_count, scalar_count
@@ -467,11 +467,11 @@ def draw_figure(
     for x, y in zooms
     )
     titles = (
-        "$xz$ ($y=$" + format_with_unit(y_actual, "$R_p$") + ")",
-        "$xy$ ($z=$" + format_with_unit(z_actual, "$R_p$") + ")",
-        "$yz$ ($x=$" + format_with_unit(x_actual, "$R_p$") + ")",
+        r"$xz$ ($y=$" + format_with_unit(y_actual, r"$R_p$") + ")",
+        r"$xy$ ($z=$" + format_with_unit(z_actual, r"$R_p$") + ")",
+        r"$yz$ ($x=$" + format_with_unit(x_actual, r"$R_p$") + ")",
     )
-    labels = (("$x$", "$z$"), ("$x$", "$y$"), ("$y$", "$z$"))
+    labels = ((r"$x$", r"$z$"), (r"$x$", r"$y$"), (r"$y$", r"$z$"))
     fig, axes = plt.subplots(1, 3, figsize=FIGURE_SIZE, frameon=True, layout="constrained")
     try:
         for index, (axis, panel) in enumerate(zip(axes, panels)):
@@ -494,8 +494,8 @@ def draw_figure(
                     fontsize=plt.rcParams["axes.titlesize"],
                     clip_on=False,
                 )
-            axis.set_xlabel(labels[index][0] + " [$R_p$]")
-            axis.set_ylabel(labels[index][1] + " [$R_p$]")
+            axis.set_xlabel(labels[index][0] + r" [$R_p$]")
+            axis.set_ylabel(labels[index][1] + r" [$R_p$]")
             axis.xaxis.set_major_locator(MultipleLocator(tick_step))
             axis.tick_params("x", labelrotation=X_TICK_ANGLE)
             axis.yaxis.set_major_locator(MultipleLocator(tick_step))
