@@ -69,19 +69,19 @@ module load python-data/3.12-31.03
 #module load ffmpeg
 
 folder_vlsv_files="./"
-vlsv_pattern="state*.vlsv"
 folder_output="./"
 folder_rhybridpy="/PATH/TO/RHYBRIDPY/"
 
-output_file="${folder_output%/}/example_state_average_0_4000.vlsv"
 timestep_first_text="0"
 timestep_last_text="4000"
 timestep_stride_text="1"
+output_file="${folder_output%/}/average_state_${timestep_first_text}_${timestep_last_text}_${timestep_stride_text}dt.vlsv"
+
 state_number_width=8
 WORK_DIR="$SLURM_SUBMIT_DIR/average_state_files_tmp"
 averaging_script="./average_state_files.py"
 
-echo "Reading VLSV files: $folder_vlsv_files/$vlsv_pattern"
+echo "Reading VLSV files from: $folder_vlsv_files"
 
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$folder_rhybridpy"
 mkdir -p "$folder_output"
@@ -90,18 +90,6 @@ mkdir -p "$folder_output"
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1
-
-# Find VLSV files
-shopt -s nullglob
-files=("$folder_vlsv_files"/$vlsv_pattern)
-
-if ((${#files[@]} == 0)); then
-    echo "ERROR: no matching VLSV files found in $folder_vlsv_files" >&2
-    exit 1
-fi
-
-echo "Found ${#files[@]} VLSV files."
-export folder_output
 
 # Average selected files using parallel workers
 for value in \
@@ -129,6 +117,11 @@ if (( state_number_width < 1 )); then
 fi
 if [[ ! -f "$averaging_script" ]]; then
     echo "ERROR: averaging script not found: $averaging_script" >&2
+    exit 1
+fi
+# Refuse to overwrite an existing output, including dangling symlinks.
+if [[ -e "$output_file" || -L "$output_file" ]]; then
+    echo "ERROR: output already exists: $output_file" >&2
     exit 1
 fi
 if [[ "$folder_vlsv_files" != "/" ]]; then
@@ -166,11 +159,12 @@ if (( ${#input_files[@]} == 0 )); then
     exit 1
 fi
 
-echo "(SLURM) Suggested files: $candidate_count"
-echo "(SLURM) Found files:     ${#input_files[@]}"
-echo "(SLURM) Missing files:   ${#missing_files[@]}"
-echo "(SLURM) First input:     ${input_files[0]}"
-echo "(SLURM) Last input:      ${input_files[-1]}"
+echo "Suggested files: $candidate_count"
+echo "Found files:     ${#input_files[@]}"
+echo "Missing files:   ${#missing_files[@]}"
+echo "First input:     ${input_files[0]}"
+echo "Last input:      ${input_files[-1]}"
+echo "Average file:    $output_file"
 
 # Avoid the operating-system argument-size limit for large snapshot sets.
 # Bash printf is a builtin, so writing thousands of array entries here does
@@ -199,9 +193,11 @@ average_command=(
     -o "$output_file"
     --input-list "$input_list_file"
 )
-
+echo "AVERAGING: BEGIN"
 "${average_command[@]}"
+echo "AVERAGING: FINISHED"
 
-echo "(SLURM) Provenance log: ${output_file}.log"
+echo "Output file: $output_file"
+echo "Provenance log: ${output_file}.log"
 
 
