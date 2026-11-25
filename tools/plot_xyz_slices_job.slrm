@@ -7,16 +7,18 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=50G
-set -euo pipefail
-trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND" >&2' ERR
+#SBATCH --no-requeue
+#SBATCH --output=slurm-%j.out
+set -Eeuo pipefail
+trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND (exit status $?)" >&2' ERR
 on_exit() {
     local status=$?
     local elapsed=$SECONDS
     echo
     if (( status == 0 )); then
-        echo "(SLURM) FINISH: ${script_name:-$SLURM_JOB_NAME}"
+        echo "(SLURM) FINISH: ${script_name:-${SLURM_JOB_NAME:-unknown}}"
     else
-        echo "(SLURM) FAILED: ${script_name:-$SLURM_JOB_NAME} (exit status $status)" >&2
+        echo "(SLURM) FAILED: ${script_name:-${SLURM_JOB_NAME:-unknown}} (exit status $status)" >&2
     fi
     echo
     echo "Time stamp: $(date -R)"
@@ -54,8 +56,15 @@ echo "N_nodes = $N_nodes"
 echo "N_tasks = $N_tasks"
 echo "N_cpus_per_task = $N_cpus_per_task"
 echo
-if (( N_nodes != 1 )); then
-    echo "ERROR: This script supports exactly one Slurm node; allocated $N_nodes nodes." >&2
+echo "Job ID: $SLURM_JOB_ID"
+echo "Node list: $SLURM_JOB_NODELIST"
+echo
+if (( N_nodes != 1 || N_tasks != 1 )); then
+    echo "ERROR: This script requires exactly one Slurm node and one task." >&2
+    exit 1
+fi
+if (( N_cpus_per_task < 1 )); then
+    echo "ERROR: Invalid CPU allocation." >&2
     exit 1
 fi
 
@@ -80,7 +89,7 @@ echo "Run main log file: $file_main_log"
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$folder_rhybridpy"
 mkdir -p "./$folder_output"
 
-# Prevent Python processes from using multiple math-library threads.
+# Prevent unintended multithreading in linked libraries
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1

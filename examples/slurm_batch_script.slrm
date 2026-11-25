@@ -1,19 +1,85 @@
 #!/bin/bash -l
-# Example Slurm batch script for RHybrid
-#SBATCH --job-name=MY_RUN_NAME
+#SBATCH --job-name=rhb
 #SBATCH --account=YOUR_PROJECT_HERE
 #SBATCH --time=01:00:00
 #SBATCH --partition=YOUR_QUEUE_HERE
-#SBATCH --nodes=10
-#SBATCH --ntasks-per-node=20
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=100G
-#SBATCH --no-requeue # if needed
-##SBATCH --exclusive # if needed
-set -euo pipefail
-cd $SLURM_SUBMIT_DIR
-echo "$(date) $SLURM_JOB_ID" >> jobid.txt
-#module load package # load here needed modules in your HPC environment
-export OMPI_MCA_io=^ompio # workaround OpenMPI I/O bug (if needed)
-srun ./rhybrid --runconfig=myrun.cfg
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=10
+#SBATCH --cpus-per-task=1 # pure MPI, no multithreading
+#SBATCH --mem=50G
+#SBATCH --no-requeue
+#SBATCH --output=slurm-%j.out
+set -Eeuo pipefail
+trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND (exit status $?)" >&2' ERR
+on_exit() {
+    local status=$?
+    local elapsed=$SECONDS
+    echo
+    if (( status == 0 )); then
+        echo "(SLURM) FINISH: ${script_name:-${SLURM_JOB_NAME:-unknown}}"
+    else
+        echo "(SLURM) FAILED: ${script_name:-${SLURM_JOB_NAME:-unknown}} (exit status $status)" >&2
+    fi
+    echo
+    echo "Time stamp: $(date -R)"
+    printf 'Elapsed time: %02d:%02d:%02d\n' "$((elapsed / 3600))" "$(((elapsed % 3600) / 60))" "$((elapsed % 60))"
+    echo
+}
+trap on_exit EXIT
+SECONDS=0
+cd "$SLURM_SUBMIT_DIR"
+echo "$SLURM_JOB_ID" >jobid.txt
+N_nodes="${SLURM_JOB_NUM_NODES}"
+N_tasks="${SLURM_NTASKS}"
+N_cpus_per_task="${SLURM_CPUS_PER_TASK}"
+# Get original submitted script path.
+if job_info=$(scontrol show job "$SLURM_JOB_ID" 2>/dev/null); then
+    script_path=$(sed -n 's/^[[:space:]]*Command=//p' <<< "$job_info")
+else
+    script_path=""
+fi
+script_name="${script_path##*/}"
+# Fallback if path is unavailable.
+script_name="${script_name:-$SLURM_JOB_NAME}"
+script_path="${script_path:-unknown}"
+echo
+echo "Time stamp: $(date -R)"
+echo
+echo "Script name: $script_name"
+echo "Script path: $script_path"
+echo
+echo "(SLURM) START: $script_name"
+echo
+echo "Current folder: $(pwd)"
+echo
+echo "N_nodes = $N_nodes"
+echo "N_tasks = $N_tasks"
+echo "N_cpus_per_task = $N_cpus_per_task"
+echo
+echo "Job ID: $SLURM_JOB_ID"
+echo "Node list: $SLURM_JOB_NODELIST"
+echo
+
+module load StdEnv
+module load gcc/15.2.0
+module load boost
+module load openmpi/5.0.10
+#module load python-data/3.12-31.03
+#module load gnuplot/6.0.0
+#module load texlive/20260301
+#module load ffmpeg
+
+# Prevent unintended multithreading in linked libraries
+export OMP_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+#export OMPI_MCA_io=^ompio # workaround OpenMPI I/O bug (if needed)
+
+srun --nodes="$SLURM_JOB_NUM_NODES" \
+     --ntasks="$SLURM_NTASKS" \
+     --cpus-per-task="$SLURM_CPUS_PER_TASK" \
+     --kill-on-bad-exit=1 \
+     ./rhybrid --runconfig=myrun.cfg
+
 # after completion run get_post_job_statistic.sh to get information on resource usage
+

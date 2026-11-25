@@ -7,16 +7,18 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=300G
-set -euo pipefail
-trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND" >&2' ERR
+#SBATCH --no-requeue
+#SBATCH --output=slurm-%j.out
+set -Eeuo pipefail
+trap 'echo "SCRIPT ERROR: line $LINENO: $BASH_COMMAND (exit status $?)" >&2' ERR
 on_exit() {
     local status=$?
     local elapsed=$SECONDS
     echo
     if (( status == 0 )); then
-        echo "(SLURM) FINISH: ${script_name:-$SLURM_JOB_NAME}"
+        echo "(SLURM) FINISH: ${script_name:-${SLURM_JOB_NAME:-unknown}}"
     else
-        echo "(SLURM) FAILED: ${script_name:-$SLURM_JOB_NAME} (exit status $status)" >&2
+        echo "(SLURM) FAILED: ${script_name:-${SLURM_JOB_NAME:-unknown}} (exit status $status)" >&2
     fi
     echo
     echo "Time stamp: $(date -R)"
@@ -54,8 +56,15 @@ echo "N_nodes = $N_nodes"
 echo "N_tasks = $N_tasks"
 echo "N_cpus_per_task = $N_cpus_per_task"
 echo
-if (( N_nodes != 1 )); then
-    echo "ERROR: This script supports exactly one Slurm node; allocated $N_nodes nodes." >&2
+echo "Job ID: $SLURM_JOB_ID"
+echo "Node list: $SLURM_JOB_NODELIST"
+echo
+if (( N_nodes != 1 || N_tasks != 1 )); then
+    echo "ERROR: This script requires exactly one Slurm node and one task." >&2
+    exit 1
+fi
+if (( N_cpus_per_task < 1 )); then
+    echo "ERROR: Invalid CPU allocation." >&2
     exit 1
 fi
 
@@ -78,7 +87,7 @@ timestep_stride_text="1"
 output_file="${folder_output%/}/average_state_${timestep_first_text}_${timestep_last_text}_${timestep_stride_text}dt.vlsv"
 
 state_number_width=8
-WORK_DIR="$SLURM_SUBMIT_DIR/average_state_files_tmp"
+WORK_DIR="$SLURM_SUBMIT_DIR/average_state_files_tmp_${SLURM_JOB_ID}"
 averaging_script="./average_state_files.py"
 
 echo "Reading VLSV files from: $folder_vlsv_files"
@@ -86,7 +95,7 @@ echo "Reading VLSV files from: $folder_vlsv_files"
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$folder_rhybridpy"
 mkdir -p "$folder_output"
 
-# Prevent individual Python processes from using multiple threads
+# Prevent unintended multithreading in linked libraries
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1
@@ -178,10 +187,12 @@ export AVERAGE_STATE_TIMESTEP_LAST="$timestep_last"
 export AVERAGE_STATE_TIMESTEP_STRIDE="$timestep_stride"
 export AVERAGE_STATE_NUMBER_WIDTH="$state_number_width"
 export AVERAGE_STATE_INPUT_FOLDER="$folder_vlsv_files"
-export AVERAGE_STATE_LAUNCH_PREFIX="srun --cpu-bind=cores python -u"
+export AVERAGE_STATE_LAUNCH_PREFIX="srun --ntasks=1 --cpus-per-task=$N_cpus_per_task --cpu-bind=cores python -u"
 
 average_command=(
     srun
+    --ntasks=1
+    --cpus-per-task="$N_cpus_per_task"
     --cpu-bind=cores
     python
     -u
@@ -193,6 +204,7 @@ average_command=(
     -o "$output_file"
     --input-list "$input_list_file"
 )
+
 echo "AVERAGING: BEGIN"
 "${average_command[@]}"
 echo "AVERAGING: FINISHED"
