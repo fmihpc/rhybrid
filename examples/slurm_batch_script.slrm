@@ -62,24 +62,54 @@ echo
 
 module load StdEnv
 module load gcc/15.2.0
-module load boost
+module load boost/1.90.0
 module load openmpi/5.0.10
 #module load python-data/3.12-31.03
 #module load gnuplot/6.0.0
 #module load texlive/20260301
 #module load ffmpeg
 
+# Simulation executable and configuration file
+readonly EXEC="./rhybrid"
+readonly CFG="myrun.cfg"
+
 # Prevent unintended multithreading in linked libraries
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1
-#export OMPI_MCA_io=^ompio # workaround OpenMPI I/O bug (if needed)
 
-srun --nodes="$SLURM_JOB_NUM_NODES" \
-     --ntasks="$SLURM_NTASKS" \
-     --cpus-per-task="$SLURM_CPUS_PER_TASK" \
+# Open MPI settings
+#export OMPI_MCA_io=^ompio # workaround OpenMPI I/O bug (if needed)
+export OMPI_MCA_coll='^han' # workaround OpenMPI HAN bug (if needed)
+export OMPI_MCA_mpi_show_mca_params=enviro,file,api
+
+# Record software environment
+echo "===== Software environment ====="
+module list 2>&1
+ompi_info --version
+echo
+
+echo "===== MPI and communication environment ====="
+env | grep -E '^(OMPI_|OPAL_|UCX_|PMIX_|PRTE_|OMP_|OPENBLAS_|MKL_)' | sort
+echo
+
+echo "===== Executable and config file checksums ====="
+sha256sum "$EXEC" "$CFG"
+echo
+
+echo "===== Linked libraries ====="
+ldd "$EXEC"
+echo
+
+echo "SIMULATION: BEGIN"
+
+srun --nodes="$N_nodes" \
+     --ntasks="$N_tasks" \
+     --cpus-per-task="$N_cpus_per_task" \
      --kill-on-bad-exit=1 \
-     ./rhybrid --runconfig=myrun.cfg
+     "$EXEC" --runconfig="$CFG"
+
+echo "SIMULATION: FINISHED"
 
 # after completion run get_post_job_statistic.sh to get information on resource usage
 
