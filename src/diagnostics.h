@@ -515,7 +515,7 @@ bool logWriteParticleField(Simulation& sim,SimulationClasses& simClasses,const s
    Real sumMaxCellUeGlobal = 0.0;
    Real sumMaxNodeUeThisProcess = Hybrid::logCounterFieldMaxNodeUe;
    Real sumMaxNodeUeGlobal = 0.0;
-   Real sumMaxVwThisProcess = Hybrid::logCounterFieldMaxNodeUe;
+   Real sumMaxVwThisProcess = Hybrid::logCounterFieldMaxVw;
    Real sumMaxVwGlobal = 0.0;
    Real sumMaxEThisProcess = Hybrid::logCounterFieldMaxE;
    Real sumMaxEGlobal = 0.0;
